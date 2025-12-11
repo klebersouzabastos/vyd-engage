@@ -128,6 +128,41 @@ export function LandingPage() {
     },
   ];
 
+  const trustedCompanies = [
+    {
+      name: "TechSolutions",
+      logo: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=100&fit=crop",
+    },
+    {
+      name: "StartupX",
+      logo: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=100&fit=crop",
+    },
+    {
+      name: "InnovaCorp",
+      logo: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=200&h=100&fit=crop",
+    },
+    {
+      name: "DigitalGrowth",
+      logo: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=200&h=100&fit=crop",
+    },
+    {
+      name: "CloudTech",
+      logo: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=200&h=100&fit=crop",
+    },
+    {
+      name: "SmartBusiness",
+      logo: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=200&h=100&fit=crop",
+    },
+    {
+      name: "AgileSolutions",
+      logo: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=100&fit=crop",
+    },
+    {
+      name: "NextLevel",
+      logo: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=200&h=100&fit=crop",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -160,7 +195,7 @@ export function LandingPage() {
               <Link to="/login">
                 <Button variant="ghost">Entrar</Button>
               </Link>
-              <Link to="/onboarding">
+              <Link to="/register">
                 <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
                   Começar Grátis
                 </Button>
@@ -186,7 +221,7 @@ export function LandingPage() {
                 Aumente suas vendas sem aumentar sua equipe.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link to="/onboarding">
+                <Link to="/register">
                   <Button size="lg" className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2">
                     Criar Conta Gratuita
                     <ArrowRight size={20} />
@@ -227,12 +262,22 @@ export function LandingPage() {
       <section className="py-12 bg-[#F9FAFB]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-8">
-            <p className="text-[#6B7280]">Empresas que confiam no FlowCRM</p>
+            <p className="text-[#6B7280] text-sm font-medium uppercase tracking-wide">
+              Empresas que confiam no FlowCRM
+            </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center opacity-50">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-12 bg-[#E5E7EB] rounded flex items-center justify-center">
-                <span className="text-[#6B7280]">Logo {i}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 items-center">
+            {trustedCompanies.map((company, index) => (
+              <div 
+                key={index} 
+                className="flex items-center justify-center h-16 px-4 bg-white rounded-lg border border-[#E5E7EB] hover:border-[#2563EB] hover:shadow-sm transition-all grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
+                title={company.name}
+              >
+                <ImageWithFallback
+                  src={company.logo}
+                  alt={company.name}
+                  className="max-h-10 max-w-full object-contain"
+                />
               </div>
             ))}
           </div>
@@ -372,7 +417,7 @@ export function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/onboarding">
+                <Link to="/register">
                   <Button
                     className={`w-full ${
                       plan.highlighted
@@ -416,7 +461,7 @@ export function LandingPage() {
           <p className="text-xl text-white/90 mb-8">
             Junte-se a centenas de empresas que já estão vendendo mais com o FlowCRM
           </p>
-          <Link to="/onboarding">
+          <Link to="/register">
             <Button size="lg" className="bg-white text-[#2563EB] hover:bg-white/90">
               Começar Agora - É Grátis
             </Button>

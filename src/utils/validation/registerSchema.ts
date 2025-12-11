@@ -2,18 +2,30 @@ import { z } from 'zod';
 
 // Step 1: Dados pessoais (Nome e Empresa)
 export const step1Schema = z.object({
-  name: z
-    .string()
-    .min(2, 'Nome deve ter pelo menos 2 caracteres')
-    .max(100, 'Nome deve ter no máximo 100 caracteres')
-    .trim(),
+  name: z.preprocess(
+    (val) => {
+      if (val === undefined || val === null) return "";
+      return String(val);
+    },
+    z.string()
+      .min(1, 'Nome é obrigatório')
+      .trim()
+      .min(2, 'Nome deve ter pelo menos 2 caracteres')
+      .max(100, 'Nome deve ter no máximo 100 caracteres')
+  ),
   
-  companyName: z
-    .string()
-    .min(2, 'Nome da empresa deve ter pelo menos 2 caracteres')
-    .max(100, 'Nome da empresa deve ter no máximo 100 caracteres')
-    .regex(/^[a-zA-Z0-9\s\-_áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]+$/, 'Nome da empresa contém caracteres inválidos')
-    .trim(),
+  companyName: z.preprocess(
+    (val) => {
+      if (val === undefined || val === null) return "";
+      return String(val);
+    },
+    z.string()
+      .min(1, 'Nome da empresa é obrigatório')
+      .trim()
+      .min(2, 'Nome da empresa deve ter pelo menos 2 caracteres')
+      .max(100, 'Nome da empresa deve ter no máximo 100 caracteres')
+      .regex(/^[a-zA-Z0-9\s\-_+áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]+$/, 'Nome da empresa contém caracteres inválidos')
+  ),
 });
 
 export type Step1FormData = z.infer<typeof step1Schema>;
@@ -35,21 +47,14 @@ export const step2Schema = z.object({
 
 export type Step2FormData = z.infer<typeof step2Schema>;
 
-// Step 3: Email (opcional)
+// Step 3: Email (obrigatório)
 export const step3Schema = z.object({
   email: z
     .string()
-    .optional()
-    .refine((val) => {
-      // Se não fornecido ou vazio, é válido
-      if (!val || val.trim() === '') {
-        return true;
-      }
-      // Se fornecido, deve ser um email válido
-      return z.string().email().safeParse(val.toLowerCase().trim()).success;
-    }, {
-      message: 'Email inválido',
-    }),
+    .min(1, 'Email é obrigatório')
+    .email('Email inválido')
+    .toLowerCase()
+    .trim(),
 });
 
 export type Step3FormData = z.infer<typeof step3Schema>;
@@ -58,24 +63,25 @@ export type Step3FormData = z.infer<typeof step3Schema>;
 export const registerSchema = z.object({
   name: z
     .string()
+    .trim()
+    .min(1, 'Nome é obrigatório')
     .min(2, 'Nome deve ter pelo menos 2 caracteres')
-    .max(100, 'Nome deve ter no máximo 100 caracteres')
-    .trim(),
+    .max(100, 'Nome deve ter no máximo 100 caracteres'),
   
   email: z
     .string()
-    .email('Email inválido')
-    .toLowerCase()
     .trim()
-    .optional()
-    .or(z.literal('')),
+    .toLowerCase()
+    .min(1, 'Email é obrigatório')
+    .email('Email inválido'),
   
   companyName: z
     .string()
+    .trim()
+    .min(1, 'Nome da empresa é obrigatório')
     .min(2, 'Nome da empresa deve ter pelo menos 2 caracteres')
     .max(100, 'Nome da empresa deve ter no máximo 100 caracteres')
-    .regex(/^[a-zA-Z0-9\s\-_áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]+$/, 'Nome da empresa contém caracteres inválidos')
-    .trim(),
+    .regex(/^[a-zA-Z0-9\s\-_+áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]+$/, 'Nome da empresa contém caracteres inválidos'),
   
   password: z
     .string()

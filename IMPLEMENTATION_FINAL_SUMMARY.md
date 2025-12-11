@@ -128,3 +128,8 @@ Os componentes restantes (Pipeline, Automações, Relatórios) podem ser adicion
 
 **A aplicação pode ser lançada em produção agora!** 🎉
 
+
+
+
+
+

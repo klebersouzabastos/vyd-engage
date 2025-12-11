@@ -56,6 +56,10 @@
     build: {
       target: 'esnext',
       outDir: 'build',
+      commonjsOptions: {
+        include: [/exceljs/, /node_modules/],
+        transformMixedEsModules: true
+      }
     },
     server: {
       port: 3000,

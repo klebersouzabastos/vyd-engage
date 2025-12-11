@@ -228,12 +228,23 @@ export function Onboarding() {
             >
               Voltar
             </Button>
-            <Button
-              onClick={handleNext}
-              className="bg-[#2563EB] hover:bg-[#1E40AF]"
-            >
-              {step === 3 ? "Começar a usar" : "Continuar"}
-            </Button>
+            <div className="flex gap-3">
+              {step === 3 && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/app")}
+                  className="text-[#6B7280] border-[#E5E7EB] hover:bg-[#F9FAFB]"
+                >
+                  Configurar depois
+                </Button>
+              )}
+              <Button
+                onClick={handleNext}
+                className="bg-[#2563EB] hover:bg-[#1E40AF]"
+              >
+                {step === 3 ? "Começar a usar" : "Continuar"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

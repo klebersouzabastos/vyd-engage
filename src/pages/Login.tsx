@@ -139,7 +139,7 @@ export function Login() {
           <p className="mt-8 sm:mt-10 text-center text-[#6B7280] text-base sm:text-lg">
             Não tem uma conta?{" "}
             <Link 
-              to="/onboarding" 
+              to="/register" 
               className="text-[#2563EB] hover:text-[#1E40AF] font-medium transition-colors"
             >
               Criar conta gratuita

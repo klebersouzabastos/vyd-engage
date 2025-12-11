@@ -57,3 +57,8 @@ WHERE table_name = 'User' AND column_name = 'email';
 - Mas cada email não-nulo deve ser único
 - A migration é reversível se necessário
 
+
+
+
+
+

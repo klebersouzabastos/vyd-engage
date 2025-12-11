@@ -196,3 +196,8 @@ export async function getEvolutionQRCode(
 }
 
 
+
+
+
+
+

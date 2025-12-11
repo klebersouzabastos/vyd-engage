@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
 
 export interface RegisterData {
-  email?: string;
+  email: string;
   password: string;
   name: string;
   companyName: string;
@@ -31,15 +31,13 @@ export interface AuthResponse {
 }
 
 export async function register(data: RegisterData): Promise<AuthResponse> {
-  // Check if user already exists (only if email is provided)
-  if (data.email) {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
 
-    if (existingUser) {
-      throw createError('User with this email already exists', 400, 'USER_EXISTS');
-    }
+  if (existingUser) {
+    throw createError('User with this email already exists', 400, 'USER_EXISTS');
   }
 
   // Create tenant
@@ -67,13 +65,13 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   const passwordHash = await hashPassword(data.password);
   const user = await prisma.user.create({
     data: {
-      email: data.email || null,
+      email: data.email,
       passwordHash,
       name: data.name,
       tenantId: tenant.id,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
-      emailVerified: false, // Require email verification if email is provided
+      emailVerified: false, // Require email verification
     },
   });
 
@@ -113,7 +111,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   const tokenPayload: TokenPayload = {
     userId: user.id,
     tenantId: tenant.id,
-    email: user.email || '', // Use empty string if email is null
+    email: user.email,
     role: user.role,
   };
 

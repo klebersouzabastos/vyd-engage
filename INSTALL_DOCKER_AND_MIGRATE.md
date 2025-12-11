@@ -102,3 +102,8 @@ Deve retornar: `email | YES | character varying`
 3. Verifique que múltiplos usuários podem ter email NULL
 4. Verifique que emails não-nulos são únicos
 
+
+
+
+
+

@@ -15,3 +15,8 @@ ALTER TABLE "User" ADD CONSTRAINT "User_email_key" UNIQUE ("email");
 -- - Multiple users can have NULL email (no email)
 -- - Each non-NULL email must be unique
 
+
+
+
+
+

@@ -248,3 +248,8 @@ src/
 A aplicação está pronta para ser comercializada como SaaS com todos os componentes críticos implementados. Os componentes restantes podem ser adicionados incrementalmente conforme a necessidade do negócio.
 
 
+
+
+
+
+

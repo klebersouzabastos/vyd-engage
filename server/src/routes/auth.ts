@@ -9,19 +9,7 @@ const router = Router();
 
 // Validation schemas
 const registerSchema = z.object({
-  email: z
-    .string()
-    .optional()
-    .refine((val) => {
-      // If not provided or empty, it's valid
-      if (!val || val.trim() === '') {
-        return true;
-      }
-      // If provided, must be a valid email
-      return z.string().email().safeParse(val.trim().toLowerCase()).success;
-    }, {
-      message: 'Email inválido',
-    }),
+  email: z.string().min(1, 'Email é obrigatório').email('Email inválido').toLowerCase().trim(),
   password: z.string().min(8),
   name: z.string().min(2),
   companyName: z.string().min(2),
@@ -39,12 +27,7 @@ const refreshSchema = z.object({
 // Register
 router.post('/register', async (req, res, next) => {
   try {
-    const parsedData = registerSchema.parse(req.body);
-    // Normalize email: empty string becomes undefined
-    const data = {
-      ...parsedData,
-      email: parsedData.email && parsedData.email.trim() !== '' ? parsedData.email.trim().toLowerCase() : undefined,
-    };
+    const data = registerSchema.parse(req.body);
     const result = await authService.register(data);
     res.status(201).json(result);
   } catch (error) {

@@ -3,7 +3,7 @@ import { apiClient } from '../services/api/client';
 
 interface User {
   id: string;
-  email: string | null;
+  email: string;
   name: string;
   avatar?: string | null;
   role: string;
@@ -21,7 +21,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: {
-    email?: string;
+    email: string;
     password: string;
     name: string;
     companyName: string;
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: {
-    email?: string;
+    email: string;
     password: string;
     name: string;
     companyName: string;

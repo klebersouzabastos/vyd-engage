@@ -18,7 +18,7 @@ import { calculateLeadScore, saveLeadScore } from "../utils/leadScoring";
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
 import { Lead } from "../types";
 import { getLeadInteractions } from "../utils/interactions";
-import { saveSampleLeads } from "../utils/generateSampleLeads";
+import { generateSampleLeads } from "../utils/generateSampleLeads";
 import { cn } from "../components/ui/utils";
 import { exportLeadsToExcel } from "../utils/excelExport";
 import { removeLeadFromPipeline } from "../utils/pipelineSync";
@@ -893,15 +893,45 @@ export function Leads() {
               onClick={async () => {
                 try {
                   // Gerar leads de exemplo via API
-                  const sampleLeads = saveSampleLeads();
+                  const sampleLeads = generateSampleLeads();
+                  let createdCount = 0;
+                  let failedCount = 0;
+                  
                   for (const lead of sampleLeads) {
-                    await createLead(lead);
+                    try {
+                      // Remover campos que não são necessários para criação via API
+                      const { id, date, automations, tags, ...leadData } = lead;
+                      // Garantir que tags seja um array vazio (o createLead espera objetos com id)
+                      await createLead({
+                        ...leadData,
+                        tags: [],
+                      });
+                      createdCount++;
+                    } catch (error: any) {
+                      console.error(`Erro ao criar lead ${lead.name}:`, error);
+                      console.error('Detalhes do erro:', {
+                        message: error.message,
+                        statusCode: error.statusCode,
+                        details: error.details,
+                        leadData: lead
+                      });
+                      failedCount++;
+                      // Continua criando os outros leads mesmo se um falhar
+                    }
                   }
-                  alert("✅ 20 leads de exemplo foram criados com sucesso!");
-                  refetch();
+                  
+                  if (createdCount > 0) {
+                    const message = failedCount > 0 
+                      ? `✅ ${createdCount} leads de exemplo foram criados com sucesso! ${failedCount} falharam.`
+                      : `✅ ${createdCount} leads de exemplo foram criados com sucesso!`;
+                    alert(message);
+                    refetch();
+                  } else {
+                    alert("❌ Não foi possível criar nenhum lead de exemplo. Verifique o console para mais detalhes.");
+                  }
                 } catch (error) {
-                  console.error("Erro ao criar leads de exemplo:", error);
-                  alert("Erro ao criar leads de exemplo");
+                  console.error("Erro ao gerar leads de exemplo:", error);
+                  alert("Erro ao gerar leads de exemplo");
                 }
               }}
             >

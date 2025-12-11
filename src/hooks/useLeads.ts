@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Lead } from '../types';
+import { mapStatusToBackend, mapSourceToBackend, mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
+import { syncLeadToPipeline, syncAllLeadsToPipeline, removeLeadFromPipeline } from '../utils/pipelineSync';
 
 export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -28,8 +30,8 @@ export function useLeads() {
         phone: lead.phone || '',
         company: lead.company || '',
         position: lead.position || '',
-        status: lead.status.toLowerCase(),
-        source: lead.source.toLowerCase(),
+        status: mapStatusFromBackend(lead.status),
+        source: mapSourceFromBackend(lead.source),
         score: lead.score || 0,
         customFields: lead.customFields || {},
         notes: lead.notes || '',
@@ -46,6 +48,9 @@ export function useLeads() {
         total: transformedLeads.length,
         totalPages: 1,
       });
+      
+      // Sincronizar leads com o pipeline após carregar da API
+      syncAllLeadsToPipeline(transformedLeads);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar leads');
       toast.error('Erro ao carregar leads');
@@ -62,8 +67,8 @@ export function useLeads() {
         phone: data.phone,
         company: data.company,
         position: data.position,
-        status: data.status?.toUpperCase(),
-        source: data.source?.toUpperCase(),
+        status: data.status ? mapStatusToBackend(data.status) : undefined,
+        source: data.source ? mapSourceToBackend(data.source) : undefined,
         score: data.score || 0,
         customFields: data.customFields || {},
         notes: data.notes,
@@ -79,8 +84,8 @@ export function useLeads() {
         phone: result.phone || '',
         company: result.company || '',
         position: result.position || '',
-        status: result.status.toLowerCase() as any,
-        source: result.source.toLowerCase() as any,
+        status: mapStatusFromBackend(result.status) as any,
+        source: mapSourceFromBackend(result.source) as any,
         score: result.score || 0,
         customFields: result.customFields || {},
         notes: result.notes || '',
@@ -91,6 +96,10 @@ export function useLeads() {
       };
 
       setLeads(prev => [newLead, ...prev]);
+      
+      // Sincronizar novo lead com o pipeline
+      syncLeadToPipeline(newLead);
+      
       toast.success('Lead criado com sucesso!');
       return newLead;
     } catch (err: any) {
@@ -107,8 +116,8 @@ export function useLeads() {
         phone: data.phone,
         company: data.company,
         position: data.position,
-        status: data.status?.toUpperCase(),
-        source: data.source?.toUpperCase(),
+        status: data.status ? mapStatusToBackend(data.status) : undefined,
+        source: data.source ? mapSourceToBackend(data.source) : undefined,
         score: data.score,
         customFields: data.customFields,
         notes: data.notes,
@@ -124,8 +133,8 @@ export function useLeads() {
         phone: result.phone || '',
         company: result.company || '',
         position: result.position || '',
-        status: result.status.toLowerCase() as any,
-        source: result.source.toLowerCase() as any,
+        status: mapStatusFromBackend(result.status) as any,
+        source: mapSourceFromBackend(result.source) as any,
         score: result.score || 0,
         customFields: result.customFields || {},
         notes: result.notes || '',
@@ -136,6 +145,10 @@ export function useLeads() {
       };
 
       setLeads(prev => prev.map(l => l.id === id ? updatedLead : l));
+      
+      // Sincronizar lead atualizado com o pipeline
+      syncLeadToPipeline(updatedLead);
+      
       toast.success('Lead atualizado com sucesso!');
       return updatedLead;
     } catch (err: any) {
@@ -148,6 +161,10 @@ export function useLeads() {
     try {
       await apiClient.deleteLead(id);
       setLeads(prev => prev.filter(l => l.id !== id));
+      
+      // Remover lead do pipeline
+      removeLeadFromPipeline(Number(id));
+      
       toast.success('Lead deletado com sucesso!');
     } catch (err: any) {
       toast.error(err.message || 'Erro ao deletar lead');
@@ -171,5 +188,6 @@ export function useLeads() {
     refetch: fetchLeads,
   };
 }
+
 
 

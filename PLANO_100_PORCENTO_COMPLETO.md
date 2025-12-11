@@ -208,3 +208,8 @@ Todos os componentes críticos para um SaaS comercializável foram implementados
 
 **O FlowCRM está pronto para ser comercializado como SaaS!** 🚀
 
+
+
+
+
+

@@ -116,7 +116,7 @@ class ApiClient {
 
   // Auth methods
   async register(data: {
-    email?: string;
+    email: string;
     password: string;
     name: string;
     companyName: string;

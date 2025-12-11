@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +29,8 @@ export function Register() {
   // Form para Step 1 (Nome e Empresa)
   const step1Form = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
-    mode: "onChange",
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       name: formData.name || "",
       companyName: formData.companyName || "",
@@ -41,19 +42,36 @@ export function Register() {
     resolver: zodResolver(step2Schema),
     mode: "onChange",
     defaultValues: {
-      password: formData.password || "",
-      confirmPassword: formData.confirmPassword || "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
-  // Form para Step 3 (Email - opcional)
+  // Atualizar valores do formulário quando formData mudar
+  useEffect(() => {
+    if (formData.password !== undefined) {
+      step2Form.setValue("password", formData.password, { shouldValidate: false });
+    }
+    if (formData.confirmPassword !== undefined) {
+      step2Form.setValue("confirmPassword", formData.confirmPassword, { shouldValidate: false });
+    }
+  }, [formData.password, formData.confirmPassword]);
+
+  // Form para Step 3 (Email - obrigatório)
   const step3Form = useForm<Step3FormData>({
     resolver: zodResolver(step3Schema),
     mode: "onChange",
     defaultValues: {
-      email: formData.email || "",
+      email: "",
     },
   });
+
+  // Atualizar valores do formulário quando formData mudar
+  useEffect(() => {
+    if (formData.email !== undefined) {
+      step3Form.setValue("email", formData.email, { shouldValidate: false });
+    }
+  }, [formData.email]);
 
   const password = step2Form.watch("password");
   const watchedFieldsStep1 = step1Form.watch();
@@ -67,20 +85,37 @@ export function Register() {
 
   const handleStep2Submit = (data: Step2FormData) => {
     setFormData((prev) => ({ ...prev, ...data }));
+    // Sempre avançar para o Step 3 (Email obrigatório)
     setCurrentStep(3);
+    console.log('Avançando para Step 3 - Email obrigatório');
   };
 
   const handleStep3Submit = async (data: Step3FormData) => {
     setIsSubmitting(true);
     try {
+      // Validação adicional para garantir que o email seja fornecido
+      if (!data.email || data.email.trim() === "") {
+        toast.error("O e-mail é obrigatório para criar sua conta.");
+        step3Form.setError("email", { message: "Email é obrigatório" });
+        setIsSubmitting(false);
+        return;
+      }
+
       const finalData: RegisterFormData = {
         ...formData,
         ...data,
       } as RegisterFormData;
 
+      // Validação final antes de enviar
+      if (!finalData.email || finalData.email.trim() === "") {
+        toast.error("Por favor, informe um e-mail válido.");
+        setIsSubmitting(false);
+        return;
+      }
+
       await registerUser({
         name: finalData.name,
-        email: finalData.email && finalData.email.trim() !== "" ? finalData.email : undefined,
+        email: finalData.email,
         password: finalData.password,
         companyName: finalData.companyName,
       });
@@ -88,35 +123,7 @@ export function Register() {
       toast.success("Conta criada com sucesso! Redirecionando...");
       
       setTimeout(() => {
-        navigate("/app");
-      }, 1500);
-    } catch (error: any) {
-      const errorMessage = getErrorMessage(error);
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSkipEmail = async () => {
-    setIsSubmitting(true);
-    try {
-      const finalData: RegisterFormData = {
-        ...formData,
-        email: undefined,
-      } as RegisterFormData;
-
-      await registerUser({
-        name: finalData.name,
-        email: undefined,
-        password: finalData.password,
-        companyName: finalData.companyName,
-      });
-      
-      toast.success("Conta criada com sucesso! Redirecionando...");
-      
-      setTimeout(() => {
-        navigate("/app");
+        navigate("/onboarding");
       }, 1500);
     } catch (error: any) {
       const errorMessage = getErrorMessage(error);
@@ -135,7 +142,7 @@ export function Register() {
   const steps = [
     { number: 1, title: "Dados pessoais", description: "Nome e empresa" },
     { number: 2, title: "Senha", description: "Crie uma senha segura" },
-    { number: 3, title: "E-mail", description: "Opcional - configure mais tarde" },
+    { number: 3, title: "E-mail", description: "Seu e-mail de acesso" },
   ];
 
   return (
@@ -214,7 +221,16 @@ export function Register() {
                     id="name"
                     type="text"
                     placeholder="Seu nome completo"
-                    {...step1Form.register("name")}
+                    {...step1Form.register("name", {
+                      onChange: (e) => {
+                        const value = e.target.value ?? "";
+                        step1Form.setValue("name", value, { shouldValidate: false, shouldTouch: true });
+                      },
+                      onBlur: (e) => {
+                        const trimmedValue = (e.target.value ?? "").trim();
+                        step1Form.setValue("name", trimmedValue, { shouldValidate: true });
+                      }
+                    })}
                     error={step1Form.formState.errors.name?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
                     aria-describedby={step1Form.formState.errors.name ? "name-error" : undefined}
@@ -242,7 +258,16 @@ export function Register() {
                     id="companyName"
                     type="text"
                     placeholder="Nome da sua empresa"
-                    {...step1Form.register("companyName")}
+                    {...step1Form.register("companyName", {
+                      onChange: (e) => {
+                        const value = e.target.value ?? "";
+                        step1Form.setValue("companyName", value, { shouldValidate: false, shouldTouch: true });
+                      },
+                      onBlur: (e) => {
+                        const trimmedValue = (e.target.value ?? "").trim();
+                        step1Form.setValue("companyName", trimmedValue, { shouldValidate: true });
+                      }
+                    })}
                     error={step1Form.formState.errors.companyName?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
                     aria-describedby={step1Form.formState.errors.companyName ? "companyName-error" : undefined}
@@ -285,7 +310,12 @@ export function Register() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    {...step2Form.register("password")}
+                    {...step2Form.register("password", {
+                      onChange: (e) => {
+                        const value = e.target.value ?? "";
+                        step2Form.setValue("password", value, { shouldValidate: false, shouldTouch: true });
+                      }
+                    })}
                     error={step2Form.formState.errors.password?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
                     aria-describedby={step2Form.formState.errors.password ? "password-error password-strength" : "password-strength"}
@@ -382,35 +412,35 @@ export function Register() {
             </form>
           )}
 
-          {/* Step 3: Email (opcional) */}
+          {/* Step 3: Email (obrigatório) */}
           {currentStep === 3 && (
             <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-5 sm:space-y-6" noValidate>
-              <div className="bg-[#F0F9FF] border border-[#BAE6FD] rounded-lg p-4 mb-4">
-                <p className="text-sm text-[#0369A1]">
-                  <strong>O e-mail é opcional.</strong> Você pode configurá-lo agora ou mais tarde nas configurações da sua conta.
-                </p>
-              </div>
-
               {/* Email */}
               <div className="space-y-2.5">
                 <Label htmlFor="email" className="text-[#1F2937] text-base sm:text-lg font-medium block">
-                  E-mail <span className="text-[#6B7280] text-sm font-normal">(opcional)</span>
+                  E-mail <span className="text-red-500">*</span>
+                  <span className="text-sm text-[#6B7280] font-normal ml-2">(obrigatório)</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="email"
                     type="email"
                     placeholder="seu@email.com"
+                    required
                     {...step3Form.register("email")}
                     error={step3Form.formState.errors.email?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
-                    aria-describedby={step3Form.formState.errors.email ? "email-error" : undefined}
+                    aria-describedby={step3Form.formState.errors.email ? "email-error email-help" : "email-help"}
+                    aria-required="true"
                   />
                   <FieldSuccess
                     isValid={!step3Form.formState.errors.email && step3Form.formState.touchedFields.email && !!watchedFieldsStep3.email && watchedFieldsStep3.email.trim() !== ""}
                     touched={step3Form.formState.touchedFields.email}
                   />
                 </div>
+                <p id="email-help" className="text-sm text-[#6B7280] mt-1">
+                  Este campo é obrigatório para criar sua conta.
+                </p>
                 <FieldError
                   id="email-error"
                   error={step3Form.formState.errors.email?.message}
@@ -419,36 +449,24 @@ export function Register() {
                 />
               </div>
 
-              <div className="flex flex-col gap-4 mt-6">
-                <LoadingButton
-                  type="submit"
-                  loading={isSubmitting}
-                  loadingText="Criando conta..."
-                  className="w-full h-12 sm:h-14 bg-[#2563EB] hover:bg-[#1E40AF] text-white font-medium rounded-lg transition-colors text-base sm:text-lg"
-                  disabled={isSubmitting || (watchedFieldsStep3.email && watchedFieldsStep3.email.trim() !== "" && !step3Form.formState.isValid)}
-                >
-                  Criar conta
-                </LoadingButton>
-                
-                <LoadingButton
-                  type="button"
-                  onClick={handleSkipEmail}
-                  loading={isSubmitting}
-                  loadingText="Criando conta..."
-                  className="w-full h-12 sm:h-14 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#1F2937] font-medium rounded-lg transition-colors text-base sm:text-lg"
-                  disabled={isSubmitting}
-                >
-                  Configurar e-mail mais tarde
-                </LoadingButton>
-
+              <div className="flex gap-4 mt-6">
                 <LoadingButton
                   type="button"
                   onClick={goToPreviousStep}
                   loading={false}
-                  className="w-full h-12 sm:h-14 bg-transparent hover:bg-[#F9FAFB] text-[#6B7280] font-medium rounded-lg transition-colors text-base sm:text-lg border border-[#E5E7EB]"
+                  className="flex-1 h-12 sm:h-14 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#1F2937] font-medium rounded-lg transition-colors text-base sm:text-lg"
                   disabled={isSubmitting}
                 >
                   Voltar
+                </LoadingButton>
+                <LoadingButton
+                  type="submit"
+                  loading={isSubmitting}
+                  loadingText="Criando conta..."
+                  className="flex-1 h-12 sm:h-14 bg-[#2563EB] hover:bg-[#1E40AF] text-white font-medium rounded-lg transition-colors text-base sm:text-lg"
+                  disabled={isSubmitting || !step3Form.formState.isValid}
+                >
+                  Criar conta
                 </LoadingButton>
               </div>
             </form>

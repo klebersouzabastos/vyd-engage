@@ -125,3 +125,8 @@ app.use('/admin/queues', serverAdapter.getRouter());
 
 Acesse: `http://localhost:3001/admin/queues`
 
+
+
+
+
+

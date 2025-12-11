@@ -30,12 +30,15 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { addInteraction } from "../utils/interactions";
-import { syncAllLeadsToPipeline } from "../utils/pipelineSync";
+import { syncAllLeadsToPipeline, syncLeadToPipeline } from "../utils/pipelineSync";
 import { LeadModal } from "../components/LeadModal";
 import { cn } from "../components/ui/utils";
+import { apiClient } from "../services/api/client";
+import { useLeads } from "../hooks/useLeads";
+import { mapStatusToBackend, mapStatusFromBackend, mapSourceFromBackend } from "../utils/leadEnums";
 
 interface Lead {
-  id: number;
+  id: number | string; // Aceita number (legado) ou string (UUID da API)
   name: string;
   phone: string;
   email: string;
@@ -211,13 +214,30 @@ function saveColumns(funnelId: string, columns: Column[]): void {
   saveFunnels(funnels);
 }
 
-// Função para buscar o lead completo do localStorage
-function getLeadById(leadId: number): any | null {
+// Função para buscar o lead completo (tenta API primeiro, depois localStorage)
+async function getLeadById(leadId: number | string): Promise<any | null> {
   try {
+    // Tentar buscar da API primeiro
+    try {
+      const lead = await apiClient.getLead(String(leadId));
+      if (lead) {
+        // Transformar para o formato esperado
+        return {
+          ...lead,
+          status: mapStatusFromBackend(lead.status),
+          source: mapSourceFromBackend(lead.source),
+        };
+      }
+    } catch (apiError) {
+      // Se API falhar, tentar localStorage
+      console.log("API não disponível, usando localStorage");
+    }
+    
+    // Fallback: buscar do localStorage
     const stored = localStorage.getItem("leads");
     if (stored) {
       const leads = JSON.parse(stored);
-      return leads.find((lead: any) => lead.id === leadId) || null;
+      return leads.find((lead: any) => lead.id === leadId || String(lead.id) === String(leadId)) || null;
     }
   } catch (error) {
     console.error("Erro ao buscar lead:", error);
@@ -235,6 +255,7 @@ export function Pipeline() {
   const navigate = useNavigate();
   const { getTagById } = useTags();
   const { fields: customFields } = useCustomFields();
+  const { updateLead, refetch } = useLeads();
   const [funnels, setFunnels] = useState<Funnel[]>(getSavedFunnels);
   const [currentFunnelId, setCurrentFunnelId] = useState<string>(DEFAULT_FUNNEL_ID);
   const [columns, setColumns] = useState<Column[]>(() => {
@@ -267,8 +288,42 @@ export function Pipeline() {
 
   // Carregar funis e colunas ao montar e sincronizar leads
   useEffect(() => {
-    // Primeiro, sincronizar todos os leads existentes com o funil de venda
-    syncAllLeadsToPipeline();
+    // Carregar leads da API e sincronizar com o pipeline
+    const loadAndSyncLeads = async () => {
+      try {
+        const result = await apiClient.getLeads();
+        if (result && result.leads) {
+          // Transformar leads da API para o formato esperado
+          const transformedLeads = result.leads.map((lead: any) => ({
+            id: lead.id,
+            name: lead.name,
+            email: lead.email || '',
+            phone: lead.phone || '',
+            company: lead.company || '',
+            position: lead.position || '',
+            status: mapStatusFromBackend(lead.status) as any,
+            source: mapSourceFromBackend(lead.source) as any,
+            score: lead.score || 0,
+            customFields: lead.customFields || {},
+            notes: lead.notes || '',
+            assignedTo: lead.assignedTo || '',
+            tags: lead.tags?.map((lt: any) => lt.tag) || [],
+            createdAt: lead.createdAt,
+            updatedAt: lead.updatedAt,
+            automations: [],
+          }));
+          
+          // Sincronizar leads da API com o pipeline
+          syncAllLeadsToPipeline(transformedLeads);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar leads da API:", error);
+        // Fallback: usar localStorage se API falhar
+        syncAllLeadsToPipeline();
+      }
+    };
+    
+    loadAndSyncLeads();
     
     // Depois, carregar os funis atualizados (após sincronização)
     let savedFunnels = getSavedFunnels();
@@ -408,7 +463,7 @@ export function Pipeline() {
     e.preventDefault();
   };
 
-  const handleDrop = (targetColumnId: string) => {
+  const handleDrop = async (targetColumnId: string) => {
     if (!draggedLead || !draggedFromColumn) return;
 
     const newColumns = columns.map((col) => {
@@ -429,33 +484,70 @@ export function Pipeline() {
 
     setColumns(newColumns);
     
-    // Atualizar status do lead no localStorage
+    // Buscar o lead completo da API para atualizar
     try {
-      const stored = localStorage.getItem("leads");
-      if (stored) {
-        const leads = JSON.parse(stored);
-        const leadIndex = leads.findIndex((l: any) => l.id === draggedLead.id);
-        if (leadIndex !== -1) {
-          leads[leadIndex] = {
-            ...leads[leadIndex],
-            status: targetColumnId,
-            updatedAt: new Date().toISOString(),
-          };
-          localStorage.setItem("leads", JSON.stringify(leads));
-          
-          // Adicionar interação de mudança de status
-          addInteraction(draggedLead.id, {
+      const targetColumnTitle = newColumns.find(col => col.id === targetColumnId)?.title || targetColumnId;
+      
+      // Buscar lead completo da API
+      const fullLead = await apiClient.getLead(String(draggedLead.id));
+      
+      if (fullLead) {
+        // Atualizar lead na API com novo status
+        const updatedLead = await updateLead(String(draggedLead.id), {
+          ...fullLead,
+          status: targetColumnId as any,
+        });
+        
+        // Sincronizar com o pipeline
+        syncLeadToPipeline(updatedLead);
+        
+        // Adicionar interação de mudança de status na API
+        try {
+          await apiClient.createInteraction({
+            leadId: String(draggedLead.id),
             type: "status_change",
-            content: `Status alterado para "${newColumns.find(col => col.id === targetColumnId)?.title || targetColumnId}"`,
+            content: `Status alterado de "${columns.find(col => col.id === draggedFromColumn)?.title || draggedFromColumn}" para "${targetColumnTitle}"`,
             metadata: {
               oldStatus: draggedFromColumn,
               newStatus: targetColumnId,
             },
           });
+        } catch (interactionError) {
+          console.error("Erro ao criar interação:", interactionError);
+          // Continuar mesmo se falhar ao criar interação
         }
       }
     } catch (error) {
-      console.error("Erro ao atualizar status do lead:", error);
+      console.error("Erro ao atualizar status do lead na API:", error);
+      
+      // Fallback: atualizar localStorage se API falhar
+      try {
+        const stored = localStorage.getItem("leads");
+        if (stored) {
+          const leads = JSON.parse(stored);
+          const leadIndex = leads.findIndex((l: any) => l.id === draggedLead.id);
+          if (leadIndex !== -1) {
+            leads[leadIndex] = {
+              ...leads[leadIndex],
+              status: targetColumnId,
+              updatedAt: new Date().toISOString(),
+            };
+            localStorage.setItem("leads", JSON.stringify(leads));
+            
+            // Adicionar interação de mudança de status no localStorage
+            addInteraction(draggedLead.id, {
+              type: "status_change",
+              content: `Status alterado para "${newColumns.find(col => col.id === targetColumnId)?.title || targetColumnId}"`,
+              metadata: {
+                oldStatus: draggedFromColumn,
+                newStatus: targetColumnId,
+              },
+            });
+          }
+        }
+      } catch (localError) {
+        console.error("Erro ao atualizar status do lead no localStorage:", localError);
+      }
     }
     
     setDraggedLead(null);
@@ -465,7 +557,7 @@ export function Pipeline() {
     dragStartPosition.current = null;
   };
 
-  const handleCardClick = (e: React.MouseEvent, lead: Lead) => {
+  const handleCardClick = async (e: React.MouseEvent, lead: Lead) => {
     // Não abrir modal se estiver arrastando
     if (isDragging) {
       return;
@@ -487,13 +579,13 @@ export function Pipeline() {
       }
     }
     
-    // Buscar o lead completo do localStorage
-    const fullLead = getLeadById(lead.id);
+    // Buscar o lead completo (da API ou localStorage)
+    const fullLead = await getLeadById(lead.id);
     if (fullLead) {
       setSelectedLead(fullLead);
       setModalOpen(true);
     } else {
-      // Se não encontrar no localStorage, usar os dados básicos do card
+      // Se não encontrar, usar os dados básicos do card
       setSelectedLead({
         ...lead,
         status: columns.find(col => col.leads.some(l => l.id === lead.id))?.id || "novo",
@@ -1037,10 +1129,12 @@ export function Pipeline() {
                       </div>
                     )}
 
-                    {/* Campos Customizados */}
-                    {(() => {
-                      const fullLead = getLeadById(lead.id);
-                      const hasCustomFieldsData = fullLead && hasCustomFields(fullLead);
+                    {/* Campos Customizados - Removido pois getLeadById é async e PipelineLead não inclui customFields */}
+                    {/* Para ver campos customizados, abra o lead clicando nele */}
+                    {false && (() => {
+                      // Código removido - campos customizados não estão disponíveis no card do pipeline
+                      const fullLead = null;
+                      const hasCustomFieldsData = false;
                       if (!hasCustomFieldsData || customFields.length === 0) return null;
                       
                       const customFieldsWithValues = customFields.filter(f => {

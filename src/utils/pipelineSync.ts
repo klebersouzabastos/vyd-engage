@@ -2,7 +2,7 @@ import { Lead } from "../types";
 
 // Interface do Lead no Pipeline
 export interface PipelineLead {
-  id: number;
+  id: number | string; // Aceita number (legado) ou string (UUID da API)
   name: string;
   phone: string;
   email: string;
@@ -263,7 +263,7 @@ export function syncLeadToPipeline(lead: Lead): void {
 }
 
 // Remover lead do pipeline (funil de venda padrão)
-export function removeLeadFromPipeline(leadId: number): void {
+export function removeLeadFromPipeline(leadId: number | string): void {
   // Obter ou criar o funil de venda padrão
   let funnels = getSavedFunnels();
   let defaultFunnel = funnels.find(f => f.id === DEFAULT_FUNNEL_ID);
@@ -293,12 +293,19 @@ export function removeLeadFromPipeline(leadId: number): void {
 }
 
 // Sincronizar todos os leads com o pipeline (funil de venda padrão)
-export function syncAllLeadsToPipeline(): void {
+// Agora aceita uma lista de leads como parâmetro (da API) ou usa localStorage como fallback
+export function syncAllLeadsToPipeline(leadsFromAPI?: Lead[]): void {
   try {
-    const stored = localStorage.getItem("leads");
-    if (!stored) return;
-
-    const leads: Lead[] = JSON.parse(stored);
+    let leads: Lead[] = [];
+    
+    // Priorizar leads da API se fornecidos, senão usar localStorage
+    if (leadsFromAPI && leadsFromAPI.length > 0) {
+      leads = leadsFromAPI;
+    } else {
+      const stored = localStorage.getItem("leads");
+      if (!stored) return;
+      leads = JSON.parse(stored);
+    }
     
     // Obter ou criar o funil de venda padrão
     let funnels = getSavedFunnels();

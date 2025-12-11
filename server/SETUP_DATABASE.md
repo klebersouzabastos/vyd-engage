@@ -96,3 +96,8 @@ Isso abrirá o Prisma Studio no navegador, permitindo visualizar o banco de dado
 - Verifique se o usuário tem permissões no banco de dados
 - No PostgreSQL local, você pode precisar usar o usuário `postgres`
 
+
+
+
+
+

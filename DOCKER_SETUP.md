@@ -80,3 +80,8 @@ Após a migration ser executada com sucesso:
 2. ✅ A constraint UNIQUE será mantida para emails não-nulos
 3. ✅ Você poderá cadastrar usuários sem email no frontend
 
+
+
+
+
+
