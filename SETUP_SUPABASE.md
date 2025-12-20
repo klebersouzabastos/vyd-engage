@@ -96,3 +96,4 @@ Vamos configurar as variáveis de ambiente na Vercel usando o MCP!
 
 
 
+

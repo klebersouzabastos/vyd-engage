@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { Building2, Target, Zap, Check, ArrowLeft, MessageSquare, ArrowRight } from "lucide-react";
 import { useWhatsApp } from "../contexts/WhatsAppContext";
 import {
@@ -40,6 +41,9 @@ export function Onboarding() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-8">
+      {/* VYD Ecosystem Banner */}
+      <VYDEcosystemBanner />
+      
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <Link 
@@ -53,9 +57,9 @@ export function Onboarding() {
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
           <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center">
-            <span className="text-white font-bold text-lg">F</span>
+            <span className="text-white font-bold text-xs">VE</span>
           </div>
-          <span className="text-xl font-semibold text-[#1F2937]">FlowCRM</span>
+          <span className="text-xl font-semibold text-[#1F2937]">VYD Engage</span>
         </div>
 
         {/* Progress Steps */}

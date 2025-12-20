@@ -1,6 +1,10 @@
-# FlowCRM SaaS Application
+# VYD Engage
 
 Sistema completo de CRM SaaS com autenticação, multi-tenancy, pagamentos e gerenciamento de leads.
+
+**VYD Engage** faz parte do ecossistema **VYD (Value Your Day)**, uma plataforma modular composta por múltiplas soluções independentes, todas integradas sob um único hub central.
+
+👉 [Acesse o VYD Hub](https://www.vydhub.com)
 
 ## Estrutura do Projeto
 

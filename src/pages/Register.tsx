@@ -6,6 +6,7 @@ import { LoadingButton } from "../components/ui/loading-button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { ArrowLeft, Eye, EyeOff, Check, ChevronRight } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
@@ -147,6 +148,9 @@ export function Register() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+      {/* VYD Ecosystem Banner */}
+      <VYDEcosystemBanner />
+      
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
@@ -162,9 +166,9 @@ export function Register() {
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 md:mb-12">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#2563EB] flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-lg sm:text-xl">F</span>
+              <span className="text-white font-bold text-xs sm:text-sm">VE</span>
             </div>
-            <span className="text-xl sm:text-2xl font-semibold text-[#1F2937]">FlowCRM</span>
+            <span className="text-xl sm:text-2xl font-semibold text-[#1F2937]">VYD Engage</span>
           </div>
 
           {/* Heading */}
@@ -500,7 +504,7 @@ export function Register() {
               Comece a vender mais hoje
             </h3>
             <p className="text-sm lg:text-base xl:text-lg opacity-90">
-              Junte-se a centenas de empresas que já estão usando o FlowCRM para aumentar suas vendas.
+              Junte-se a centenas de empresas que já estão usando o VYD Engage para aumentar suas vendas.
             </p>
           </div>
         </div>

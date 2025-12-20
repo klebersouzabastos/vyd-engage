@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { CheckCircle } from "lucide-react";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
 import { CustomFieldInput } from "../components/CustomFieldInput";
@@ -124,7 +125,8 @@ export function PublicForm() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#2563EB]/10 to-[#F9FAFB] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#2563EB]/10 to-[#F9FAFB] flex flex-col items-center justify-center p-4">
+        <VYDEcosystemBanner />
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={32} className="text-green-600" />
@@ -144,7 +146,8 @@ export function PublicForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#2563EB]/10 to-[#F9FAFB] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#2563EB]/10 to-[#F9FAFB] flex flex-col items-center justify-center p-4">
+      <VYDEcosystemBanner />
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         {/* Company Logo */}
         <div className="text-center mb-6">

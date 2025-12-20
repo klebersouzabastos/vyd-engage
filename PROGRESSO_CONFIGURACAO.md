@@ -34,3 +34,4 @@ Ainda preciso da **DATABASE_URL** do Supabase:
 
 
 
+

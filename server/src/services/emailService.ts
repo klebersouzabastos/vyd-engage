@@ -54,7 +54,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     const mailTransporter = getTransporter();
     
     const mailOptions = {
-      from: options.from || process.env.SMTP_FROM || 'noreply@flowcrm.com',
+      from: options.from || process.env.SMTP_FROM || 'noreply@vydengage.com',
       to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
       subject: options.subject,
       html: options.html,
@@ -76,7 +76,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
 // Email templates
 export const emailTemplates = {
   passwordReset: (name: string, resetLink: string) => ({
-    subject: 'Recuperação de Senha - FlowCRM',
+    subject: 'Recuperação de Senha - VYD Engage',
     html: `
       <!DOCTYPE html>
       <html>
@@ -93,7 +93,7 @@ export const emailTemplates = {
         <div class="container">
           <h1>Recuperação de Senha</h1>
           <p>Olá ${name},</p>
-          <p>Recebemos uma solicitação para redefinir a senha da sua conta FlowCRM.</p>
+          <p>Recebemos uma solicitação para redefinir a senha da sua conta VYD Engage.</p>
           <p>Clique no botão abaixo para criar uma nova senha:</p>
           <a href="${resetLink}" class="button">Redefinir Senha</a>
           <p>Ou copie e cole este link no seu navegador:</p>
@@ -110,7 +110,7 @@ export const emailTemplates = {
   }),
 
   emailVerification: (name: string, verificationLink: string) => ({
-    subject: 'Verifique seu Email - FlowCRM',
+    subject: 'Verifique seu Email - VYD Engage',
     html: `
       <!DOCTYPE html>
       <html>
@@ -127,7 +127,7 @@ export const emailTemplates = {
         <div class="container">
           <h1>Verificação de Email</h1>
           <p>Olá ${name},</p>
-          <p>Obrigado por se cadastrar no FlowCRM!</p>
+          <p>Obrigado por se cadastrar no VYD Engage!</p>
           <p>Por favor, verifique seu endereço de email clicando no botão abaixo:</p>
           <a href="${verificationLink}" class="button">Verificar Email</a>
           <p>Ou copie e cole este link no seu navegador:</p>
@@ -143,7 +143,7 @@ export const emailTemplates = {
   }),
 
   invitation: (inviterName: string, companyName: string, invitationLink: string, role: string) => ({
-    subject: `Convite para ${companyName} - FlowCRM`,
+    subject: `Convite para ${companyName} - VYD Engage`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -160,7 +160,7 @@ export const emailTemplates = {
         <div class="container">
           <h1>Você foi convidado!</h1>
           <p>Olá,</p>
-          <p><strong>${inviterName}</strong> convidou você para se juntar a <strong>${companyName}</strong> no FlowCRM como <strong>${role}</strong>.</p>
+          <p><strong>${inviterName}</strong> convidou você para se juntar a <strong>${companyName}</strong> no VYD Engage como <strong>${role}</strong>.</p>
           <p>Clique no botão abaixo para aceitar o convite e criar sua conta:</p>
           <a href="${invitationLink}" class="button">Aceitar Convite</a>
           <p>Ou copie e cole este link no seu navegador:</p>
@@ -175,6 +175,7 @@ export const emailTemplates = {
     `,
   }),
 };
+
 
 
 

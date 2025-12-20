@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { 
   Users, 
   Zap, 
@@ -52,7 +53,7 @@ export function LandingPage() {
     {
       name: "Maria Santos",
       role: "CEO da TechSolutions",
-      content: "O FlowCRM transformou nossa gestão de leads. Aumentamos nossa conversão em 45% no primeiro mês!",
+      content: "O VYD Engage transformou nossa gestão de leads. Aumentamos nossa conversão em 45% no primeiro mês!",
       rating: 5,
     },
     {
@@ -120,7 +121,7 @@ export function LandingPage() {
     },
     {
       question: "Preciso de conhecimento técnico?",
-      answer: "Não! O FlowCRM foi projetado para ser extremamente intuitivo. Qualquer pessoa consegue usar.",
+      answer: "Não! O VYD Engage foi projetado para ser extremamente intuitivo. Qualquer pessoa consegue usar.",
     },
     {
       question: "Como funciona a integração com WhatsApp?",
@@ -165,15 +166,18 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* VYD Ecosystem Banner */}
+      <VYDEcosystemBanner />
+      
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-[#E5E7EB] z-50">
+      <header className="fixed top-[33px] left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-[#E5E7EB] z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
+                <span className="text-white font-bold text-lg">VE</span>
               </div>
-              <span className="text-xl font-semibold text-[#1F2937]">FlowCRM</span>
+              <span className="text-xl font-semibold text-[#1F2937]">VYD Engage</span>
             </div>
 
             <nav className="hidden md:flex items-center gap-8">
@@ -209,7 +213,7 @@ export function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
+      <section className="pt-44 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -263,7 +267,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-8">
             <p className="text-[#6B7280] text-sm font-medium uppercase tracking-wide">
-              Empresas que confiam no FlowCRM
+              Empresas que confiam no VYD Engage
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 items-center">
@@ -354,7 +358,7 @@ export function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-[#1F2937] mb-4">O que nossos clientes dizem</h2>
             <p className="text-xl text-[#6B7280]">
-              Mais de 500 empresas já usam o FlowCRM
+              Mais de 500 empresas já usam o VYD Engage
             </p>
           </div>
 
@@ -459,7 +463,7 @@ export function LandingPage() {
             Pronto para aumentar suas vendas?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Junte-se a centenas de empresas que já estão vendendo mais com o FlowCRM
+            Junte-se a centenas de empresas que já estão vendendo mais com o VYD Engage
           </p>
           <Link to="/register">
             <Button size="lg" className="bg-white text-[#2563EB] hover:bg-white/90">
@@ -476,9 +480,9 @@ export function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center">
-                  <span className="text-white font-bold">F</span>
+                  <span className="text-white font-bold text-xs">VE</span>
                 </div>
-                <span className="text-white font-semibold">FlowCRM</span>
+                <span className="text-white font-semibold">VYD Engage</span>
               </div>
               <p className="text-[#9CA3AF] text-sm">
                 O CRM que ajuda você a vender mais, automaticamente.
@@ -510,7 +514,7 @@ export function LandingPage() {
           </div>
           <div className="pt-8 border-t border-[#374151]">
             <p className="text-center text-sm text-[#9CA3AF]">
-              © 2024 FlowCRM. Todos os direitos reservados.
+              © 2024 VYD Engage. Todos os direitos reservados.
             </p>
           </div>
         </div>

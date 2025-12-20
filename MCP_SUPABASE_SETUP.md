@@ -99,3 +99,4 @@ Após a configuração, você poderá usar as ferramentas do MCP do Supabase, in
 
 
 
+

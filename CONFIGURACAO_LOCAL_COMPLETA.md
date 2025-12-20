@@ -111,3 +111,4 @@ Sua aplicação local está agora configurada para usar o Supabase! 🎉
 
 
 
+

@@ -107,3 +107,4 @@ Deve retornar: `email | YES | character varying`
 
 
 
+

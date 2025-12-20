@@ -36,3 +36,4 @@ Ou use o botão "Import .env" e cole todo o conteúdo acima (incluindo DATABASE_
 
 
 
+

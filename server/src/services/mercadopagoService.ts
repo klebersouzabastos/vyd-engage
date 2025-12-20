@@ -36,7 +36,7 @@ export const mercadopagoService = {
     const preferenceData = {
       items: [
         {
-          title: `FlowCRM - ${params.planName}`,
+          title: `VYD Engage - ${params.planName}`,
           quantity: 1,
           unit_price: params.amount,
           currency_id: 'BRL',
@@ -58,7 +58,7 @@ export const mercadopagoService = {
         billingCycle: params.billingCycle,
       }),
       notification_url: `${process.env.API_URL}/api/webhooks/mercadopago`,
-      statement_descriptor: 'FlowCRM',
+      statement_descriptor: 'VYD Engage',
       metadata: {
         tenantId: params.tenantId,
         planId: params.planId,
@@ -92,6 +92,7 @@ export const mercadopagoService = {
     };
   },
 };
+
 
 
 
