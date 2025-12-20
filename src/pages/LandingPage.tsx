@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -12,10 +13,12 @@ import {
   CheckCircle, 
   Star,
   ArrowRight,
-  Menu
+  Menu,
+  X
 } from "lucide-react";
 
 export function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const features = [
     {
       icon: Users,
@@ -169,16 +172,26 @@ export function LandingPage() {
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
       
+      {/* Spacer to push content below fixed headers */}
+      <div style={{ height: '120px' }} aria-hidden="true" />
+      
       {/* Header */}
-      <header className="fixed top-[33px] left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-[#E5E7EB] z-50">
+      <header className="fixed left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-[#E5E7EB] z-[99]" style={{ top: '40px' }}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <Link 
+              to="/" 
+              onClick={(e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center">
                 <span className="text-white font-bold text-lg">VE</span>
               </div>
               <span className="text-xl font-semibold text-[#1F2937]">VYD Engage</span>
-            </div>
+            </Link>
 
             <nav className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
@@ -196,24 +209,82 @@ export function LandingPage() {
             </nav>
 
             <div className="flex items-center gap-4">
-              <Link to="/login">
-                <Button variant="ghost">Entrar</Button>
-              </Link>
-              <Link to="/register">
-                <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
-                  Começar Grátis
-                </Button>
-              </Link>
-              <button className="md:hidden">
-                <Menu size={24} className="text-[#6B7280]" />
+              <div className="hidden md:flex items-center gap-4">
+                <Link to="/login">
+                  <Button variant="ghost">Entrar</Button>
+                </Link>
+                <Link to="/register">
+                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                    Começar Grátis
+                  </Button>
+                </Link>
+              </div>
+              <button 
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? (
+                  <X size={24} className="text-[#6B7280]" />
+                ) : (
+                  <Menu size={24} className="text-[#6B7280]" />
+                )}
               </button>
             </div>
           </div>
         </div>
+        
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[#E5E7EB] bg-white">
+            <nav className="flex flex-col px-6 py-4 gap-4">
+              <a 
+                href="#features" 
+                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Funcionalidades
+              </a>
+              <a 
+                href="#pricing" 
+                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Preços
+              </a>
+              <a 
+                href="#testimonials" 
+                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Depoimentos
+              </a>
+              <a 
+                href="#faq" 
+                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                FAQ
+              </a>
+              <div className="flex flex-col gap-3 pt-4 border-t border-[#E5E7EB]">
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full bg-[#2563EB] hover:bg-[#1E40AF]">
+                    Começar Grátis
+                  </Button>
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section className="pt-44 pb-20 px-6">
+      <section className="pt-8 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
