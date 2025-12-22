@@ -1,13 +1,33 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Detect API URL automatically in production, use env var or localhost in development
+const getApiUrl = () => {
+  // If VITE_API_URL is set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // In production (when not localhost), use relative URLs
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return window.location.origin;
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:3001';
+};
 
 class ApiClient {
   private baseURL: string;
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
 
-  constructor(baseURL: string = API_URL) {
-    this.baseURL = baseURL;
+  constructor(baseURL?: string) {
+    // Detect URL dynamically at runtime
+    this.baseURL = baseURL || getApiUrl();
     this.loadTokens();
+  }
+  
+  // Method to get current API URL (useful for debugging)
+  getApiUrl(): string {
+    return this.baseURL;
   }
 
   private loadTokens() {
