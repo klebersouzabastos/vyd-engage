@@ -45,8 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await apiClient.getCurrentUser();
       setUser(data.user);
     } catch (error) {
+      // User is not authenticated or API error - set user to null
       setUser(null);
     } finally {
+      // Always set loading to false, even on error
+      // This ensures components can render properly
       setLoading(false);
     }
   };

@@ -248,14 +248,22 @@ export async function logoutAll(userId: string): Promise<void> {
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
+  // Normalize email (trim and lowercase)
+  const normalizedEmail = email.trim().toLowerCase();
+  
+  logger.info('Password reset requested', { email: normalizedEmail });
+  
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
   });
 
   if (!user) {
     // Don't reveal if user exists for security
+    logger.info('User not found for password reset', { email: normalizedEmail });
     return;
   }
+  
+  logger.info('User found for password reset', { userId: user.id, email: user.email });
 
   // Generate reset token
   const resetToken = uuidv4();
@@ -275,13 +283,36 @@ export async function requestPasswordReset(email: string): Promise<void> {
   const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
   
   try {
+    logger.info('Attempting to send password reset email', { 
+      userId: user.id, 
+      email: user.email,
+      resetLink 
+    });
+    
     await sendEmail({
       to: user.email,
       ...emailTemplates.passwordReset(user.name, resetLink),
     });
-  } catch (error) {
+    
+    logger.info('Password reset email sent successfully', { 
+      userId: user.id, 
+      email: user.email 
+    });
+  } catch (error: any) {
     logger.error('Failed to send password reset email', error);
-    // Don't throw - user might still be able to reset via support
+    // Log more details in development
+    logger.error('Email error details', {
+      message: error.message,
+      stack: error.stack,
+      userId: user.id,
+      email: user.email,
+      resetLink,
+    });
+    // Re-throw error in development to see what's happening
+    if (process.env.NODE_ENV === 'development') {
+      throw error;
+    }
+    // Don't throw in production - user might still be able to reset via support
   }
 }
 

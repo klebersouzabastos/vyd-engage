@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { authService } from '../services/authService.js';
 import { authenticate } from '../middleware/auth.js';
 import { createError } from '../middleware/errorHandler.js';
+import { passwordResetLimiter } from '../middleware/rateLimit.js';
+import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
 
 const router = Router();
@@ -132,17 +134,32 @@ router.get('/me', authenticate, async (req, res, next) => {
 
 // Request password reset
 const requestPasswordResetSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email('Email inválido'),
 });
 
 router.post('/password/reset-request', async (req, res, next) => {
   try {
+    // Log request body for debugging
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('Password reset request', { body: req.body });
+    }
+    
     const { email } = requestPasswordResetSchema.parse(req.body);
+    
+    // Log parsed email
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('Parsed email', { email });
+    }
+    
     await authService.requestPasswordReset(email);
     // Always return success to prevent email enumeration
     res.json({ message: 'If the email exists, a password reset link has been sent.' });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.error('Password reset validation error', { 
+        errors: error.errors,
+        body: req.body 
+      });
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     }
     next(error);

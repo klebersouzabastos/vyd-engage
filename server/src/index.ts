@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
-import { apiLimiter, authLimiter } from './middleware/rateLimit.js';
+import { apiLimiter, authLimiter, passwordResetLimiter } from './middleware/rateLimit.js';
 import { initSentry } from './utils/sentry.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
@@ -88,6 +88,11 @@ import interactionRoutes from './routes/interactions.js';
 import notificationRoutes from './routes/notifications.js';
 import invitationRoutes from './routes/invitations.js';
 
+// Password reset routes need to be registered before authLimiter
+// to avoid double rate limiting
+app.use('/api/auth/password', passwordResetLimiter);
+
+// Other auth routes (stricter rate limiting)
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/tasks', taskRoutes);

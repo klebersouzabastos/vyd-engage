@@ -23,7 +23,21 @@ export function Login() {
       await login(email, password);
       toast.success("Login realizado com sucesso!");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer login");
+      // Mensagem de erro mais específica
+      let errorMessage = "Erro ao fazer login";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.details?.code === 'NETWORK_ERROR') {
+        errorMessage = "Erro de conexão. Verifique se o servidor está rodando.";
+      } else if (error.details?.code === 'INVALID_CREDENTIALS') {
+        errorMessage = "Email ou senha incorretos.";
+      } else if (error.statusCode === 401) {
+        errorMessage = "Credenciais inválidas.";
+      }
+      
+      toast.error(errorMessage);
+      console.error("Erro de login:", error);
     } finally {
       setLoading(false);
     }
@@ -123,12 +137,12 @@ export function Login() {
                 />
                 <span className="text-sm sm:text-base text-[#6B7280]">Lembrar de mim</span>
               </label>
-              <a 
-                href="#" 
+              <Link 
+                to="/forgot-password"
                 className="text-sm sm:text-base text-[#2563EB] hover:text-[#1E40AF] font-normal transition-colors whitespace-nowrap"
               >
                 Esqueci minha senha
-              </a>
+              </Link>
             </div>
 
             <Button 

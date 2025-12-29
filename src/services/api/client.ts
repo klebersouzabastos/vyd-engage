@@ -118,11 +118,20 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: 'An error occurred',
-        statusCode: response.status,
-      }));
-      throw new ApiError(error.error || 'Request failed', response.status, error);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        // Se não conseguir fazer parse do JSON, criar um erro genérico
+        errorData = {
+          error: response.statusText || 'An error occurred',
+          statusCode: response.status,
+        };
+      }
+      
+      // Extrair mensagem de erro mais específica
+      const errorMessage = errorData.error || errorData.message || 'Request failed';
+      throw new ApiError(errorMessage, response.status, errorData);
     }
 
     // Handle empty responses
@@ -192,17 +201,54 @@ class ApiClient {
   }
 
   async login(data: { email: string; password: string }) {
-    const result = await this.request<{
-      user: any;
-      accessToken: string;
-      refreshToken: string;
-    }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      const result = await this.request<{
+        user: any;
+        accessToken: string;
+        refreshToken: string;
+      }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
 
-    this.saveTokens(result.accessToken, result.refreshToken);
-    return result;
+      this.saveTokens(result.accessToken, result.refreshToken);
+      return result;
+    } catch (error: any) {
+      // Detectar erros de rede
+      if (
+        error instanceof TypeError &&
+        (error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('Network request failed'))
+      ) {
+        throw new ApiError(
+          'Erro de conexão. Verifique se o servidor está rodando e tente novamente.',
+          0,
+          { code: 'NETWORK_ERROR', originalError: error }
+        );
+      }
+
+      // Detectar timeout (se aplicável)
+      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+        throw new ApiError(
+          'A requisição demorou muito. Tente novamente.',
+          408,
+          { code: 'TIMEOUT', originalError: error }
+        );
+      }
+
+      // Se já é um ApiError, verificar se tem código do backend
+      if (error instanceof ApiError && error.details) {
+        // Extrair código de erro do backend se disponível
+        const backendCode = error.details.code || error.details.error?.code;
+        if (backendCode) {
+          error.details.code = backendCode;
+        }
+      }
+
+      // Re-lançar o erro para ser tratado pelo componente
+      throw error;
+    }
   }
 
   async logout() {
@@ -217,6 +263,83 @@ class ApiClient {
 
   async getCurrentUser() {
     return this.request<any>('/api/auth/me');
+  }
+
+  async requestPasswordReset(email: string) {
+    try {
+      // Ensure email is trimmed and lowercase
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      if (!normalizedEmail || !normalizedEmail.includes('@')) {
+        throw new ApiError('Email inválido', 400, { code: 'VALIDATION_ERROR' });
+      }
+      
+      return await this.request<{ message: string }>('/api/auth/password/reset-request', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+    } catch (error: any) {
+      // Detectar erros de rede
+      if (
+        error instanceof TypeError &&
+        (error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('Network request failed'))
+      ) {
+        throw new ApiError(
+          'Erro de conexão. Verifique se o servidor está rodando e tente novamente.',
+          0,
+          { code: 'NETWORK_ERROR', originalError: error }
+        );
+      }
+
+      // Detectar timeout (se aplicável)
+      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+        throw new ApiError(
+          'A requisição demorou muito. Tente novamente.',
+          408,
+          { code: 'TIMEOUT', originalError: error }
+        );
+      }
+
+      // Re-lançar o erro para ser tratado pelo componente
+      throw error;
+    }
+  }
+
+  async resetPassword(token: string, password: string) {
+    try {
+      return await this.request<{ message: string }>('/api/auth/password/reset', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+      });
+    } catch (error: any) {
+      // Detectar erros de rede
+      if (
+        error instanceof TypeError &&
+        (error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('Network request failed'))
+      ) {
+        throw new ApiError(
+          'Erro de conexão. Verifique se o servidor está rodando e tente novamente.',
+          0,
+          { code: 'NETWORK_ERROR', originalError: error }
+        );
+      }
+
+      // Detectar timeout (se aplicável)
+      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+        throw new ApiError(
+          'A requisição demorou muito. Tente novamente.',
+          408,
+          { code: 'TIMEOUT', originalError: error }
+        );
+      }
+
+      // Re-lançar o erro para ser tratado pelo componente
+      throw error;
+    }
   }
 
   // Leads
