@@ -1,11 +1,11 @@
-import { PrismaClient, PlanType } from '@prisma/client';
+import { PrismaClient, PlanType, LeadStatus, LeadSource, UserRole, UserStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('Seeding database...');
+async function seedPlans() {
+  console.log('Seeding plans...');
 
-  // Create plans
   const starterPlan = await prisma.plan.upsert({
     where: { type: PlanType.STARTER },
     update: {},
@@ -62,7 +62,7 @@ async function main() {
       limits: {
         maxLeads: 1000,
         maxUsers: 5,
-        maxAutomations: Infinity,
+        maxAutomations: -1,
         maxWhatsAppConnections: 3,
         maxEmailConfigs: 3,
         features: {
@@ -99,11 +99,11 @@ async function main() {
         'Gerente de conta dedicado',
       ],
       limits: {
-        maxLeads: Infinity,
-        maxUsers: Infinity,
-        maxAutomations: Infinity,
-        maxWhatsAppConnections: Infinity,
-        maxEmailConfigs: Infinity,
+        maxLeads: -1,
+        maxUsers: -1,
+        maxAutomations: -1,
+        maxWhatsAppConnections: -1,
+        maxEmailConfigs: -1,
         features: {
           whatsapp: true,
           email: true,
@@ -120,7 +120,152 @@ async function main() {
     },
   });
 
-  console.log('Plans created:', { starterPlan, proPlan, enterprisePlan });
+  console.log('Plans created:', {
+    starter: starterPlan.id,
+    pro: proPlan.id,
+    enterprise: enterprisePlan.id,
+  });
+
+  return { starterPlan, proPlan, enterprisePlan };
+}
+
+async function seedDemoData(proPlanId: string) {
+  console.log('Seeding demo data...');
+
+  // Create demo tenant
+  const tenant = await prisma.tenant.upsert({
+    where: { slug: 'demo-empresa' },
+    update: {},
+    create: {
+      name: 'Empresa Demo',
+      slug: 'demo-empresa',
+      settings: {
+        timezone: 'America/Sao_Paulo',
+        language: 'pt-BR',
+        currency: 'BRL',
+      },
+    },
+  });
+
+  // Create demo user (password: demo123)
+  const passwordHash = await bcrypt.hash('demo123', 10);
+  const user = await prisma.user.upsert({
+    where: { email: 'demo@vydengage.com' },
+    update: {},
+    create: {
+      email: 'demo@vydengage.com',
+      passwordHash,
+      name: 'Usuário Demo',
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      tenantId: tenant.id,
+    },
+  });
+
+  // Create subscription for demo tenant
+  await prisma.subscription.upsert({
+    where: { tenantId: tenant.id },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      planId: proPlanId,
+      status: 'ACTIVE',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  // Create tags
+  const tagNames = ['Quente', 'Frio', 'VIP', 'Retorno', 'Indicação'];
+  const tagColors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6'];
+  const tags = await Promise.all(
+    tagNames.map((name, i) =>
+      prisma.tag.create({
+        data: {
+          name,
+          color: tagColors[i],
+          tenantId: tenant.id,
+        },
+      })
+    )
+  );
+
+  // Create demo leads
+  const leadData = [
+    { name: 'Maria Santos', email: 'maria@empresa.com', phone: '(11) 99999-1111', status: LeadStatus.NEW, source: LeadSource.WEBSITE },
+    { name: 'João Oliveira', email: 'joao@startup.com', phone: '(21) 99999-2222', status: LeadStatus.CONTACTED, source: LeadSource.SOCIAL_MEDIA },
+    { name: 'Ana Costa', email: 'ana@agencia.com', phone: '(31) 99999-3333', status: LeadStatus.QUALIFIED, source: LeadSource.REFERRAL },
+    { name: 'Carlos Ferreira', email: 'carlos@loja.com', phone: '(41) 99999-4444', status: LeadStatus.PROPOSAL, source: LeadSource.EMAIL },
+    { name: 'Fernanda Lima', email: 'fernanda@tech.com', phone: '(51) 99999-5555', status: LeadStatus.WON, source: LeadSource.WEBSITE },
+  ];
+
+  const leads = await Promise.all(
+    leadData.map((lead) =>
+      prisma.lead.create({
+        data: {
+          ...lead,
+          tenantId: tenant.id,
+          userId: user.id,
+        },
+      })
+    )
+  );
+
+  // Assign tags to leads
+  await prisma.leadTag.createMany({
+    data: [
+      { leadId: leads[0].id, tagId: tags[0].id },
+      { leadId: leads[2].id, tagId: tags[2].id },
+      { leadId: leads[4].id, tagId: tags[2].id },
+      { leadId: leads[4].id, tagId: tags[4].id },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Create demo tasks
+  const now = new Date();
+  const taskData = [
+    { title: 'Ligar para Maria Santos', description: 'Follow-up sobre proposta comercial', priority: 'HIGH' as const, dueDate: new Date(now.getTime() + 24 * 60 * 60 * 1000), leadId: leads[0].id },
+    { title: 'Enviar proposta para João', description: 'Preparar proposta do plano Pro', priority: 'MEDIUM' as const, dueDate: new Date(now.getTime() + 48 * 60 * 60 * 1000), leadId: leads[1].id },
+    { title: 'Reunião com Ana Costa', description: 'Apresentação de produto', priority: 'HIGH' as const, dueDate: new Date(now.getTime() + 72 * 60 * 60 * 1000), leadId: leads[2].id },
+    { title: 'Atualizar cadastro de leads', description: 'Limpar dados duplicados', priority: 'LOW' as const, dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
+  ];
+
+  await Promise.all(
+    taskData.map((task) =>
+      prisma.task.create({
+        data: {
+          ...task,
+          status: 'PENDING',
+          tenantId: tenant.id,
+          userId: user.id,
+        },
+      })
+    )
+  );
+
+  console.log('Demo data created:', {
+    tenant: tenant.slug,
+    user: user.email,
+    leads: leads.length,
+    tags: tags.length,
+    tasks: taskData.length,
+  });
+}
+
+async function main() {
+  console.log('Seeding database...');
+
+  const { proPlan } = await seedPlans();
+
+  // Only seed demo data if SEED_DEMO=true
+  if (process.env.SEED_DEMO === 'true') {
+    await seedDemoData(proPlan.id);
+  }
+
+  console.log('Seed complete!');
 }
 
 main()
@@ -131,4 +276,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

@@ -1,6 +1,7 @@
 import { Outlet } from "react-router";
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
+import { OnboardingTour } from "./OnboardingTour";
 import { Menu } from "lucide-react";
 
 export function AppLayout() {
@@ -44,6 +45,9 @@ export function AppLayout() {
       <main id="main-content" className="flex-1 ml-0 md:ml-64 pt-14 md:pt-0" role="main">
         <Outlet />
       </main>
+
+      {/* Onboarding Tour */}
+      <OnboardingTour />
     </div>
   );
 }

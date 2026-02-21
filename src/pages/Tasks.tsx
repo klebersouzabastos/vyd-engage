@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { TaskCard } from "../components/TaskCard";
 import { Calendar } from "../components/ui/calendar";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { useTasks } from "../hooks/useTasks";
 import { Task } from "../types";
 import { Plus, Filter, Calendar as CalendarIcon, AlertCircle, List, Grid } from "lucide-react";
@@ -206,6 +207,15 @@ export function Tasks() {
   // Obter datas com tarefas para marcar no calendário
   const datesWithTasks = Object.keys(tasksByDate).map((dateStr) => new Date(dateStr));
 
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Tarefas" subtitle="Gerencie todas as suas tarefas e lembretes" />
+        <PageSkeleton type="cards" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

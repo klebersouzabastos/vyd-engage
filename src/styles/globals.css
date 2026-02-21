@@ -44,6 +44,29 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
+/* Dark Mode Overrides */
+.dark {
+  --color-primary: #3B82F6;
+  --color-primary-dark: #2563EB;
+  --color-primary-light: #60A5FA;
+  --color-primary-50: #1E293B;
+
+  --color-gray-900: #F9FAFB;
+  --color-gray-700: #E5E7EB;
+  --color-gray-600: #D1D5DB;
+  --color-gray-500: #9CA3AF;
+  --color-gray-400: #6B7280;
+  --color-gray-300: #374151;
+  --color-gray-200: #1F2937;
+  --color-gray-100: #111827;
+  --color-gray-50: #0F172A;
+
+  --color-success: #22C55E;
+  --color-warning: #F97316;
+  --color-error: #EF4444;
+  --color-amber: #FBBF24;
+}
+
 @layer base {
   * {
     @apply border-border;

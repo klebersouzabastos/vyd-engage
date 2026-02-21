@@ -49,7 +49,8 @@ export function GlobalSearch() {
       return;
     }
 
-    const performSearch = async () => {
+    const performSearch = async (searchQuery: string) => {
+      if (!searchQuery.trim()) return;
       const searchResults: SearchResult[] = [];
 
       try {
@@ -117,7 +118,8 @@ export function GlobalSearch() {
       setResults(searchResults);
     };
 
-    performSearch();
+    const debounceTimer = setTimeout(() => performSearch(query), 300);
+    return () => clearTimeout(debounceTimer);
   }, [query]);
 
   const handleSelect = (result: SearchResult) => {

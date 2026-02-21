@@ -7,6 +7,7 @@ import { LeadStatusBadge } from "../components/LeadStatusBadge";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { LeadModal } from "../components/LeadModal";
 import { EmptyState } from "../components/EmptyState";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { Plus, Download, Pencil, Trash2, Users, Mail, MessageSquare, X } from "lucide-react";
 import { Checkbox } from "../components/ui/checkbox";
 import { useTags } from "../contexts/TagsContext";
@@ -92,7 +93,7 @@ export function Leads() {
   const navigate = useNavigate();
   const { getTagById } = useTags();
   const { fields: customFields } = useCustomFields();
-  const { leads: leadsData, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
+  const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterSource, setFilterSource] = useState<string[]>([]);
@@ -238,6 +239,15 @@ export function Leads() {
       alert("Erro ao deletar leads. Tente novamente.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Leads" subtitle="Gerencie todos os seus leads em um só lugar" />
+        <PageSkeleton type="table" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

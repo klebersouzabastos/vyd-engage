@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 import { NotificationCenter } from "./NotificationCenter";
 import { GlobalSearch } from "./GlobalSearch";
+import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../contexts/AuthContext";
 
 interface HeaderProps {
@@ -27,7 +28,8 @@ export function Header({ title, subtitle }: HeaderProps) {
       
       <div className="flex items-center gap-4">
         <GlobalSearch />
-        
+
+        <ThemeToggle />
         <NotificationCenter />
 
         <button 

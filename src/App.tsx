@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router';
+import { ThemeProvider } from 'next-themes';
 import { router } from './utils/routes';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -31,12 +32,14 @@ const AppProviders = composeProviders(
 function App() {
   return (
     <ErrorBoundary>
-      <AppProviders>
-        <TaskNotificationChecker />
-        <MigrationChecker />
-        <RouterProvider router={router} />
-        <Toaster />
-      </AppProviders>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <AppProviders>
+          <TaskNotificationChecker />
+          <MigrationChecker />
+          <RouterProvider router={router} />
+          <Toaster />
+        </AppProviders>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

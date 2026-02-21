@@ -6,6 +6,7 @@ import { DashboardWidget } from "../components/DashboardWidget";
 import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashboard";
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { useDashboard } from "../hooks/useDashboard";
 // Helper function to format time ago
 function formatTimeAgo(date: string): string {
@@ -75,10 +76,11 @@ export function Dashboard() {
     setLayout(getCurrentLayout());
   };
 
-  if (!layout) {
+  if (!layout || dashboardLoading) {
     return (
       <div className="min-h-screen">
         <Header title="Dashboard" subtitle="Carregando..." />
+        <PageSkeleton type="dashboard" />
       </div>
     );
   }
@@ -101,7 +103,7 @@ export function Dashboard() {
         </div>
 
         {/* Widgets Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div data-tour="dashboard-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {layout.widgets
             .filter((w) => w.type === "stat")
             .map((widget) => (

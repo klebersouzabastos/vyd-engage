@@ -16,13 +16,13 @@ import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { useTasks } from "../hooks/useTasks";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
-  { icon: Users, label: "Leads", path: "/app/leads" },
-  { icon: GitBranch, label: "Funil", path: "/app/pipeline" },
-  { icon: Zap, label: "Automações", path: "/app/automations" },
-  { icon: CheckSquare, label: "Tarefas", path: "/app/tasks" },
-  { icon: BarChart3, label: "Relatórios", path: "/app/reports" },
-  { icon: Settings, label: "Configurações", path: "/app/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/app", tourId: "sidebar-dashboard" },
+  { icon: Users, label: "Leads", path: "/app/leads", tourId: "sidebar-leads" },
+  { icon: GitBranch, label: "Funil", path: "/app/pipeline", tourId: "sidebar-pipeline" },
+  { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },
+  { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
+  { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
+  { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
 ];
 
 interface SidebarProps {
@@ -148,6 +148,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               to={item.path}
               onClick={handleNavClick}
               aria-current={isActive ? 'page' : undefined}
+              data-tour={item.tourId}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors relative
                 ${isActive

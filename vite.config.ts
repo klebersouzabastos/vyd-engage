@@ -59,7 +59,26 @@
       commonjsOptions: {
         include: [/exceljs/, /node_modules/],
         transformMixedEsModules: true
-      }
+      },
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router'],
+            'vendor-radix': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-select',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-checkbox',
+              '@radix-ui/react-alert-dialog',
+              '@radix-ui/react-tooltip',
+            ],
+            'vendor-recharts': ['recharts'],
+            'vendor-exceljs': ['exceljs'],
+          },
+        },
+      },
     },
     server: {
       port: 5173,

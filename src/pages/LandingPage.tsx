@@ -1,24 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { 
-  Users, 
-  Zap, 
-  GitBranch, 
-  Mail, 
-  MessageSquare, 
-  BarChart3, 
-  CheckCircle, 
+import {
+  Users,
+  Zap,
+  GitBranch,
+  Mail,
+  MessageSquare,
+  BarChart3,
+  CheckCircle,
   Star,
   ArrowRight,
   Menu,
-  X
+  X,
+  ChevronDown
 } from "lucide-react";
+
+function useScrollAnimation() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+}
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const heroAnim = useScrollAnimation();
+  const featuresAnim = useScrollAnimation();
+  const benefitsAnim = useScrollAnimation();
+  const testimonialsAnim = useScrollAnimation();
+  const pricingAnim = useScrollAnimation();
   const features = [
     {
       icon: Users,
@@ -285,7 +313,7 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <section className="pt-8 pb-20 px-6">
-        <div className="max-w-7xl mx-auto">
+        <div ref={heroAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${heroAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-gray-900 mb-6">
@@ -361,7 +389,7 @@ export function LandingPage() {
 
       {/* Features Section */}
       <section id="features" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+        <div ref={featuresAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${featuresAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="text-center mb-16">
             <h2 className="text-gray-900 mb-4">Tudo que você precisa para vender mais</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -388,7 +416,7 @@ export function LandingPage() {
 
       {/* Benefits Section */}
       <section className="py-20 px-6 bg-gray-100">
-        <div className="max-w-7xl mx-auto">
+        <div ref={benefitsAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${benefitsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <ImageWithFallback
@@ -425,7 +453,7 @@ export function LandingPage() {
 
       {/* Testimonials */}
       <section id="testimonials" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+        <div ref={testimonialsAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${testimonialsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="text-center mb-16">
             <h2 className="text-gray-900 mb-4">O que nossos clientes dizem</h2>
             <p className="text-xl text-gray-600">
@@ -454,7 +482,7 @@ export function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" className="py-20 px-6 bg-gray-100">
-        <div className="max-w-7xl mx-auto">
+        <div ref={pricingAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="text-center mb-16">
             <h2 className="text-gray-900 mb-4">Planos transparentes</h2>
             <p className="text-xl text-gray-600">
@@ -518,9 +546,20 @@ export function LandingPage() {
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="p-6 rounded-lg bg-white border border-gray-300">
-                <h4 className="text-gray-900 mb-2">{faq.question}</h4>
-                <p className="text-gray-600">{faq.answer}</p>
+              <div key={index} className="rounded-lg bg-white border border-gray-300 overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                >
+                  <h4 className="text-gray-900 pr-4">{faq.question}</h4>
+                  <ChevronDown
+                    size={20}
+                    className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${openFaq === index ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                <div className={`overflow-hidden transition-all duration-200 ${openFaq === index ? 'max-h-40 pb-6' : 'max-h-0'}`}>
+                  <p className="text-gray-600 px-6">{faq.answer}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -585,7 +624,7 @@ export function LandingPage() {
           </div>
           <div className="pt-8 border-t border-gray-700">
             <p className="text-center text-sm text-gray-400">
-              © 2024 VYD Engage. Todos os direitos reservados.
+              © {new Date().getFullYear()} VYD Engage. Todos os direitos reservados.
             </p>
           </div>
         </div>
