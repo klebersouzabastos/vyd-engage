@@ -41,6 +41,8 @@ coverage/
 *.tmp
 *.temp
 .cache/
+.env.backup.*
+server.pid
 
 # Docker
 .dockerignore
