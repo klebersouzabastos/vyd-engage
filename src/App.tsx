@@ -1,6 +1,7 @@
 import { RouterProvider } from 'react-router';
 import { router } from './utils/routes';
 import { Toaster } from './components/ui/sonner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import { TagsProvider } from './contexts/TagsContext';
@@ -15,6 +16,7 @@ import { MigrationChecker } from './components/MigrationChecker';
 
 function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <CompanyProvider>
         <TagsProvider>
@@ -37,6 +39,7 @@ function App() {
         </TagsProvider>
       </CompanyProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

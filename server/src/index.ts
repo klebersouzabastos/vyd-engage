@@ -21,7 +21,9 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: true, // Allow all origins in development
+  origin: process.env.NODE_ENV === 'production'
+    ? (process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:5173'])
+    : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -88,12 +90,14 @@ import interactionRoutes from './routes/interactions.js';
 import notificationRoutes from './routes/notifications.js';
 import invitationRoutes from './routes/invitations.js';
 
-// Password reset routes need to be registered before authLimiter
-// to avoid double rate limiting
+// Rate limiting — applied BEFORE routes to actually protect them
 app.use('/api/auth/password', passwordResetLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/webhooks', apiLimiter); // Webhooks get rate limited too
+app.use('/api', apiLimiter);
 
-// Other auth routes (stricter rate limiting)
-app.use('/api/auth', authLimiter, authRoutes);
+// API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tags', tagRoutes);
@@ -108,8 +112,7 @@ app.use('/api/custom-fields', customFieldRoutes);
 app.use('/api/interactions', interactionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invitations', invitationRoutes);
-app.use('/api/webhooks', webhookRoutes); // No auth/rate limit for webhooks
-app.use('/api', apiLimiter);
+app.use('/api/webhooks', webhookRoutes);
 
 // 404 handler
 app.use((req, res) => {

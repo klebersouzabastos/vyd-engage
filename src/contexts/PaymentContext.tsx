@@ -3,9 +3,7 @@ import {
   PaymentIntent,
   PaymentMethod,
   PaymentResult,
-  CreditCardData,
-  PixPaymentData,
-  BoletoPaymentData,
+  CardTokenData,
   PaymentStatus,
 } from "../types/payment";
 import { PlanType } from "../types/plan";
@@ -27,7 +25,7 @@ interface PaymentContextType {
   startPayment: (planId: PlanType, amount: number, method: PaymentMethod) => Promise<PaymentIntent>;
   processPayment: (
     paymentIntentId: string,
-    data?: CreditCardData
+    data?: CardTokenData
   ) => Promise<PaymentResult>;
   checkPayment: (paymentIntentId: string) => Promise<PaymentStatus>;
   validateUpgrade: (planId: PlanType) => { isValid: boolean; reason?: string; pendingPayment?: PaymentIntent };
@@ -85,7 +83,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
   const processPayment = useCallback(
     async (
       paymentIntentId: string,
-      data?: CreditCardData
+      data?: CardTokenData
     ): Promise<PaymentResult> => {
       setIsProcessing(true);
       try {

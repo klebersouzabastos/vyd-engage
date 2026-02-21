@@ -4,7 +4,7 @@ import {
   PaymentMethod,
   MercadoPagoConfig,
   MercadoPagoPreference,
-  CreditCardData,
+  CardTokenData,
   PixPaymentData,
   BoletoPaymentData,
   PaymentStatus,
@@ -77,14 +77,13 @@ export async function createPaymentIntent(
 }
 
 /**
- * Processar pagamento com cartão de crédito
+ * Processar pagamento com cartão de crédito via token do Mercado Pago SDK.
+ * Dados sensíveis do cartão nunca passam pelo nosso código — apenas o token.
  */
 export async function processCreditCardPayment(
   paymentIntentId: string,
-  cardData: CreditCardData
+  tokenData: CardTokenData
 ): Promise<PaymentResult> {
-  await delay(2000); // Simular processamento
-
   const paymentIntent = getPaymentIntent(paymentIntentId);
   if (!paymentIntent) {
     return {
@@ -96,18 +95,21 @@ export async function processCreditCardPayment(
     };
   }
 
-  // Validação básica do cartão (mock)
-  if (!cardData.cardNumber || cardData.cardNumber.length < 13) {
+  if (!tokenData.token) {
     return {
       success: false,
       paymentIntentId,
       status: "failed",
-      message: "Número de cartão inválido",
-      error: "INVALID_CARD",
+      message: "Token de pagamento não recebido",
+      error: "MISSING_TOKEN",
     };
   }
 
-  // Simular sucesso/falha (90% de sucesso em desenvolvimento)
+  // TODO: Em produção, enviar token ao backend:
+  // POST /api/payments/process { paymentIntentId, token, paymentMethodId, issuerId, installments }
+  // O backend envia o token à API do Mercado Pago para processar o pagamento.
+  // Por enquanto, simulamos o resultado.
+  await delay(2000);
   const success = Math.random() > 0.1;
 
   if (success) {
@@ -115,12 +117,7 @@ export async function processCreditCardPayment(
       ...paymentIntent,
       status: "paid",
       updatedAt: new Date().toISOString(),
-      mercadoPagoPaymentId: `mock_payment_${generateId()}`,
-      paymentData: {
-        ...cardData,
-        cardNumber: `**** **** **** ${cardData.cardNumber.slice(-4)}`, // Mascarar número
-        securityCode: "", // Não armazenar CVV
-      },
+      mercadoPagoPaymentId: `mp_payment_${generateId()}`,
     };
 
     updatePaymentIntent(updatedIntent);

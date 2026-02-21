@@ -4,14 +4,22 @@ export type PaymentMethod = "credit_card" | "pix" | "boleto";
 
 export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "refunded" | "cancelled";
 
-// Informações do cartão de crédito (não armazenar dados sensíveis)
+// Token de cartão retornado pelo Mercado Pago SDK (dados sensíveis nunca tocam nosso código)
+export interface CardTokenData {
+  token: string;
+  paymentMethodId: string;
+  issuerId: string;
+  installments: number;
+}
+
+// @deprecated — Usar CardTokenData. Mantido para compatibilidade com dados antigos.
 export interface CreditCardData {
-  cardNumber: string; // Apenas últimos 4 dígitos após processamento
+  cardNumber: string;
   cardHolderName: string;
   expirationMonth: string;
   expirationYear: string;
-  securityCode: string; // Não armazenar
-  installments?: number; // Número de parcelas
+  securityCode: string;
+  installments?: number;
 }
 
 // Dados para pagamento via PIX

@@ -1,14 +1,23 @@
 // Tipos compartilhados do sistema
 
+// Aligned with Prisma LeadStatus enum
+export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST";
+
+// Aligned with Prisma LeadSource enum
+export type LeadSource = "WEBSITE" | "SOCIAL_MEDIA" | "REFERRAL" | "EMAIL" | "PHONE" | "OTHER";
+
 export interface Lead {
-  id: number;
+  id: string; // UUID from Prisma
   name: string;
-  phone: string;
-  email: string;
-  source: "meta" | "google" | "organico" | "manual";
-  status: "novo" | "contato" | "fechado" | "perdido";
-  date: string;
-  automations: number[];
+  phone?: string;
+  email?: string;
+  company?: string;
+  position?: string;
+  source: LeadSource;
+  status: LeadStatus;
+  score: number;
+  notes?: string;
+  assignedTo?: string;
   tags: string[];
   customFields: Record<string, any>;
   interactions?: Interaction[];
@@ -19,8 +28,10 @@ export interface Lead {
 
 export interface Interaction {
   id: string;
-  leadId: number;
+  leadId: string;
   type: "note" | "call" | "email" | "whatsapp" | "meeting" | "status_change" | "automation";
+  direction?: "inbound" | "outbound";
+  subject?: string;
   content: string;
   userId?: string;
   timestamp: string;
@@ -29,7 +40,7 @@ export interface Interaction {
 
 export interface Task {
   id: string;
-  leadId?: number;
+  leadId?: string;
   title: string;
   description?: string;
   dueDate?: string;
@@ -150,7 +161,7 @@ export interface ReportShareSettings {
 }
 
 export interface LeadScore {
-  leadId: number;
+  leadId: string;
   score: number;
   factors: ScoreFactor[];
   lastUpdated: string;
@@ -164,7 +175,7 @@ export interface ScoreFactor {
 
 export interface Comment {
   id: string;
-  leadId: number;
+  leadId: string;
   userId: string;
   userName: string;
   content: string;

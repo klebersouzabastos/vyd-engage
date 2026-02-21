@@ -4,6 +4,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
+import { hashToken } from '../utils/tokenHash.js';
 
 export interface CreateInvitationData {
   email: string;
@@ -35,8 +36,9 @@ export const invitationService = {
       throw createError('Invitation already sent to this email', 400, 'INVITATION_EXISTS');
     }
 
-    // Generate invitation token
+    // Generate invitation token — store hash, send plaintext to user
     const token = uuidv4();
+    const tokenHash = hashToken(token);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
@@ -45,7 +47,7 @@ export const invitationService = {
         tenantId,
         email: data.email,
         role: data.role,
-        token,
+        token: tokenHash,
         invitedBy,
         expiresAt,
       },
@@ -104,8 +106,9 @@ export const invitationService = {
   },
 
   async findByToken(token: string) {
-    const invitation = await prisma.invitation.findUnique({
-      where: { token },
+    const tokenHash = hashToken(token);
+    const invitation = await prisma.invitation.findFirst({
+      where: { token: tokenHash },
       include: {
         tenant: true,
         inviter: {

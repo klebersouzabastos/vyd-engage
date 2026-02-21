@@ -5,6 +5,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { UserRole, UserStatus } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
+import { hashToken } from '../utils/tokenHash.js';
 
 export interface RegisterData {
   email: string;
@@ -265,15 +266,16 @@ export async function requestPasswordReset(email: string): Promise<void> {
   
   logger.info('User found for password reset', { userId: user.id, email: user.email });
 
-  // Generate reset token
+  // Generate reset token — store hash, send plaintext to user
   const resetToken = uuidv4();
+  const resetTokenHash = hashToken(resetToken);
   const resetExpires = new Date();
   resetExpires.setHours(resetExpires.getHours() + 1); // 1 hour expiry
 
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      passwordResetToken: resetToken,
+      passwordResetToken: resetTokenHash,
       passwordResetExpires: resetExpires,
     },
   });
@@ -317,9 +319,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const tokenHash = hashToken(token);
   const user = await prisma.user.findFirst({
     where: {
-      passwordResetToken: token,
+      passwordResetToken: tokenHash,
       passwordResetExpires: {
         gt: new Date(),
       },
@@ -355,16 +358,17 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
     throw createError('Email already verified', 400, 'EMAIL_ALREADY_VERIFIED');
   }
 
-  // Generate verification token
+  // Generate verification token — store hash, send plaintext to user
   const verificationToken = uuidv4();
+  const verificationTokenHash = hashToken(verificationToken);
   const verificationExpires = new Date();
   verificationExpires.setDate(verificationExpires.getDate() + 1); // 24 hours
 
-  // Store token temporarily (we'll use passwordResetToken field for this)
+  // Store token hash temporarily (we'll use passwordResetToken field for this)
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      passwordResetToken: verificationToken,
+      passwordResetToken: verificationTokenHash,
       passwordResetExpires: verificationExpires,
     },
   });
@@ -385,9 +389,10 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
 }
 
 export async function verifyEmail(token: string): Promise<void> {
+  const tokenHash = hashToken(token);
   const user = await prisma.user.findFirst({
     where: {
-      passwordResetToken: token, // Reusing this field for verification
+      passwordResetToken: tokenHash, // Reusing this field for verification
       passwordResetExpires: {
         gt: new Date(),
       },

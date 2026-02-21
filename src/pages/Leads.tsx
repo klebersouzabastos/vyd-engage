@@ -18,11 +18,11 @@ import { calculateLeadScore, saveLeadScore } from "../utils/leadScoring";
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
 import { Lead } from "../types";
 import { getLeadInteractions } from "../utils/interactions";
-import { generateSampleLeads } from "../utils/generateSampleLeads";
 import { cn } from "../components/ui/utils";
 import { exportLeadsToExcel } from "../utils/excelExport";
 import { removeLeadFromPipeline } from "../utils/pipelineSync";
 import { useLeads } from "../hooks/useLeads";
+import { Pagination } from "../components/Pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -115,7 +115,7 @@ export function Leads() {
   const { logo, companyName } = useCompany();
   const { tags, getTagById } = useTags();
   const { fields: customFields } = useCustomFields();
-  const { leads: leadsData, loading: leadsLoading, createLead, updateLead, deleteLead: deleteLeadAPI, refetch } = useLeads();
+  const { leads: leadsData, loading: leadsLoading, pagination, createLead, updateLead, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterSource, setFilterSource] = useState<string[]>([]);
@@ -888,58 +888,6 @@ export function Leads() {
             </Button>
 
             <Button 
-              variant="outline"
-              className="gap-2"
-              onClick={async () => {
-                try {
-                  // Gerar leads de exemplo via API
-                  const sampleLeads = generateSampleLeads();
-                  let createdCount = 0;
-                  let failedCount = 0;
-                  
-                  for (const lead of sampleLeads) {
-                    try {
-                      // Remover campos que não são necessários para criação via API
-                      const { id, date, automations, tags, ...leadData } = lead;
-                      // Garantir que tags seja um array vazio (o createLead espera objetos com id)
-                      await createLead({
-                        ...leadData,
-                        tags: [],
-                      });
-                      createdCount++;
-                    } catch (error: any) {
-                      console.error(`Erro ao criar lead ${lead.name}:`, error);
-                      console.error('Detalhes do erro:', {
-                        message: error.message,
-                        statusCode: error.statusCode,
-                        details: error.details,
-                        leadData: lead
-                      });
-                      failedCount++;
-                      // Continua criando os outros leads mesmo se um falhar
-                    }
-                  }
-                  
-                  if (createdCount > 0) {
-                    const message = failedCount > 0 
-                      ? `✅ ${createdCount} leads de exemplo foram criados com sucesso! ${failedCount} falharam.`
-                      : `✅ ${createdCount} leads de exemplo foram criados com sucesso!`;
-                    alert(message);
-                    refetch();
-                  } else {
-                    alert("❌ Não foi possível criar nenhum lead de exemplo. Verifique o console para mais detalhes.");
-                  }
-                } catch (error) {
-                  console.error("Erro ao gerar leads de exemplo:", error);
-                  alert("Erro ao gerar leads de exemplo");
-                }
-              }}
-            >
-              <Users size={16} />
-              Gerar Leads de Exemplo
-            </Button>
-
-            <Button 
               className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
               onClick={() => navigate("/app/leads/new")}
             >
@@ -1192,6 +1140,13 @@ export function Leads() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={pagination.limit}
+                onPageChange={(newPage) => fetchLeads({ page: newPage, limit: pagination.limit })}
+              />
             </div>
           </div>
         ) : (

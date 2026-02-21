@@ -94,10 +94,14 @@ export const leadService = {
     assignedTo?: string;
     page?: number;
     limit?: number;
+    sort?: string;
+    order?: 'asc' | 'desc';
   }) {
     const page = filters?.page || 1;
-    const limit = filters?.limit || 50;
+    const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
+    const sortField = filters?.sort || 'createdAt';
+    const sortOrder = filters?.order || 'desc';
 
     const where: any = {
       tenantId,
@@ -143,7 +147,7 @@ export const leadService = {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          [sortField]: sortOrder,
         },
         skip,
         take: limit,

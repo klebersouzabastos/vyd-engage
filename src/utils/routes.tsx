@@ -22,6 +22,8 @@ import { Tasks } from "../pages/Tasks";
 import { Reports } from "../pages/Reports";
 import { ReportBuilder } from "../pages/ReportBuilder";
 import { ReportView } from "../pages/ReportView";
+import { RequireAuth } from "../components/RequireAuth";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 export const router = createBrowserRouter([
   {
@@ -54,7 +56,13 @@ export const router = createBrowserRouter([
   },
   {
     path: "/app",
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <ErrorBoundary>
+          <AppLayout />
+        </ErrorBoundary>
+      </RequireAuth>
+    ),
     children: [
       {
         index: true,

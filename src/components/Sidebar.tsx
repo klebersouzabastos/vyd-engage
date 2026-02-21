@@ -24,7 +24,12 @@ const menuItems = [
   { icon: Settings, label: "Configurações", path: "/app/settings" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logo, companyName } = useCompany();
@@ -95,8 +100,18 @@ export function Sidebar() {
     navigate("/login");
   };
 
+  const handleNavClick = () => {
+    // Close sidebar on mobile after navigation
+    if (onClose) onClose();
+  };
+
   return (
-    <aside className="w-64 bg-white border-r border-[#E5E7EB] h-screen fixed left-0 top-0 flex flex-col">
+    <aside className={`
+      w-64 bg-white border-r border-[#E5E7EB] h-screen fixed left-0 top-0 flex flex-col
+      z-50 transition-transform duration-300 ease-in-out
+      ${open ? 'translate-x-0' : '-translate-x-full'}
+      md:translate-x-0
+    `}>
       {/* Logo */}
       <Link 
         to="/app" 
@@ -130,10 +145,11 @@ export function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
+              onClick={handleNavClick}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors relative
-                ${isActive 
-                  ? 'bg-[#2563EB] text-white' 
+                ${isActive
+                  ? 'bg-[#2563EB] text-white'
                   : 'text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#1F2937]'
                 }
               `}

@@ -24,7 +24,7 @@ router.get('/', async (req, res, next) => {
       select: {
         id: true,
         name: true,
-        key: true, // Show partial key
+        key: true, // Already masked (stored as fcrm_****last8)
         lastUsedAt: true,
         expiresAt: true,
         active: true,
@@ -33,13 +33,7 @@ router.get('/', async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Mask API keys (show only last 8 characters)
-    const maskedKeys = apiKeys.map((key) => ({
-      ...key,
-      key: `****${key.key.slice(-8)}`,
-    }));
-
-    res.json(maskedKeys);
+    res.json(apiKeys);
   } catch (error) {
     next(error);
   }
@@ -57,26 +51,27 @@ router.post('/', async (req, res, next) => {
       expiresAt: z.coerce.date().optional(),
     }).parse(req.body);
 
-    // Generate API key
+    // Generate API key — store only hash + masked suffix in DB
     const apiKey = `fcrm_${uuidv4().replace(/-/g, '')}`;
     const keyHash = await bcrypt.hash(apiKey, 10);
+    const keySuffix = `fcrm_****${apiKey.slice(-8)}`; // Masked version for display
 
     const created = await prisma.apiKey.create({
       data: {
         tenantId: req.user.tenantId,
         name,
-        key: apiKey,
+        key: keySuffix, // Store only masked version, never plaintext
         keyHash,
         expiresAt,
         active: true,
       },
     });
 
-    // Return full key only once (for display)
+    // Return full key only once (user must save it)
     res.status(201).json({
       id: created.id,
       name: created.name,
-      key: apiKey, // Full key shown only on creation
+      key: apiKey, // Full key shown only on creation — never stored
       expiresAt: created.expiresAt,
       active: created.active,
       createdAt: created.createdAt,

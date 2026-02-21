@@ -39,6 +39,8 @@ const querySchema = z.object({
   assignedTo: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
+  sort: z.enum(['createdAt', 'updatedAt', 'name', 'status', 'score']).optional(),
+  order: z.enum(['asc', 'desc']).optional(),
 });
 
 // GET /api/leads - List all leads

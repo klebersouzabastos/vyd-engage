@@ -59,7 +59,11 @@ model User {
   // Relations
   refreshTokens RefreshToken[]
   invitations   Invitation[]    @relation("InvitedBy")
-  
+  assignedLeads Lead[]          @relation("LeadAssignment")
+  assignedTasks Task[]          @relation("TaskAssignment")
+  interactions  Interaction[]   @relation("InteractionUser")
+  notifications Notification[]  @relation("NotificationUser")
+
   @@index([email])
   @@index([tenantId])
   @@index([tenantId, email])
@@ -93,6 +97,7 @@ model Invitation {
   @@index([token])
   @@index([tenantId])
   @@index([email])
+  @@index([invitedBy])
 }
 
 // ============================================
@@ -154,7 +159,7 @@ model Plan {
   id          String   @id @default(uuid())
   type        PlanType @unique
   name        String
-  price       Float
+  price       Decimal  @db.Decimal(10, 2)
   description String?
   features    Json     // Store plan features as JSON
   limits      Json     // Store plan limits as JSON
@@ -193,6 +198,7 @@ model Subscription {
   
   @@index([tenantId])
   @@index([status])
+  @@index([planId])
 }
 
 model Payment {
@@ -203,7 +209,7 @@ model Payment {
   subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
   
   // Payment details
-  amount            Float
+  amount            Decimal  @db.Decimal(10, 2)
   currency          String    @default("BRL")
   method            String    // credit_card, pix, boleto
   status            String    // pending, paid, failed, refunded
@@ -276,17 +282,18 @@ model Lead {
   
   // Metadata
   notes         String?
-  assignedTo    String? // User ID
-  
+  assignedTo    String?
+  assignedUser  User?    @relation("LeadAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+
   // Timestamps
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+
   // Relations
   tags          LeadTag[]
   interactions Interaction[]
   tasks         Task[]
-  
+
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, email])
@@ -367,7 +374,8 @@ model Task {
   priority    TaskPriority @default(MEDIUM)
   
   // Assignment
-  assignedTo  String?    // User ID
+  assignedTo  String?
+  assignedUser User?     @relation("TaskAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
   leadId      String?
   lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
   
@@ -418,8 +426,9 @@ model Automation {
   lastRunAt   DateTime?
   
   // Relations
-  logs        AutomationLog[]
-  
+  logs         AutomationLog[]
+  interactions Interaction[]
+
   @@index([tenantId])
   @@index([tenantId, status])
 }
@@ -538,8 +547,11 @@ model Interaction {
   
   // Related entities
   automationId String?
+  automation   Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
   userId      String?
-  
+  user        User?       @relation("InteractionUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Append-only: interactions are immutable communication records
   createdAt   DateTime @default(now())
   
   @@index([tenantId])
@@ -638,8 +650,9 @@ model Notification {
   id          String            @id @default(uuid())
   tenantId    String
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String            // User ID
-  
+  userId      String
+  user        User              @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+
   type        NotificationType
   title       String
   message     String

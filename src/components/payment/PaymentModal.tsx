@@ -7,11 +7,11 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
-import { CreditCardForm } from "./CreditCardForm";
+import { CreditCardForm, CardTokenData } from "./CreditCardForm";
 import { PixPayment } from "./PixPayment";
 import { BoletoPayment } from "./BoletoPayment";
 import { usePayment } from "../../contexts/PaymentContext";
-import { PaymentMethod, CreditCardData, PixPaymentData, BoletoPaymentData } from "../../types/payment";
+import { PaymentMethod, PixPaymentData, BoletoPaymentData } from "../../types/payment";
 import { PlanType } from "../../types/plan";
 import { X, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
@@ -98,12 +98,12 @@ export function PaymentModal({
     }
   };
 
-  const handleCreditCardSubmit = async (cardData: CreditCardData) => {
+  const handleCreditCardSubmit = async (tokenData: CardTokenData) => {
     if (!currentPaymentIntent) return;
 
     try {
       setErrorMessage(null);
-      const result = await processPayment(currentPaymentIntent.id, cardData);
+      const result = await processPayment(currentPaymentIntent.id, tokenData);
       
       if (result.success) {
         if (result.status === "paid") {
@@ -198,6 +198,7 @@ export function PaymentModal({
                 Dados do Cartão
               </h3>
               <CreditCardForm
+                amount={amount}
                 onSubmit={handleCreditCardSubmit}
                 onCancel={() => setStep("select")}
                 isLoading={isProcessing}

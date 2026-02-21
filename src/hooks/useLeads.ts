@@ -11,7 +11,7 @@ export function useLeads() {
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 20,
     total: 0,
     totalPages: 0,
   });
@@ -163,7 +163,7 @@ export function useLeads() {
       setLeads(prev => prev.filter(l => l.id !== id));
       
       // Remover lead do pipeline
-      removeLeadFromPipeline(Number(id));
+      removeLeadFromPipeline(id);
       
       toast.success('Lead deletado com sucesso!');
     } catch (err: any) {

@@ -260,30 +260,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Erro ao carregar histórico de pagamentos do localStorage:", error);
     }
-    // Histórico mockado inicialmente
-    return [
-      {
-        id: "1",
-        date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 197,
-        status: "paid",
-        plan: "pro",
-      },
-      {
-        id: "2",
-        date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 197,
-        status: "paid",
-        plan: "pro",
-      },
-      {
-        id: "3",
-        date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 197,
-        status: "paid",
-        plan: "pro",
-      },
-    ];
+    return [];
   });
 
   // Calcular uso atual
