@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 import { NotificationCenter } from "./NotificationCenter";
 import { GlobalSearch } from "./GlobalSearch";
+import { useAuth } from "../contexts/AuthContext";
 
 interface HeaderProps {
   title: string;
@@ -10,13 +11,10 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    // Limpar dados de autenticação (se houver)
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
-    
-    // Redirecionar para login
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

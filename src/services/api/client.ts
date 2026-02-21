@@ -16,72 +16,39 @@ const getApiUrl = () => {
 
 class ApiClient {
   private baseURL: string;
-  private accessToken: string | null = null;
-  private refreshToken: string | null = null;
 
   constructor(baseURL?: string) {
     // Detect URL dynamically at runtime
     this.baseURL = baseURL || getApiUrl();
-    this.loadTokens();
   }
-  
+
   // Method to get current API URL (useful for debugging)
   getApiUrl(): string {
     return this.baseURL;
   }
 
-  private loadTokens() {
-    if (typeof window !== 'undefined') {
-      this.accessToken = localStorage.getItem('accessToken');
-      this.refreshToken = localStorage.getItem('refreshToken');
-    }
-  }
-
-  private saveTokens(accessToken: string, refreshToken: string) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      this.accessToken = accessToken;
-      this.refreshToken = refreshToken;
-    }
-  }
-
-  private clearTokens() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      this.accessToken = null;
-      this.refreshToken = null;
-    }
+  // Read CSRF token from cookie (non-httpOnly, readable by JS)
+  private getCsrfToken(): string | null {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    if (!this.refreshToken) {
-      return false;
-    }
-
     try {
       const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
+        credentials: 'include',
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        this.accessToken = data.accessToken;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('accessToken', data.accessToken);
-        }
-        return true;
-      }
+      return response.ok;
     } catch (error) {
       console.error('Failed to refresh token:', error);
     }
 
-    this.clearTokens();
     return false;
   }
 
@@ -90,29 +57,35 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    // Attach CSRF token for non-GET requests
+    const method = (options.method || 'GET').toUpperCase();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      const csrfToken = this.getCsrfToken();
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
     }
 
     let response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
-    // If unauthorized, try to refresh token
-    if (response.status === 401 && this.refreshToken) {
+    // If unauthorized, try to refresh token via cookie
+    if (response.status === 401) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
-        // Retry request with new token
-        headers['Authorization'] = `Bearer ${this.accessToken}`;
+        // Retry request with new cookie
         response = await fetch(url, {
           ...options,
           headers,
+          credentials: 'include',
         });
       }
     }
@@ -151,17 +124,11 @@ class ApiClient {
     companyName: string;
   }) {
     try {
-      const result = await this.request<{
-        user: any;
-        accessToken: string;
-        refreshToken: string;
-      }>('/api/auth/register', {
+      // Cookies are set by the server (httpOnly) — no localStorage needed
+      return await this.request<{ user: any }>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-
-      this.saveTokens(result.accessToken, result.refreshToken);
-      return result;
     } catch (error: any) {
       // Detectar erros de rede
       if (
@@ -202,17 +169,11 @@ class ApiClient {
 
   async login(data: { email: string; password: string }) {
     try {
-      const result = await this.request<{
-        user: any;
-        accessToken: string;
-        refreshToken: string;
-      }>('/api/auth/login', {
+      // Cookies are set by the server (httpOnly) — no localStorage needed
+      return await this.request<{ user: any }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-
-      this.saveTokens(result.accessToken, result.refreshToken);
-      return result;
     } catch (error: any) {
       // Detectar erros de rede
       if (
@@ -252,13 +213,10 @@ class ApiClient {
   }
 
   async logout() {
-    try {
-      await this.request('/api/auth/logout', {
-        method: 'POST',
-      });
-    } finally {
-      this.clearTokens();
-    }
+    // Server clears httpOnly cookies
+    await this.request('/api/auth/logout', {
+      method: 'POST',
+    });
   }
 
   async getCurrentUser() {

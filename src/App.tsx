@@ -13,32 +13,30 @@ import { PlanProvider } from './contexts/PlanContext';
 import { PaymentProvider } from './contexts/PaymentContext';
 import { TaskNotificationChecker } from './components/TaskNotificationChecker';
 import { MigrationChecker } from './components/MigrationChecker';
+import { composeProviders } from './utils/composeProviders';
+
+// Compose all providers in order (outermost first)
+const AppProviders = composeProviders(
+  AuthProvider,
+  CompanyProvider,
+  TagsProvider,
+  CustomFieldsProvider,
+  NotificationProvider,
+  PlanProvider,
+  PaymentProvider,
+  WhatsAppProvider,
+  EmailProvider,
+);
 
 function App() {
   return (
     <ErrorBoundary>
-    <AuthProvider>
-      <CompanyProvider>
-        <TagsProvider>
-          <CustomFieldsProvider>
-            <NotificationProvider>
-              <PlanProvider>
-                <PaymentProvider>
-                  <WhatsAppProvider>
-                    <EmailProvider>
-                      <TaskNotificationChecker />
-                      <MigrationChecker />
-                      <RouterProvider router={router} />
-                      <Toaster />
-                    </EmailProvider>
-                  </WhatsAppProvider>
-                </PaymentProvider>
-              </PlanProvider>
-            </NotificationProvider>
-          </CustomFieldsProvider>
-        </TagsProvider>
-      </CompanyProvider>
-    </AuthProvider>
+      <AppProviders>
+        <TaskNotificationChecker />
+        <MigrationChecker />
+        <RouterProvider router={router} />
+        <Toaster />
+      </AppProviders>
     </ErrorBoundary>
   );
 }

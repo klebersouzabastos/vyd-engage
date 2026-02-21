@@ -18,13 +18,15 @@ export async function authenticate(
   next: NextFunction
 ): Promise<void> {
   try {
+    // Read token from httpOnly cookie (primary) or Authorization header (fallback)
     const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.accessToken;
+    const token = cookieToken || (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       throw createError('No token provided', 401, 'NO_TOKEN');
     }
 
-    const token = authHeader.substring(7);
     const payload = verifyAccessToken(token);
 
     // Verify user still exists and is active

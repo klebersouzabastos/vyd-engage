@@ -11,6 +11,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
+import { useAuth } from "../contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { useTasks } from "../hooks/useTasks";
 
@@ -91,12 +92,10 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       .slice(0, 2);
   };
 
-  const handleLogout = () => {
-    // Limpar dados de autenticação (se houver)
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
-    
-    // Redirecionar para login
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -106,7 +105,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
   };
 
   return (
-    <aside className={`
+    <aside
+      aria-label="Menu principal"
+      className={`
       w-64 bg-white border-r border-[#E5E7EB] h-screen fixed left-0 top-0 flex flex-col
       z-50 transition-transform duration-300 ease-in-out
       ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -136,7 +137,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       </Link>
 
       {/* Menu Items */}
-      <nav className="flex-1 px-3 py-4">
+      <nav aria-label="Navegação do aplicativo" className="flex-1 px-3 py-4">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -146,6 +147,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               key={item.path}
               to={item.path}
               onClick={handleNavClick}
+              aria-current={isActive ? 'page' : undefined}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors relative
                 ${isActive
@@ -200,6 +202,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
+          aria-label="Sair da conta"
           className="w-full p-4 border-t border-[#E5E7EB] flex items-center gap-3 text-[#6B7280] hover:bg-red-50 hover:text-red-600 transition-colors"
         >
           <LogOut size={20} />

@@ -57,7 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const result = await apiClient.login({ email, password });
     setUser(result.user);
-    window.location.href = '/app';
   };
 
   const register = async (data: {
@@ -68,13 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }) => {
     const result = await apiClient.register(data);
     setUser(result.user);
-    window.location.href = '/app';
   };
 
   const logout = async () => {
     await apiClient.logout();
     setUser(null);
-    window.location.href = '/login';
   };
 
   const refreshUser = async () => {

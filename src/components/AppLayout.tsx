@@ -8,6 +8,14 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]">
+      {/* Skip to main content — a11y */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-[#2563EB] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm"
+      >
+        Pular para o conteúdo principal
+      </a>
+
       {/* Mobile hamburger header */}
       <div className="fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 bg-white border-b border-[#E5E7EB] md:hidden">
         <button
@@ -33,7 +41,7 @@ export function AppLayout() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main content */}
-      <main className="flex-1 ml-0 md:ml-64 pt-14 md:pt-0">
+      <main id="main-content" className="flex-1 ml-0 md:ml-64 pt-14 md:pt-0" role="main">
         <Outlet />
       </main>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 export function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +23,7 @@ export function Login() {
     try {
       await login(email, password);
       toast.success("Login realizado com sucesso!");
+      navigate('/app');
     } catch (error: any) {
       // Mensagem de erro mais específica
       let errorMessage = "Erro ao fazer login";

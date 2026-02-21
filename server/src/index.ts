@@ -3,10 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { apiLimiter, authLimiter, passwordResetLimiter } from './middleware/rateLimit.js';
+import { csrfProtection } from './middleware/csrf.js';
 import { initSentry } from './utils/sentry.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
@@ -26,8 +28,9 @@ app.use(cors({
     : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
 }));
+app.use(cookieParser());
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false,
@@ -95,6 +98,23 @@ app.use('/api/auth/password', passwordResetLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/webhooks', apiLimiter); // Webhooks get rate limited too
 app.use('/api', apiLimiter);
+
+// CSRF protection — applied to all API routes except webhooks (which use HMAC signatures)
+// Auth login/register/refresh are excluded since they don't have a CSRF cookie yet
+app.use('/api/leads', csrfProtection);
+app.use('/api/tasks', csrfProtection);
+app.use('/api/tags', csrfProtection);
+app.use('/api/subscriptions', csrfProtection);
+app.use('/api/payments', csrfProtection);
+app.use('/api/users', csrfProtection);
+app.use('/api/api-keys', csrfProtection);
+app.use('/api/automations', csrfProtection);
+app.use('/api/whatsapp', csrfProtection);
+app.use('/api/email', csrfProtection);
+app.use('/api/custom-fields', csrfProtection);
+app.use('/api/interactions', csrfProtection);
+app.use('/api/notifications', csrfProtection);
+app.use('/api/invitations', csrfProtection);
 
 // API Routes
 app.use('/api/auth', authRoutes);

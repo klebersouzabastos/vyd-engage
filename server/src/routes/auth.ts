@@ -6,6 +6,8 @@ import { createError } from '../middleware/errorHandler.js';
 import { passwordResetLimiter } from '../middleware/rateLimit.js';
 import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
+import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
+import { setCsrfCookie } from '../middleware/csrf.js';
 
 const router = Router();
 
@@ -31,7 +33,9 @@ router.post('/register', async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
     const result = await authService.register(data);
-    res.status(201).json(result);
+    setAuthCookies(res, result.accessToken, result.refreshToken);
+    setCsrfCookie(res);
+    res.status(201).json({ user: result.user });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
@@ -45,7 +49,9 @@ router.post('/login', async (req, res, next) => {
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
-    res.json(result);
+    setAuthCookies(res, result.accessToken, result.refreshToken);
+    setCsrfCookie(res);
+    res.json({ user: result.user });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
@@ -57,13 +63,22 @@ router.post('/login', async (req, res, next) => {
 // Refresh token
 router.post('/refresh', async (req, res, next) => {
   try {
-    const { refreshToken } = refreshSchema.parse(req.body);
-    const result = await authService.refreshToken(refreshToken);
-    res.json(result);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    // Read refreshToken from httpOnly cookie (primary) or body (fallback)
+    const refreshTokenValue = req.cookies?.refreshToken || req.body?.refreshToken;
+    if (!refreshTokenValue) {
+      return next(createError('Refresh token missing', 401, 'NO_REFRESH_TOKEN'));
     }
+    const result = await authService.refreshToken(refreshTokenValue);
+    // Set new accessToken cookie
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/',
+    });
+    res.json({ success: true });
+  } catch (error) {
     next(error);
   }
 });
@@ -71,10 +86,12 @@ router.post('/refresh', async (req, res, next) => {
 // Logout
 router.post('/logout', authenticate, async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.substring(7);
-    if (token) {
-      await authService.logout(token);
+    // Invalidate refresh token from cookie or header
+    const refreshTokenValue = req.cookies?.refreshToken;
+    if (refreshTokenValue) {
+      await authService.logout(refreshTokenValue);
     }
+    clearAuthCookies(res);
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
     next(error);
@@ -88,6 +105,7 @@ router.post('/logout-all', authenticate, async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
     await authService.logoutAll(req.user.userId);
+    clearAuthCookies(res);
     res.json({ message: 'Logged out from all devices' });
   } catch (error) {
     next(error);

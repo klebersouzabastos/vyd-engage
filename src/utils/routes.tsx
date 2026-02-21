@@ -1,58 +1,87 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
-import { Dashboard } from "../pages/Dashboard";
-import { Leads } from "../pages/Leads";
-import { LeadForm } from "../pages/LeadForm";
-import { Pipeline } from "../pages/Pipeline";
-import { TaskForm } from "../pages/TaskForm";
-import { Automations } from "../pages/Automations";
-import { AutomationDetail } from "../pages/AutomationDetail";
-import { AutomationLogs } from "../pages/AutomationLogs";
-import { Settings } from "../pages/Settings";
-import { Profile } from "../pages/Profile";
-import { Login } from "../pages/Login";
-import { Register } from "../pages/Register";
-import { ForgotPassword } from "../pages/ForgotPassword";
-import { ResetPassword } from "../pages/ResetPassword";
-import { Onboarding } from "../pages/Onboarding";
-import { PublicForm } from "../pages/PublicForm";
-import { LandingPage } from "../pages/LandingPage";
 import { AppLayout } from "../components/AppLayout";
-import { CustomFields } from "../pages/CustomFields";
-import { Tasks } from "../pages/Tasks";
-import { Reports } from "../pages/Reports";
-import { ReportBuilder } from "../pages/ReportBuilder";
-import { ReportView } from "../pages/ReportView";
 import { RequireAuth } from "../components/RequireAuth";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+
+// Loading fallback
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]" />
+    </div>
+  );
+}
+
+// Lazy wrapper for named exports
+function lazyNamed<T extends Record<string, any>>(
+  factory: () => Promise<T>,
+  name: keyof T
+) {
+  const Component = lazy(() =>
+    factory().then((mod) => ({ default: mod[name] as any }))
+  );
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  );
+}
+
+// Public pages
+const LandingPage = lazyNamed(() => import("../pages/LandingPage"), "LandingPage");
+const Login = lazyNamed(() => import("../pages/Login"), "Login");
+const Register = lazyNamed(() => import("../pages/Register"), "Register");
+const ForgotPassword = lazyNamed(() => import("../pages/ForgotPassword"), "ForgotPassword");
+const ResetPassword = lazyNamed(() => import("../pages/ResetPassword"), "ResetPassword");
+const Onboarding = lazyNamed(() => import("../pages/Onboarding"), "Onboarding");
+const PublicForm = lazyNamed(() => import("../pages/PublicForm"), "PublicForm");
+
+// App pages (behind auth)
+const Dashboard = lazyNamed(() => import("../pages/Dashboard"), "Dashboard");
+const Leads = lazyNamed(() => import("../pages/Leads"), "Leads");
+const LeadForm = lazyNamed(() => import("../pages/LeadForm"), "LeadForm");
+const Pipeline = lazyNamed(() => import("../pages/Pipeline"), "Pipeline");
+const Automations = lazyNamed(() => import("../pages/Automations"), "Automations");
+const AutomationDetail = lazyNamed(() => import("../pages/AutomationDetail"), "AutomationDetail");
+const AutomationLogs = lazyNamed(() => import("../pages/AutomationLogs"), "AutomationLogs");
+const Settings = lazyNamed(() => import("../pages/Settings"), "Settings");
+const CustomFields = lazyNamed(() => import("../pages/CustomFields"), "CustomFields");
+const Tasks = lazyNamed(() => import("../pages/Tasks"), "Tasks");
+const TaskForm = lazyNamed(() => import("../pages/TaskForm"), "TaskForm");
+const Profile = lazyNamed(() => import("../pages/Profile"), "Profile");
+const Reports = lazyNamed(() => import("../pages/Reports"), "Reports");
+const ReportBuilder = lazyNamed(() => import("../pages/ReportBuilder"), "ReportBuilder");
+const ReportView = lazyNamed(() => import("../pages/ReportView"), "ReportView");
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: LandingPage,
   },
   {
     path: "/login",
-    element: <Login />,
+    element: Login,
   },
   {
     path: "/register",
-    element: <Register />,
+    element: Register,
   },
   {
     path: "/forgot-password",
-    element: <ForgotPassword />,
+    element: ForgotPassword,
   },
   {
     path: "/reset-password",
-    element: <ResetPassword />,
+    element: ResetPassword,
   },
   {
     path: "/onboarding",
-    element: <Onboarding />,
+    element: Onboarding,
   },
   {
     path: "/capture/:formId",
-    element: <PublicForm />,
+    element: PublicForm,
   },
   {
     path: "/app",
@@ -66,75 +95,75 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Dashboard />,
+        element: Dashboard,
       },
       {
         path: "leads",
-        element: <Leads />,
+        element: Leads,
       },
       {
         path: "leads/new",
-        element: <LeadForm />,
+        element: LeadForm,
       },
       {
         path: "leads/:id/edit",
-        element: <LeadForm />,
+        element: LeadForm,
       },
       {
         path: "pipeline",
-        element: <Pipeline />,
+        element: Pipeline,
       },
       {
         path: "automations",
-        element: <Automations />,
+        element: Automations,
       },
       {
         path: "automations/:id",
-        element: <AutomationDetail />,
+        element: AutomationDetail,
       },
       {
         path: "automations/logs",
-        element: <AutomationLogs />,
+        element: AutomationLogs,
       },
       {
         path: "settings",
-        element: <Settings />,
+        element: Settings,
       },
       {
         path: "custom-fields",
-        element: <CustomFields />,
+        element: CustomFields,
       },
       {
         path: "tasks",
-        element: <Tasks />,
+        element: Tasks,
       },
       {
         path: "tasks/new",
-        element: <TaskForm />,
+        element: TaskForm,
       },
       {
         path: "tasks/:id/edit",
-        element: <TaskForm />,
+        element: TaskForm,
       },
       {
         path: "profile",
-        element: <Profile />,
+        element: Profile,
       },
       {
         path: "reports",
-        element: <Reports />,
+        element: Reports,
       },
       {
         path: "reports/new",
-        element: <ReportBuilder />,
+        element: ReportBuilder,
       },
       {
         path: "reports/view/:id",
-        element: <ReportView />,
+        element: ReportView,
       },
       {
         path: "reports/:id",
-        element: <ReportBuilder />,
+        element: ReportBuilder,
       },
     ],
   },

@@ -1,4 +1,4 @@
-name: Deploy
+name: CI
 
 on:
   push:
@@ -7,9 +7,28 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  frontend:
+    name: Frontend Build
     runs-on: ubuntu-latest
-    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+  backend:
+    name: Backend Lint, Build & Test
+    runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -55,11 +74,20 @@ jobs:
         working-directory: ./server
         run: npm run build
 
+      - name: Run tests
+        working-directory: ./server
+        run: npm test -- --reporter=verbose
+        env:
+          DATABASE_URL: postgresql://flowcrm:flowcrm_test@localhost:5432/flowcrm_test
+          JWT_SECRET: test-jwt-secret-ci
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-ci
+          NODE_ENV: test
+
   deploy:
-    needs: test
+    needs: [frontend, backend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -71,12 +99,3 @@ jobs:
       - name: Build and deploy
         run: |
           echo "Deploy steps would go here"
-          # Add your deployment steps (e.g., Docker build, push to registry, etc.)
-
-
-
-
-
-
-
-
