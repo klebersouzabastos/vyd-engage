@@ -108,7 +108,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
     <aside
       aria-label="Menu principal"
       className={`
-      w-64 bg-white border-r border-[#E5E7EB] h-screen fixed left-0 top-0 flex flex-col
+      w-64 bg-white border-r border-gray-300 h-screen fixed left-0 top-0 flex flex-col
       z-50 transition-transform duration-300 ease-in-out
       ${open ? 'translate-x-0' : '-translate-x-full'}
       md:translate-x-0
@@ -116,11 +116,11 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       {/* Logo */}
       <Link 
         to="/app" 
-        className="h-16 flex items-center px-6 border-b border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors cursor-pointer"
+        className="h-16 flex items-center px-6 border-b border-gray-300 hover:bg-gray-100 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2.5">
           {logo ? (
-            <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-[#E5E7EB] p-1 flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-gray-300 p-1 flex-shrink-0">
               <img 
                 src={logo} 
                 alt={`${companyName} logo`}
@@ -128,11 +128,11 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               />
             </div>
           ) : (
-            <div className="w-9 h-9 rounded-lg bg-[#2563EB] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">F</span>
             </div>
           )}
-          <span className="font-semibold text-[#1F2937] text-sm truncate">{companyName}</span>
+          <span className="font-semibold text-gray-900 text-sm truncate">{companyName}</span>
         </div>
       </Link>
 
@@ -151,8 +151,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors relative
                 ${isActive
-                  ? 'bg-[#2563EB] text-white'
-                  : 'text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#1F2937]'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }
               `}
             >
@@ -169,14 +169,14 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       </nav>
 
       {/* User Profile */}
-      <div className="border-t border-[#E5E7EB]">
+      <div className="border-t border-gray-300">
         <Link
           to="/app/profile"
           className={`
             p-4 transition-colors block
             ${location.pathname === "/app/profile"
-              ? "bg-[#F0F4FF]"
-              : "hover:bg-[#F9FAFB]"
+              ? "bg-primary-50"
+              : "hover:bg-gray-100"
             }
           `}
         >
@@ -188,13 +188,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                   alt={userProfile.name}
                 />
               ) : null}
-              <AvatarFallback className="bg-[#2563EB] text-white text-sm font-medium">
+              <AvatarFallback className="bg-primary text-white text-sm font-medium">
                 {getInitials(userProfile.name)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-[#1F2937] truncate font-medium">{userProfile.name}</p>
-              <p className="text-xs text-[#6B7280] truncate">{userProfile.email}</p>
+              <p className="text-sm text-gray-900 truncate font-medium">{userProfile.name}</p>
+              <p className="text-xs text-gray-600 truncate">{userProfile.email}</p>
             </div>
           </div>
         </Link>
@@ -203,7 +203,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         <button
           onClick={handleLogout}
           aria-label="Sair da conta"
-          className="w-full p-4 border-t border-[#E5E7EB] flex items-center gap-3 text-[#6B7280] hover:bg-red-50 hover:text-red-600 transition-colors"
+          className="w-full p-4 border-t border-gray-300 flex items-center gap-3 text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
         >
           <LogOut size={20} />
           <span className="text-sm font-medium">Sair</span>

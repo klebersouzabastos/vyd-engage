@@ -47,11 +47,11 @@ export function AutomationLogs() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "sent":
-        return <CheckCircle size={16} className="text-[#16A34A]" />;
+        return <CheckCircle size={16} className="text-success" />;
       case "error":
-        return <XCircle size={16} className="text-[#DC2626]" />;
+        return <XCircle size={16} className="text-error" />;
       case "pending":
-        return <Clock size={16} className="text-[#EA580C]" />;
+        return <Clock size={16} className="text-warning" />;
       default:
         return null;
     }
@@ -130,37 +130,37 @@ export function AutomationLogs() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-            <p className="text-sm text-[#6B7280] mb-1">Total</p>
-            <p className="text-2xl font-semibold text-[#1F2937]">{logsData.length}</p>
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+            <p className="text-sm text-gray-600 mb-1">Total</p>
+            <p className="text-2xl font-semibold text-gray-900">{logsData.length}</p>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-            <p className="text-sm text-[#6B7280] mb-1">Enviados</p>
-            <p className="text-2xl font-semibold text-[#16A34A]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+            <p className="text-sm text-gray-600 mb-1">Enviados</p>
+            <p className="text-2xl font-semibold text-success">
               {logsData.filter(l => l.status === "sent").length}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-            <p className="text-sm text-[#6B7280] mb-1">Erros</p>
-            <p className="text-2xl font-semibold text-[#DC2626]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+            <p className="text-sm text-gray-600 mb-1">Erros</p>
+            <p className="text-2xl font-semibold text-error">
               {logsData.filter(l => l.status === "error").length}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-            <p className="text-sm text-[#6B7280] mb-1">Pendentes</p>
-            <p className="text-2xl font-semibold text-[#EA580C]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+            <p className="text-sm text-gray-600 mb-1">Pendentes</p>
+            <p className="text-2xl font-semibold text-warning">
               {logsData.filter(l => l.status === "pending").length}
             </p>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+            <table className="w-full" aria-label="Logs de automação">
+              <thead className="bg-gray-100 border-b border-gray-300">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     <div className="flex flex-col gap-2">
                       <span>Lead</span>
                       <Input
@@ -171,13 +171,13 @@ export function AutomationLogs() {
                       />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     <div className="flex flex-col gap-2">
                       <span>Automação</span>
                       <select
                         value={filterAutomation}
                         onChange={(e) => setFilterAutomation(e.target.value)}
-                        className="h-8 px-2 text-xs border border-[#E5E7EB] rounded-md bg-white w-full"
+                        className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
                       >
                         <option value="all">Todas</option>
                         {uniqueAutomations.map((automation) => (
@@ -188,13 +188,13 @@ export function AutomationLogs() {
                       </select>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden md:table-cell">
                     <div className="flex flex-col gap-2">
                       <span>Step</span>
                       <select
                         value={filterStep}
                         onChange={(e) => setFilterStep(e.target.value)}
-                        className="h-8 px-2 text-xs border border-[#E5E7EB] rounded-md bg-white w-full"
+                        className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
                       >
                         <option value="all">Todos</option>
                         <option value="1">Step 1</option>
@@ -203,13 +203,13 @@ export function AutomationLogs() {
                       </select>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden md:table-cell">
                     <div className="flex flex-col gap-2">
                       <span>Canal</span>
                       <select
                         value={filterChannel}
                         onChange={(e) => setFilterChannel(e.target.value)}
-                        className="h-8 px-2 text-xs border border-[#E5E7EB] rounded-md bg-white w-full"
+                        className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
                       >
                         <option value="all">Todos</option>
                         <option value="whatsapp">WhatsApp</option>
@@ -217,13 +217,13 @@ export function AutomationLogs() {
                       </select>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                     <div className="flex flex-col gap-2">
                       <span>Status</span>
                       <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="h-8 px-2 text-xs border border-[#E5E7EB] rounded-md bg-white w-full"
+                        className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
                       >
                         <option value="all">Todos</option>
                         <option value="sent">Enviado</option>
@@ -232,7 +232,7 @@ export function AutomationLogs() {
                       </select>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden lg:table-cell">
                     <div className="flex flex-col gap-2">
                       <span>Data/Hora</span>
                       <Input
@@ -245,22 +245,22 @@ export function AutomationLogs() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
+              <tbody className="divide-y divide-gray-300">
                 {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-[#F9FAFB] transition-colors">
+                  <tr key={log.id} className="hover:bg-gray-100 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="font-medium text-[#1F2937]">{log.lead}</p>
+                      <p className="font-medium text-gray-900">{log.lead}</p>
                       {log.errorMessage && (
-                        <p className="text-xs text-[#DC2626] mt-1">{log.errorMessage}</p>
+                        <p className="text-xs text-error mt-1">{log.errorMessage}</p>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-[#6B7280]">{log.automation}</td>
-                    <td className="px-6 py-4 text-[#6B7280]">Step {log.step}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-gray-600">{log.automation}</td>
+                    <td className="px-6 py-4 text-gray-600 hidden md:table-cell">Step {log.step}</td>
+                    <td className="px-6 py-4 hidden md:table-cell">
                       <span className={`
                         inline-flex items-center px-2 py-1 rounded text-xs
-                        ${log.channel === "whatsapp" 
-                          ? "bg-green-50 text-green-600" 
+                        ${log.channel === "whatsapp"
+                          ? "bg-green-50 text-green-600"
                           : "bg-blue-50 text-blue-600"
                         }
                       `}>
@@ -270,7 +270,7 @@ export function AutomationLogs() {
                     <td className="px-6 py-4">
                       {getStatusBadge(log.status)}
                     </td>
-                    <td className="px-6 py-4 text-[#6B7280]">{log.datetime}</td>
+                    <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{log.datetime}</td>
                   </tr>
                 ))}
               </tbody>

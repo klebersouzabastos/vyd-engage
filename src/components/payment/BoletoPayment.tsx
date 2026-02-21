@@ -123,14 +123,14 @@ export function BoletoPayment({
         </Button>
       )}
 
-      <div className="p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+      <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
         <div className="flex items-start gap-3">
-          <FileText size={20} className="text-[#6B7280] mt-0.5" />
+          <FileText size={20} className="text-gray-600 mt-0.5" />
           <div className="flex-1">
-            <h4 className="font-medium text-[#1F2937] mb-1">
+            <h4 className="font-medium text-gray-900 mb-1">
               Como pagar o boleto
             </h4>
-            <ol className="text-sm text-[#6B7280] space-y-1 list-decimal list-inside">
+            <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
               <li>Copie a linha digitável ou código de barras</li>
               <li>Acesse seu banco ou aplicativo de pagamento</li>
               <li>Cole o código e confirme o pagamento</li>
@@ -143,7 +143,7 @@ export function BoletoPayment({
       <Button
         onClick={onCheckStatus}
         disabled={isLoading}
-        className="w-full bg-[#2563EB] hover:bg-[#1E40AF]"
+        className="w-full bg-primary hover:bg-primary-dark"
       >
         {isLoading ? "Verificando..." : "Verificar Pagamento"}
       </Button>

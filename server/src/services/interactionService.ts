@@ -1,10 +1,11 @@
 import prisma from '../config/database.js';
+import { InteractionType, InteractionDirection } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 export interface CreateInteractionData {
   leadId?: string;
-  type: 'email' | 'whatsapp' | 'call' | 'meeting' | 'note';
-  direction: 'inbound' | 'outbound';
+  type: InteractionType;
+  direction: InteractionDirection;
   subject?: string;
   content: string;
   metadata?: any;

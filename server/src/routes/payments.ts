@@ -4,7 +4,7 @@ import { paymentService } from '../services/paymentService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { PlanType } from '@prisma/client';
+import { PlanType, PaymentMethod, BillingCycle } from '@prisma/client';
 
 const router = Router();
 
@@ -15,8 +15,8 @@ const createPaymentIntentSchema = z.object({
   planId: z.string().uuid(),
   planType: z.nativeEnum(PlanType),
   amount: z.number().positive(),
-  method: z.enum(['credit_card', 'pix', 'boleto']),
-  billingCycle: z.enum(['monthly', 'yearly']),
+  method: z.nativeEnum(PaymentMethod),
+  billingCycle: z.nativeEnum(BillingCycle),
 });
 
 // POST /api/payments/intent - Create payment intent

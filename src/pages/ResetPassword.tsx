@@ -80,7 +80,7 @@ export function ResetPassword() {
           {/* Back Button */}
           <Link 
             to="/login" 
-            className="inline-flex items-center gap-2 text-[#6B7280] hover:text-[#1F2937] transition-colors mb-6 sm:mb-8"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 sm:mb-8"
           >
             <ArrowLeft size={20} />
             <span className="text-sm sm:text-base">Voltar para login</span>
@@ -88,18 +88,18 @@ export function ResetPassword() {
 
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 md:mb-12">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#2563EB] flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-xs sm:text-sm">VE</span>
             </div>
-            <span className="text-xl sm:text-2xl font-semibold text-[#1F2937]">VYD Engage</span>
+            <span className="text-xl sm:text-2xl font-semibold text-gray-900">VYD Engage</span>
           </div>
 
           {/* Heading */}
           <div className="mb-8 sm:mb-10 md:mb-12">
-            <h1 className="text-[#1F2937] mb-3 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
+            <h1 className="text-gray-900 mb-3 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
               Redefinir senha
             </h1>
-            <p className="text-[#6B7280] text-base sm:text-lg md:text-xl mt-2">
+            <p className="text-gray-600 text-base sm:text-lg md:text-xl mt-2">
               {success 
                 ? "Sua senha foi redefinida com sucesso!"
                 : "Digite sua nova senha abaixo"
@@ -113,13 +113,13 @@ export function ResetPassword() {
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
               <div className="text-center space-y-4">
-                <p className="text-[#6B7280] text-base sm:text-lg">
+                <p className="text-gray-600 text-base sm:text-lg">
                   Sua senha foi alterada com sucesso. Você será redirecionado para a página de login em instantes.
                 </p>
               </div>
               <Button
                 onClick={() => navigate("/login")}
-                className="w-full h-12 sm:h-14 bg-[#2563EB] hover:bg-[#1E40AF] text-white font-medium rounded-lg transition-colors text-base sm:text-lg"
+                className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg"
               >
                 Ir para login
               </Button>
@@ -127,7 +127,7 @@ export function ResetPassword() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               <div className="space-y-2.5">
-                <Label htmlFor="password" className="text-[#1F2937] text-base sm:text-lg font-medium block">
+                <Label htmlFor="password" className="text-gray-900 text-base sm:text-lg font-medium block">
                   Nova senha
                 </Label>
                 <div className="relative">
@@ -137,7 +137,7 @@ export function ResetPassword() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                     minLength={8}
                   />
@@ -148,7 +148,7 @@ export function ResetPassword() {
                       e.stopPropagation();
                       setShowPassword(!showPassword);
                     }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1F2937] transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                     tabIndex={0}
                   >
@@ -163,7 +163,7 @@ export function ResetPassword() {
               </div>
 
               <div className="space-y-2.5">
-                <Label htmlFor="confirmPassword" className="text-[#1F2937] text-base sm:text-lg font-medium block">
+                <Label htmlFor="confirmPassword" className="text-gray-900 text-base sm:text-lg font-medium block">
                   Confirmar nova senha
                 </Label>
                 <div className="relative">
@@ -173,7 +173,7 @@ export function ResetPassword() {
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                     minLength={8}
                   />
@@ -184,7 +184,7 @@ export function ResetPassword() {
                       e.stopPropagation();
                       setShowConfirmPassword(!showConfirmPassword);
                     }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1F2937] transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
                     aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
                     tabIndex={0}
                   >
@@ -203,7 +203,7 @@ export function ResetPassword() {
               <Button 
                 type="submit" 
                 disabled={loading || password !== confirmPassword || password.length < 8}
-                className="w-full h-12 sm:h-14 bg-[#2563EB] hover:bg-[#1E40AF] text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Redefinindo..." : "Redefinir senha"}
               </Button>
@@ -211,11 +211,11 @@ export function ResetPassword() {
           )}
 
           {/* Sign up link */}
-          <p className="mt-8 sm:mt-10 text-center text-[#6B7280] text-base sm:text-lg">
+          <p className="mt-8 sm:mt-10 text-center text-gray-600 text-base sm:text-lg">
             Lembrou sua senha?{" "}
             <Link 
               to="/login" 
-              className="text-[#2563EB] hover:text-[#1E40AF] font-medium transition-colors"
+              className="text-primary hover:text-primary-dark font-medium transition-colors"
             >
               Fazer login
             </Link>
@@ -224,8 +224,8 @@ export function ResetPassword() {
       </div>
 
       {/* Right side - Image */}
-      <div className="hidden lg:flex flex-1 bg-[#F9FAFB] relative overflow-hidden w-full lg:w-1/2">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#2563EB]/10 to-transparent"></div>
+      <div className="hidden lg:flex flex-1 bg-gray-100 relative overflow-hidden w-full lg:w-1/2">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
         <ImageWithFallback
           src="https://images.unsplash.com/photo-1641430034785-47f6f91ab6cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3b3Jrc3BhY2UlMjBsYXB0b3B8ZW58MXx8fHwxNzYzNzAwMDAxfDA&ixlib=rb-4.1.0&q=80&w=1080"
           alt="Modern workspace"

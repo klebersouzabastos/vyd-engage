@@ -86,11 +86,11 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
           </Alert>
         )}
 
-        <div className="flex flex-col items-center justify-center p-6 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+        <div className="flex flex-col items-center justify-center p-6 bg-gray-100 rounded-lg border border-gray-300">
           {isLoading ? (
             <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-[#2563EB]" />
-              <p className="text-sm text-[#6B7280]">Gerando QR Code...</p>
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-sm text-gray-600">Gerando QR Code...</p>
             </div>
           ) : qrCode ? (
             <>
@@ -99,7 +99,7 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
                 alt="QR Code WhatsApp"
                 className="w-64 h-64 border-2 border-white rounded-lg shadow-lg"
               />
-              <p className="text-sm text-[#6B7280] mt-4 text-center max-w-sm">
+              <p className="text-sm text-gray-600 mt-4 text-center max-w-sm">
                 1. Abra o WhatsApp no seu celular<br />
                 2. Vá em Configurações → Aparelhos conectados<br />
                 3. Toque em "Conectar um aparelho"<br />
@@ -108,8 +108,8 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
             </>
           ) : (
             <div className="flex flex-col items-center gap-4">
-              <AlertCircle className="h-12 w-12 text-[#6B7280]" />
-              <p className="text-sm text-[#6B7280]">
+              <AlertCircle className="h-12 w-12 text-gray-600" />
+              <p className="text-sm text-gray-600">
                 Não foi possível gerar o QR Code
               </p>
             </div>
@@ -138,7 +138,7 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
         </div>
 
         {expiresAt && !isExpired && (
-          <p className="text-xs text-center text-[#6B7280]">
+          <p className="text-xs text-center text-gray-600">
             QR Code expira em: {new Date(expiresAt).toLocaleString("pt-BR")}
           </p>
         )}

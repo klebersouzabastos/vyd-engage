@@ -85,11 +85,11 @@ export function WhatsAppConnectionsModal({ onClose }: WhatsAppConnectionsModalPr
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[#1F2937]">
+            <p className="text-sm font-medium text-gray-900">
               Conexões: {connectionsUsed} / {connectionsLimit}
             </p>
             {!canAddConnection() && (
-              <p className="text-xs text-[#6B7280] mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 Limite de conexões atingido. Faça upgrade do plano para adicionar mais.
               </p>
             )}
@@ -97,7 +97,7 @@ export function WhatsAppConnectionsModal({ onClose }: WhatsAppConnectionsModalPr
           {canAddConnection() && !isAdding && !editingId && (
             <Button
               onClick={() => setIsAdding(true)}
-              className="bg-[#2563EB] hover:bg-[#1E40AF]"
+              className="bg-primary hover:bg-primary-dark"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adicionar Conexão
@@ -106,8 +106,8 @@ export function WhatsAppConnectionsModal({ onClose }: WhatsAppConnectionsModalPr
         </div>
 
         {isAdding && (
-          <div className="p-4 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-            <h3 className="font-medium text-[#1F2937] mb-4">Nova Conexão WhatsApp</h3>
+          <div className="p-4 border border-gray-300 rounded-lg bg-gray-100">
+            <h3 className="font-medium text-gray-900 mb-4">Nova Conexão WhatsApp</h3>
             <ConnectionForm
               onSubmit={handleAdd}
               onCancel={() => setIsAdding(false)}
@@ -116,8 +116,8 @@ export function WhatsAppConnectionsModal({ onClose }: WhatsAppConnectionsModalPr
         )}
 
         {editingConnection && (
-          <div className="p-4 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-            <h3 className="font-medium text-[#1F2937] mb-4">Editar Conexão</h3>
+          <div className="p-4 border border-gray-300 rounded-lg bg-gray-100">
+            <h3 className="font-medium text-gray-900 mb-4">Editar Conexão</h3>
             <ConnectionForm
               connection={editingConnection}
               onSubmit={async (data) => {

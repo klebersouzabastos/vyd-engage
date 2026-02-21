@@ -173,14 +173,14 @@ export function InteractionTimeline({
   if (interactions.length === 0 && !showAddForm) {
     return (
       <div className="text-center py-12">
-        <FileText size={48} className="mx-auto text-[#9CA3AF] mb-4" />
-        <p className="text-[#6B7280] mb-2">Nenhuma interação registrada</p>
-        <p className="text-sm text-[#9CA3AF] mb-6">
+        <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-600 mb-2">Nenhuma interação registrada</p>
+        <p className="text-sm text-gray-400 mb-6">
           Comece a registrar interações com este lead
         </p>
         <Button 
           onClick={() => setShowAddForm(true)} 
-          className="bg-[#2563EB] hover:bg-[#1E40AF] text-white shadow-sm hover:shadow-md transition-all duration-200 px-6 py-2.5 font-medium"
+          className="bg-primary hover:bg-primary-dark text-white shadow-sm hover:shadow-md transition-all duration-200 px-6 py-2.5 font-medium"
         >
           <Plus size={18} className="mr-2" />
           Adicionar Interação
@@ -192,13 +192,13 @@ export function InteractionTimeline({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
-        <h4 className="font-semibold text-[#1F2937] text-base">
+        <h4 className="font-semibold text-gray-900 text-base">
           Histórico de Interações ({interactions.length})
         </h4>
         {!showAddForm && (
           <Button 
             onClick={() => setShowAddForm(true)} 
-            className="bg-[#2563EB] hover:bg-[#1E40AF] text-white shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 font-medium flex items-center gap-2"
+            className="bg-primary hover:bg-primary-dark text-white shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 font-medium flex items-center gap-2"
           >
             <Plus size={16} />
             Adicionar Interação
@@ -213,15 +213,15 @@ export function InteractionTimeline({
             <Plus size={20} />
           </div>
           <div className="flex-1">
-            <div className="bg-white border-2 border-[#2563EB] rounded-lg p-4 shadow-sm">
+            <div className="bg-white border-2 border-primary rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h5 className="font-semibold text-[#1F2937] text-sm">Nova Interação</h5>
+                <h5 className="font-semibold text-gray-900 text-sm">Nova Interação</h5>
                 <button
                   onClick={handleCancel}
                   className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                   aria-label="Cancelar"
                 >
-                  <X size={16} className="text-[#6B7280]" />
+                  <X size={16} className="text-gray-600" />
                 </button>
               </div>
               
@@ -308,7 +308,7 @@ export function InteractionTimeline({
                   <Button variant="outline" onClick={handleCancel} className="h-8 text-sm px-3">
                     Cancelar
                   </Button>
-                  <Button onClick={handleSave} className="bg-[#2563EB] hover:bg-[#1E40AF] h-8 text-sm px-3">
+                  <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark h-8 text-sm px-3">
                     Salvar Interação
                   </Button>
                 </div>
@@ -320,7 +320,7 @@ export function InteractionTimeline({
 
       <div className="relative">
         {/* Linha vertical */}
-        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#E5E7EB]" />
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-300" />
 
         <div className="space-y-6">
           {interactions.map((interaction) => {
@@ -342,13 +342,13 @@ export function InteractionTimeline({
 
                 {/* Conteúdo */}
                 <div className="flex-1 pb-6">
-                  <div className="bg-white border border-[#E5E7EB] rounded-lg p-4 shadow-sm">
+                  <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-[#6B7280]">
+                        <span className="text-xs font-medium text-gray-600">
                           {label}
                         </span>
-                        <span className="text-xs text-[#9CA3AF]">
+                        <span className="text-xs text-gray-400">
                           {formatRelativeTime(interaction.timestamp)}
                         </span>
                       </div>
@@ -361,12 +361,12 @@ export function InteractionTimeline({
                         <Trash2 size={16} className="text-red-600" />
                       </button>
                     </div>
-                    <p className="text-sm text-[#1F2937] whitespace-pre-wrap">
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
                       {interaction.content}
                     </p>
                     {interaction.metadata && Object.keys(interaction.metadata).length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
-                        <div className="text-xs text-[#6B7280] space-y-1">
+                      <div className="mt-2 pt-2 border-t border-gray-300">
+                        <div className="text-xs text-gray-600 space-y-1">
                           {Object.entries(interaction.metadata).map(([key, value]) => (
                             <div key={key}>
                               <span className="font-medium">{key}:</span> {String(value)}

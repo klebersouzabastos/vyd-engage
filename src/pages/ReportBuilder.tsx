@@ -220,14 +220,14 @@ export function ReportBuilder() {
               <div
                 key={template.id}
                 onClick={() => handleTemplateSelect(template.id)}
-                className="border border-[#E5E7EB] rounded-lg p-4 hover:border-[#2563EB] hover:shadow-md cursor-pointer transition-all"
+                className="border border-gray-300 rounded-lg p-4 hover:border-primary hover:shadow-md cursor-pointer transition-all"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-[#1F2937]">{template.name}</h3>
-                  <FileText size={20} className="text-[#6B7280]" />
+                  <h3 className="font-medium text-gray-900">{template.name}</h3>
+                  <FileText size={20} className="text-gray-600" />
                 </div>
-                <p className="text-sm text-[#6B7280] mb-3">{template.description}</p>
-                <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+                <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
                   <span>{template.widgets.length} widgets</span>
                   <span>•</span>
                   <span className="capitalize">{template.category}</span>
@@ -236,11 +236,11 @@ export function ReportBuilder() {
             ))}
             <div
               onClick={handleSkipTemplate}
-              className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-4 hover:border-[#2563EB] cursor-pointer transition-all flex items-center justify-center min-h-[120px]"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-primary cursor-pointer transition-all flex items-center justify-center min-h-[120px]"
             >
               <div className="text-center">
-                <Plus size={24} className="mx-auto mb-2 text-[#6B7280]" />
-                <p className="text-sm text-[#6B7280]">Começar do zero</p>
+                <Plus size={24} className="mx-auto mb-2 text-gray-600" />
+                <p className="text-sm text-gray-600">Começar do zero</p>
               </div>
             </div>
           </div>
@@ -248,20 +248,20 @@ export function ReportBuilder() {
       </Dialog>
       
       <div className="p-8">
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB]">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
           <Tabs defaultValue="general" className="w-full">
-            <div className="border-b border-[#E5E7EB] px-6">
+            <div className="border-b border-gray-300 px-6">
               <div className="flex items-center justify-between">
                 <TabsList className="bg-transparent h-auto p-0 gap-8">
                   <TabsTrigger 
                     value="general"
-                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#2563EB] rounded-none pb-4 px-0"
+                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
                   >
                     Geral
                   </TabsTrigger>
                   <TabsTrigger 
                     value="widgets"
-                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#2563EB] rounded-none pb-4 px-0"
+                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
                   >
                     Widgets
                   </TabsTrigger>
@@ -269,13 +269,13 @@ export function ReportBuilder() {
                     <>
                       <TabsTrigger 
                         value="filters"
-                        className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#2563EB] rounded-none pb-4 px-0"
+                        className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
                       >
                         Filtros
                       </TabsTrigger>
                       <TabsTrigger 
                         value="schedule"
-                        className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#2563EB] rounded-none pb-4 px-0"
+                        className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
                       >
                         Agendamento
                       </TabsTrigger>
@@ -345,8 +345,8 @@ export function ReportBuilder() {
               <TabsContent value="filters" className="p-6">
                 <div className="max-w-2xl space-y-6">
                   <div>
-                    <h3 className="text-[#1F2937] font-medium mb-1">Filtros Globais</h3>
-                    <p className="text-sm text-[#6B7280] mb-4">
+                    <h3 className="text-gray-900 font-medium mb-1">Filtros Globais</h3>
+                    <p className="text-sm text-gray-600 mb-4">
                       Configure filtros que serão aplicados a todos os widgets do relatório
                     </p>
                     <ReportFilters
@@ -364,8 +364,8 @@ export function ReportBuilder() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-[#1F2937] font-medium mb-1">Widgets do Relatório</h3>
-                    <p className="text-sm text-[#6B7280]">
+                    <h3 className="text-gray-900 font-medium mb-1">Widgets do Relatório</h3>
+                    <p className="text-sm text-gray-600">
                       Adicione widgets para visualizar seus dados
                     </p>
                   </div>
@@ -376,8 +376,8 @@ export function ReportBuilder() {
                 </div>
 
                 {report.widgets.length === 0 ? (
-                  <div className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-12 text-center">
-                    <p className="text-[#6B7280] mb-4">Nenhum widget adicionado</p>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                    <p className="text-gray-600 mb-4">Nenhum widget adicionado</p>
                     <Button variant="outline" onClick={addWidget} className="gap-2">
                       <Plus size={16} />
                       Adicionar Primeiro Widget
@@ -388,7 +388,7 @@ export function ReportBuilder() {
                     {report.widgets.map((widget) => (
                       <div
                         key={widget.id}
-                        className="border border-[#E5E7EB] rounded-lg p-4"
+                        className="border border-gray-300 rounded-lg p-4"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
@@ -400,7 +400,7 @@ export function ReportBuilder() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-[#DC2626] hover:text-[#DC2626] hover:bg-red-50 ml-4"
+                            className="text-error hover:text-error hover:bg-red-50 ml-4"
                             onClick={() => removeWidget(widget.id)}
                           >
                             <X size={16} />
@@ -419,8 +419,8 @@ export function ReportBuilder() {
                 <div className="max-w-2xl space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-[#1F2937] font-medium mb-1">Agendamento</h3>
-                      <p className="text-sm text-[#6B7280]">
+                      <h3 className="text-gray-900 font-medium mb-1">Agendamento</h3>
+                      <p className="text-sm text-gray-600">
                         Configure o envio automático deste relatório
                       </p>
                     </div>
@@ -433,7 +433,7 @@ export function ReportBuilder() {
                   </div>
 
                 {schedule.enabled && (
-                  <div className="space-y-6 pt-4 border-t border-[#E5E7EB]">
+                  <div className="space-y-6 pt-4 border-t border-gray-300">
                     <div>
                       <Label>Frequência</Label>
                       <Select
@@ -537,7 +537,7 @@ export function ReportBuilder() {
                         </Button>
                       </div>
                       {schedule.recipients.length === 0 ? (
-                        <p className="text-sm text-[#6B7280] mt-2">
+                        <p className="text-sm text-gray-600 mt-2">
                           Nenhum destinatário adicionado
                         </p>
                       ) : (
@@ -545,14 +545,14 @@ export function ReportBuilder() {
                           {schedule.recipients.map((email) => (
                             <div
                               key={email}
-                              className="flex items-center justify-between p-2 bg-[#F9FAFB] rounded"
+                              className="flex items-center justify-between p-2 bg-gray-100 rounded"
                             >
                               <span className="text-sm">{email}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeRecipient(email)}
-                                className="text-[#DC2626] hover:text-[#DC2626]"
+                                className="text-error hover:text-error"
                               >
                                 <X size={14} />
                               </Button>
@@ -569,7 +569,7 @@ export function ReportBuilder() {
           </Tabs>
 
           {/* Actions */}
-          <div className="border-t border-[#E5E7EB] p-6 flex items-center justify-between">
+          <div className="border-t border-gray-300 p-6 flex items-center justify-between">
             <Button
               variant="outline"
               onClick={() => navigate("/app/reports")}
@@ -580,7 +580,7 @@ export function ReportBuilder() {
             </Button>
             <Button
               onClick={handleSave}
-              className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+              className="bg-primary hover:bg-primary-dark gap-2"
               disabled={!report.name.trim()}
             >
               <Save size={16} />

@@ -4,6 +4,7 @@ import { interactionService } from '../services/interactionService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { InteractionType, InteractionDirection } from '@prisma/client';
 
 const router = Router();
 
@@ -12,8 +13,8 @@ router.use(tenantScope);
 
 const createInteractionSchema = z.object({
   leadId: z.string().uuid().optional(),
-  type: z.enum(['email', 'whatsapp', 'call', 'meeting', 'note']),
-  direction: z.enum(['inbound', 'outbound']),
+  type: z.nativeEnum(InteractionType),
+  direction: z.nativeEnum(InteractionDirection),
   subject: z.string().optional(),
   content: z.string().min(1),
   metadata: z.any().optional(),

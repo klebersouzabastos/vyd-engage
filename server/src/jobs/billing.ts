@@ -61,7 +61,7 @@ export const billingWorker = new Worker(
       }
 
       // Calculate amount based on plan and billing cycle
-      const amount = subscription.billingCycle === 'yearly'
+      const amount = subscription.billingCycle === 'YEARLY'
         ? subscription.plan.yearlyPrice
         : subscription.plan.monthlyPrice;
 
@@ -90,7 +90,7 @@ export const billingWorker = new Worker(
           planId: subscription.planId,
           planType: planType,
           amount,
-          method: 'credit_card', // Default method
+          method: 'CREDIT_CARD', // Default method
           billingCycle: subscription.billingCycle,
         }
       );

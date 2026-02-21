@@ -50,8 +50,8 @@ export function PaymentMethodSelector({
             className={cn(
               "p-4 rounded-lg border-2 transition-all text-left",
               isSelected
-                ? "border-[#2563EB] bg-[#2563EB]/5"
-                : "border-[#E5E7EB] bg-white hover:border-[#2563EB]/50",
+                ? "border-primary bg-primary/5"
+                : "border-gray-300 bg-white hover:border-primary/50",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -59,22 +59,22 @@ export function PaymentMethodSelector({
               <div
                 className={cn(
                   "p-2 rounded-lg",
-                  isSelected ? "bg-[#2563EB]" : "bg-[#F3F4F6]"
+                  isSelected ? "bg-primary" : "bg-gray-200"
                 )}
               >
                 <Icon
                   size={20}
-                  className={isSelected ? "text-white" : "text-[#6B7280]"}
+                  className={isSelected ? "text-white" : "text-gray-600"}
                 />
               </div>
               <div className="flex-1">
-                <h4 className="font-medium text-[#1F2937] mb-1">
+                <h4 className="font-medium text-gray-900 mb-1">
                   {method.label}
                 </h4>
-                <p className="text-xs text-[#6B7280]">{method.description}</p>
+                <p className="text-xs text-gray-600">{method.description}</p>
               </div>
               {isSelected && (
-                <div className="w-5 h-5 rounded-full bg-[#2563EB] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-white"></div>
                 </div>
               )}

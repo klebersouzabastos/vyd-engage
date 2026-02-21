@@ -52,7 +52,7 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs">
           <span className={cn('font-medium', colors.text)}>{strength.label}</span>
-          <span className="text-[#6B7280]">{strength.percentage}%</span>
+          <span className="text-gray-600">{strength.percentage}%</span>
         </div>
         <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
           <div

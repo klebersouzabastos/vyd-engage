@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 import { PlanType, Plan, PlanLimits, PlanUsage, PaymentHistory, Subscription } from "../types/plan";
 
 interface PlanContextType {
@@ -367,19 +367,19 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   };
 
   // Obter informações de um plano específico
-  const getPlan = (planType: PlanType): Plan => {
+  const getPlan = useCallback((planType: PlanType): Plan => {
     return AVAILABLE_PLANS.find(p => p.id === planType) || AVAILABLE_PLANS[1];
-  };
+  }, []);
 
   // Verificar se pode fazer upgrade
-  const canUpgrade = (): boolean => {
+  const canUpgrade = useCallback((): boolean => {
     return currentPlan !== "enterprise";
-  };
+  }, [currentPlan]);
 
   // Verificar se pode fazer downgrade
-  const canDowngrade = (): boolean => {
+  const canDowngrade = useCallback((): boolean => {
     return currentPlan !== "starter";
-  };
+  }, [currentPlan]);
 
   // Atualizar assinatura quando o plano muda
   useEffect(() => {
@@ -393,7 +393,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
   }, [currentPlan]);
 
-  const value: PlanContextType = {
+  const value = useMemo(() => ({
     currentPlan,
     plans: AVAILABLE_PLANS,
     planLimits,
@@ -405,7 +405,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     getPlan,
     canUpgrade,
     canDowngrade,
-  };
+  }), [currentPlan, planLimits, planUsage, subscription, paymentHistory, changePlan, changePlanWithPayment, getPlan, canUpgrade, canDowngrade]);
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;
 }

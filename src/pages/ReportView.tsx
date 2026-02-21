@@ -79,7 +79,7 @@ export function ReportView() {
           
           <div className="flex items-center gap-2">
             {report.schedule && (
-              <div className="flex items-center gap-2 text-sm text-[#6B7280] mr-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600 mr-4">
                 <Calendar size={16} />
                 <span>
                   {report.schedule.enabled
@@ -116,19 +116,19 @@ export function ReportView() {
         </div>
 
         {/* Report Info */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] mb-6">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-[#6B7280]">Tipo</p>
-              <p className="text-[#1F2937] font-medium capitalize">{report.type}</p>
+              <p className="text-gray-600">Tipo</p>
+              <p className="text-gray-900 font-medium capitalize">{report.type}</p>
             </div>
             <div>
-              <p className="text-[#6B7280]">Widgets</p>
-              <p className="text-[#1F2937] font-medium">{report.widgets.length}</p>
+              <p className="text-gray-600">Widgets</p>
+              <p className="text-gray-900 font-medium">{report.widgets.length}</p>
             </div>
             <div>
-              <p className="text-[#6B7280]">Criado em</p>
-              <p className="text-[#1F2937] font-medium">
+              <p className="text-gray-600">Criado em</p>
+              <p className="text-gray-900 font-medium">
                 {new Date(report.createdAt).toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -137,8 +137,8 @@ export function ReportView() {
 
         {/* Filtros */}
         {showFilters && report.filters && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] mb-6">
-            <h3 className="text-[#1F2937] font-medium mb-4">Filtros Aplicados</h3>
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
+            <h3 className="text-gray-900 font-medium mb-4">Filtros Aplicados</h3>
             <ReportFilters
               filters={report.filters}
               onChange={(filters) => {
@@ -153,8 +153,8 @@ export function ReportView() {
         {/* Widgets */}
         <div className="space-y-6">
           {report.widgets.length === 0 ? (
-            <div className="bg-white rounded-lg p-12 text-center border border-[#E5E7EB]">
-              <p className="text-[#6B7280]">Este relatório não possui widgets configurados.</p>
+            <div className="bg-white rounded-lg p-12 text-center border border-gray-300">
+              <p className="text-gray-600">Este relatório não possui widgets configurados.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

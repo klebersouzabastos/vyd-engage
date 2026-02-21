@@ -4,6 +4,7 @@ import { customFieldService } from '../services/customFieldService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { CustomFieldType } from '@prisma/client';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.use(tenantScope);
 
 const createCustomFieldSchema = z.object({
   name: z.string().min(1),
-  type: z.enum(['text', 'number', 'date', 'select', 'boolean']),
+  type: z.nativeEnum(CustomFieldType),
   options: z.array(z.string()).optional(),
   required: z.boolean().optional(),
   order: z.number().int().optional(),

@@ -105,7 +105,7 @@ export function TestMessageModal({ connection, onTest }: TestMessageModalProps) 
             className="mt-1.5"
             disabled={isSending}
           />
-          <p className="text-xs text-[#6B7280] mt-1">
+          <p className="text-xs text-gray-600 mt-1">
             Digite o número com DDD (ex: 11999999999) ou formato internacional
           </p>
         </div>
@@ -134,11 +134,11 @@ export function TestMessageModal({ connection, onTest }: TestMessageModalProps) 
           </Alert>
         )}
 
-        <div className="flex items-center gap-2 pt-4 border-t border-[#E5E7EB]">
+        <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
           <Button
             onClick={handleSend}
             disabled={isSending || connection.status.status === "disconnected"}
-            className="flex-1 bg-[#2563EB] hover:bg-[#1E40AF]"
+            className="flex-1 bg-primary hover:bg-primary-dark"
           >
             {isSending ? (
               <>

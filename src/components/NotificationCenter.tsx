@@ -63,9 +63,9 @@ export function NotificationCenter() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative p-2 hover:bg-[#F9FAFB] rounded-lg transition-colors"
+          className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <Bell size={20} className="text-[#6B7280]" />
+          <Bell size={20} className="text-gray-600" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full min-w-[18px] text-center">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -74,8 +74,8 @@ export function NotificationCenter() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b border-[#E5E7EB]">
-          <h3 className="font-semibold text-[#1F2937]">Notificações</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-300">
+          <h3 className="font-semibold text-gray-900">Notificações</h3>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <Button
@@ -93,17 +93,17 @@ export function NotificationCenter() {
         <div className="max-h-[500px] overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="p-8 text-center">
-              <Bell size={48} className="mx-auto text-[#9CA3AF] mb-4" />
-              <p className="text-[#6B7280]">Nenhuma notificação</p>
+              <Bell size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600">Nenhuma notificação</p>
             </div>
           ) : (
-            <div className="divide-y divide-[#E5E7EB]">
+            <div className="divide-y divide-gray-300">
               {Object.entries(groupedNotifications).map(([groupKey, groupNotifications]) => (
                 <div key={groupKey}>
-                  <div className="px-4 py-2 bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                    <p className="text-xs font-medium text-[#6B7280]">{groupKey}</p>
+                  <div className="px-4 py-2 bg-gray-100 border-b border-gray-300">
+                    <p className="text-xs font-medium text-gray-600">{groupKey}</p>
                   </div>
-                  <div className="divide-y divide-[#E5E7EB]">
+                  <div className="divide-y divide-gray-300">
                     {groupNotifications.map((notification) => (
                       <NotificationItem key={notification.id} notification={notification} />
                     ))}
@@ -115,7 +115,7 @@ export function NotificationCenter() {
         </div>
 
         {notifications.length > 0 && (
-          <div className="p-3 border-t border-[#E5E7EB]">
+          <div className="p-3 border-t border-gray-300">
             <Link to="/app/tasks">
               <Button variant="outline" className="w-full" onClick={() => setIsOpen(false)}>
                 Ver todas as tarefas

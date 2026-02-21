@@ -176,11 +176,11 @@ export function TaskModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 border-t border-[#E5E7EB] pt-4 mt-4">
+        <DialogFooter className="flex-shrink-0 border-t border-gray-300 pt-4 mt-4">
           <Button variant="outline" onClick={handleClose}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} className="bg-[#2563EB] hover:bg-[#1E40AF]">
+          <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark">
             {task ? "Salvar" : "Criar"}
           </Button>
         </DialogFooter>

@@ -15,7 +15,7 @@ export function VYDEcosystemBanner() {
   if (isPublicRoute) {
     return (
       <div 
-        className="fixed top-0 left-0 right-0 bg-[#F9FAFB] border-b border-[#E5E7EB] shadow-sm"
+        className="fixed top-0 left-0 right-0 bg-gray-100 border-b border-gray-300 shadow-sm"
         style={{ 
           position: 'fixed', 
           top: 0, 
@@ -35,12 +35,12 @@ export function VYDEcosystemBanner() {
           <a
             href="https://www.vydhub.com"
             target="_self"
-            className="inline-flex items-center gap-1.5 text-[#6B7280] hover:text-[#1F2937] transition-colors flex-shrink-0"
+            className="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
           >
             <ArrowLeft size={14} />
             <span>Back to VYD Hub</span>
           </a>
-          <span className="text-[#6B7280] flex-shrink-0 ml-auto">
+          <span className="text-gray-600 flex-shrink-0 ml-auto">
             A VYD ecosystem solution
           </span>
         </div>
@@ -62,7 +62,7 @@ export function VYDEcosystemBanner() {
   // Show banner by default (for unauthenticated users on /app routes, etc.)
   return (
     <div 
-      className="fixed top-0 left-0 right-0 bg-[#F9FAFB] border-b border-[#E5E7EB] shadow-sm"
+      className="fixed top-0 left-0 right-0 bg-gray-100 border-b border-gray-300 shadow-sm"
       style={{ 
         position: 'fixed', 
         top: 0, 
@@ -82,12 +82,12 @@ export function VYDEcosystemBanner() {
         <a
           href="https://www.vydhub.com"
           target="_self"
-          className="inline-flex items-center gap-1.5 text-[#6B7280] hover:text-[#1F2937] transition-colors flex-shrink-0"
+          className="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
         >
           <ArrowLeft size={14} />
           <span>Back to VYD Hub</span>
         </a>
-        <span className="text-[#6B7280] flex-shrink-0 ml-auto">
+        <span className="text-gray-600 flex-shrink-0 ml-auto">
           A VYD ecosystem solution
         </span>
       </div>

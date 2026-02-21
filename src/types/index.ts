@@ -19,7 +19,7 @@ export interface Lead {
   notes?: string;
   assignedTo?: string;
   tags: string[];
-  customFields: Record<string, any>;
+  customFields: Record<string, string | number | boolean | null>;
   interactions?: Interaction[];
   tasks?: Task[];
   createdAt?: string;
@@ -35,7 +35,7 @@ export interface Interaction {
   content: string;
   userId?: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export interface Task {
@@ -59,7 +59,7 @@ export interface CustomField {
   type: "text" | "number" | "date" | "select" | "textarea" | "checkbox";
   options?: string[];
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean;
 }
 
 export interface Tag {
@@ -77,7 +77,7 @@ export interface Notification {
   read: boolean;
   link?: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export interface Report {
@@ -99,7 +99,7 @@ export interface ReportWidget {
   id: string;
   type: "chart" | "table" | "metric" | "funnel" | "heatmap" | "line" | "comparison" | "topn";
   title: string;
-  config: Record<string, any>;
+  config: Record<string, string | number | boolean | null>;
   position: { x: number; y: number; w: number; h: number };
   dataSource?: "leads" | "pipeline" | "automations" | "tasks" | "interactions";
   filters?: ReportFilter;
@@ -112,7 +112,7 @@ export interface ReportWidget {
   metric?: string;
   chartType?: "bar" | "line" | "pie" | "area";
   colors?: string[];
-  styles?: Record<string, any>;
+  styles?: Record<string, string | number>;
 }
 
 export interface ReportFilter {

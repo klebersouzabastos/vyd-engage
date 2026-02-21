@@ -349,7 +349,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           maxHeight: '90vh'
         }}
       >
-        <DialogHeader className="flex-shrink-0 pb-4 border-b border-[#E5E7EB] px-6 pt-6">
+        <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-300 px-6 pt-6">
           <div className="flex items-center justify-between">
             <DialogTitle>{lead ? "Editar Lead" : "Novo Lead"}</DialogTitle>
             {leadScore && (
@@ -413,7 +413,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                       id="source"
                       value={formData.source}
                       onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                      className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                     >
                       <option value="meta">Meta Ads</option>
                       <option value="google">Google Ads</option>
@@ -428,7 +428,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                       id="status"
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                     >
                       {pipelineColumns.map((column) => (
                         <option key={column.id} value={column.id}>
@@ -441,7 +441,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
 
                 <div className="mt-4">
                   <Label>Automações</Label>
-                  <div className="mt-1.5 space-y-2 max-h-48 overflow-y-auto border border-[#E5E7EB] rounded-md p-3 bg-[#F9FAFB]">
+                  <div className="mt-1.5 space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-100">
                     {availableAutomations.length > 0 ? (
                       availableAutomations.map((automation) => (
                         <div
@@ -473,7 +473,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                               )}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-[#1F2937]">
+                              <p className="text-sm font-medium text-gray-900">
                                 {automation.name}
                               </p>
                               <div className="flex items-center gap-2 mt-0.5">
@@ -488,7 +488,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                                 >
                                   {automation.status === "active" ? "Ativa" : "Pausada"}
                                 </span>
-                                <span className="text-xs text-[#6B7280]">
+                                <span className="text-xs text-gray-600">
                                   {automation.type === "whatsapp" ? "WhatsApp" : "E-mail"}
                                 </span>
                               </div>
@@ -497,13 +497,13 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-[#6B7280] text-center py-4">
+                      <p className="text-sm text-gray-600 text-center py-4">
                         Nenhuma automação disponível
                       </p>
                     )}
                   </div>
                   {formData.automations && formData.automations.length > 0 && (
-                    <p className="text-xs text-[#6B7280] mt-1.5">
+                    <p className="text-xs text-gray-600 mt-1.5">
                       {formData.automations.length} automação(ões) selecionada(s)
                     </p>
                   )}
@@ -521,7 +521,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                 {fields.length > 0 && (
                   <div className="mt-4">
                     <Label className="mb-2 block">Campos Customizados</Label>
-                    <div className="space-y-4 p-4 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
+                    <div className="space-y-4 p-4 border border-gray-300 rounded-lg bg-gray-100">
                       {fields.map((field) => (
                         <CustomFieldInput
                           key={field.id}
@@ -556,7 +556,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                   onAdd={handleAddInteraction}
                 />
               ) : (
-                <div className="text-center py-12 text-[#6B7280]">
+                <div className="text-center py-12 text-gray-600">
                   <p>Salve o lead para ver o histórico de interações</p>
                 </div>
               )}
@@ -566,7 +566,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
               {lead?.id ? (
                 <TasksList leadId={lead.id} />
               ) : (
-                <div className="text-center py-12 text-[#6B7280]">
+                <div className="text-center py-12 text-gray-600">
                   <p>Salve o lead para gerenciar tarefas</p>
                 </div>
               )}
@@ -576,7 +576,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
               {lead?.id ? (
                 <CommentsSection leadId={lead.id} />
               ) : (
-                <div className="text-center py-12 text-[#6B7280]">
+                <div className="text-center py-12 text-gray-600">
                   <p>Salve o lead para adicionar comentários</p>
                 </div>
               )}
@@ -584,11 +584,11 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           </Tabs>
         </div>
 
-        <DialogFooter className="flex-shrink-0 pt-4 border-t border-[#E5E7EB] mt-0 px-6 pb-6">
+        <DialogFooter className="flex-shrink-0 pt-4 border-t border-gray-300 mt-0 px-6 pb-6">
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} className="bg-[#2563EB] hover:bg-[#1E40AF]">
+          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary-dark">
             Salvar Lead
           </Button>
         </DialogFooter>

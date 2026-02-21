@@ -7,25 +7,25 @@ export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB]">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Skip to main content — a11y */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-[#2563EB] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm"
       >
         Pular para o conteúdo principal
       </a>
 
       {/* Mobile hamburger header */}
-      <div className="fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 bg-white border-b border-[#E5E7EB] md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 bg-white border-b border-gray-300 md:hidden">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-lg text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#1F2937] transition-colors"
+          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
           aria-label="Abrir menu"
         >
           <Menu size={24} />
         </button>
-        <span className="ml-3 font-semibold text-[#1F2937] text-sm">VYD Engage</span>
+        <span className="ml-3 font-semibold text-gray-900 text-sm">VYD Engage</span>
       </div>
 
       {/* Backdrop overlay for mobile */}

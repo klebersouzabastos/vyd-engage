@@ -111,7 +111,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
           className="mt-1.5"
           type="password"
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Token de acesso da API do WhatsApp Business
         </p>
       </div>
@@ -299,7 +299,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
           className="mt-1.5"
           required
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Um nome descritivo para identificar esta conexão
         </p>
       </div>
@@ -357,18 +357,18 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
           id="isDefault"
           checked={isDefault}
           onChange={(e) => setIsDefault(e.target.checked)}
-          className="rounded border-[#E5E7EB]"
+          className="rounded border-gray-300"
         />
         <Label htmlFor="isDefault" className="cursor-pointer">
           Definir como conexão padrão
         </Label>
       </div>
 
-      <div className="flex items-center gap-2 pt-4 border-t border-[#E5E7EB]">
+      <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
         <Button
           type="submit"
           disabled={!validation?.isValid || isSubmitting}
-          className="bg-[#2563EB] hover:bg-[#1E40AF]"
+          className="bg-primary hover:bg-primary-dark"
         >
           {isSubmitting ? "Salvando..." : connection ? "Atualizar" : "Criar Conexão"}
         </Button>

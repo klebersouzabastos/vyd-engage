@@ -230,7 +230,7 @@ export function Reports() {
           </div>
 
           <Button 
-            className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+            className="bg-primary hover:bg-primary-dark gap-2"
             onClick={() => setShowWizard(true)}
           >
             <Plus size={16} />
@@ -252,11 +252,11 @@ export function Reports() {
 
         {/* Search and Filters */}
         {reports.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] p-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               {/* Search */}
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280]" size={16} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" size={16} />
                 <Input
                   placeholder="Buscar relatórios..."
                   value={searchQuery}
@@ -294,7 +294,7 @@ export function Reports() {
               </Select>
 
               {/* View Mode */}
-              <div className="flex items-center gap-2 border border-[#E5E7EB] rounded-md p-1">
+              <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
@@ -334,7 +334,7 @@ export function Reports() {
             {filteredAndSortedReports.map((report) => (
               <div
                 key={report.id}
-                className={`bg-white rounded-lg shadow-sm border border-[#E5E7EB] overflow-hidden hover:shadow-md transition-shadow ${
+                className={`bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow ${
                   viewMode === "list" ? "flex items-center p-4" : ""
                 }`}
               >
@@ -342,11 +342,11 @@ export function Reports() {
                   {viewMode === "list" ? (
                     <>
                       <div className="flex-1">
-                        <h3 className="text-[#1F2937] font-medium mb-1">{report.name}</h3>
+                        <h3 className="text-gray-900 font-medium mb-1">{report.name}</h3>
                         {report.description && (
-                          <p className="text-sm text-[#6B7280]">{report.description}</p>
+                          <p className="text-sm text-gray-600">{report.description}</p>
                         )}
-                        <div className="flex items-center gap-4 mt-2 text-sm text-[#6B7280]">
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                           <span className="capitalize">{report.type}</span>
                           <span>•</span>
                           <span>{report.widgets.length} widgets</span>
@@ -373,7 +373,7 @@ export function Reports() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-[#DC2626] hover:text-[#DC2626] hover:bg-red-50"
+                          className="text-error hover:text-error hover:bg-red-50"
                           onClick={() => handleDelete(report.id)}
                         >
                           <Trash2 size={14} />
@@ -384,31 +384,31 @@ export function Reports() {
                     <>
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <h3 className="text-[#1F2937] font-medium mb-1">{report.name}</h3>
+                          <h3 className="text-gray-900 font-medium mb-1">{report.name}</h3>
                           {report.description && (
-                            <p className="text-sm text-[#6B7280] line-clamp-2">{report.description}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">{report.description}</p>
                           )}
                         </div>
                       </div>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <FileText size={14} />
                       <span>{report.widgets.length} widget{report.widgets.length !== 1 ? 's' : ''}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar size={14} />
                       <span>{getScheduleLabel(report.schedule)}</span>
                     </div>
                     {report.schedule?.enabled && report.schedule.recipients.length > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Mail size={14} />
                         <span>{report.schedule.recipients.length} destinatário{report.schedule.recipients.length !== 1 ? 's' : ''}</span>
                       </div>
                     )}
                   </div>
 
-                      <div className="flex items-center gap-2 pt-4 border-t border-[#E5E7EB]">
+                      <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
                         <Button
                           variant="outline"
                           size="sm"
@@ -428,7 +428,7 @@ export function Reports() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-[#DC2626] hover:text-[#DC2626] hover:bg-red-50"
+                          className="text-error hover:text-error hover:bg-red-50"
                           onClick={() => handleDelete(report.id)}
                           title="Excluir"
                         >
@@ -462,16 +462,16 @@ export function Reports() {
             ))}
           </div>
         ) : reports.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] p-12 text-center">
-            <FileText size={48} className="mx-auto mb-4 text-[#9CA3AF]" />
-            <h3 className="text-lg font-medium text-[#1F2937] mb-2">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-12 text-center">
+            <FileText size={48} className="mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nenhum relatório criado
             </h3>
-            <p className="text-[#6B7280] mb-6">
+            <p className="text-gray-600 mb-6">
               Comece criando seu primeiro relatório personalizado
             </p>
             <Button 
-              className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+              className="bg-primary hover:bg-primary-dark gap-2"
               onClick={() => navigate("/app/reports/new")}
             >
               <Plus size={16} />
@@ -479,12 +479,12 @@ export function Reports() {
             </Button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] p-12 text-center">
-            <Search size={48} className="mx-auto mb-4 text-[#9CA3AF]" />
-            <h3 className="text-lg font-medium text-[#1F2937] mb-2">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-12 text-center">
+            <Search size={48} className="mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nenhum relatório encontrado
             </h3>
-            <p className="text-[#6B7280] mb-6">
+            <p className="text-gray-600 mb-6">
               Tente ajustar seus filtros de busca
             </p>
             <Button 

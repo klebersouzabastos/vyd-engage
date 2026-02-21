@@ -87,7 +87,7 @@ export function Automations() {
           </div>
 
           <Button 
-            className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+            className="bg-primary hover:bg-primary-dark gap-2"
             onClick={() => navigate("/app/automations/new")}
           >
             <Plus size={16} />
@@ -100,10 +100,10 @@ export function Automations() {
           {automationsList.map((automation) => (
             <div
               key={automation.id}
-              className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow"
             >
               {/* Header */}
-              <div className="p-6 border-b border-[#E5E7EB]">
+              <div className="p-6 border-b border-gray-300">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className={`
@@ -120,8 +120,8 @@ export function Automations() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-[#1F2937] font-medium">{automation.name}</h3>
-                      <p className="text-sm text-[#6B7280]">
+                      <h3 className="text-gray-900 font-medium">{automation.name}</h3>
+                      <p className="text-sm text-gray-600">
                         {automation.steps} etapas
                       </p>
                     </div>
@@ -157,21 +157,21 @@ export function Automations() {
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <p className="text-sm text-[#6B7280] mb-1">Leads Inscritos</p>
-                    <p className="text-xl font-semibold text-[#1F2937]">
+                    <p className="text-sm text-gray-600 mb-1">Leads Inscritos</p>
+                    <p className="text-xl font-semibold text-gray-900">
                       {automation.leadsEnrolled}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#6B7280] mb-1">Mensagens Enviadas</p>
-                    <p className="text-xl font-semibold text-[#1F2937]">
+                    <p className="text-sm text-gray-600 mb-1">Mensagens Enviadas</p>
+                    <p className="text-xl font-semibold text-gray-900">
                       {automation.sentMessages}
                     </p>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 pt-4 border-t border-[#E5E7EB]">
+                <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
                   <Button
                     variant="outline"
                     size="sm"
@@ -183,7 +183,7 @@ export function Automations() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-[#DC2626] hover:text-[#DC2626] hover:bg-red-50"
+                    className="text-error hover:text-error hover:bg-red-50"
                     onClick={() => handleDelete(automation.id)}
                   >
                     <Trash2 size={16} />
@@ -195,28 +195,28 @@ export function Automations() {
         </div>
 
         {/* Summary Stats */}
-        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-          <h3 className="text-[#1F2937] mb-4">Visão Geral</h3>
+        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+          <h3 className="text-gray-900 mb-4">Visão Geral</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Total de Automações</p>
-              <p className="text-2xl font-semibold text-[#1F2937]">{overallStats.totalAutomations}</p>
+              <p className="text-sm text-gray-600 mb-1">Total de Automações</p>
+              <p className="text-2xl font-semibold text-gray-900">{overallStats.totalAutomations}</p>
             </div>
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Automações Ativas</p>
-              <p className="text-2xl font-semibold text-[#16A34A]">
+              <p className="text-sm text-gray-600 mb-1">Automações Ativas</p>
+              <p className="text-2xl font-semibold text-success">
                 {overallStats.activeAutomations}
               </p>
             </div>
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Leads Inscritos</p>
-              <p className="text-2xl font-semibold text-[#1F2937]">
+              <p className="text-sm text-gray-600 mb-1">Leads Inscritos</p>
+              <p className="text-2xl font-semibold text-gray-900">
                 {overallStats.totalLeadsEnrolled}
               </p>
             </div>
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Mensagens Enviadas</p>
-              <p className="text-2xl font-semibold text-[#2563EB]">
+              <p className="text-sm text-gray-600 mb-1">Mensagens Enviadas</p>
+              <p className="text-2xl font-semibold text-primary">
                 {overallStats.totalSentMessages}
               </p>
             </div>

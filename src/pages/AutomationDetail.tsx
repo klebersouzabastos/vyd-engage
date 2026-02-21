@@ -159,7 +159,7 @@ export function AutomationDetail() {
               id="status"
               value={triggerConfig.status || ""}
               onChange={(e) => updateConfig("status", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione um status</option>
               <option value="novo">Novo</option>
@@ -179,7 +179,7 @@ export function AutomationDetail() {
               id="funnel"
               value={triggerConfig.funnel || ""}
               onChange={(e) => updateConfig("funnel", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione um funil</option>
               <option value="vendas">Funil de Vendas</option>
@@ -215,7 +215,7 @@ export function AutomationDetail() {
               id="interactionType"
               value={triggerConfig.interactionType || ""}
               onChange={(e) => updateConfig("interactionType", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione o tipo</option>
               <option value="note">Nota</option>
@@ -235,7 +235,7 @@ export function AutomationDetail() {
               id="taskType"
               value={triggerConfig.taskType || ""}
               onChange={(e) => updateConfig("taskType", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione o tipo</option>
               <option value="any">Qualquer tarefa</option>
@@ -291,7 +291,7 @@ export function AutomationDetail() {
               id="formId"
               value={triggerConfig.formId || ""}
               onChange={(e) => updateConfig("formId", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione um formulário</option>
               <option value="form1">Formulário de Contato</option>
@@ -310,7 +310,7 @@ export function AutomationDetail() {
               id="emailCampaign"
               value={triggerConfig.emailCampaign || ""}
               onChange={(e) => updateConfig("emailCampaign", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione uma campanha</option>
               <option value="campaign1">Boas-vindas</option>
@@ -329,7 +329,7 @@ export function AutomationDetail() {
               id="tag"
               value={triggerConfig.tag || ""}
               onChange={(e) => updateConfig("tag", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Selecione uma tag</option>
               <option value="tag1">Cliente VIP</option>
@@ -349,7 +349,7 @@ export function AutomationDetail() {
                 id="scoreOperator"
                 value={triggerConfig.scoreOperator || ">="}
                 onChange={(e) => updateConfig("scoreOperator", e.target.value)}
-                className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
               >
                 <option value=">=">Maior ou igual a</option>
                 <option value="<=">Menor ou igual a</option>
@@ -460,13 +460,13 @@ export function AutomationDetail() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[#6B7280]">Status:</span>
+              <span className="text-sm text-gray-600">Status:</span>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <span className="text-sm font-medium text-[#1F2937]">
+              <span className="text-sm font-medium text-gray-900">
                 {isActive ? "Ativo" : "Pausado"}
               </span>
             </div>
-            <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+            <Button className="bg-primary hover:bg-primary-dark">
               Salvar Alterações
             </Button>
           </div>
@@ -476,8 +476,8 @@ export function AutomationDetail() {
           {/* Left Column - Step Editor + Recent Activities */}
           <div className="lg:col-span-2 space-y-6">
             {/* Automation Info */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-              <h3 className="text-[#1F2937] mb-4">Informações</h3>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+              <h3 className="text-gray-900 mb-4">Informações</h3>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nome da Automação</Label>
@@ -496,7 +496,7 @@ export function AutomationDetail() {
                       setTrigger(e.target.value);
                       setTriggerConfig({}); // Limpa a configuração ao mudar o gatilho
                     }}
-                    className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                    className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                   >
                     <optgroup label="Criação e Status">
                       <option>Quando lead é criado</option>
@@ -540,7 +540,7 @@ export function AutomationDetail() {
                 {(() => {
                   const fields = renderTriggerFields();
                   return fields && (
-                    <div className="pt-4 border-t border-[#E5E7EB]">
+                    <div className="pt-4 border-t border-gray-300">
                       {fields}
                     </div>
                   );
@@ -550,10 +550,10 @@ export function AutomationDetail() {
 
             {/* Step Editor */}
             {currentStep ? (
-              <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB]">
-                <div className="px-6 pt-6 pb-4 border-b border-[#E5E7EB]">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+                <div className="px-6 pt-6 pb-4 border-b border-gray-300">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-[#1F2937]">
+                    <h3 className="text-gray-900">
                       Editar Step {steps.findIndex(s => s.id === selectedStep) + 1}
                     </h3>
                     <Button
@@ -585,7 +585,7 @@ export function AutomationDetail() {
                                   s.id === selectedStep ? { ...s, delay: newDelay } : s
                                 ));
                               }}
-                              className="w-4 h-4 text-[#2563EB] border-[#E5E7EB] rounded focus:ring-[#2563EB]"
+                              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                             />
                             <Label htmlFor="immediate" className="text-sm font-normal cursor-pointer">
                               Enviar imediatamente
@@ -621,7 +621,7 @@ export function AutomationDetail() {
                                       s.id === selectedStep ? { ...s, delay: newDelay } : s
                                     ));
                                   }}
-                                  className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                                 >
                                   <option value="n">Minutos</option>
                                   <option value="h">Horas</option>
@@ -647,7 +647,7 @@ export function AutomationDetail() {
                           s.id === selectedStep ? { ...s, channel: e.target.value as "whatsapp" | "email" } : s
                         ));
                       }}
-                      className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                     >
                       <option value="whatsapp">WhatsApp</option>
                       <option value="email">E-mail</option>
@@ -662,7 +662,7 @@ export function AutomationDetail() {
                           <AlertCircle className="h-4 w-4" />
                           <AlertDescription>
                             Nenhuma conexão WhatsApp configurada.{" "}
-                            <a href="/app/settings?tab=integrations" className="text-[#2563EB] underline">
+                            <a href="/app/settings?tab=integrations" className="text-primary underline">
                               Configure uma conexão
                             </a>
                           </AlertDescription>
@@ -677,7 +677,7 @@ export function AutomationDetail() {
                                 s.id === selectedStep ? { ...s, whatsappConnectionId: e.target.value } : s
                               ));
                             }}
-                            className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                            className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                           >
                             {connections.map((conn) => (
                               <option key={conn.id} value={conn.id}>
@@ -732,7 +732,7 @@ export function AutomationDetail() {
                       className="mt-1.5"
                       rows={6}
                     />
-                    <p className="text-xs text-[#6B7280] mt-2">
+                    <p className="text-xs text-gray-600 mt-2">
                       Use {`{{nome}}`} para personalizar com o nome do lead
                     </p>
                   </div>
@@ -741,12 +741,12 @@ export function AutomationDetail() {
                     Testar Mensagem
                   </Button>
 
-                  <div className="flex gap-2 pt-2 border-t border-[#E5E7EB]">
+                  <div className="flex gap-2 pt-2 border-t border-gray-300">
                     <Button variant="outline" className="flex-1" onClick={closeStepEditor}>
                       Cancelar
                     </Button>
                     <Button 
-                      className="flex-1 bg-[#2563EB] hover:bg-[#1E40AF]"
+                      className="flex-1 bg-primary hover:bg-primary-dark"
                       onClick={closeStepEditor}
                     >
                       Salvar
@@ -757,18 +757,18 @@ export function AutomationDetail() {
             ) : null}
 
             {/* Recent Activities */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-              <h3 className="text-[#1F2937] mb-4">Atividades Recentes</h3>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+              <h3 className="text-gray-900 mb-4">Atividades Recentes</h3>
               
               <div className="space-y-3">
                 {recentActivities.map((activity) => (
-                  <div key={activity.id} className="pb-3 border-b border-[#E5E7EB] last:border-0">
-                    <p className="font-medium text-sm text-[#1F2937] mb-1">
+                  <div key={activity.id} className="pb-3 border-b border-gray-300 last:border-0">
+                    <p className="font-medium text-sm text-gray-900 mb-1">
                       {activity.lead}
                     </p>
-                    <p className="text-sm text-[#6B7280] mb-1">{activity.action}</p>
+                    <p className="text-sm text-gray-600 mb-1">{activity.action}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#6B7280]">{activity.time}</span>
+                      <span className="text-xs text-gray-600">{activity.time}</span>
                       <span className={`
                         text-xs px-2 py-0.5 rounded-full
                         ${activity.status === "success" 
@@ -787,9 +787,9 @@ export function AutomationDetail() {
 
           {/* Right Column - Steps Flow */}
           <div className="space-y-6">
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] sticky top-6">
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 sticky top-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-[#1F2937]">Fluxo de Mensagens</h3>
+                <h3 className="text-gray-900">Fluxo de Mensagens</h3>
                 <Button
                   variant="outline"
                   size="sm"
@@ -808,8 +808,8 @@ export function AutomationDetail() {
                       className={`
                         p-4 rounded-lg border-2 cursor-pointer transition-all
                         ${selectedStep === step.id 
-                          ? 'border-[#2563EB] bg-[#2563EB]/5' 
-                          : 'border-[#E5E7EB] hover:border-[#2563EB]/50'
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-gray-300 hover:border-primary/50'
                         }
                       `}
                       onClick={() => setSelectedStep(step.id)}
@@ -831,15 +831,15 @@ export function AutomationDetail() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-[#1F2937]">
+                              <span className="font-medium text-gray-900">
                                 Step {index + 1}
                               </span>
-                              <span className="text-sm text-[#6B7280]">•</span>
-                              <span className="text-sm text-[#6B7280]">
+                              <span className="text-sm text-gray-600">•</span>
+                              <span className="text-sm text-gray-600">
                                 {step.channel === "whatsapp" ? "WhatsApp" : "E-mail"}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
                               <Clock size={14} />
                               <span>
                                 {formatDelay(step.delay)}
@@ -855,7 +855,7 @@ export function AutomationDetail() {
                               e.stopPropagation();
                               deleteStep(step.id);
                             }}
-                            className="text-[#DC2626] hover:text-[#DC2626] hover:bg-red-50"
+                            className="text-error hover:text-error hover:bg-red-50"
                           >
                             <Trash2 size={16} />
                           </Button>
@@ -865,9 +865,9 @@ export function AutomationDetail() {
 
                     {index < steps.length - 1 && (
                       <div className="flex flex-col items-center py-3">
-                        <div className="w-0.5 h-4 bg-[#2563EB]"></div>
-                        <ArrowDown size={20} className="text-[#2563EB] my-1" />
-                        <div className="w-0.5 h-4 bg-[#2563EB]"></div>
+                        <div className="w-0.5 h-4 bg-primary"></div>
+                        <ArrowDown size={20} className="text-primary my-1" />
+                        <div className="w-0.5 h-4 bg-primary"></div>
                       </div>
                     )}
                   </div>

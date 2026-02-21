@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import {
   PaymentIntent,
   PaymentMethod,
@@ -186,7 +186,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [paymentIntents, checkPayment]);
 
-  const value: PaymentContextType = {
+  const value = useMemo(() => ({
     paymentIntents,
     currentPaymentIntent,
     isProcessing,
@@ -196,7 +196,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     validateUpgrade,
     clearCurrentPayment,
     refreshPayments,
-  };
+  }), [paymentIntents, currentPaymentIntent, isProcessing, startPayment, processPayment, checkPayment, validateUpgrade, clearCurrentPayment, refreshPayments]);
 
   return <PaymentContext.Provider value={value}>{children}</PaymentContext.Provider>;
 }

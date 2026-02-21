@@ -56,7 +56,7 @@ export function Login() {
           {/* Back Button */}
           <Link 
             to="/" 
-            className="inline-flex items-center gap-2 text-[#6B7280] hover:text-[#1F2937] transition-colors mb-6 sm:mb-8"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 sm:mb-8"
           >
             <ArrowLeft size={20} />
             <span className="text-sm sm:text-base">Voltar para home</span>
@@ -64,18 +64,18 @@ export function Login() {
 
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 md:mb-12">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#2563EB] flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-xs sm:text-sm">VE</span>
             </div>
-            <span className="text-xl sm:text-2xl font-semibold text-[#1F2937]">VYD Engage</span>
+            <span className="text-xl sm:text-2xl font-semibold text-gray-900">VYD Engage</span>
           </div>
 
           {/* Heading */}
           <div className="mb-8 sm:mb-10 md:mb-12">
-            <h1 className="text-[#1F2937] mb-3 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
+            <h1 className="text-gray-900 mb-3 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
               Bem-vindo de volta
             </h1>
-            <p className="text-[#6B7280] text-base sm:text-lg md:text-xl mt-2">
+            <p className="text-gray-600 text-base sm:text-lg md:text-xl mt-2">
               Entre com suas credenciais para acessar sua conta
             </p>
           </div>
@@ -83,7 +83,7 @@ export function Login() {
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6">
             <div className="space-y-2.5">
-              <Label htmlFor="email" className="text-[#1F2937] text-base sm:text-lg font-medium block">
+              <Label htmlFor="email" className="text-gray-900 text-base sm:text-lg font-medium block">
                 E-mail
               </Label>
               <Input
@@ -92,13 +92,13 @@ export function Login() {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-12 sm:h-14 px-4 py-3 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
+                className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 required
               />
             </div>
 
             <div className="space-y-2.5">
-              <Label htmlFor="password" className="text-[#1F2937] text-base sm:text-lg font-medium block">
+              <Label htmlFor="password" className="text-gray-900 text-base sm:text-lg font-medium block">
                 Senha
               </Label>
               <div className="relative">
@@ -108,7 +108,7 @@ export function Login() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-[#E5E7EB] rounded-lg bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all"
+                  className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   required
                 />
                 <button
@@ -118,7 +118,7 @@ export function Login() {
                     e.stopPropagation();
                     setShowPassword(!showPassword);
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1F2937] transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
                   aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   tabIndex={0}
                 >
@@ -135,13 +135,13 @@ export function Login() {
               <label className="flex items-center gap-2.5 cursor-pointer">
                 <input 
                   type="checkbox" 
-                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-[#E5E7EB] text-[#2563EB] focus:ring-2 focus:ring-[#2563EB] cursor-pointer" 
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary cursor-pointer" 
                 />
-                <span className="text-sm sm:text-base text-[#6B7280]">Lembrar de mim</span>
+                <span className="text-sm sm:text-base text-gray-600">Lembrar de mim</span>
               </label>
               <Link 
                 to="/forgot-password"
-                className="text-sm sm:text-base text-[#2563EB] hover:text-[#1E40AF] font-normal transition-colors whitespace-nowrap"
+                className="text-sm sm:text-base text-primary hover:text-primary-dark font-normal transition-colors whitespace-nowrap"
               >
                 Esqueci minha senha
               </Link>
@@ -149,18 +149,18 @@ export function Login() {
 
             <Button 
               type="submit" 
-              className="w-full h-12 sm:h-14 bg-[#2563EB] hover:bg-[#1E40AF] text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6"
+              className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6"
             >
               Entrar
             </Button>
           </form>
 
           {/* Sign up link */}
-          <p className="mt-8 sm:mt-10 text-center text-[#6B7280] text-base sm:text-lg">
+          <p className="mt-8 sm:mt-10 text-center text-gray-600 text-base sm:text-lg">
             Não tem uma conta?{" "}
             <Link 
               to="/register" 
-              className="text-[#2563EB] hover:text-[#1E40AF] font-medium transition-colors"
+              className="text-primary hover:text-primary-dark font-medium transition-colors"
             >
               Criar conta gratuita
             </Link>
@@ -169,8 +169,8 @@ export function Login() {
       </div>
 
       {/* Right side - Image */}
-      <div className="hidden lg:flex flex-1 bg-[#F9FAFB] relative overflow-hidden w-full lg:w-1/2">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#2563EB]/10 to-transparent"></div>
+      <div className="hidden lg:flex flex-1 bg-gray-100 relative overflow-hidden w-full lg:w-1/2">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
         <ImageWithFallback
           src="https://images.unsplash.com/photo-1641430034785-47f6f91ab6cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3b3Jrc3BhY2UlMjBsYXB0b3B8ZW58MXx8fHwxNzYzNzAwMDAxfDA&ixlib=rb-4.1.0&q=80&w=1080"
           alt="Modern workspace"

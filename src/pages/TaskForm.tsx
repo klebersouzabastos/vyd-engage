@@ -96,7 +96,7 @@ export function TaskForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-gray-100">
       <Header 
         title={task ? "Editar Tarefa" : "Nova Tarefa"} 
         subtitle={task ? `Editando: ${task.title}` : "Preencha os dados da nova tarefa"}
@@ -114,9 +114,9 @@ export function TaskForm() {
           </Button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] max-w-2xl relative overflow-visible">
-          <div className="p-6 border-b border-[#E5E7EB]">
-            <h2 className="text-xl font-semibold text-[#1F2937]">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-300 max-w-2xl relative overflow-visible">
+          <div className="p-6 border-b border-gray-300">
+            <h2 className="text-xl font-semibold text-gray-900">
               {task ? "Editar Tarefa" : "Nova Tarefa"}
             </h2>
           </div>
@@ -133,7 +133,7 @@ export function TaskForm() {
                 <SelectTrigger className="mt-1.5 w-full">
                   <SelectValue placeholder="Selecione um lead" />
                 </SelectTrigger>
-                <SelectContent className="z-[9999] bg-white border-2 border-[#2563EB] shadow-lg max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
+                <SelectContent className="z-[9999] bg-white border-2 border-primary shadow-lg max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
                   {leads.length > 0 ? (
                     leads.map((lead: any) => (
                       <SelectItem key={lead.id} value={lead.id.toString()}>
@@ -216,11 +216,11 @@ export function TaskForm() {
               </Select>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#E5E7EB] mt-6">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-300 mt-6">
               <Button variant="outline" type="button" onClick={() => navigate("/app/tasks")}>
                 Cancelar
               </Button>
-              <Button onClick={handleSave} className="bg-[#2563EB] hover:bg-[#1E40AF]">
+              <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark">
                 {task ? "Salvar" : "Criar"}
               </Button>
             </div>

@@ -85,7 +85,7 @@ export function TagSelector({
     <div className="space-y-2">
       {/* Tags selecionadas */}
       {selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB] min-h-[42px]">
+        <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg bg-gray-100 min-h-[42px]">
           {selectedTags.map((tag) => (
             <TagBadge
               key={tag.id}
@@ -111,8 +111,8 @@ export function TagSelector({
         </Button>
         
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border border-[#E5E7EB] rounded-md shadow-lg z-50">
-            <div className="p-3 border-b border-[#E5E7EB]">
+          <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50">
+            <div className="p-3 border-b border-gray-300">
               <Input
                 ref={inputRef}
                 placeholder="Buscar tags..."
@@ -132,7 +132,7 @@ export function TagSelector({
                       handleTagToggle(tag.id);
                       setIsOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-[#F9FAFB] rounded-md transition-colors flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
                   >
                     <TagBadge tag={tag} size="sm" />
                   </button>
@@ -141,8 +141,8 @@ export function TagSelector({
             )}
 
             {/* Criar nova tag */}
-            <div className="p-3 border-t border-[#E5E7EB] space-y-2">
-              <p className="text-sm font-medium text-[#1F2937]">Criar nova tag</p>
+            <div className="p-3 border-t border-gray-300 space-y-2">
+              <p className="text-sm font-medium text-gray-900">Criar nova tag</p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Nome da tag"
@@ -164,7 +164,7 @@ export function TagSelector({
                     setIsOpen(false);
                   }}
                   size="sm"
-                  className="bg-[#2563EB] hover:bg-[#1E40AF]"
+                  className="bg-primary hover:bg-primary-dark"
                 >
                   Criar
                 </Button>
@@ -177,7 +177,7 @@ export function TagSelector({
                     onClick={() => setNewTagColor(color)}
                     className={`
                       w-6 h-6 rounded-full border-2 transition-all
-                      ${newTagColor === color ? "border-[#1F2937] scale-110" : "border-[#E5E7EB]"}
+                      ${newTagColor === color ? "border-gray-900 scale-110" : "border-gray-300"}
                     `}
                     style={{ backgroundColor: color }}
                     aria-label={`Selecionar cor ${color}`}

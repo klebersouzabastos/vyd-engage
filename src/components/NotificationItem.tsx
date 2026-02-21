@@ -48,7 +48,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         className={`
           p-3 rounded-lg transition-colors
           ${notification.read
-            ? "bg-white hover:bg-[#F9FAFB]"
+            ? "bg-white hover:bg-gray-100"
             : "bg-blue-50 hover:bg-blue-100"
           }
         `}
@@ -61,15 +61,15 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             <p
               className={`
                 text-sm font-medium mb-1
-                ${notification.read ? "text-[#6B7280]" : "text-[#1F2937]"}
+                ${notification.read ? "text-gray-600" : "text-gray-900"}
               `}
             >
               {notification.title}
             </p>
-            <p className="text-xs text-[#6B7280] line-clamp-2">
+            <p className="text-xs text-gray-600 line-clamp-2">
               {notification.message}
             </p>
-            <p className="text-xs text-[#9CA3AF] mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               {formatTime(notification.timestamp)}
             </p>
           </div>
@@ -85,7 +85,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       className={`
         p-3 rounded-lg transition-colors cursor-pointer
         ${notification.read
-          ? "bg-white hover:bg-[#F9FAFB]"
+          ? "bg-white hover:bg-gray-100"
           : "bg-blue-50 hover:bg-blue-100"
         }
       `}
@@ -98,15 +98,15 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           <p
             className={`
               text-sm font-medium mb-1
-              ${notification.read ? "text-[#6B7280]" : "text-[#1F2937]"}
+              ${notification.read ? "text-gray-600" : "text-gray-900"}
             `}
           >
             {notification.title}
           </p>
-          <p className="text-xs text-[#6B7280] line-clamp-2">
+          <p className="text-xs text-gray-600 line-clamp-2">
             {notification.message}
           </p>
-          <p className="text-xs text-[#9CA3AF] mt-1">
+          <p className="text-xs text-gray-400 mt-1">
             {formatTime(notification.timestamp)}
           </p>
         </div>

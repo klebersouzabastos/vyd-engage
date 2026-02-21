@@ -166,13 +166,13 @@ export function PaymentModal({
         className="max-w-2xl w-[90vw] sm:w-[600px] max-h-[85vh] min-h-[400px] overflow-hidden flex flex-col p-0"
         style={{ maxWidth: '600px' }}
       >
-        <div className="px-6 pt-6 pb-4 border-b border-[#E5E7EB] flex-shrink-0">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-300 flex-shrink-0">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-[#1F2937]">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
               Pagamento - {planName}
             </DialogTitle>
-            <DialogDescription className="text-sm text-[#6B7280] mt-1">
-              Valor: <span className="font-semibold text-[#1F2937]">{formatAmount(amount)}</span>
+            <DialogDescription className="text-sm text-gray-600 mt-1">
+              Valor: <span className="font-semibold text-gray-900">{formatAmount(amount)}</span>
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -181,7 +181,7 @@ export function PaymentModal({
           <div className="space-y-6">
           {step === "select" && (
             <div>
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Escolha a forma de pagamento
               </h3>
               <PaymentMethodSelector
@@ -194,7 +194,7 @@ export function PaymentModal({
 
           {step === "payment" && currentPaymentIntent && selectedMethod === "credit_card" && (
             <div>
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Dados do Cartão
               </h3>
               <CreditCardForm
@@ -208,7 +208,7 @@ export function PaymentModal({
 
           {step === "pending" && currentPaymentIntent && (
             <div>
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {selectedMethod === "pix" ? "Pagamento via PIX" : "Pagamento via Boleto"}
               </h3>
               {selectedMethod === "pix" && currentPaymentIntent.paymentData && (
@@ -233,10 +233,10 @@ export function PaymentModal({
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={32} className="text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-[#1F2937] mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Pagamento Aprovado!
               </h3>
-              <p className="text-[#6B7280]">
+              <p className="text-gray-600">
                 Seu plano será atualizado em instantes...
               </p>
             </div>
@@ -247,10 +247,10 @@ export function PaymentModal({
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <XCircle size={32} className="text-red-600" />
               </div>
-              <h3 className="text-xl font-semibold text-[#1F2937] mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Erro no Pagamento
               </h3>
-              <p className="text-[#6B7280] mb-4">
+              <p className="text-gray-600 mb-4">
                 {errorMessage || "Ocorreu um erro ao processar o pagamento."}
               </p>
               <div className="flex gap-2 justify-center">
@@ -267,7 +267,7 @@ export function PaymentModal({
                 </Button>
                 <Button
                   onClick={handleClose}
-                  className="bg-[#2563EB] hover:bg-[#1E40AF]"
+                  className="bg-primary hover:bg-primary-dark"
                 >
                   Fechar
                 </Button>
@@ -277,8 +277,8 @@ export function PaymentModal({
 
           {isProcessing && step !== "pending" && (
             <div className="flex items-center justify-center py-4">
-              <Loader2 size={24} className="animate-spin text-[#2563EB]" />
-              <span className="ml-2 text-[#6B7280]">Processando...</span>
+              <Loader2 size={24} className="animate-spin text-primary" />
+              <span className="ml-2 text-gray-600">Processando...</span>
             </div>
           )}
           </div>

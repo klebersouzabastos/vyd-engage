@@ -155,6 +155,26 @@ enum SubscriptionStatus {
   PAST_DUE
 }
 
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PIX
+  BOLETO
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
 model Plan {
   id          String   @id @default(uuid())
   type        PlanType @unique
@@ -180,7 +200,7 @@ model Subscription {
   status        SubscriptionStatus @default(TRIAL)
   
   // Billing
-  billingCycle  String            @default("monthly") // monthly, yearly
+  billingCycle  BillingCycle       @default(MONTHLY)
   startDate     DateTime          @default(now())
   renewalDate   DateTime
   cancelledAt   DateTime?
@@ -211,8 +231,8 @@ model Payment {
   // Payment details
   amount            Decimal  @db.Decimal(10, 2)
   currency          String    @default("BRL")
-  method            String    // credit_card, pix, boleto
-  status            String    // pending, paid, failed, refunded
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
   
   // Mercado Pago
   mercadoPagoId     String?
@@ -333,7 +353,7 @@ model CustomField {
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
-  type        String   // text, number, date, select, boolean
+  type        CustomFieldType
   options     Json?    // For select type
   required    Boolean  @default(false)
   order       Int      @default(0)
@@ -403,6 +423,12 @@ enum AutomationStatus {
   DRAFT
 }
 
+enum AutomationLogStatus {
+  SUCCESS
+  ERROR
+  SKIPPED
+}
+
 model Automation {
   id          String           @id @default(uuid())
   tenantId    String
@@ -438,7 +464,7 @@ model AutomationLog {
   automationId  String
   automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
   
-  status        String     // success, error, skipped
+  status        AutomationLogStatus
   message       String?
   data          Json?
   error         String?
@@ -452,6 +478,36 @@ model AutomationLog {
 // ============================================
 // COMMUNICATIONS
 // ============================================
+
+enum InteractionType {
+  EMAIL
+  WHATSAPP
+  CALL
+  MEETING
+  NOTE
+  STATUS_CHANGE
+  AUTOMATION
+}
+
+enum InteractionDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  TEXTAREA
+  CHECKBOX
+}
+
+enum WebhookLogStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
 
 enum WhatsAppProvider {
   OFFICIAL_API
@@ -539,8 +595,8 @@ model Interaction {
   leadId      String?
   lead        Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   
-  type        String   // email, whatsapp, call, meeting, note
-  direction   String   // inbound, outbound
+  type        InteractionType
+  direction   InteractionDirection
   subject     String?
   content     String
   metadata    Json?
@@ -614,7 +670,7 @@ model WebhookLog {
   webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
   
   event       String
-  status      String   // success, failed, pending
+  status      WebhookLogStatus @default(PENDING)
   statusCode  Int?
   response    String?
   error       String?

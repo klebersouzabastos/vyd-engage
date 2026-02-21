@@ -94,14 +94,14 @@ export function TagManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-[#1F2937]">Gerenciar Tags</h3>
-          <p className="text-sm text-[#6B7280] mt-1">
+          <h3 className="text-lg font-semibold text-gray-900">Gerenciar Tags</h3>
+          <p className="text-sm text-gray-600 mt-1">
             Crie e gerencie tags para categorizar seus leads
           </p>
         </div>
         <Button
           onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-[#2563EB] hover:bg-[#1E40AF]"
+          className="bg-primary hover:bg-primary-dark"
         >
           <Plus size={16} className="mr-2" />
           Nova Tag
@@ -110,9 +110,9 @@ export function TagManager() {
 
       {/* Lista de tags */}
       {tags.length === 0 ? (
-        <div className="text-center py-12 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-          <p className="text-[#6B7280]">Nenhuma tag criada ainda</p>
-          <p className="text-sm text-[#6B7280] mt-1">
+        <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
+          <p className="text-gray-600">Nenhuma tag criada ainda</p>
+          <p className="text-sm text-gray-600 mt-1">
             Crie sua primeira tag para começar a categorizar leads
           </p>
         </div>
@@ -123,17 +123,17 @@ export function TagManager() {
             return (
               <div
                 key={tag.id}
-                className="p-4 border border-[#E5E7EB] rounded-lg bg-white hover:shadow-md transition-shadow"
+                className="p-4 border border-gray-300 rounded-lg bg-white hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-3">
                   <TagBadge tag={tag} size="md" />
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleEdit(tag)}
-                      className="p-1.5 hover:bg-[#F9FAFB] rounded transition-colors"
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
                       aria-label="Editar tag"
                     >
-                      <Edit2 size={14} className="text-[#6B7280]" />
+                      <Edit2 size={14} className="text-gray-600" />
                     </button>
                     <button
                       onClick={() => setDeletingTag(tag)}
@@ -144,7 +144,7 @@ export function TagManager() {
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-[#6B7280]">
+                <div className="text-xs text-gray-600">
                   Usada em {usageCount} lead(s)
                 </div>
               </div>
@@ -155,9 +155,9 @@ export function TagManager() {
 
       {/* Formulário de criar/editar - inline na mesma tela */}
       {isCreateDialogOpen && (
-        <div className="border border-[#E5E7EB] rounded-lg bg-white p-6 shadow-sm">
+        <div className="border border-gray-300 rounded-lg bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-[#1F2937]">
+            <h4 className="text-lg font-semibold text-gray-900">
               {editingTag ? "Editar Tag" : "Nova Tag"}
             </h4>
             <Button
@@ -194,8 +194,8 @@ export function TagManager() {
                       w-10 h-10 rounded-lg border-2 transition-all
                       ${
                         formData.color === color
-                          ? "border-[#1F2937] scale-110"
-                          : "border-[#E5E7EB] hover:border-[#9CA3AF]"
+                          ? "border-gray-900 scale-110"
+                          : "border-gray-300 hover:border-gray-400"
                       }
                     `}
                     style={{ backgroundColor: color }}
@@ -210,7 +210,7 @@ export function TagManager() {
               </Button>
               <Button
                 onClick={editingTag ? handleUpdate : handleCreate}
-                className="bg-[#2563EB] hover:bg-[#1E40AF]"
+                className="bg-primary hover:bg-primary-dark"
               >
                 {editingTag ? "Salvar" : "Criar"}
               </Button>

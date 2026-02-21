@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import {
   EmailConfig,
   EmailProvider as EmailProviderType,
@@ -10,6 +10,7 @@ import {
 } from "../types/email";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "../utils/errors";
 
 interface EmailContextType {
   configs: EmailConfig[];
@@ -119,7 +120,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         lastUsedAt: config.verifiedAt || undefined,
       }));
       setConfigs(transformedConfigs);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar configurações de email:", error);
       toast.error("Erro ao carregar configurações de email");
     } finally {
@@ -174,8 +175,8 @@ export function EmailProvider({ children }: { children: ReactNode }) {
 
         setConfigs((prev) => [...prev, newConfig]);
         toast.success("Configuração de email criada com sucesso!");
-      } catch (error: any) {
-        toast.error(error.message || "Erro ao criar configuração de email");
+      } catch (error) {
+        toast.error(getErrorMessage(error) ||"Erro ao criar configuração de email");
         throw error;
       }
     },
@@ -223,8 +224,8 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         })
       );
       toast.success("Configuração atualizada com sucesso!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar configuração");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao atualizar configuração");
       throw error;
     }
   }, []);
@@ -245,8 +246,8 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         return filtered;
       });
       toast.success("Configuração deletada com sucesso!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao deletar configuração");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao deletar configuração");
       throw error;
     }
   }, []);
@@ -304,7 +305,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
           status: result.verified ? "verified" : "unverified" as EmailStatus,
           lastTested: result.verifiedAt || undefined,
         });
-      } catch (error: any) {
+      } catch (error) {
         console.error("Erro ao atualizar status da configuração:", error);
         toast.error("Erro ao atualizar status da configuração");
       }
@@ -312,24 +313,24 @@ export function EmailProvider({ children }: { children: ReactNode }) {
     [updateEmailConfigStatus]
   );
 
+  const value = useMemo(() => ({
+    configs,
+    currentPlan,
+    planLimits,
+    addEmailConfig,
+    updateEmailConfig,
+    deleteEmailConfig,
+    setDefaultEmailConfig,
+    getDefaultEmailConfig,
+    getEmailConfig,
+    updateEmailConfigStatus,
+    canAddEmailConfig,
+    getEmailConfigsByProvider,
+    refreshEmailConfigStatus,
+  }), [configs, currentPlan, planLimits, addEmailConfig, updateEmailConfig, deleteEmailConfig, setDefaultEmailConfig, getDefaultEmailConfig, getEmailConfig, updateEmailConfigStatus, canAddEmailConfig, getEmailConfigsByProvider, refreshEmailConfigStatus]);
+
   return (
-    <EmailContext.Provider
-      value={{
-        configs,
-        currentPlan,
-        planLimits,
-        addEmailConfig,
-        updateEmailConfig,
-        deleteEmailConfig,
-        setDefaultEmailConfig,
-        getDefaultEmailConfig,
-        getEmailConfig,
-        updateEmailConfigStatus,
-        canAddEmailConfig,
-        getEmailConfigsByProvider,
-        refreshEmailConfigStatus,
-      }}
-    >
+    <EmailContext.Provider value={value}>
       {children}
     </EmailContext.Provider>
   );

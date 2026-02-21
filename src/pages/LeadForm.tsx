@@ -313,7 +313,7 @@ export function LeadForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-gray-100">
       <Header 
         title={lead ? "Editar Lead" : "Novo Lead"} 
         subtitle={lead ? `Editando: ${lead.name}` : "Preencha os dados do novo lead"}
@@ -331,9 +331,9 @@ export function LeadForm() {
           </Button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] overflow-hidden">
-          <div className="p-6 border-b border-[#E5E7EB] flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#1F2937]">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+          <div className="p-6 border-b border-gray-300 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
               {lead ? "Editar Lead" : "Novo Lead"}
             </h2>
             {leadScore && (
@@ -396,7 +396,7 @@ export function LeadForm() {
                         id="source"
                         value={formData.source}
                         onChange={(e) => setFormData({ ...formData, source: e.target.value as any })}
-                        className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                       >
                         <option value="meta">Meta Ads</option>
                         <option value="google">Google Ads</option>
@@ -411,7 +411,7 @@ export function LeadForm() {
                         id="status"
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                        className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white"
+                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                       >
                         {pipelineColumns.map((column) => (
                           <option key={column.id} value={column.id}>
@@ -424,7 +424,7 @@ export function LeadForm() {
 
                   <div className="mt-4">
                     <Label>Automações</Label>
-                    <div className="mt-1.5 space-y-2 max-h-48 overflow-y-auto border border-[#E5E7EB] rounded-md p-3 bg-[#F9FAFB]">
+                    <div className="mt-1.5 space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-100">
                       {availableAutomations.length > 0 ? (
                         availableAutomations.map((automation) => (
                           <div
@@ -456,7 +456,7 @@ export function LeadForm() {
                                 )}
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-[#1F2937]">
+                                <p className="text-sm font-medium text-gray-900">
                                   {automation.name}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -471,7 +471,7 @@ export function LeadForm() {
                                   >
                                     {automation.status === "active" ? "Ativa" : "Pausada"}
                                   </span>
-                                  <span className="text-xs text-[#6B7280]">
+                                  <span className="text-xs text-gray-600">
                                     {automation.type === "whatsapp" ? "WhatsApp" : "E-mail"}
                                   </span>
                                 </div>
@@ -480,13 +480,13 @@ export function LeadForm() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-[#6B7280] text-center py-4">
+                        <p className="text-sm text-gray-600 text-center py-4">
                           Nenhuma automação disponível
                         </p>
                       )}
                     </div>
                     {formData.automations && formData.automations.length > 0 && (
-                      <p className="text-xs text-[#6B7280] mt-1.5">
+                      <p className="text-xs text-gray-600 mt-1.5">
                         {formData.automations.length} automação(ões) selecionada(s)
                       </p>
                     )}
@@ -504,7 +504,7 @@ export function LeadForm() {
                   {fields.length > 0 && (
                     <div className="mt-4">
                       <Label className="mb-2 block">Campos Customizados</Label>
-                      <div className="space-y-4 p-4 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
+                      <div className="space-y-4 p-4 border border-gray-300 rounded-lg bg-gray-100">
                         {fields.map((field) => (
                           <CustomFieldInput
                             key={field.id}
@@ -528,11 +528,11 @@ export function LeadForm() {
                     />
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-[#E5E7EB] mt-6">
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-300 mt-6">
                     <Button variant="outline" type="button" onClick={() => navigate("/app/leads")}>
                       Cancelar
                     </Button>
-                    <Button type="submit" className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                    <Button type="submit" className="bg-primary hover:bg-primary-dark">
                       Salvar Lead
                     </Button>
                   </div>
@@ -548,7 +548,7 @@ export function LeadForm() {
                     onAdd={handleAddInteraction}
                   />
                 ) : (
-                  <div className="text-center py-12 text-[#6B7280]">
+                  <div className="text-center py-12 text-gray-600">
                     <p>Salve o lead para ver o histórico de interações</p>
                   </div>
                 )}
@@ -558,7 +558,7 @@ export function LeadForm() {
                 {lead?.id ? (
                   <TasksList leadId={lead.id} />
                 ) : (
-                  <div className="text-center py-12 text-[#6B7280]">
+                  <div className="text-center py-12 text-gray-600">
                     <p>Salve o lead para gerenciar tarefas</p>
                   </div>
                 )}
@@ -568,7 +568,7 @@ export function LeadForm() {
                 {lead?.id ? (
                   <CommentsSection leadId={lead.id} />
                 ) : (
-                  <div className="text-center py-12 text-[#6B7280]">
+                  <div className="text-center py-12 text-gray-600">
                     <p>Salve o lead para adicionar comentários</p>
                   </div>
                 )}

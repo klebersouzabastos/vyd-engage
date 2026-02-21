@@ -61,12 +61,12 @@ export function TaskCard({
         p-4 border rounded-lg transition-all
         ${selected ? "bg-blue-50 border-blue-300" : ""}
         ${isCompleted
-          ? "bg-[#F9FAFB] border-[#E5E7EB] opacity-60"
+          ? "bg-gray-100 border-gray-300 opacity-60"
           : isOverdue
           ? "bg-red-50 border-red-200"
           : isDueToday
           ? "bg-yellow-50 border-yellow-200"
-          : "bg-white border-[#E5E7EB] hover:shadow-md"
+          : "bg-white border-gray-300 hover:shadow-md"
         }
       `}
     >
@@ -91,8 +91,8 @@ export function TaskCard({
               className={`
                 font-medium
                 ${isCompleted
-                  ? "text-[#9CA3AF] line-through"
-                  : "text-[#1F2937]"
+                  ? "text-gray-400 line-through"
+                  : "text-gray-900"
                 }
               `}
             >
@@ -101,10 +101,10 @@ export function TaskCard({
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 onClick={onEdit}
-                className="p-1 hover:bg-[#F9FAFB] rounded transition-colors"
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
                 aria-label="Editar tarefa"
               >
-                <Edit2 size={14} className="text-[#6B7280]" />
+                <Edit2 size={14} className="text-gray-600" />
               </button>
               <button
                 onClick={onDelete}
@@ -121,8 +121,8 @@ export function TaskCard({
               className={`
                 text-sm mb-2
                 ${isCompleted
-                  ? "text-[#9CA3AF]"
-                  : "text-[#6B7280]"
+                  ? "text-gray-400"
+                  : "text-gray-600"
                 }
               `}
             >
@@ -139,7 +139,7 @@ export function TaskCard({
                     ? "text-red-600"
                     : isDueToday
                     ? "text-yellow-600"
-                    : "text-[#6B7280]"
+                    : "text-gray-600"
                 }
               />
               <span
@@ -149,7 +149,7 @@ export function TaskCard({
                     ? "text-red-600 font-medium"
                     : isDueToday
                     ? "text-yellow-600 font-medium"
-                    : "text-[#6B7280]"
+                    : "text-gray-600"
                   }
                 `}
               >

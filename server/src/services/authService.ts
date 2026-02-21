@@ -90,7 +90,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
         tenantId: tenant.id,
         planId: proPlan.id,
         status: 'TRIAL',
-        billingCycle: 'monthly',
+        billingCycle: 'MONTHLY',
         renewalDate: trialEndsAt,
         trialEndsAt,
       },

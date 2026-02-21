@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import {
   WhatsAppConnection,
   WhatsAppProvider as WhatsAppProviderType,
@@ -10,6 +10,7 @@ import {
 } from "../types/whatsapp";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "../utils/errors";
 
 interface WhatsAppContextType {
   connections: WhatsAppConnection[];
@@ -128,7 +129,7 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
         lastUsedAt: conn.lastConnectedAt || undefined,
       }));
       setConnections(transformedConnections);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar conexões WhatsApp:", error);
       toast.error("Erro ao carregar conexões WhatsApp");
     } finally {
@@ -180,8 +181,8 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
 
         setConnections((prev) => [...prev, newConnection]);
         toast.success("Conexão WhatsApp criada com sucesso!");
-      } catch (error: any) {
-        toast.error(error.message || "Erro ao criar conexão WhatsApp");
+      } catch (error) {
+        toast.error(getErrorMessage(error) ||"Erro ao criar conexão WhatsApp");
         throw error;
       }
     },
@@ -226,8 +227,8 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
         })
       );
       toast.success("Conexão atualizada com sucesso!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar conexão");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao atualizar conexão");
       throw error;
     }
   }, []);
@@ -248,8 +249,8 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
         return filtered;
       });
       toast.success("Conexão deletada com sucesso!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao deletar conexão");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao deletar conexão");
       throw error;
     }
   }, []);
@@ -308,7 +309,7 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
           lastSync: result.lastConnectedAt || new Date().toISOString(),
           qrCode: result.qrCode || undefined,
         });
-      } catch (error: any) {
+      } catch (error) {
         console.error("Erro ao atualizar status da conexão:", error);
         toast.error("Erro ao atualizar status da conexão");
       }
@@ -316,24 +317,24 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
     [updateConnectionStatus]
   );
 
+  const value = useMemo(() => ({
+    connections,
+    currentPlan,
+    planLimits,
+    addConnection,
+    updateConnection,
+    deleteConnection,
+    setDefaultConnection,
+    getDefaultConnection,
+    getConnection,
+    updateConnectionStatus,
+    canAddConnection,
+    getConnectionsByProvider,
+    refreshConnectionStatus,
+  }), [connections, currentPlan, planLimits, addConnection, updateConnection, deleteConnection, setDefaultConnection, getDefaultConnection, getConnection, updateConnectionStatus, canAddConnection, getConnectionsByProvider, refreshConnectionStatus]);
+
   return (
-    <WhatsAppContext.Provider
-      value={{
-        connections,
-        currentPlan,
-        planLimits,
-        addConnection,
-        updateConnection,
-        deleteConnection,
-        setDefaultConnection,
-        getDefaultConnection,
-        getConnection,
-        updateConnectionStatus,
-        canAddConnection,
-        getConnectionsByProvider,
-        refreshConnectionStatus,
-      }}
-    >
+    <WhatsAppContext.Provider value={value}>
       {children}
     </WhatsAppContext.Provider>
   );

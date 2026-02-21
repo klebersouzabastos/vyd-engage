@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { AutomationStatus } from '@prisma/client';
+import { AutomationStatus, AutomationLogStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 export interface CreateAutomationData {
@@ -135,7 +135,7 @@ export const automationService = {
     });
   },
 
-  async addLog(automationId: string, status: string, message?: string, data?: any, error?: string) {
+  async addLog(automationId: string, status: AutomationLogStatus, message?: string, data?: any, error?: string) {
     return prisma.automationLog.create({
       data: {
         automationId,

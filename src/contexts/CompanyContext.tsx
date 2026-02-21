@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 
 interface CompanyContextType {
   logo: string | null;
@@ -20,32 +20,32 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     return saved || "FlowCRM";
   });
 
-  const setLogo = (newLogo: string | null) => {
+  const setLogo = useCallback((newLogo: string | null) => {
     try {
       setLogoState(newLogo);
       if (newLogo) {
         localStorage.setItem("companyLogo", newLogo);
-        console.log('Logo salvo no localStorage');
       } else {
         localStorage.removeItem("companyLogo");
-        console.log('Logo removido do localStorage');
       }
     } catch (error) {
-      console.error('Erro ao salvar logo:', error);
-      // Se o localStorage estiver cheio, tentar limpar e salvar novamente
       if (error instanceof DOMException && error.code === 22) {
         alert('O arquivo é muito grande. Tente uma imagem menor.');
       }
     }
-  };
+  }, []);
 
-  const setCompanyName = (name: string) => {
+  const setCompanyName = useCallback((name: string) => {
     setCompanyNameState(name);
     localStorage.setItem("companyName", name);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    logo, companyName, setLogo, setCompanyName,
+  }), [logo, companyName, setLogo, setCompanyName]);
 
   return (
-    <CompanyContext.Provider value={{ logo, companyName, setLogo, setCompanyName }}>
+    <CompanyContext.Provider value={value}>
       {children}
     </CompanyContext.Provider>
   );

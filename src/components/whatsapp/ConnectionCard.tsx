@@ -55,12 +55,12 @@ export function ConnectionCard({
   };
 
   return (
-    <Card className="border border-[#E5E7EB]">
+    <Card className="border border-gray-300">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <CardTitle className="text-base font-medium text-[#1F2937]">
+              <CardTitle className="text-base font-medium text-gray-900">
                 {connection.name}
               </CardTitle>
               {connection.isDefault && (
@@ -70,7 +70,7 @@ export function ConnectionCard({
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-3 text-sm text-[#6B7280]">
+            <div className="flex items-center gap-3 text-sm text-gray-600">
               <Badge variant="outline" className="text-xs">
                 {providerLabel}
               </Badge>
@@ -154,7 +154,7 @@ export function ConnectionCard({
           </div>
 
           {connection.metadata && (
-            <div className="text-xs text-[#6B7280] pt-2 border-t border-[#E5E7EB]">
+            <div className="text-xs text-gray-600 pt-2 border-t border-gray-300">
               {connection.metadata.messageCount !== undefined && (
                 <div>Mensagens enviadas: {connection.metadata.messageCount}</div>
               )}

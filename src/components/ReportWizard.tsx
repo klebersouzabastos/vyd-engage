@@ -185,12 +185,12 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
   };
 
   return (
-    <div className="bg-[#F9FAFB]">
+    <div className="bg-gray-100">
       <div className="max-w-4xl mx-auto p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#1F2937] mb-2">Criar Novo Relatório</h1>
-          <p className="text-[#6B7280]">Siga os passos para criar seu relatório personalizado</p>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Criar Novo Relatório</h1>
+          <p className="text-gray-600">Siga os passos para criar seu relatório personalizado</p>
         </div>
 
         {/* Progress Indicator */}
@@ -202,13 +202,13 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
                       step >= s
-                        ? "bg-[#2563EB] text-white"
-                        : "bg-[#E5E7EB] text-[#6B7280]"
+                        ? "bg-primary text-white"
+                        : "bg-gray-300 text-gray-600"
                     }`}
                   >
                     {step > s ? <Check size={20} /> : s}
                   </div>
-                  <span className="text-xs mt-2 text-[#6B7280] text-center">
+                  <span className="text-xs mt-2 text-gray-600 text-center">
                     {s === 1 && "Nome"}
                     {s === 2 && "Template"}
                     {s === 3 && "Período"}
@@ -218,7 +218,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                 {s < 4 && (
                   <div
                     className={`h-1 flex-1 mx-2 ${
-                      step > s ? "bg-[#2563EB]" : "bg-[#E5E7EB]"
+                      step > s ? "bg-primary" : "bg-gray-300"
                     }`}
                   />
                 )}
@@ -228,13 +228,13 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] p-8 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-8 mb-6">
           {/* Step 1: Nome */}
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-medium text-[#1F2937] mb-2">Nome do Relatório</h2>
-                <p className="text-sm text-[#6B7280] mb-4">
+                <h2 className="text-xl font-medium text-gray-900 mb-2">Nome do Relatório</h2>
+                <p className="text-sm text-gray-600 mb-4">
                   Dê um nome descritivo para seu relatório
                 </p>
                 <Label htmlFor="report-name">Nome *</Label>
@@ -254,8 +254,8 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-medium text-[#1F2937] mb-2">Escolha um Template</h2>
-                <p className="text-sm text-[#6B7280] mb-6">
+                <h2 className="text-xl font-medium text-gray-900 mb-2">Escolha um Template</h2>
+                <p className="text-sm text-gray-600 mb-6">
                   Selecione um template pré-configurado ou crie um relatório personalizado
                 </p>
                 
@@ -268,21 +268,21 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                         onClick={() => setSelectedTemplateId(template.id)}
                         className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                           selectedTemplateId === template.id
-                            ? "border-[#2563EB] bg-[#EFF6FF]"
-                            : "border-[#E5E7EB] hover:border-[#2563EB] hover:shadow-md"
+                            ? "border-primary bg-primary-50"
+                            : "border-gray-300 hover:border-primary hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Icon size={20} className="text-[#2563EB]" />
-                            <h3 className="font-medium text-[#1F2937]">{template.name}</h3>
+                            <Icon size={20} className="text-primary" />
+                            <h3 className="font-medium text-gray-900">{template.name}</h3>
                           </div>
                           {selectedTemplateId === template.id && (
-                            <Check size={20} className="text-[#2563EB]" />
+                            <Check size={20} className="text-primary" />
                           )}
                         </div>
-                        <p className="text-sm text-[#6B7280] mb-3">{template.description}</p>
-                        <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+                        <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
                           <span>{template.widgets.length} widgets</span>
                           <span>•</span>
                           <span className="capitalize">{template.category}</span>
@@ -295,16 +295,16 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                     onClick={() => setSelectedTemplateId(null)}
                     className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-all flex items-center justify-center min-h-[140px] ${
                       selectedTemplateId === null
-                        ? "border-[#2563EB] bg-[#EFF6FF]"
-                        : "border-[#E5E7EB] hover:border-[#2563EB]"
+                        ? "border-primary bg-primary-50"
+                        : "border-gray-300 hover:border-primary"
                     }`}
                   >
                     <div className="text-center">
-                      <FileText size={24} className="mx-auto mb-2 text-[#6B7280]" />
-                      <p className="text-sm font-medium text-[#1F2937]">Personalizado</p>
-                      <p className="text-xs text-[#6B7280] mt-1">Começar do zero</p>
+                      <FileText size={24} className="mx-auto mb-2 text-gray-600" />
+                      <p className="text-sm font-medium text-gray-900">Personalizado</p>
+                      <p className="text-xs text-gray-600 mt-1">Começar do zero</p>
                       {selectedTemplateId === null && (
-                        <Check size={20} className="mx-auto mt-2 text-[#2563EB]" />
+                        <Check size={20} className="mx-auto mt-2 text-primary" />
                       )}
                     </div>
                   </div>
@@ -317,8 +317,8 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
           {step === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-medium text-[#1F2937] mb-2">Período de Análise</h2>
-                <p className="text-sm text-[#6B7280] mb-4">
+                <h2 className="text-xl font-medium text-gray-900 mb-2">Período de Análise</h2>
+                <p className="text-sm text-gray-600 mb-4">
                   Selecione o período de dados que deseja analisar (opcional)
                 </p>
                 <Label htmlFor="period">Período</Label>
@@ -334,7 +334,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-[#6B7280] mt-2">
+                <p className="text-xs text-gray-600 mt-2">
                   Você pode ajustar isso depois na edição do relatório
                 </p>
               </div>
@@ -345,20 +345,20 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
           {step === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-medium text-[#1F2937] mb-2">Revisão</h2>
-                <p className="text-sm text-[#6B7280] mb-6">
+                <h2 className="text-xl font-medium text-gray-900 mb-2">Revisão</h2>
+                <p className="text-sm text-gray-600 mb-6">
                   Revise as configurações antes de criar o relatório
                 </p>
                 
-                <div className="bg-[#F9FAFB] rounded-lg p-6 space-y-4">
+                <div className="bg-gray-100 rounded-lg p-6 space-y-4">
                   <div>
-                    <span className="text-sm font-medium text-[#6B7280]">Nome:</span>
-                    <p className="text-[#1F2937] mt-1">{reportName}</p>
+                    <span className="text-sm font-medium text-gray-600">Nome:</span>
+                    <p className="text-gray-900 mt-1">{reportName}</p>
                   </div>
                   
                   <div>
-                    <span className="text-sm font-medium text-[#6B7280]">Template:</span>
-                    <p className="text-[#1F2937] mt-1">
+                    <span className="text-sm font-medium text-gray-600">Template:</span>
+                    <p className="text-gray-900 mt-1">
                       {selectedTemplateId
                         ? REPORT_TEMPLATES.find(t => t.id === selectedTemplateId)?.name || "Personalizado"
                         : "Personalizado"}
@@ -366,8 +366,8 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                   </div>
                   
                   <div>
-                    <span className="text-sm font-medium text-[#6B7280]">Período:</span>
-                    <p className="text-[#1F2937] mt-1">
+                    <span className="text-sm font-medium text-gray-600">Período:</span>
+                    <p className="text-gray-900 mt-1">
                       {PERIOD_OPTIONS.find(p => p.value === period)?.label || "Último mês"}
                     </p>
                   </div>
@@ -404,7 +404,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+                className="bg-primary hover:bg-primary-dark gap-2"
               >
                 Próximo
                 <ArrowRight size={16} />
@@ -413,7 +413,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
               <Button
                 onClick={handleCreate}
                 disabled={!canProceed()}
-                className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+                className="bg-primary hover:bg-primary-dark gap-2"
               >
                 <Check size={16} />
                 Criar Relatório
@@ -424,18 +424,18 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
 
         {/* Quick Create Option */}
         {step === 1 && reportName.trim() && (
-          <div className="mt-6 p-4 bg-[#EFF6FF] rounded-lg border border-[#2563EB]/20">
+          <div className="mt-6 p-4 bg-primary-50 rounded-lg border border-primary/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#1F2937]">Modo Rápido</p>
-                <p className="text-xs text-[#6B7280] mt-1">
+                <p className="text-sm font-medium text-gray-900">Modo Rápido</p>
+                <p className="text-xs text-gray-600 mt-1">
                   Crie um relatório em 1 clique usando o template padrão
                 </p>
               </div>
               <Button
                 onClick={handleQuickCreate}
                 size="sm"
-                className="bg-[#2563EB] hover:bg-[#1E40AF]"
+                className="bg-primary hover:bg-primary-dark"
               >
                 Criar Rápido
               </Button>

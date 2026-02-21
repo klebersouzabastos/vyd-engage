@@ -1,6 +1,6 @@
 import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
-import { PlanType, SubscriptionStatus } from '@prisma/client';
+import { PlanType, SubscriptionStatus, BillingCycle } from '@prisma/client';
 
 export const subscriptionService = {
   async getCurrentSubscription(tenantId: string) {
@@ -25,7 +25,7 @@ export const subscriptionService = {
   async changePlan(
     tenantId: string,
     newPlanType: PlanType,
-    billingCycle: 'monthly' | 'yearly' = 'monthly'
+    billingCycle: BillingCycle = 'MONTHLY'
   ) {
     const currentSubscription = await this.getCurrentSubscription(tenantId);
     const newPlan = await prisma.plan.findUnique({
@@ -38,7 +38,7 @@ export const subscriptionService = {
 
     // Calculate renewal date
     const renewalDate = new Date();
-    if (billingCycle === 'monthly') {
+    if (billingCycle === 'MONTHLY') {
       renewalDate.setMonth(renewalDate.getMonth() + 1);
     } else {
       renewalDate.setFullYear(renewalDate.getFullYear() + 1);
@@ -92,7 +92,7 @@ export const subscriptionService = {
     }
 
     const renewalDate = new Date();
-    if (subscription.billingCycle === 'monthly') {
+    if (subscription.billingCycle === 'MONTHLY') {
       renewalDate.setMonth(renewalDate.getMonth() + 1);
     } else {
       renewalDate.setFullYear(renewalDate.getFullYear() + 1);

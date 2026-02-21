@@ -94,7 +94,7 @@ export function AddInteractionModal({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
         {/* Header */}
-        <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-2 border-b border-[#E5E7EB]">
+        <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-2 border-b border-gray-300">
           <DialogTitle>Nova Interação</DialogTitle>
         </DialogHeader>
 
@@ -180,11 +180,11 @@ export function AddInteractionModal({
         </div>
 
         {/* Footer */}
-        <DialogFooter className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-[#E5E7EB] mt-2">
+        <DialogFooter className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-gray-300 mt-2">
           <Button variant="outline" onClick={handleClose} className="h-8 text-sm px-3">
             Cancelar
           </Button>
-          <Button onClick={handleSave} className="bg-[#2563EB] hover:bg-[#1E40AF] h-8 text-sm px-3">
+          <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark h-8 text-sm px-3">
             Salvar Interação
           </Button>
         </DialogFooter>

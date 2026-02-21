@@ -119,7 +119,7 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
         <Button
           onClick={() => navigate(`/app/tasks/new?leadId=${leadId}`)}
           size="sm"
-          className="bg-[#2563EB] hover:bg-[#1E40AF]"
+          className="bg-primary hover:bg-primary-dark"
         >
           <Plus size={16} className="mr-2" />
           Nova Tarefa
@@ -127,8 +127,8 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
       </div>
 
       {sortedTasks.length === 0 ? (
-        <div className="text-center py-12 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-          <p className="text-[#6B7280]">
+        <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
+          <p className="text-gray-600">
             {filter === "completed"
               ? "Nenhuma tarefa concluída"
               : filter === "pending"

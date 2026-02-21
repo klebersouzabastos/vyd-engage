@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
+import { getErrorMessage } from '../utils/errors';
 
 export interface Tag {
   id: string;
@@ -31,7 +32,7 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       const fetchedTags = await apiClient.getTags();
       setTags(fetchedTags || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao carregar tags:', error);
       toast.error('Erro ao carregar tags');
     } finally {
@@ -49,8 +50,8 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       setTags(prev => [...prev, newTag]);
       toast.success('Tag criada com sucesso!');
       return newTag;
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar tag');
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||'Erro ao criar tag');
       throw error;
     }
   }, []);
@@ -61,8 +62,8 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       setTags(prev => prev.map(t => t.id === id ? updatedTag : t));
       toast.success('Tag atualizada com sucesso!');
       return updatedTag;
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar tag');
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||'Erro ao atualizar tag');
       throw error;
     }
   }, []);
@@ -72,8 +73,8 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       await apiClient.deleteTag(id);
       setTags(prev => prev.filter(t => t.id !== id));
       toast.success('Tag deletada com sucesso!');
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao deletar tag');
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||'Erro ao deletar tag');
       throw error;
     }
   }, []);
@@ -82,18 +83,18 @@ export function TagsProvider({ children }: { children: ReactNode }) {
     fetchTags();
   }, [fetchTags]);
 
+  const value = useMemo(() => ({
+    tags,
+    loading,
+    getTagById,
+    createTag,
+    updateTag,
+    deleteTag,
+    refetch: fetchTags,
+  }), [tags, loading, getTagById, createTag, updateTag, deleteTag, fetchTags]);
+
   return (
-    <TagsContext.Provider
-      value={{
-        tags,
-        loading,
-        getTagById,
-        createTag,
-        updateTag,
-        deleteTag,
-        refetch: fetchTags,
-      }}
-    >
+    <TagsContext.Provider value={value}>
       {children}
     </TagsContext.Provider>
   );

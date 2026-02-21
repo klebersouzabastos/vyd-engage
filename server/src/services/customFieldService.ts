@@ -1,9 +1,10 @@
 import prisma from '../config/database.js';
+import { Prisma, CustomFieldType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 export interface CreateCustomFieldData {
   name: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'boolean';
+  type: CustomFieldType;
   options?: string[]; // For select type
   required?: boolean;
   order?: number;
@@ -35,7 +36,7 @@ export const customFieldService = {
         tenantId,
         name: data.name,
         type: data.type,
-        options: data.options || null,
+        options: data.options || Prisma.JsonNull,
         required: data.required || false,
         order: data.order || 0,
         active: true,
@@ -93,7 +94,7 @@ export const customFieldService = {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.options !== undefined) updateData.options = data.options || null;
+    if (data.options !== undefined) updateData.options = data.options || Prisma.JsonNull;
     if (data.required !== undefined) updateData.required = data.required;
     if (data.order !== undefined) updateData.order = data.order;
     if (data.active !== undefined) updateData.active = data.active;

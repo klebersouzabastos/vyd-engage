@@ -19,10 +19,10 @@ export function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-[#E5E7EB] px-8 flex items-center justify-between">
+    <header className="h-16 bg-white border-b border-gray-300 px-8 flex items-center justify-between">
       <div>
-        <h1 className="text-[#1F2937]">{title}</h1>
-        {subtitle && <p className="text-sm text-[#6B7280] mt-0.5">{subtitle}</p>}
+        <h1 className="text-gray-900">{title}</h1>
+        {subtitle && <p className="text-sm text-gray-600 mt-0.5">{subtitle}</p>}
       </div>
       
       <div className="flex items-center gap-4">
@@ -35,7 +35,7 @@ export function Header({ title, subtitle }: HeaderProps) {
           className="p-2 hover:bg-red-50 rounded-lg transition-colors group"
           title="Sair"
         >
-          <LogOut size={20} className="text-[#6B7280] group-hover:text-red-600 transition-colors" />
+          <LogOut size={20} className="text-gray-600 group-hover:text-red-600 transition-colors" />
         </button>
       </div>
     </header>

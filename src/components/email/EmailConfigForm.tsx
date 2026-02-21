@@ -138,7 +138,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
       <div className="flex items-center justify-between">
         <div>
           <Label htmlFor="secure">Usar SSL/TLS</Label>
-          <p className="text-xs text-[#6B7280] mt-1">Recomendado para portas 465</p>
+          <p className="text-xs text-gray-600 mt-1">Recomendado para portas 465</p>
         </div>
         <Switch
           id="secure"
@@ -182,7 +182,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           placeholder="SG.xxxxxxxxxxxxx"
           className="mt-1.5"
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Obtenha sua API Key em: https://app.sendgrid.com/settings/api_keys
         </p>
       </div>
@@ -232,7 +232,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           placeholder="mg.exemplo.com"
           className="mt-1.5"
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Domínio verificado no Mailgun
         </p>
       </div>
@@ -272,7 +272,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           placeholder="re_xxxxxxxxxxxxx"
           className="mt-1.5"
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Obtenha sua API Key em: https://resend.com/api-keys
         </p>
       </div>
@@ -327,7 +327,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           className="mt-1.5"
           required
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Um nome descritivo para identificar esta configuração
         </p>
       </div>
@@ -371,18 +371,18 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           id="isDefault"
           checked={isDefault}
           onChange={(e) => setIsDefault(e.target.checked)}
-          className="rounded border-[#E5E7EB]"
+          className="rounded border-gray-300"
         />
         <Label htmlFor="isDefault" className="cursor-pointer">
           Definir como configuração padrão
         </Label>
       </div>
 
-      <div className="flex items-center gap-2 pt-4 border-t border-[#E5E7EB]">
+      <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
         <Button
           type="submit"
           disabled={!validation?.isValid || isSubmitting}
-          className="bg-[#2563EB] hover:bg-[#1E40AF]"
+          className="bg-primary hover:bg-primary-dark"
         >
           {isSubmitting ? "Salvando..." : config ? "Atualizar" : "Criar Configuração"}
         </Button>

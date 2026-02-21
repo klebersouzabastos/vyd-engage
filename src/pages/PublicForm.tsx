@@ -125,18 +125,18 @@ export function PublicForm() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#2563EB]/10 to-[#F9FAFB] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 to-gray-100 flex flex-col items-center justify-center p-4">
         <VYDEcosystemBanner />
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={32} className="text-green-600" />
           </div>
-          <h2 className="text-[#1F2937] mb-2">Obrigado!</h2>
-          <p className="text-[#6B7280] mb-6">
+          <h2 className="text-gray-900 mb-2">Obrigado!</h2>
+          <p className="text-gray-600 mb-6">
             Recebemos suas informações e entraremos em contato em breve.
           </p>
-          <div className="p-4 bg-[#F9FAFB] rounded-lg">
-            <p className="text-sm text-[#6B7280]">
+          <div className="p-4 bg-gray-100 rounded-lg">
+            <p className="text-sm text-gray-600">
               Fique atento ao seu WhatsApp e e-mail para nossas mensagens.
             </p>
           </div>
@@ -146,16 +146,16 @@ export function PublicForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#2563EB]/10 to-[#F9FAFB] flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-gray-100 flex flex-col items-center justify-center p-4">
       <VYDEcosystemBanner />
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         {/* Company Logo */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-[#2563EB] rounded-lg flex items-center justify-center mx-auto mb-3">
+          <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
             <span className="text-white text-2xl font-bold">E</span>
           </div>
-          <h2 className="text-[#1F2937] mb-1">Entre em contato</h2>
-          <p className="text-[#6B7280]">Preencha o formulário abaixo e retornaremos em breve</p>
+          <h2 className="text-gray-900 mb-1">Entre em contato</h2>
+          <p className="text-gray-600">Preencha o formulário abaixo e retornaremos em breve</p>
         </div>
 
         {/* Form */}
@@ -211,8 +211,8 @@ export function PublicForm() {
           </div>
 
           {fields.length > 0 && (
-            <div className="pt-4 border-t border-[#E5E7EB]">
-              <Label className="mb-3 block text-[#1F2937] font-medium">Informações Adicionais</Label>
+            <div className="pt-4 border-t border-gray-300">
+              <Label className="mb-3 block text-gray-900 font-medium">Informações Adicionais</Label>
               <div className="space-y-4">
                 {fields.map((field) => (
                   <CustomFieldInput
@@ -229,14 +229,14 @@ export function PublicForm() {
 
           <Button 
             type="submit" 
-            className="w-full bg-[#2563EB] hover:bg-[#1E40AF]"
+            className="w-full bg-primary hover:bg-primary-dark"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Enviando..." : "Enviar"}
           </Button>
         </form>
 
-        <p className="text-xs text-center text-[#6B7280] mt-6">
+        <p className="text-xs text-center text-gray-600 mt-6">
           Ao enviar este formulário, você concorda com nossa política de privacidade.
         </p>
       </div>

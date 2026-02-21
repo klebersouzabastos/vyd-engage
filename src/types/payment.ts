@@ -65,7 +65,7 @@ export interface PaymentResult {
   status: PaymentStatus;
   message: string;
   error?: string;
-  mercadoPagoResponse?: any;
+  mercadoPagoResponse?: unknown;
   requiresAction?: boolean; // Se precisa de ação adicional (ex: escanear QR code)
   actionData?: PixPaymentData | BoletoPaymentData;
 }

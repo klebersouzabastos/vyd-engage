@@ -158,8 +158,8 @@ export function CreditCardForm({
     <div className="space-y-4">
       {!sdkReady && (
         <div className="flex items-center justify-center py-8">
-          <Loader2 size={24} className="animate-spin text-[#2563EB]" />
-          <span className="ml-2 text-[#6B7280]">Carregando formulário seguro...</span>
+          <Loader2 size={24} className="animate-spin text-primary" />
+          <span className="ml-2 text-gray-600">Carregando formulário seguro...</span>
         </div>
       )}
 
@@ -227,7 +227,7 @@ export function CreditCardForm({
           <Button
             type="submit"
             disabled={isLoading || !sdkReady}
-            className="flex-1 bg-[#2563EB] hover:bg-[#1E40AF]"
+            className="flex-1 bg-primary hover:bg-primary-dark"
           >
             {isLoading ? "Processando..." : "Pagar"}
           </Button>

@@ -130,13 +130,13 @@ export function GlobalSearch() {
   return (
     <div ref={containerRef} className="relative min-w-[280px]">
       <div
-        className={`flex items-center gap-3 px-4 py-2.5 text-sm bg-[#F9FAFB] border rounded-lg transition-all duration-200 ${
+        className={`flex items-center gap-3 px-4 py-2.5 text-sm bg-gray-100 border rounded-lg transition-all duration-200 ${
           isFocused
-            ? "bg-white border-[#2563EB] shadow-md ring-2 ring-[#2563EB] ring-offset-1"
-            : "border-[#E5E7EB] hover:bg-white hover:border-[#D1D5DB] hover:shadow-sm"
+            ? "bg-white border-primary shadow-md ring-2 ring-primary ring-offset-1"
+            : "border-gray-300 hover:bg-white hover:border-[#D1D5DB] hover:shadow-sm"
         }`}
       >
-        <Search size={18} className="text-[#9CA3AF] shrink-0" />
+        <Search size={18} className="text-gray-400 shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -144,23 +144,23 @@ export function GlobalSearch() {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder="Buscar leads, tarefas, interações..."
-          className="flex-1 bg-transparent outline-none text-[#1F2937] placeholder:text-[#6B7280]"
+          className="flex-1 bg-transparent outline-none text-gray-900 placeholder:text-gray-600"
         />
-        <kbd className="pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded border border-[#D1D5DB] bg-white px-2 font-mono text-[11px] font-medium text-[#6B7280] shadow-sm">
+        <kbd className="pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded border border-[#D1D5DB] bg-white px-2 font-mono text-[11px] font-medium text-gray-600 shadow-sm">
           <span className="text-xs">⌘</span>K
         </kbd>
       </div>
 
       {isFocused && (query.trim() || results.length > 0) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-50 max-h-[400px] overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-[400px] overflow-hidden">
           <div className="max-h-[400px] overflow-y-auto">
             {results.length === 0 && query.trim() ? (
-              <div className="px-4 py-6 text-center text-sm text-[#6B7280]">
+              <div className="px-4 py-6 text-center text-sm text-gray-600">
                 Nenhum resultado encontrado.
               </div>
             ) : results.length > 0 ? (
               <div className="p-2">
-                <div className="px-2 py-1.5 text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                <div className="px-2 py-1.5 text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Resultados
                 </div>
                 {results.map((result) => {
@@ -169,20 +169,20 @@ export function GlobalSearch() {
                     <button
                       key={result.id}
                       onClick={() => handleSelect(result)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-[#F9FAFB] transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 transition-colors text-left"
                     >
-                      <Icon size={16} className="text-[#6B7280] shrink-0" />
+                      <Icon size={16} className="text-gray-600 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[#1F2937] truncate">
+                        <p className="font-medium text-gray-900 truncate">
                           {result.title}
                         </p>
                         {result.subtitle && (
-                          <p className="text-xs text-[#6B7280] truncate mt-0.5">
+                          <p className="text-xs text-gray-600 truncate mt-0.5">
                             {result.subtitle}
                           </p>
                         )}
                       </div>
-                      <span className="text-xs text-[#9CA3AF] capitalize shrink-0">
+                      <span className="text-xs text-gray-400 capitalize shrink-0">
                         {result.type === "lead"
                           ? "Lead"
                           : result.type === "task"

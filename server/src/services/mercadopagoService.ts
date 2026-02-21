@@ -1,5 +1,6 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { createError } from '../middleware/errorHandler.js';
+import { BillingCycle } from '@prisma/client';
 
 const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || '';
 const publicKey = process.env.MERCADOPAGO_PUBLIC_KEY || '';
@@ -22,7 +23,7 @@ export interface CreatePreferenceParams {
   amount: number;
   tenantId: string;
   userId: string;
-  billingCycle: 'monthly' | 'yearly';
+  billingCycle: BillingCycle;
 }
 
 export const mercadopagoService = {
@@ -69,10 +70,10 @@ export const mercadopagoService = {
     try {
       const response = await preference.create({ body: preferenceData });
       return response;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Mercado Pago error:', error);
       throw createError(
-        `Failed to create payment preference: ${error.message}`,
+        `Failed to create payment preference: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'MP_CREATE_ERROR'
       );

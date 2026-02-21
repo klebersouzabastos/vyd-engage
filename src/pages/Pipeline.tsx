@@ -816,10 +816,10 @@ export function Pipeline() {
       
       <div className="p-8">
         {/* Funnel Selector */}
-        <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-[#E5E7EB]">
+        <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1">
-              <Funnel size={20} className="text-[#6B7280]" />
+              <Funnel size={20} className="text-gray-600" />
               <div className="flex items-center gap-2 flex-1">
                 {editingFunnelId === currentFunnelId ? (
                   <div className="flex items-center gap-2 flex-1">
@@ -858,7 +858,7 @@ export function Pipeline() {
                     <select
                       value={currentFunnelId}
                       onChange={(e) => handleFunnelChange(e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm border border-[#E5E7EB] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       {funnels.map((funnel) => (
                         <option key={funnel.id} value={funnel.id}>
@@ -870,20 +870,20 @@ export function Pipeline() {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleStartEditFunnel(currentFunnelId, funnels.find(f => f.id === currentFunnelId)?.name || "")}
-                      className="h-8 w-8 p-0 hover:bg-[#F3F4F6]"
+                      className="h-8 w-8 p-0 hover:bg-gray-200"
                       title="Renomear funil"
                     >
-                      <Edit2 size={14} className="text-[#6B7280]" />
+                      <Edit2 size={14} className="text-gray-600" />
                     </Button>
                     {!funnels.find(f => f.id === currentFunnelId)?.isDefault && (
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => setDeleteFunnelId(currentFunnelId)}
-                        className="h-8 w-8 p-0 hover:bg-[#F3F4F6]"
+                        className="h-8 w-8 p-0 hover:bg-gray-200"
                         title="Deletar funil"
                       >
-                        <Trash2 size={14} className="text-[#6B7280]" />
+                        <Trash2 size={14} className="text-gray-600" />
                       </Button>
                     )}
                   </>
@@ -895,7 +895,7 @@ export function Pipeline() {
             </div>
             <Button
               variant="outline"
-              className="border-2 border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white gap-2"
+              className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
               onClick={() => setCreateFunnelOpen(true)}
             >
               <Plus size={16} />
@@ -911,7 +911,7 @@ export function Pipeline() {
               type="button"
               className={cn(
                 buttonVariants({ variant: "outline" }),
-                "gap-2 border border-[#E5E7EB] bg-white hover:bg-gray-50 cursor-pointer"
+                "gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer"
               )}
               aria-expanded={filterPopoverOpen}
               aria-haspopup="true"
@@ -931,10 +931,10 @@ export function Pipeline() {
               <ChevronDown size={16} className={filterPopoverOpen ? "rotate-180 transition-transform duration-200" : "transition-transform duration-200"} />
             </button>
             {filterPopoverOpen && (
-              <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white rounded-md border border-[#E5E7EB] shadow-lg p-3">
+              <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white rounded-md border border-gray-300 shadow-lg p-3">
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#E5E7EB]">
-                    <span className="text-sm font-medium text-[#1F2937]">Filtrar por Origem</span>
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-300">
+                    <span className="text-sm font-medium text-gray-900">Filtrar por Origem</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -957,7 +957,7 @@ export function Pipeline() {
                       />
                       <label
                         htmlFor={`source-${option.value}`}
-                        className="text-sm text-[#1F2937] cursor-pointer flex-1"
+                        className="text-sm text-gray-900 cursor-pointer flex-1"
                       >
                         {option.label}
                       </label>
@@ -971,14 +971,14 @@ export function Pipeline() {
           <div className="flex items-center gap-3">
             <Button 
               variant="outline"
-              className="border-2 border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white gap-2"
+              className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
               onClick={() => setCreateColumnOpen(true)}
             >
               <Plus size={16} />
               Nova Coluna
             </Button>
             <Button 
-              className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+              className="bg-primary hover:bg-primary-dark gap-2"
               onClick={() => navigate("/app/leads/new")}
             >
               <Plus size={16} />
@@ -993,7 +993,7 @@ export function Pipeline() {
             {filteredColumns.map((column) => (
               <div
                 key={column.id}
-                className="bg-[#F9FAFB] rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0"
+                className="bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0"
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
               >
@@ -1040,8 +1040,8 @@ export function Pipeline() {
                     </div>
                   ) : (
                     <>
-                      <h3 className="text-[#1F2937]">{column.title}</h3>
-                      <span className="text-sm text-[#6B7280] bg-white px-2 py-0.5 rounded">
+                      <h3 className="text-gray-900">{column.title}</h3>
+                      <span className="text-sm text-gray-600 bg-white px-2 py-0.5 rounded">
                         {column.leads.length}
                       </span>
                     </>
@@ -1053,17 +1053,17 @@ export function Pipeline() {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleStartEdit(column.id, column.title)}
-                      className="h-7 w-7 p-0 hover:bg-[#F3F4F6]"
+                      className="h-7 w-7 p-0 hover:bg-gray-200"
                       title="Renomear coluna"
                     >
-                      <Edit2 size={14} className="text-[#6B7280]" />
+                      <Edit2 size={14} className="text-gray-600" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => setDeleteColumnId(column.id)}
                       disabled={column.leads.length > 0 || column.isDefault}
-                      className="h-7 w-7 p-0 hover:bg-[#F3F4F6] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-7 w-7 p-0 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       title={
                         column.isDefault 
                           ? "Não é possível deletar a coluna padrão" 
@@ -1072,7 +1072,7 @@ export function Pipeline() {
                           : "Deletar coluna"
                       }
                     >
-                      <Trash2 size={14} className="text-[#6B7280]" />
+                      <Trash2 size={14} className="text-gray-600" />
                     </Button>
                   </div>
                 )}
@@ -1091,24 +1091,24 @@ export function Pipeline() {
                       dragStartPosition.current = null;
                     }}
                     onClick={(e) => handleCardClick(e, lead)}
-                    className="bg-white rounded-lg p-4 shadow-sm border border-[#E5E7EB] cursor-pointer hover:shadow-md transition-shadow"
+                    className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-pointer hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="font-medium text-[#1F2937] mb-1">{lead.name}</h4>
+                        <h4 className="font-medium text-gray-900 mb-1">{lead.name}</h4>
                         <LeadSourceBadge source={lead.source} />
                       </div>
                       {lead.automationActive && (
-                        <div className="w-2 h-2 bg-[#16A34A] rounded-full" title="Automação ativa"></div>
+                        <div className="w-2 h-2 bg-success rounded-full" title="Automação ativa"></div>
                       )}
                     </div>
 
                     <div className="space-y-2 mb-3">
-                      <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Phone size={14} />
                         <span>{lead.phone}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Mail size={14} />
                         <span className="truncate">{lead.email}</span>
                       </div>
@@ -1122,7 +1122,7 @@ export function Pipeline() {
                           return <TagBadge key={tagId} tag={tag} size="sm" />;
                         })}
                         {lead.tags.length > 2 && (
-                          <span className="text-xs text-[#6B7280] px-1.5 py-0.5 bg-[#F9FAFB] rounded">
+                          <span className="text-xs text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded">
                             +{lead.tags.length - 2}
                           </span>
                         )}
@@ -1165,7 +1165,7 @@ export function Pipeline() {
                                   const value = fullLead.customFields?.[f.id];
                                   return value !== null && value !== undefined && value !== "";
                                 }).length > 2 && (
-                                  <div className="text-xs text-[#6B7280] pt-1">
+                                  <div className="text-xs text-gray-600 pt-1">
                                     +{customFields.filter(f => {
                                       const value = fullLead.customFields?.[f.id];
                                       return value !== null && value !== undefined && value !== "";
@@ -1197,7 +1197,7 @@ export function Pipeline() {
                       );
                     })()}
 
-                    <div className="flex items-center gap-2 text-xs text-[#6B7280] pt-3 border-t border-[#E5E7EB]">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 pt-3 border-t border-gray-300">
                       <Clock size={12} />
                       <span>{lead.lastActivity}</span>
                     </div>
@@ -1205,7 +1205,7 @@ export function Pipeline() {
                 ))}
 
                 {column.leads.length === 0 && (
-                  <div className="text-center py-8 text-[#6B7280]">
+                  <div className="text-center py-8 text-gray-600">
                     <p className="text-sm">Nenhum lead nesta etapa</p>
                   </div>
                 )}
@@ -1216,26 +1216,26 @@ export function Pipeline() {
         </div>
 
         {/* Stats Summary */}
-        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-          <h3 className="text-[#1F2937] mb-4">Resumo do Funil</h3>
+        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+          <h3 className="text-gray-900 mb-4">Resumo do Funil</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Total de Leads</p>
-              <p className="text-2xl font-semibold text-[#1F2937]">
+              <p className="text-sm text-gray-600 mb-1">Total de Leads</p>
+              <p className="text-2xl font-semibold text-gray-900">
                 {filteredColumns.reduce((acc, col) => acc + col.leads.length, 0)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Taxa de Conversão</p>
-              <p className="text-2xl font-semibold text-[#16A34A]">14.3%</p>
+              <p className="text-sm text-gray-600 mb-1">Taxa de Conversão</p>
+              <p className="text-2xl font-semibold text-success">14.3%</p>
             </div>
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Tempo Médio no Funil</p>
-              <p className="text-2xl font-semibold text-[#1F2937]">4.2 dias</p>
+              <p className="text-sm text-gray-600 mb-1">Tempo Médio no Funil</p>
+              <p className="text-2xl font-semibold text-gray-900">4.2 dias</p>
             </div>
             <div>
-              <p className="text-sm text-[#6B7280] mb-1">Automações Ativas</p>
-              <p className="text-2xl font-semibold text-[#2563EB]">
+              <p className="text-sm text-gray-600 mb-1">Automações Ativas</p>
+              <p className="text-2xl font-semibold text-primary">
                 {filteredColumns.reduce((acc, col) => 
                   acc + col.leads.filter(l => l.automationActive).length, 0
                 )}
@@ -1249,11 +1249,11 @@ export function Pipeline() {
       <Dialog open={createColumnOpen} onOpenChange={setCreateColumnOpen}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader className="text-left space-y-0 pb-4">
-            <DialogTitle className="text-lg font-semibold text-[#1F2937]">Criar Nova Coluna</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-gray-900">Criar Nova Coluna</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-[#1F2937] mb-2 block">
+              <label className="text-sm font-medium text-gray-900 mb-2 block">
                 Nome da Coluna
               </label>
               <Input
@@ -1288,7 +1288,7 @@ export function Pipeline() {
             <Button
               onClick={handleCreateColumn}
               disabled={!newColumnTitle.trim()}
-              className="bg-[#2563EB] hover:bg-[#1E40AF]"
+              className="bg-primary hover:bg-primary-dark"
             >
               Criar
             </Button>
@@ -1346,11 +1346,11 @@ export function Pipeline() {
       <Dialog open={createFunnelOpen} onOpenChange={setCreateFunnelOpen}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader className="text-left space-y-0 pb-4">
-            <DialogTitle className="text-lg font-semibold text-[#1F2937]">Criar Novo Funil</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-gray-900">Criar Novo Funil</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-[#1F2937] mb-2 block">
+              <label className="text-sm font-medium text-gray-900 mb-2 block">
                 Nome do Funil
               </label>
               <Input
@@ -1369,7 +1369,7 @@ export function Pipeline() {
               {errorMessage && (
                 <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
               )}
-              <p className="text-xs text-[#6B7280] mt-2">
+              <p className="text-xs text-gray-600 mt-2">
                 O funil será criado com uma coluna padrão chamada "Novo" que não pode ser deletada.
               </p>
             </div>
@@ -1388,7 +1388,7 @@ export function Pipeline() {
             <Button
               onClick={handleCreateFunnel}
               disabled={!newFunnelName.trim()}
-              className="bg-[#2563EB] hover:bg-[#1E40AF]"
+              className="bg-primary hover:bg-primary-dark"
             >
               Criar
             </Button>

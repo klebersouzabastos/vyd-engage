@@ -213,7 +213,7 @@ export function Tasks() {
 
       <div className="p-8 overflow-visible">
         {/* Filters */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-[#E5E7EB] mb-6 overflow-visible relative z-10">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 mb-6 overflow-visible relative z-10">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
               <Input
@@ -273,7 +273,7 @@ export function Tasks() {
               onChange={(e) =>
                 setPriorityFilter(e.target.value as typeof priorityFilter)
               }
-              className="px-3 py-2 border border-[#E5E7EB] rounded-md bg-white whitespace-nowrap"
+              className="px-3 py-2 border border-gray-300 rounded-md bg-white whitespace-nowrap"
             >
               <option value="all">Todas as prioridades</option>
               <option value="high">Alta</option>
@@ -349,7 +349,7 @@ export function Tasks() {
 
             <Button
               onClick={() => navigate("/app/tasks/new")}
-              className="bg-[#2563EB] hover:bg-[#1E40AF] whitespace-nowrap"
+              className="bg-primary hover:bg-primary-dark whitespace-nowrap"
             >
               <Plus size={16} className="mr-2" />
               Nova Tarefa
@@ -385,7 +385,7 @@ export function Tasks() {
 
             {groupedTasks.today.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <CalendarIcon size={20} />
                   Vencem Hoje ({groupedTasks.today.length})
                 </h3>
@@ -408,7 +408,7 @@ export function Tasks() {
 
             {groupedTasks.upcoming.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Próximas ({groupedTasks.upcoming.length})
                 </h3>
                 <div className="space-y-3">
@@ -430,7 +430,7 @@ export function Tasks() {
 
             {groupedTasks.completed.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Concluídas ({groupedTasks.completed.length})
                 </h3>
                 <div className="space-y-3">
@@ -451,14 +451,14 @@ export function Tasks() {
             )}
 
             {filteredTasks.length === 0 && (
-              <div className="text-center py-12 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-                <p className="text-[#6B7280]">Nenhuma tarefa encontrada</p>
+              <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
+                <p className="text-gray-600">Nenhuma tarefa encontrada</p>
               </div>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 bg-white rounded-lg p-8 shadow-sm border border-[#E5E7EB]">
+            <div className="xl:col-span-2 bg-white rounded-lg p-8 shadow-sm border border-gray-300">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -486,8 +486,8 @@ export function Tasks() {
                 }}
               />
             </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {selectedDate
                   ? `Tarefas para ${selectedDate.toLocaleDateString("pt-BR", {
                       weekday: "long",
@@ -513,8 +513,8 @@ export function Tasks() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-                  <p className="text-[#6B7280]">
+                <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
+                  <p className="text-gray-600">
                     {selectedDate
                       ? "Nenhuma tarefa para esta data"
                       : "Selecione uma data no calendário para ver as tarefas"}

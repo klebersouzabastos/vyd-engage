@@ -38,9 +38,9 @@ export function DashboardWidget({
       case "stat":
         if (!stats) {
           return (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
-              <h3 className="text-[#1F2937]">{widget.title}</h3>
-              <p className="text-sm text-[#6B7280] mt-2">Carregando...</p>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+              <h3 className="text-gray-900">{widget.title}</h3>
+              <p className="text-sm text-gray-600 mt-2">Carregando...</p>
             </div>
           );
         }
@@ -83,10 +83,10 @@ export function DashboardWidget({
         if (widget.config.chartType === "pie") {
           const dataToUse = widget.config.dataSource === "sources" ? sourceData : funnelData;
           return (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] h-full">
-              <h3 className="text-[#1F2937] mb-4">{widget.title}</h3>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 h-full">
+              <h3 className="text-gray-900 mb-4">{widget.title}</h3>
               {dataToUse.length === 0 ? (
-                <div className="flex items-center justify-center h-[200px] text-[#6B7280]">
+                <div className="flex items-center justify-center h-[200px] text-gray-600">
                   Nenhum dado disponível
                 </div>
               ) : (
@@ -115,10 +115,10 @@ export function DashboardWidget({
 
         const barDataToUse = widget.config.dataSource === "funnel" ? funnelData : sourceData;
         return (
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] h-full">
-            <h3 className="text-[#1F2937] mb-4">{widget.title}</h3>
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 h-full">
+            <h3 className="text-gray-900 mb-4">{widget.title}</h3>
             {barDataToUse.length === 0 ? (
-              <div className="flex items-center justify-center h-[200px] text-[#6B7280]">
+              <div className="flex items-center justify-center h-[200px] text-gray-600">
                 Nenhum dado disponível
               </div>
             ) : (
@@ -140,9 +140,9 @@ export function DashboardWidget({
 
       default:
         return (
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB] h-full">
-            <h3 className="text-[#1F2937]">{widget.title}</h3>
-            <p className="text-sm text-[#6B7280] mt-2">Widget não implementado</p>
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 h-full">
+            <h3 className="text-gray-900">{widget.title}</h3>
+            <p className="text-sm text-gray-600 mt-2">Widget não implementado</p>
           </div>
         );
     }

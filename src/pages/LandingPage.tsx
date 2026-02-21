@@ -176,7 +176,7 @@ export function LandingPage() {
       <div style={{ height: '120px' }} aria-hidden="true" />
       
       {/* Header */}
-      <header className="fixed left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-[#E5E7EB] z-[99]" style={{ top: '40px' }}>
+      <header className="fixed left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99]" style={{ top: '40px' }}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link 
@@ -187,23 +187,23 @@ export function LandingPage() {
               }}
               className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             >
-              <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-white font-bold text-lg">VE</span>
               </div>
-              <span className="text-xl font-semibold text-[#1F2937]">VYD Engage</span>
+              <span className="text-xl font-semibold text-gray-900">VYD Engage</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Funcionalidades
               </a>
-              <a href="#pricing" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Preços
               </a>
-              <a href="#testimonials" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+              <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Depoimentos
               </a>
-              <a href="#faq" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+              <a href="#faq" className="text-gray-600 hover:text-gray-900 transition-colors">
                 FAQ
               </a>
             </nav>
@@ -214,7 +214,7 @@ export function LandingPage() {
                   <Button variant="ghost">Entrar</Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-[#2563EB] hover:bg-[#1E40AF]">
+                  <Button className="bg-primary hover:bg-primary-dark">
                     Começar Grátis
                   </Button>
                 </Link>
@@ -225,9 +225,9 @@ export function LandingPage() {
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? (
-                  <X size={24} className="text-[#6B7280]" />
+                  <X size={24} className="text-gray-600" />
                 ) : (
-                  <Menu size={24} className="text-[#6B7280]" />
+                  <Menu size={24} className="text-gray-600" />
                 )}
               </button>
             </div>
@@ -236,44 +236,44 @@ export function LandingPage() {
         
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-[#E5E7EB] bg-white">
+          <div className="md:hidden border-t border-gray-300 bg-white">
             <nav className="flex flex-col px-6 py-4 gap-4">
               <a 
                 href="#features" 
-                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Funcionalidades
               </a>
               <a 
                 href="#pricing" 
-                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Preços
               </a>
               <a 
                 href="#testimonials" 
-                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Depoimentos
               </a>
               <a 
                 href="#faq" 
-                className="text-[#6B7280] hover:text-[#1F2937] transition-colors py-2"
+                className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 FAQ
               </a>
-              <div className="flex flex-col gap-3 pt-4 border-t border-[#E5E7EB]">
+              <div className="flex flex-col gap-3 pt-4 border-t border-gray-300">
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">
                     Entrar
                   </Button>
                 </Link>
                 <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-[#2563EB] hover:bg-[#1E40AF]">
+                  <Button className="w-full bg-primary hover:bg-primary-dark">
                     Começar Grátis
                   </Button>
                 </Link>
@@ -288,16 +288,16 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-[#1F2937] mb-6">
+              <h1 className="text-gray-900 mb-6">
                 Capture, Organize e Converta Mais Leads
               </h1>
-              <p className="text-xl text-[#6B7280] mb-8">
+              <p className="text-xl text-gray-600 mb-8">
                 CRM simples e poderoso com automação inteligente via WhatsApp e e-mail. 
                 Aumente suas vendas sem aumentar sua equipe.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Link to="/register">
-                  <Button size="lg" className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2">
+                  <Button size="lg" className="bg-primary hover:bg-primary-dark gap-2">
                     Criar Conta Gratuita
                     <ArrowRight size={20} />
                   </Button>
@@ -306,23 +306,23 @@ export function LandingPage() {
                   Assistir Demo
                 </Button>
               </div>
-              <div className="flex items-center gap-6 text-sm text-[#6B7280]">
+              <div className="flex items-center gap-6 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-[#16A34A]" />
+                  <CheckCircle size={16} className="text-success" />
                   <span>14 dias grátis</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-[#16A34A]" />
+                  <CheckCircle size={16} className="text-success" />
                   <span>Sem cartão de crédito</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-[#16A34A]" />
+                  <CheckCircle size={16} className="text-success" />
                   <span>Cancele quando quiser</span>
                 </div>
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#2563EB]/20 to-[#3B82F6]/20 rounded-2xl transform rotate-3"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary-light/20 rounded-2xl transform rotate-3"></div>
               <ImageWithFallback
                 src="https://images.unsplash.com/photo-1577563682708-4f022ec774fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncm93dGglMjBjaGFydCUyMHN1Y2Nlc3N8ZW58MXx8fHwxNzYzNzc2MzUwfDA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="Dashboard preview"
@@ -334,10 +334,10 @@ export function LandingPage() {
       </section>
 
       {/* Social Proof */}
-      <section className="py-12 bg-[#F9FAFB]">
+      <section className="py-12 bg-gray-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-8">
-            <p className="text-[#6B7280] text-sm font-medium uppercase tracking-wide">
+            <p className="text-gray-600 text-sm font-medium uppercase tracking-wide">
               Empresas que confiam no VYD Engage
             </p>
           </div>
@@ -345,7 +345,7 @@ export function LandingPage() {
             {trustedCompanies.map((company, index) => (
               <div 
                 key={index} 
-                className="flex items-center justify-center h-16 px-4 bg-white rounded-lg border border-[#E5E7EB] hover:border-[#2563EB] hover:shadow-sm transition-all grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
+                className="flex items-center justify-center h-16 px-4 bg-white rounded-lg border border-gray-300 hover:border-primary hover:shadow-sm transition-all grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
                 title={company.name}
               >
                 <ImageWithFallback
@@ -363,8 +363,8 @@ export function LandingPage() {
       <section id="features" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-[#1F2937] mb-4">Tudo que você precisa para vender mais</h2>
-            <p className="text-xl text-[#6B7280] max-w-2xl mx-auto">
+            <h2 className="text-gray-900 mb-4">Tudo que você precisa para vender mais</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Ferramentas poderosas para capturar, organizar e converter leads em clientes
             </p>
           </div>
@@ -373,12 +373,12 @@ export function LandingPage() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="p-6 rounded-lg border border-[#E5E7EB] hover:border-[#2563EB] hover:shadow-md transition-all">
-                  <div className="w-12 h-12 bg-[#2563EB]/10 rounded-lg flex items-center justify-center mb-4">
-                    <Icon className="text-[#2563EB]" size={24} />
+                <div key={index} className="p-6 rounded-lg border border-gray-300 hover:border-primary hover:shadow-md transition-all">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                    <Icon className="text-primary" size={24} />
                   </div>
-                  <h3 className="text-[#1F2937] mb-2">{feature.title}</h3>
-                  <p className="text-[#6B7280]">{feature.description}</p>
+                  <h3 className="text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
                 </div>
               );
             })}
@@ -387,7 +387,7 @@ export function LandingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 px-6 bg-[#F9FAFB]">
+      <section className="py-20 px-6 bg-gray-100">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -398,10 +398,10 @@ export function LandingPage() {
               />
             </div>
             <div>
-              <h2 className="text-[#1F2937] mb-6">
+              <h2 className="text-gray-900 mb-6">
                 Automação que realmente funciona
               </h2>
-              <p className="text-lg text-[#6B7280] mb-8">
+              <p className="text-lg text-gray-600 mb-8">
                 Configure fluxos de automação personalizados em minutos, não em dias. 
                 Envie mensagens no momento certo, para a pessoa certa, pelo canal certo.
               </p>
@@ -413,8 +413,8 @@ export function LandingPage() {
                   "Acompanhe resultados em tempo real",
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <CheckCircle size={20} className="text-[#16A34A] flex-shrink-0" />
-                    <span className="text-[#1F2937]">{benefit}</span>
+                    <CheckCircle size={20} className="text-success flex-shrink-0" />
+                    <span className="text-gray-900">{benefit}</span>
                   </div>
                 ))}
               </div>
@@ -427,24 +427,24 @@ export function LandingPage() {
       <section id="testimonials" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-[#1F2937] mb-4">O que nossos clientes dizem</h2>
-            <p className="text-xl text-[#6B7280]">
+            <h2 className="text-gray-900 mb-4">O que nossos clientes dizem</h2>
+            <p className="text-xl text-gray-600">
               Mais de 500 empresas já usam o VYD Engage
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="p-6 rounded-lg bg-white border border-[#E5E7EB] shadow-sm">
+              <div key={index} className="p-6 rounded-lg bg-white border border-gray-300 shadow-sm">
                 <div className="flex gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} size={16} className="fill-[#F59E0B] text-[#F59E0B]" />
+                    <Star key={i} size={16} className="fill-amber text-amber" />
                   ))}
                 </div>
-                <p className="text-[#1F2937] mb-4">"{testimonial.content}"</p>
+                <p className="text-gray-900 mb-4">"{testimonial.content}"</p>
                 <div>
-                  <p className="font-medium text-[#1F2937]">{testimonial.name}</p>
-                  <p className="text-sm text-[#6B7280]">{testimonial.role}</p>
+                  <p className="font-medium text-gray-900">{testimonial.name}</p>
+                  <p className="text-sm text-gray-600">{testimonial.role}</p>
                 </div>
               </div>
             ))}
@@ -453,11 +453,11 @@ export function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 px-6 bg-[#F9FAFB]">
+      <section id="pricing" className="py-20 px-6 bg-gray-100">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-[#1F2937] mb-4">Planos transparentes</h2>
-            <p className="text-xl text-[#6B7280]">
+            <h2 className="text-gray-900 mb-4">Planos transparentes</h2>
+            <p className="text-xl text-gray-600">
               Escolha o plano ideal para o seu negócio
             </p>
           </div>
@@ -469,26 +469,26 @@ export function LandingPage() {
                 className={`
                   p-8 rounded-lg bg-white border-2 
                   ${plan.highlighted 
-                    ? 'border-[#2563EB] shadow-xl scale-105' 
-                    : 'border-[#E5E7EB]'
+                    ? 'border-primary shadow-xl scale-105' 
+                    : 'border-gray-300'
                   }
                 `}
               >
                 {plan.highlighted && (
-                  <span className="inline-block px-3 py-1 bg-[#2563EB] text-white text-xs rounded-full mb-4">
+                  <span className="inline-block px-3 py-1 bg-primary text-white text-xs rounded-full mb-4">
                     Mais Popular
                   </span>
                 )}
-                <h3 className="text-[#1F2937] mb-2">{plan.name}</h3>
+                <h3 className="text-gray-900 mb-2">{plan.name}</h3>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-[#1F2937]">R$ {plan.price}</span>
-                  <span className="text-[#6B7280]">/mês</span>
+                  <span className="text-4xl font-bold text-gray-900">R$ {plan.price}</span>
+                  <span className="text-gray-600">/mês</span>
                 </div>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <CheckCircle size={20} className="text-[#16A34A] flex-shrink-0 mt-0.5" />
-                      <span className="text-[#6B7280]">{feature}</span>
+                      <CheckCircle size={20} className="text-success flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-600">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -496,8 +496,8 @@ export function LandingPage() {
                   <Button
                     className={`w-full ${
                       plan.highlighted
-                        ? 'bg-[#2563EB] hover:bg-[#1E40AF]'
-                        : 'bg-white border-2 border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white'
+                        ? 'bg-primary hover:bg-primary-dark'
+                        : 'bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white'
                     }`}
                   >
                     Começar Agora
@@ -513,14 +513,14 @@ export function LandingPage() {
       <section id="faq" className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-[#1F2937] mb-4">Perguntas Frequentes</h2>
+            <h2 className="text-gray-900 mb-4">Perguntas Frequentes</h2>
           </div>
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="p-6 rounded-lg bg-white border border-[#E5E7EB]">
-                <h4 className="text-[#1F2937] mb-2">{faq.question}</h4>
-                <p className="text-[#6B7280]">{faq.answer}</p>
+              <div key={index} className="p-6 rounded-lg bg-white border border-gray-300">
+                <h4 className="text-gray-900 mb-2">{faq.question}</h4>
+                <p className="text-gray-600">{faq.answer}</p>
               </div>
             ))}
           </div>
@@ -528,7 +528,7 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-[#2563EB] to-[#3B82F6]">
+      <section className="py-20 px-6 bg-gradient-to-r from-primary to-primary-light">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-white mb-6">
             Pronto para aumentar suas vendas?
@@ -537,7 +537,7 @@ export function LandingPage() {
             Junte-se a centenas de empresas que já estão vendendo mais com o VYD Engage
           </p>
           <Link to="/register">
-            <Button size="lg" className="bg-white text-[#2563EB] hover:bg-white/90">
+            <Button size="lg" className="bg-white text-primary hover:bg-white/90">
               Começar Agora - É Grátis
             </Button>
           </Link>
@@ -545,23 +545,23 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 bg-[#1F2937]">
+      <footer className="py-12 px-6 bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <span className="text-white font-bold text-xs">VE</span>
                 </div>
                 <span className="text-white font-semibold">VYD Engage</span>
               </div>
-              <p className="text-[#9CA3AF] text-sm">
+              <p className="text-gray-400 text-sm">
                 O CRM que ajuda você a vender mais, automaticamente.
               </p>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Produto</h4>
-              <ul className="space-y-2 text-sm text-[#9CA3AF]">
+              <ul className="space-y-2 text-sm text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Funcionalidades</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Preços</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Integrações</a></li>
@@ -569,7 +569,7 @@ export function LandingPage() {
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Empresa</h4>
-              <ul className="space-y-2 text-sm text-[#9CA3AF]">
+              <ul className="space-y-2 text-sm text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Sobre</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Contato</a></li>
@@ -577,14 +577,14 @@ export function LandingPage() {
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-[#9CA3AF]">
+              <ul className="space-y-2 text-sm text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Privacidade</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Termos</a></li>
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-[#374151]">
-            <p className="text-center text-sm text-[#9CA3AF]">
+          <div className="pt-8 border-t border-gray-700">
+            <p className="text-center text-sm text-gray-400">
               © 2024 VYD Engage. Todos os direitos reservados.
             </p>
           </div>

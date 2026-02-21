@@ -17,17 +17,17 @@ export function StatCard({
   value, 
   icon: Icon, 
   trend,
-  iconBg = "bg-[#2563EB]/10",
-  iconColor = "text-[#2563EB]"
+  iconBg = "bg-primary/10",
+  iconColor = "text-primary"
 }: StatCardProps) {
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E7EB]">
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-[#6B7280] mb-1">{title}</p>
-          <p className="text-3xl font-semibold text-[#1F2937] mb-2">{value}</p>
+          <p className="text-sm text-gray-600 mb-1">{title}</p>
+          <p className="text-3xl font-semibold text-gray-900 mb-2">{value}</p>
           {trend && (
-            <span className={`text-sm ${trend.isPositive ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+            <span className={`text-sm ${trend.isPositive ? 'text-success' : 'text-error'}`}>
               {trend.isPositive ? '↑' : '↓'} {trend.value}
             </span>
           )}

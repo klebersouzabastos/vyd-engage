@@ -95,14 +95,14 @@ export function ConnectionStatusBadge({
       </Badge>
 
       {showBattery && BatteryIcon && status.batteryLevel !== undefined && (
-        <div className="flex items-center gap-1 text-xs text-[#6B7280]">
+        <div className="flex items-center gap-1 text-xs text-gray-600">
           <BatteryIcon className="h-3 w-3" />
           <span>{status.batteryLevel}%</span>
         </div>
       )}
 
       {showLastSync && status.lastSync && (
-        <span className="text-xs text-[#6B7280]">
+        <span className="text-xs text-gray-600">
           {formatLastSync(status.lastSync)}
         </span>
       )}

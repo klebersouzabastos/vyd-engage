@@ -70,7 +70,7 @@ export function PixPayment({
       </div>
 
       {pixData.qrCodeBase64 && (
-        <div className="flex justify-center p-4 bg-white border border-[#E5E7EB] rounded-lg">
+        <div className="flex justify-center p-4 bg-white border border-gray-300 rounded-lg">
           <img
             src={`data:image/png;base64,${pixData.qrCodeBase64}`}
             alt="QR Code PIX"
@@ -80,9 +80,9 @@ export function PixPayment({
       )}
 
       {pixData.qrCode && !pixData.qrCodeBase64 && (
-        <div className="flex justify-center p-4 bg-white border border-[#E5E7EB] rounded-lg">
-          <div className="w-64 h-64 bg-[#F3F4F6] rounded-lg flex items-center justify-center">
-            <QrCode size={64} className="text-[#9CA3AF]" />
+        <div className="flex justify-center p-4 bg-white border border-gray-300 rounded-lg">
+          <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+            <QrCode size={64} className="text-gray-400" />
           </div>
         </div>
       )}
@@ -115,7 +115,7 @@ export function PixPayment({
       <Button
         onClick={onCheckStatus}
         disabled={isLoading || (timeLeft !== null && timeLeft === 0)}
-        className="w-full bg-[#2563EB] hover:bg-[#1E40AF]"
+        className="w-full bg-primary hover:bg-primary-dark"
       >
         {isLoading ? "Verificando..." : "Verificar Pagamento"}
       </Button>

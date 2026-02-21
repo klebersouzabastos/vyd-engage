@@ -40,7 +40,7 @@ export function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-8">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
       
@@ -48,7 +48,7 @@ export function Onboarding() {
         {/* Back Button */}
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[#6B7280] hover:text-[#1F2937] transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
         >
           <ArrowLeft size={20} />
           <span className="text-sm">Voltar para home</span>
@@ -56,10 +56,10 @@ export function Onboarding() {
 
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-white font-bold text-xs">VE</span>
           </div>
-          <span className="text-xl font-semibold text-[#1F2937]">VYD Engage</span>
+          <span className="text-xl font-semibold text-gray-900">VYD Engage</span>
         </div>
 
         {/* Progress Steps */}
@@ -68,26 +68,26 @@ export function Onboarding() {
             <div key={num} className="flex items-center flex-1">
               <div className={`
                 w-10 h-10 rounded-full flex items-center justify-center
-                ${step >= num ? 'bg-[#2563EB] text-white' : 'bg-white text-[#6B7280] border-2 border-[#E5E7EB]'}
+                ${step >= num ? 'bg-primary text-white' : 'bg-white text-gray-600 border-2 border-gray-300'}
               `}>
                 {step > num ? <Check size={20} /> : num}
               </div>
               {num < 3 && (
-                <div className={`flex-1 h-1 mx-4 ${step > num ? 'bg-[#2563EB]' : 'bg-[#E5E7EB]'}`} />
+                <div className={`flex-1 h-1 mx-4 ${step > num ? 'bg-primary' : 'bg-gray-300'}`} />
               )}
             </div>
           ))}
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB] p-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-8">
           {step === 1 && (
             <div>
-              <div className="w-12 h-12 bg-[#2563EB]/10 rounded-lg flex items-center justify-center mb-4">
-                <Building2 className="text-[#2563EB]" size={24} />
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Building2 className="text-primary" size={24} />
               </div>
-              <h2 className="text-[#1F2937] mb-2">Dados da empresa</h2>
-              <p className="text-[#6B7280] mb-6">Conte-nos um pouco sobre sua empresa</p>
+              <h2 className="text-gray-900 mb-2">Dados da empresa</h2>
+              <p className="text-gray-600 mb-6">Conte-nos um pouco sobre sua empresa</p>
 
               <div className="space-y-4">
                 <div>
@@ -106,7 +106,7 @@ export function Onboarding() {
                     id="companySize"
                     value={formData.companySize}
                     onChange={(e) => setFormData({ ...formData, companySize: e.target.value })}
-                    className="w-full mt-1.5 px-3 py-2 border border-[#E5E7EB] rounded-md bg-white text-[#1F2937]"
+                    className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
                   >
                     <option value="">Selecione</option>
                     <option value="1-10">1-10 pessoas</option>
@@ -121,11 +121,11 @@ export function Onboarding() {
 
           {step === 2 && (
             <div>
-              <div className="w-12 h-12 bg-[#2563EB]/10 rounded-lg flex items-center justify-center mb-4">
-                <Target className="text-[#2563EB]" size={24} />
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Target className="text-primary" size={24} />
               </div>
-              <h2 className="text-[#1F2937] mb-2">Objetivo principal</h2>
-              <p className="text-[#6B7280] mb-6">O que você mais deseja alcançar?</p>
+              <h2 className="text-gray-900 mb-2">Objetivo principal</h2>
+              <p className="text-gray-600 mb-6">O que você mais deseja alcançar?</p>
 
               <div className="space-y-3">
                 {[
@@ -138,8 +138,8 @@ export function Onboarding() {
                     className={`
                       flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all
                       ${formData.objective === option.value 
-                        ? 'border-[#2563EB] bg-[#2563EB]/5' 
-                        : 'border-[#E5E7EB] hover:border-[#2563EB]/50'
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-gray-300 hover:border-primary/50'
                       }
                     `}
                   >
@@ -152,8 +152,8 @@ export function Onboarding() {
                       className="mt-1"
                     />
                     <div>
-                      <p className="font-medium text-[#1F2937]">{option.label}</p>
-                      <p className="text-sm text-[#6B7280]">{option.desc}</p>
+                      <p className="font-medium text-gray-900">{option.label}</p>
+                      <p className="text-sm text-gray-600">{option.desc}</p>
                     </div>
                   </label>
                 ))}
@@ -163,16 +163,16 @@ export function Onboarding() {
 
           {step === 3 && (
             <div>
-              <div className="w-12 h-12 bg-[#2563EB]/10 rounded-lg flex items-center justify-center mb-4">
-                <Zap className="text-[#2563EB]" size={24} />
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Zap className="text-primary" size={24} />
               </div>
-              <h2 className="text-[#1F2937] mb-2">Configurações de automação</h2>
-              <p className="text-[#6B7280] mb-6">Configure seus canais de comunicação (opcional)</p>
+              <h2 className="text-gray-900 mb-2">Configurações de automação</h2>
+              <p className="text-gray-600 mb-6">Configure seus canais de comunicação (opcional)</p>
 
               <div className="space-y-4">
                 <div>
                   <Label>Conexões WhatsApp</Label>
-                  <p className="text-sm text-[#6B7280] mb-3">
+                  <p className="text-sm text-gray-600 mb-3">
                     Configure suas integrações com WhatsApp (opcional). Você pode configurar depois nas Configurações.
                   </p>
                   {connections.length > 0 ? (
@@ -185,8 +185,8 @@ export function Onboarding() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
-                      <p className="text-sm text-[#6B7280] mb-3">
+                    <div className="p-4 border border-gray-300 rounded-lg bg-gray-100">
+                      <p className="text-sm text-gray-600 mb-3">
                         Nenhuma conexão configurada ainda
                       </p>
                       <Dialog open={whatsappModalOpen} onOpenChange={setWhatsappModalOpen}>
@@ -202,7 +202,7 @@ export function Onboarding() {
                       </Dialog>
                     </div>
                   )}
-                  <p className="text-xs text-[#6B7280] mt-2">
+                  <p className="text-xs text-gray-600 mt-2">
                     Suportamos WhatsApp Business API oficial, Evolution API, Baileys/WPPConnect e ChatAPI
                   </p>
                 </div>
@@ -216,19 +216,19 @@ export function Onboarding() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="mt-1.5"
                   />
-                  <p className="text-xs text-[#6B7280] mt-1">E-mail usado para enviar automações</p>
+                  <p className="text-xs text-gray-600 mt-1">E-mail usado para enviar automações</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#E5E7EB]">
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-300">
             <Button
               variant="ghost"
               onClick={handleBack}
               disabled={step === 1}
-              className="text-[#6B7280]"
+              className="text-gray-600"
             >
               Voltar
             </Button>
@@ -237,14 +237,14 @@ export function Onboarding() {
                 <Button
                   variant="outline"
                   onClick={() => navigate("/app")}
-                  className="text-[#6B7280] border-[#E5E7EB] hover:bg-[#F9FAFB]"
+                  className="text-gray-600 border-gray-300 hover:bg-gray-100"
                 >
                   Configurar depois
                 </Button>
               )}
               <Button
                 onClick={handleNext}
-                className="bg-[#2563EB] hover:bg-[#1E40AF]"
+                className="bg-primary hover:bg-primary-dark"
               >
                 {step === 3 ? "Começar a usar" : "Continuar"}
               </Button>

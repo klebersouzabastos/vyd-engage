@@ -165,11 +165,11 @@ export function CustomFieldEditor({
               </Button>
             </div>
             {formData.options.length > 0 && (
-              <div className="flex flex-wrap gap-2 p-2 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
+              <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg bg-gray-100">
                 {formData.options.map((option) => (
                   <span
                     key={option}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-[#E5E7EB] rounded text-sm"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-gray-300 rounded text-sm"
                   >
                     {option}
                     <button
@@ -201,9 +201,9 @@ export function CustomFieldEditor({
       </div>
 
       {/* Preview */}
-      <div className="pt-4 border-t border-[#E5E7EB]">
-        <Label className="text-sm text-[#6B7280]">Preview</Label>
-        <div className="mt-2 p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+      <div className="pt-4 border-t border-gray-300">
+        <Label className="text-sm text-gray-600">Preview</Label>
+        <div className="mt-2 p-4 bg-gray-100 rounded-lg border border-gray-300">
           <CustomFieldInput
             field={{
               id: "preview",
@@ -218,13 +218,13 @@ export function CustomFieldEditor({
         </div>
       </div>
 
-      <div className="flex gap-2 pt-4 border-t border-[#E5E7EB]">
+      <div className="flex gap-2 pt-4 border-t border-gray-300">
         {onClose && (
           <Button variant="outline" onClick={handleClose} className="flex-1">
             Cancelar
           </Button>
         )}
-        <Button onClick={handleSave} className="flex-1 bg-[#2563EB] hover:bg-[#1E40AF]">
+        <Button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary-dark">
           {field ? "Salvar" : "Criar"}
         </Button>
       </div>
@@ -233,9 +233,9 @@ export function CustomFieldEditor({
 
   if (inline) {
     return (
-      <div className="p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+      <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-[#1F2937]">
+          <h3 className="font-medium text-gray-900">
             {field ? "Editar Campo Customizado" : "Novo Campo Customizado"}
           </h3>
           {onClose && (

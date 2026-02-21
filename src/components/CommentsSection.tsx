@@ -110,7 +110,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-[#1F2937] font-medium mb-3">Comentários</h3>
+        <h3 className="text-gray-900 font-medium mb-3">Comentários</h3>
         
         {/* New Comment */}
         <div className="space-y-2 mb-4">
@@ -122,7 +122,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
             className="resize-none"
           />
           <div className="flex items-center justify-between">
-            <p className="text-xs text-[#6B7280]">
+            <p className="text-xs text-gray-600">
               Pressione Enter para enviar, Shift+Enter para nova linha
             </p>
             <Button
@@ -140,24 +140,24 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
         {/* Comments List */}
         <div className="space-y-4">
           {comments.length === 0 ? (
-            <p className="text-sm text-[#6B7280] text-center py-4">
+            <p className="text-sm text-gray-600 text-center py-4">
               Nenhum comentário ainda. Seja o primeiro a comentar!
             </p>
           ) : (
             comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarFallback className="bg-[#2563EB] text-white text-xs">
+                  <AvatarFallback className="bg-primary text-white text-xs">
                     {getInitials(comment.userName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-1">
                     <div>
-                      <p className="text-sm font-medium text-[#1F2937]">
+                      <p className="text-sm font-medium text-gray-900">
                         {comment.userName}
                       </p>
-                      <p className="text-xs text-[#6B7280]">
+                      <p className="text-xs text-gray-600">
                         {formatRelativeTime(comment.createdAt)}
                         {comment.updatedAt && " (editado)"}
                       </p>
@@ -176,7 +176,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setDeletingId(comment.id)}
-                            className="text-[#DC2626]"
+                            className="text-error"
                           >
                             <Trash2 size={14} className="mr-2" />
                             Excluir
@@ -214,13 +214,13 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-sm text-[#1F2937] whitespace-pre-wrap">
+                    <div className="text-sm text-gray-900 whitespace-pre-wrap">
                       {comment.content.split(/(@\w+)/g).map((part, index) => {
                         if (part.startsWith("@")) {
                           return (
                             <span
                               key={index}
-                              className="font-medium text-[#2563EB] bg-blue-50 px-1 rounded"
+                              className="font-medium text-primary bg-blue-50 px-1 rounded"
                             >
                               {part}
                             </span>

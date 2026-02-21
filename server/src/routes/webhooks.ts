@@ -59,10 +59,10 @@ router.post('/mercadopago', async (req: Request, res: Response) => {
     await paymentService.handleWebhook(data);
 
     res.status(200).json({ received: true });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error processing Mercado Pago webhook', error);
     // Still return 200 to prevent Mercado Pago from retrying
-    res.status(200).json({ received: true, error: error.message });
+    res.status(200).json({ received: true, error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

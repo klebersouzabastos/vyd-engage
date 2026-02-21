@@ -65,12 +65,12 @@ export function EmailConfigCard({
   };
 
   return (
-    <Card className="border border-[#E5E7EB]">
+    <Card className="border border-gray-300">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <CardTitle className="text-base font-medium text-[#1F2937]">
+              <CardTitle className="text-base font-medium text-gray-900">
                 {config.name}
               </CardTitle>
               {config.isDefault && (
@@ -80,7 +80,7 @@ export function EmailConfigCard({
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-3 text-sm text-[#6B7280]">
+            <div className="flex items-center gap-3 text-sm text-gray-600">
               <Badge variant="outline" className="text-xs">
                 {providerLabel}
               </Badge>
@@ -109,7 +109,7 @@ export function EmailConfigCard({
           )}
 
           {config.status.lastTested && (
-            <div className="text-xs text-[#6B7280]">
+            <div className="text-xs text-gray-600">
               Último teste: {new Date(config.status.lastTested).toLocaleString("pt-BR")}
             </div>
           )}
@@ -156,7 +156,7 @@ export function EmailConfigCard({
           </div>
 
           {config.metadata && (
-            <div className="text-xs text-[#6B7280] pt-2 border-t border-[#E5E7EB]">
+            <div className="text-xs text-gray-600 pt-2 border-t border-gray-300">
               {config.metadata.emailCount !== undefined && (
                 <div>Emails enviados: {config.metadata.emailCount}</div>
               )}

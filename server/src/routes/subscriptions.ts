@@ -5,7 +5,7 @@ import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { planLimitsService } from '../services/planLimitsService.js';
 import { subscriptionService } from '../services/subscriptionService.js';
-import { PlanType } from '@prisma/client';
+import { PlanType, BillingCycle } from '@prisma/client';
 import prisma from '../config/database.js';
 
 const router = Router();
@@ -55,13 +55,13 @@ router.put('/change-plan', async (req, res, next) => {
 
     const { planType, billingCycle } = z.object({
       planType: z.nativeEnum(PlanType),
-      billingCycle: z.enum(['monthly', 'yearly']).optional(),
+      billingCycle: z.nativeEnum(BillingCycle).optional(),
     }).parse(req.body);
 
     const subscription = await subscriptionService.changePlan(
       req.user.tenantId,
       planType,
-      billingCycle || 'monthly'
+      billingCycle || 'MONTHLY'
     );
 
     res.json(subscription);

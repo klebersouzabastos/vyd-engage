@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { CustomField } from "../types";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "../utils/errors";
 import { validateFieldValue } from "../utils/customFields";
 
 interface CustomFieldsContextType {
@@ -37,7 +38,7 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
         active: field.active !== false,
       }));
       setFields(transformedFields);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar campos customizados:", error);
       toast.error("Erro ao carregar campos customizados");
     } finally {
@@ -71,8 +72,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
       setFields(prev => [...prev, newField]);
       toast.success("Campo customizado criado com sucesso!");
       return newField;
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao criar campo customizado");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao criar campo customizado");
       throw error;
     }
   }, []);
@@ -99,8 +100,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
       setFields(prev => prev.map(f => f.id === id ? updatedField : f));
       toast.success("Campo customizado atualizado com sucesso!");
       return updatedField;
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar campo customizado");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao atualizar campo customizado");
       throw error;
     }
   }, []);
@@ -110,8 +111,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
       await apiClient.deleteCustomField(id);
       setFields(prev => prev.filter(f => f.id !== id));
       toast.success("Campo customizado deletado com sucesso!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao deletar campo customizado");
+    } catch (error) {
+      toast.error(getErrorMessage(error) ||"Erro ao deletar campo customizado");
       throw error;
     }
   }, []);
@@ -130,7 +131,7 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
       ));
       setFields(reorderedFields);
       toast.success("Ordem dos campos atualizada!");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao reordenar campos");
       throw error;
     }
@@ -140,20 +141,20 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
     return fields.find((field) => field.id === id);
   }, [fields]);
 
+  const value = useMemo(() => ({
+    fields,
+    loading,
+    createField,
+    updateField,
+    deleteField,
+    reorderFields,
+    getFieldById,
+    validateValue: validateFieldValue,
+    refreshFields,
+  }), [fields, loading, createField, updateField, deleteField, reorderFields, getFieldById, refreshFields]);
+
   return (
-    <CustomFieldsContext.Provider
-      value={{
-        fields,
-        loading,
-        createField,
-        updateField,
-        deleteField,
-        reorderFields,
-        getFieldById,
-        validateValue: validateFieldValue,
-        refreshFields,
-      }}
-    >
+    <CustomFieldsContext.Provider value={value}>
       {children}
     </CustomFieldsContext.Provider>
   );

@@ -134,30 +134,30 @@ export function Dashboard() {
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Leads */}
-          <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB]">
-            <div className="p-6 border-b border-[#E5E7EB]">
-              <h3 className="text-[#1F2937]">Últimos Leads Capturados</h3>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+            <div className="p-6 border-b border-gray-300">
+              <h3 className="text-gray-900">Últimos Leads Capturados</h3>
             </div>
             {dashboardLoading ? (
-              <div className="p-6 text-center text-[#6B7280]">Carregando...</div>
+              <div className="p-6 text-center text-gray-600">Carregando...</div>
             ) : stats.recentLeads.length === 0 ? (
-              <div className="p-6 text-center text-[#6B7280]">Nenhum lead encontrado</div>
+              <div className="p-6 text-center text-gray-600">Nenhum lead encontrado</div>
             ) : (
-              <div className="divide-y divide-[#E5E7EB]">
+              <div className="divide-y divide-gray-300">
                 {stats.recentLeads.map((lead) => {
                   const timeAgo = lead.createdAt ? formatTimeAgo(lead.createdAt) : "";
                   return (
-                    <div key={lead.id} className="p-4 hover:bg-[#F9FAFB] transition-colors">
+                    <div key={lead.id} className="p-4 hover:bg-gray-100 transition-colors">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="font-medium text-[#1F2937]">{lead.name}</p>
-                          {lead.phone && <p className="text-sm text-[#6B7280]">{lead.phone}</p>}
+                          <p className="font-medium text-gray-900">{lead.name}</p>
+                          {lead.phone && <p className="text-sm text-gray-600">{lead.phone}</p>}
                         </div>
                         <LeadStatusBadge status={lead.status} />
                       </div>
                       <div className="flex items-center justify-between">
                         <LeadSourceBadge source={lead.source} />
-                        {timeAgo && <span className="text-xs text-[#6B7280]">{timeAgo}</span>}
+                        {timeAgo && <span className="text-xs text-gray-600">{timeAgo}</span>}
                       </div>
                     </div>
                   );
@@ -167,29 +167,29 @@ export function Dashboard() {
           </div>
 
           {/* Task Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB]">
-            <div className="p-6 border-b border-[#E5E7EB]">
-              <h3 className="text-[#1F2937]">Resumo de Tarefas</h3>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+            <div className="p-6 border-b border-gray-300">
+              <h3 className="text-gray-900">Resumo de Tarefas</h3>
             </div>
             {dashboardLoading ? (
-              <div className="p-6 text-center text-[#6B7280]">Carregando...</div>
+              <div className="p-6 text-center text-gray-600">Carregando...</div>
             ) : (
               <div className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#1F2937]">Total de Tarefas</span>
-                    <span className="font-semibold text-[#1F2937]">{stats.totalTasks}</span>
+                    <span className="text-sm text-gray-900">Total de Tarefas</span>
+                    <span className="font-semibold text-gray-900">{stats.totalTasks}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#1F2937]">Tarefas Vencidas</span>
+                    <span className="text-sm text-gray-900">Tarefas Vencidas</span>
                     <span className="font-semibold text-red-600">{stats.overdueTasks}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#1F2937]">Vencendo Hoje</span>
+                    <span className="text-sm text-gray-900">Vencendo Hoje</span>
                     <span className="font-semibold text-yellow-600">{stats.tasksDueToday}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#1F2937]">Concluídas</span>
+                    <span className="text-sm text-gray-900">Concluídas</span>
                     <span className="font-semibold text-green-600">{stats.completedTasks}</span>
                   </div>
                 </div>

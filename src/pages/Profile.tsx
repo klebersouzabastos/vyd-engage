@@ -141,7 +141,7 @@ export function Profile() {
       <div className="p-8">
         <div className="max-w-4xl mx-auto">
           {/* Profile Header Card */}
-          <Card className="bg-white border-[#E5E7EB] shadow-sm mb-6">
+          <Card className="bg-white border-gray-300 shadow-sm mb-6">
             <div className="p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="relative">
@@ -152,14 +152,14 @@ export function Profile() {
                       alt={profileData.name}
                     />
                   ) : null}
-                  <AvatarFallback className="bg-[#2563EB] text-white text-xl font-semibold">
+                  <AvatarFallback className="bg-primary text-white text-xl font-semibold">
                     {getInitials(profileData.name)}
                   </AvatarFallback>
                 </Avatar>
                 {isEditing && (
                   <label
                     htmlFor="avatar-upload"
-                    className="absolute bottom-0 right-0 w-7 h-7 bg-[#2563EB] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#1E40AF] transition-colors shadow-md border-2 border-white"
+                    className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-dark transition-colors shadow-md border-2 border-white"
                   >
                     <Camera size={14} className="text-white" />
                     <input
@@ -174,13 +174,13 @@ export function Profile() {
               </div>
               
               <div className="flex-1">
-                <h2 className="text-2xl font-semibold text-[#1F2937] mb-1">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-1">
                   {profileData.name}
                 </h2>
-                <p className="text-[#6B7280] mb-2">{profileData.role}</p>
-                <p className="text-sm text-[#6B7280]">{profileData.company}</p>
+                <p className="text-gray-600 mb-2">{profileData.role}</p>
+                <p className="text-sm text-gray-600">{profileData.company}</p>
                 {profileData.bio && (
-                  <p className="text-sm text-[#6B7280] mt-3">{profileData.bio}</p>
+                  <p className="text-sm text-gray-600 mt-3">{profileData.bio}</p>
                 )}
               </div>
 
@@ -197,7 +197,7 @@ export function Profile() {
                     </Button>
                     <Button
                       onClick={handleSave}
-                      className="bg-[#2563EB] hover:bg-[#1E40AF] gap-2"
+                      className="bg-primary hover:bg-primary-dark gap-2"
                     >
                       <Save size={16} />
                       Salvar
@@ -206,7 +206,7 @@ export function Profile() {
                 ) : (
                   <Button
                     onClick={() => setIsEditing(true)}
-                    className="bg-[#2563EB] hover:bg-[#1E40AF]"
+                    className="bg-primary hover:bg-primary-dark"
                   >
                     Editar Perfil
                   </Button>
@@ -219,9 +219,9 @@ export function Profile() {
           {/* Profile Information */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Personal Information */}
-            <Card className="bg-white border-[#E5E7EB] shadow-sm">
+            <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Informações Pessoais
               </h3>
               <div className="space-y-4">
@@ -275,9 +275,9 @@ export function Profile() {
             </Card>
 
             {/* Professional Information */}
-            <Card className="bg-white border-[#E5E7EB] shadow-sm">
+            <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Informações Profissionais
               </h3>
               <div className="space-y-4">
@@ -333,9 +333,9 @@ export function Profile() {
             </Card>
 
             {/* Social Media */}
-            <Card className="bg-white border-[#E5E7EB] shadow-sm">
+            <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Redes Sociais
               </h3>
               <div className="space-y-4">
@@ -367,9 +367,9 @@ export function Profile() {
             </Card>
 
             {/* Password Security */}
-            <Card className="bg-white border-[#E5E7EB] shadow-sm">
+            <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Segurança e Senha
               </h3>
               <div className="space-y-4">
@@ -392,7 +392,7 @@ export function Profile() {
                     placeholder="Digite sua nova senha"
                     className="mt-1.5"
                   />
-                  <p className="text-xs text-[#6B7280] mt-1.5">
+                  <p className="text-xs text-gray-600 mt-1.5">
                     A senha deve ter pelo menos 8 caracteres
                   </p>
                 </div>
@@ -407,7 +407,7 @@ export function Profile() {
                   />
                 </div>
                 {!isEditing && (
-                  <p className="text-sm text-[#6B7280] pt-2">
+                  <p className="text-sm text-gray-600 pt-2">
                     Clique em "Editar Perfil" para alterar sua senha
                   </p>
                 )}
@@ -416,27 +416,27 @@ export function Profile() {
             </Card>
 
             {/* Account Statistics */}
-            <Card className="bg-white border-[#E5E7EB] shadow-sm">
+            <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Estatísticas da Conta
               </h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-[#F9FAFB] rounded-lg">
-                  <span className="text-sm text-[#6B7280]">Leads criados</span>
-                  <span className="text-lg font-semibold text-[#1F2937]">142</span>
+                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                  <span className="text-sm text-gray-600">Leads criados</span>
+                  <span className="text-lg font-semibold text-gray-900">142</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#F9FAFB] rounded-lg">
-                  <span className="text-sm text-[#6B7280]">Automações ativas</span>
-                  <span className="text-lg font-semibold text-[#1F2937]">8</span>
+                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                  <span className="text-sm text-gray-600">Automações ativas</span>
+                  <span className="text-lg font-semibold text-gray-900">8</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#F9FAFB] rounded-lg">
-                  <span className="text-sm text-[#6B7280]">Membro desde</span>
-                  <span className="text-lg font-semibold text-[#1F2937]">Jan 2024</span>
+                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                  <span className="text-sm text-gray-600">Membro desde</span>
+                  <span className="text-lg font-semibold text-gray-900">Jan 2024</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#F9FAFB] rounded-lg">
-                  <span className="text-sm text-[#6B7280]">Plano</span>
-                  <span className="text-lg font-semibold text-[#2563EB]">Premium</span>
+                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                  <span className="text-sm text-gray-600">Plano</span>
+                  <span className="text-lg font-semibold text-primary">Premium</span>
                 </div>
               </div>
               </div>

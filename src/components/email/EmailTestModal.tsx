@@ -59,10 +59,10 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-[#1F2937] mb-2">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
           Testar Configuração de Email
         </h3>
-        <p className="text-sm text-[#6B7280]">
+        <p className="text-sm text-gray-600">
           Envie um email de teste para verificar se sua configuração está funcionando corretamente.
         </p>
       </div>
@@ -78,7 +78,7 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
           className="mt-1.5"
           disabled={isTesting}
         />
-        <p className="text-xs text-[#6B7280] mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           O email de teste será enviado para este endereço
         </p>
       </div>
@@ -99,11 +99,11 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
         </Alert>
       )}
 
-      <div className="flex items-center gap-2 pt-4 border-t border-[#E5E7EB]">
+      <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
         <Button
           onClick={handleTest}
           disabled={isTesting || !testEmail}
-          className="bg-[#2563EB] hover:bg-[#1E40AF]"
+          className="bg-primary hover:bg-primary-dark"
         >
           {isTesting ? (
             <>

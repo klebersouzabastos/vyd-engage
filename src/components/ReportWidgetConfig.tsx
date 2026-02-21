@@ -255,7 +255,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
       {showAdvanced && widget.dataSource && (
         <div>
           <Label>Filtros</Label>
-          <div className="mt-1.5 border border-[#E5E7EB] rounded-lg p-4">
+          <div className="mt-1.5 border border-gray-300 rounded-lg p-4">
             <ReportFilters
               filters={widget.filters}
               onChange={handleFilterChange}
@@ -266,7 +266,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
       )}
 
       {/* Configurações Avançadas */}
-      <div className="pt-4 border-t border-[#E5E7EB]">
+      <div className="pt-4 border-t border-gray-300">
         <Button
           type="button"
           variant="outline"
@@ -279,7 +279,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
         </Button>
 
         {showAdvanced && (
-          <div className="mt-4 space-y-4 border-t border-[#E5E7EB] pt-4">
+          <div className="mt-4 space-y-4 border-t border-gray-300 pt-4">
             {/* Período de Data */}
             <div>
               <Label>Período de Análise</Label>

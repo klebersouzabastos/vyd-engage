@@ -1,14 +1,14 @@
 import prisma from '../config/database.js';
 import { mercadopagoService } from './mercadopagoService.js';
 import { createError } from '../middleware/errorHandler.js';
-import { PlanType } from '@prisma/client';
+import { PlanType, PaymentMethod, PaymentStatus, BillingCycle } from '@prisma/client';
 
 export interface CreatePaymentIntentData {
   planId: string;
   planType: PlanType;
   amount: number;
-  method: 'credit_card' | 'pix' | 'boleto';
-  billingCycle: 'monthly' | 'yearly';
+  method: PaymentMethod;
+  billingCycle: BillingCycle;
 }
 
 export const paymentService = {
@@ -43,7 +43,7 @@ export const paymentService = {
         amount: data.amount,
         currency: 'BRL',
         method: data.method,
-        status: 'pending',
+        status: 'PENDING',
         mercadoPagoPreferenceId: preference.id,
       },
     });
@@ -58,9 +58,9 @@ export const paymentService = {
     };
   },
 
-  async handleWebhook(data: any) {
+  async handleWebhook(data: Record<string, unknown>) {
     // Handle Mercado Pago webhook
-    const { type, data: webhookData } = data;
+    const { type, data: webhookData } = data as { type: string; data: { id: string; status: string } };
 
     if (type === 'payment') {
       const paymentId = webhookData.id;
@@ -111,7 +111,7 @@ export const paymentService = {
       where: {
         id: paymentId || undefined,
         tenantId,
-        status: 'paid',
+        status: 'PAID',
       },
       include: {
         subscription: true,
@@ -140,7 +140,7 @@ export const paymentService = {
 
     // Update subscription status
     const renewalDate = new Date();
-    if (subscription.billingCycle === 'monthly') {
+    if (subscription.billingCycle === 'MONTHLY') {
       renewalDate.setMonth(renewalDate.getMonth() + 1);
     } else {
       renewalDate.setFullYear(renewalDate.getFullYear() + 1);
@@ -167,20 +167,20 @@ export const paymentService = {
     }
   },
 
-  mapMercadoPagoStatus(status: string): string {
-    const statusMap: Record<string, string> = {
-      pending: 'pending',
-      approved: 'paid',
-      authorized: 'paid',
-      in_process: 'pending',
-      in_mediation: 'pending',
-      rejected: 'failed',
-      cancelled: 'failed',
-      refunded: 'refunded',
-      charged_back: 'refunded',
+  mapMercadoPagoStatus(status: string): PaymentStatus {
+    const statusMap: Record<string, PaymentStatus> = {
+      pending: 'PENDING',
+      approved: 'PAID',
+      authorized: 'PAID',
+      in_process: 'PENDING',
+      in_mediation: 'PENDING',
+      rejected: 'FAILED',
+      cancelled: 'FAILED',
+      refunded: 'REFUNDED',
+      charged_back: 'REFUNDED',
     };
 
-    return statusMap[status] || 'pending';
+    return statusMap[status] || 'PENDING';
   },
 
   async getPaymentHistory(tenantId: string) {
