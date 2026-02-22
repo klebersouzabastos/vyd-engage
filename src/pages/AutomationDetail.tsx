@@ -5,9 +5,10 @@ import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { ArrowLeft, MessageSquare, Clock, Send, Plus, Trash2, X, ArrowDown, Loader2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Clock, Send, Plus, Trash2, X, ArrowDown, Loader2, Calendar, Settings2 } from "lucide-react";
 import { Switch } from "../components/ui/switch";
 import { apiClient } from "../services/api/client";
+import { toast } from "sonner";
 
 interface Step {
   id: number;
@@ -18,6 +19,25 @@ interface Step {
   message: string;
   config?: Record<string, any>;
 }
+
+interface Schedule {
+  enabled: boolean;
+  days: number[];
+  startHour: number;
+  endHour: number;
+  timezone: string;
+}
+
+const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+const TRIGGER_OPTIONS = [
+  { value: "lead_created", label: "Quando lead é criado" },
+  { value: "status_changed", label: "Quando lead muda de status" },
+  { value: "lead_score_changed", label: "Quando lead atinge score" },
+  { value: "tag_added", label: "Quando lead recebe tag" },
+  { value: "form_submitted", label: "Quando formulário é preenchido" },
+  { value: "scheduled", label: "Agendamento" },
+];
 
 const formatDelay = (delay: string): string => {
   if (delay === "0") return "Enviar imediatamente";
@@ -55,16 +75,27 @@ const buildDelay = (value: number, unit: string, isImmediate: boolean): string =
 export function AutomationDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const isNew = !id;
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [automationName, setAutomationName] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(false);
   const [trigger, setTrigger] = useState("lead_created");
   const [triggerConfig, setTriggerConfig] = useState<Record<string, any>>({});
-  const [steps, setSteps] = useState<Step[]>([]);
+  const [steps, setSteps] = useState<Step[]>([
+    { id: 1, delay: "0", channel: "whatsapp", type: "send_whatsapp", message: "" },
+  ]);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
+  const [schedule, setSchedule] = useState<Schedule>({
+    enabled: false,
+    days: [1, 2, 3, 4, 5],
+    startHour: 8,
+    endHour: 18,
+    timezone: "America/Sao_Paulo",
+  });
 
   useEffect(() => {
     if (id) loadAutomation();
@@ -77,15 +108,35 @@ export function AutomationDetail() {
       const automation = result?.data || result;
 
       setAutomationName(automation.name || "");
-      setIsActive(automation.active ?? true);
-      setTrigger(automation.trigger || "lead_created");
-      setTriggerConfig(automation.triggerConfig || {});
+      setDescription(automation.description || "");
+      setIsActive(automation.status === "ACTIVE");
+
+      // Parse trigger
+      const triggerData = automation.trigger || {};
+      if (typeof triggerData === "object" && triggerData.type) {
+        setTrigger(triggerData.type);
+        setTriggerConfig(triggerData.conditions || {});
+      } else if (typeof triggerData === "string") {
+        setTrigger(triggerData);
+      }
+
+      // Parse schedule from conditions or top-level
+      const scheduleData = automation.conditions?.schedule || automation.schedule;
+      if (scheduleData && scheduleData.enabled) {
+        setSchedule({
+          enabled: true,
+          days: scheduleData.days || [1, 2, 3, 4, 5],
+          startHour: scheduleData.startHour ?? 8,
+          endHour: scheduleData.endHour ?? 18,
+          timezone: scheduleData.timezone || "America/Sao_Paulo",
+        });
+      }
 
       // Parse steps from API
       const apiSteps = (automation.steps || []).map((s: any, i: number) => ({
         id: i + 1,
         delay: s.delay || "0",
-        channel: s.type === "send_email" ? "email" : "whatsapp",
+        channel: s.type === "send_email" ? "email" as const : "whatsapp" as const,
         type: s.type || "send_whatsapp",
         subject: s.config?.subject || "",
         message: s.config?.message || s.config?.content || "",
@@ -102,37 +153,65 @@ export function AutomationDetail() {
       }
     } catch (error) {
       console.error("Erro ao carregar automação:", error);
+      toast.error("Erro ao carregar automação");
     } finally {
       setLoading(false);
     }
   };
 
+  const buildPayload = () => {
+    const apiSteps = steps.map((s, i) => ({
+      order: i,
+      type: s.channel === "email" ? "send_email" : "send_whatsapp",
+      delay: s.delay,
+      config: {
+        message: s.message,
+        content: s.message,
+        ...(s.subject ? { subject: s.subject } : {}),
+        ...s.config,
+      },
+    }));
+
+    const triggerPayload: any = { type: trigger };
+    if (Object.keys(triggerConfig).length > 0) {
+      triggerPayload.conditions = triggerConfig;
+    }
+
+    return {
+      name: automationName,
+      description,
+      status: isActive ? "ACTIVE" : "PAUSED",
+      trigger: triggerPayload,
+      steps: apiSteps,
+      conditions: schedule.enabled ? { schedule } : null,
+    };
+  };
+
   const handleSave = async () => {
+    if (!automationName.trim()) {
+      toast.error("Nome da automação é obrigatório");
+      return;
+    }
+    if (steps.length === 0) {
+      toast.error("Adicione pelo menos um step");
+      return;
+    }
+
     setSaving(true);
     try {
-      const apiSteps = steps.map((s, i) => ({
-        order: i,
-        type: s.channel === "email" ? "send_email" : "send_whatsapp",
-        delay: s.delay,
-        config: {
-          message: s.message,
-          content: s.message,
-          ...(s.subject ? { subject: s.subject } : {}),
-          ...s.config,
-        },
-      }));
+      const payload = buildPayload();
 
-      await apiClient.updateAutomation(id!, {
-        name: automationName,
-        active: isActive,
-        trigger,
-        triggerConfig,
-        steps: apiSteps,
-      });
+      if (isNew) {
+        await apiClient.createAutomation(payload);
+        toast.success("Automação criada com sucesso");
+      } else {
+        await apiClient.updateAutomation(id!, payload);
+        toast.success("Automação salva com sucesso");
+      }
 
       navigate("/app/automations");
     } catch (error: any) {
-      alert(error.message || "Erro ao salvar automação");
+      toast.error(error.message || "Erro ao salvar automação");
     } finally {
       setSaving(false);
     }
@@ -159,10 +238,17 @@ export function AutomationDetail() {
     }
   };
 
+  const toggleScheduleDay = (day: number) => {
+    setSchedule(prev => ({
+      ...prev,
+      days: prev.days.includes(day) ? prev.days.filter(d => d !== day) : [...prev.days, day].sort(),
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
-        <Header title="Detalhes da Automação" />
+        <Header title={isNew ? "Nova Automação" : "Detalhes da Automação"} />
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
@@ -172,7 +258,7 @@ export function AutomationDetail() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Detalhes da Automação" />
+      <Header title={isNew ? "Nova Automação" : "Detalhes da Automação"} />
 
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
@@ -180,14 +266,16 @@ export function AutomationDetail() {
             <ArrowLeft size={16} /> Voltar
           </Button>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Status:</span>
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <span className="text-sm font-medium text-gray-900">{isActive ? "Ativo" : "Pausado"}</span>
-            </div>
+            {!isNew && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Status:</span>
+                <Switch checked={isActive} onCheckedChange={setIsActive} />
+                <span className="text-sm font-medium text-gray-900">{isActive ? "Ativo" : "Pausado"}</span>
+              </div>
+            )}
             <Button className="bg-primary hover:bg-primary-dark gap-2" onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 size={16} className="animate-spin" /> : null}
-              Salvar Alterações
+              {isNew ? "Criar Automação" : "Salvar Alterações"}
             </Button>
           </div>
         </div>
@@ -200,7 +288,23 @@ export function AutomationDetail() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nome da Automação</Label>
-                  <Input id="name" value={automationName} onChange={(e) => setAutomationName(e.target.value)} className="mt-1.5" />
+                  <Input
+                    id="name"
+                    value={automationName}
+                    onChange={(e) => setAutomationName(e.target.value)}
+                    placeholder="Ex: Follow-up após cadastro"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Descrição (opcional)</Label>
+                  <Input
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Descreva o objetivo desta automação"
+                    className="mt-1.5"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="trigger">Gatilho</Label>
@@ -209,15 +313,171 @@ export function AutomationDetail() {
                     onChange={(e) => { setTrigger(e.target.value); setTriggerConfig({}); }}
                     className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                   >
-                    <option value="lead_created">Quando lead é criado</option>
-                    <option value="lead_status_changed">Quando lead muda de status</option>
-                    <option value="lead_score_changed">Quando lead atinge score</option>
-                    <option value="lead_tag_added">Quando lead recebe tag</option>
-                    <option value="form_submitted">Quando formulário é preenchido</option>
-                    <option value="scheduled">Agendamento</option>
+                    {TRIGGER_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
+
+                {/* Trigger Conditions */}
+                {trigger === "status_changed" && (
+                  <div>
+                    <Label htmlFor="triggerStatus">Status específico (opcional)</Label>
+                    <select
+                      id="triggerStatus"
+                      value={triggerConfig.status || ""}
+                      onChange={(e) => setTriggerConfig(prev => ({ ...prev, status: e.target.value || undefined }))}
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="">Qualquer mudança de status</option>
+                      <option value="NEW">Novo</option>
+                      <option value="CONTACTED">Contatado</option>
+                      <option value="QUALIFIED">Qualificado</option>
+                      <option value="PROPOSAL">Proposta</option>
+                      <option value="NEGOTIATION">Negociação</option>
+                      <option value="WON">Ganho</option>
+                      <option value="LOST">Perdido</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Dispara apenas quando o lead mudar para este status</p>
+                  </div>
+                )}
+                {trigger === "lead_score_changed" && (
+                  <div>
+                    <Label htmlFor="triggerScore">Score mínimo</Label>
+                    <Input
+                      id="triggerScore"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={triggerConfig.minScore || ""}
+                      onChange={(e) => setTriggerConfig(prev => ({ ...prev, minScore: parseInt(e.target.value) || undefined }))}
+                      placeholder="Ex: 50"
+                      className="mt-1.5"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Dispara quando o score do lead atingir este valor</p>
+                  </div>
+                )}
+                {trigger === "tag_added" && (
+                  <div>
+                    <Label htmlFor="triggerTag">Tag ID (opcional)</Label>
+                    <Input
+                      id="triggerTag"
+                      value={triggerConfig.tagId || ""}
+                      onChange={(e) => setTriggerConfig(prev => ({ ...prev, tagId: e.target.value || undefined }))}
+                      placeholder="ID da tag específica"
+                      className="mt-1.5"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Deixe vazio para disparar com qualquer tag</p>
+                  </div>
+                )}
+                {trigger === "lead_created" && (
+                  <div>
+                    <Label htmlFor="triggerSource">Fonte do lead (opcional)</Label>
+                    <select
+                      id="triggerSource"
+                      value={triggerConfig.source || ""}
+                      onChange={(e) => setTriggerConfig(prev => ({ ...prev, source: e.target.value || undefined }))}
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="">Qualquer fonte</option>
+                      <option value="WEBSITE">Website</option>
+                      <option value="REFERRAL">Indicação</option>
+                      <option value="SOCIAL_MEDIA">Redes Sociais</option>
+                      <option value="PAID_ADS">Anúncios Pagos</option>
+                      <option value="OTHER">Outra</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Dispara apenas para leads desta fonte</p>
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Scheduling */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Calendar size={18} className="text-gray-500" />
+                  <h3 className="text-gray-900">Agendamento</h3>
+                </div>
+                <Switch
+                  checked={schedule.enabled}
+                  onCheckedChange={(checked) => setSchedule(prev => ({ ...prev, enabled: checked }))}
+                />
+              </div>
+
+              {schedule.enabled ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="mb-2 block">Dias permitidos</Label>
+                    <div className="flex gap-2">
+                      {DAY_LABELS.map((label, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => toggleScheduleDay(index)}
+                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                            schedule.days.includes(index)
+                              ? "bg-primary text-white"
+                              : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="startHour">Hora início</Label>
+                      <select
+                        id="startHour"
+                        value={schedule.startHour}
+                        onChange={(e) => setSchedule(prev => ({ ...prev, startHour: parseInt(e.target.value) }))}
+                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <option key={i} value={i}>{String(i).padStart(2, "0")}:00</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="endHour">Hora fim</Label>
+                      <select
+                        id="endHour"
+                        value={schedule.endHour}
+                        onChange={(e) => setSchedule(prev => ({ ...prev, endHour: parseInt(e.target.value) }))}
+                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <option key={i} value={i}>{String(i).padStart(2, "0")}:00</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="timezone">Fuso horário</Label>
+                    <select
+                      id="timezone"
+                      value={schedule.timezone}
+                      onChange={(e) => setSchedule(prev => ({ ...prev, timezone: e.target.value }))}
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="America/Sao_Paulo">Brasília (GMT-3)</option>
+                      <option value="America/Manaus">Manaus (GMT-4)</option>
+                      <option value="America/Belem">Belém (GMT-3)</option>
+                      <option value="America/Fortaleza">Fortaleza (GMT-3)</option>
+                      <option value="America/Recife">Recife (GMT-3)</option>
+                      <option value="America/Cuiaba">Cuiabá (GMT-4)</option>
+                      <option value="America/Rio_Branco">Rio Branco (GMT-5)</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Mensagens fora do horário serão reagendadas para o próximo horário permitido.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Automação executará a qualquer momento. Ative para restringir dias e horários.</p>
+              )}
             </div>
 
             {/* Step Editor */}
@@ -310,7 +570,9 @@ export function AutomationDetail() {
                       onChange={(e) => setSteps(steps.map(s => s.id === selectedStep ? { ...s, message: e.target.value } : s))}
                       placeholder="Digite sua mensagem..." className="mt-1.5" rows={6}
                     />
-                    <p className="text-xs text-gray-600 mt-2">Use {`{{nome}}`} para personalizar com o nome do lead</p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Variáveis: {`{{nome}}`}, {`{{email}}`}, {`{{telefone}}`}, {`{{empresa}}`}
+                    </p>
                   </div>
                   <div className="flex gap-2 pt-2 border-t border-gray-300">
                     <Button variant="outline" className="flex-1" onClick={() => setSelectedStep(null)}>Fechar</Button>
@@ -319,28 +581,40 @@ export function AutomationDetail() {
               </div>
             )}
 
-            {/* Recent Activities */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
-              <h3 className="text-gray-900 mb-4">Atividades Recentes</h3>
-              {logs.length === 0 ? (
-                <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
-              ) : (
-                <div className="space-y-3">
-                  {logs.slice(0, 5).map((log: any, i: number) => (
-                    <div key={log.id || i} className="pb-3 border-b border-gray-300 last:border-0">
-                      <p className="font-medium text-sm text-gray-900 mb-1">Step {log.stepOrder != null ? log.stepOrder + 1 : "?"}</p>
-                      <p className="text-sm text-gray-600 mb-1">{log.status === "SUCCESS" ? "Enviado" : log.status === "ERROR" ? "Erro" : log.status}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">{new Date(log.executedAt || log.createdAt).toLocaleString("pt-BR")}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${log.status === "SUCCESS" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                          {log.status === "SUCCESS" ? "Enviado" : "Erro"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+            {/* Recent Activities (only for existing automations) */}
+            {!isNew && (
+              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-gray-900">Atividades Recentes</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/app/automations/logs")}
+                    className="text-sm text-primary"
+                  >
+                    Ver todos os logs
+                  </Button>
                 </div>
-              )}
-            </div>
+                {logs.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {logs.slice(0, 5).map((log: any, i: number) => (
+                      <div key={log.id || i} className="pb-3 border-b border-gray-300 last:border-0">
+                        <p className="font-medium text-sm text-gray-900 mb-1">Step {log.stepOrder != null ? log.stepOrder + 1 : "?"}</p>
+                        <p className="text-sm text-gray-600 mb-1 truncate">{log.message || (log.status === "SUCCESS" ? "Enviado" : "Erro")}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">{new Date(log.executedAt || log.createdAt).toLocaleString("pt-BR")}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${log.status === "SUCCESS" ? "bg-green-100 text-green-700" : log.status === "SKIPPED" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
+                            {log.status === "SUCCESS" ? "Sucesso" : log.status === "SKIPPED" ? "Pulado" : "Erro"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Steps Flow */}
@@ -374,6 +648,9 @@ export function AutomationDetail() {
                               <Clock size={14} />
                               <span>{formatDelay(step.delay)}</span>
                             </div>
+                            {step.message && (
+                              <p className="text-xs text-gray-400 mt-1 truncate">{step.message.slice(0, 50)}{step.message.length > 50 ? "..." : ""}</p>
+                            )}
                           </div>
                         </div>
                         {steps.length > 1 && (

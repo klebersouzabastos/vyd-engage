@@ -120,12 +120,16 @@ export const router = createBrowserRouter([
         element: Automations,
       },
       {
-        path: "automations/:id",
+        path: "automations/new",
         element: AutomationDetail,
       },
       {
         path: "automations/logs",
         element: AutomationLogs,
+      },
+      {
+        path: "automations/:id",
+        element: AutomationDetail,
       },
       {
         path: "settings",

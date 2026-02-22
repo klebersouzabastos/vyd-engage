@@ -260,8 +260,9 @@ export const automationWorker = new Worker(
         return;
       }
 
-      // Check schedule
-      const schedule = (automation as any).schedule as AutomationSchedule | undefined;
+      // Check schedule (stored in conditions.schedule)
+      const conditions = automation.conditions as Record<string, any> | null;
+      const schedule = conditions?.schedule as AutomationSchedule | undefined;
       if (!isWithinSchedule(schedule)) {
         // Re-schedule for 1 hour later
         await automationQueue.add('process-step', job.data, { delay: 3600000 });

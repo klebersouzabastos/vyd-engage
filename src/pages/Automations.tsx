@@ -33,7 +33,10 @@ export function Automations() {
   const loadAutomations = async () => {
     try {
       const result = await apiClient.getAutomations();
-      setAutomationsList(result?.data || result || []);
+      const rawData = result?.data || result;
+      // API returns { automations, pagination } or flat array
+      const list = Array.isArray(rawData) ? rawData : rawData?.automations || [];
+      setAutomationsList(list);
     } catch (error) {
       console.error("Erro ao carregar automações:", error);
       toast.error("Erro ao carregar automações");
@@ -95,7 +98,9 @@ export function Automations() {
       <div className="p-8">
         {/* Actions */}
         <div className="flex items-center justify-between mb-6">
-          <div />
+          <Button variant="outline" className="gap-2" onClick={() => navigate("/app/automations/logs")}>
+            <Eye size={16} /> Ver Logs
+          </Button>
           <Button
             className="bg-primary hover:bg-primary-dark gap-2"
             onClick={() => navigate("/app/automations/new")}
