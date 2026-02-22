@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+import { EmailFormatToolbar, useEmailFormatter } from "../components/email/EmailFormatToolbar";
 
 interface Conversation {
   leadId: string;
@@ -70,6 +71,13 @@ export function Inbox() {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composeTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleEmailFormat = useEmailFormatter(
+    () => composeMessage,
+    setComposeMessage,
+    composeTextareaRef
+  );
 
   // Load available WhatsApp connections and Email configs
   useEffect(() => {
@@ -583,6 +591,9 @@ export function Inbox() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
+                {composeChannel === "email" && (
+                  <EmailFormatToolbar onFormat={handleEmailFormat} />
+                )}
                 <div className="flex items-end gap-2">
                   {composeChannel === "whatsapp" && (
                     <button
@@ -594,6 +605,7 @@ export function Inbox() {
                     </button>
                   )}
                   <Textarea
+                    ref={composeTextareaRef as any}
                     value={composeMessage}
                     onChange={(e) => setComposeMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -605,9 +617,9 @@ export function Inbox() {
                     placeholder={
                       composeChannel === "whatsapp"
                         ? "Digite sua mensagem WhatsApp..."
-                        : "Digite seu email..."
+                        : "Digite seu email (HTML suportado)..."
                     }
-                    className="flex-1 min-h-[40px] max-h-[120px] text-sm resize-none"
+                    className={`flex-1 min-h-[40px] max-h-[120px] text-sm resize-none ${composeChannel === "email" ? "rounded-t-none font-mono" : ""}`}
                     rows={1}
                   />
                   <Button

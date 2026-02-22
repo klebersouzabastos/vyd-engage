@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
+import { EmailFormatToolbar, useEmailFormatter } from "../components/email/EmailFormatToolbar";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import {
@@ -85,6 +86,10 @@ export function EmailCampaigns() {
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
+
+  // Format toolbar
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const handleEmailFormat = useEmailFormatter(() => htmlBody, setHtmlBody, bodyTextareaRef);
 
   useEffect(() => {
     loadConfigs();
@@ -382,8 +387,10 @@ export function EmailCampaigns() {
                     ))}
                   </div>
                 </div>
+                <EmailFormatToolbar onFormat={handleEmailFormat} />
                 <textarea
-                  className="w-full h-48 border border-gray-300 rounded-md p-3 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  ref={bodyTextareaRef}
+                  className="w-full h-48 border border-gray-300 rounded-b-md border-t-0 p-3 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   placeholder={`<h1>Olá {{name}},</h1>\n<p>Temos uma novidade especial para você...</p>`}
                   value={htmlBody}
                   onChange={e => setHtmlBody(e.target.value)}
