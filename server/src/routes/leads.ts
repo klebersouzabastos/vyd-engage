@@ -146,5 +146,94 @@ router.get('/stats/count', async (req, res, next) => {
   }
 });
 
+// POST /api/leads/import - Bulk import leads from CSV data
+const importLeadSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email().optional().or(z.literal('')).transform(v => v || undefined),
+  phone: z.string().optional().or(z.literal('')).transform(v => v || undefined),
+  company: z.string().optional().or(z.literal('')).transform(v => v || undefined),
+  position: z.string().optional().or(z.literal('')).transform(v => v || undefined),
+  status: z.nativeEnum(LeadStatus).optional(),
+  source: z.nativeEnum(LeadSource).optional(),
+  notes: z.string().optional().or(z.literal('')).transform(v => v || undefined),
+});
+
+const importSchema = z.object({
+  leads: z.array(importLeadSchema).min(1).max(1000),
+  skipDuplicateEmails: z.boolean().optional().default(true),
+});
+
+router.post('/import', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const { leads, skipDuplicateEmails } = importSchema.parse(req.body);
+    const tenantId = req.user.tenantId;
+
+    // Check plan limits
+    const { planLimitsService } = await import('../services/planLimitsService.js');
+
+    let imported = 0;
+    let skipped = 0;
+    const errors: Array<{ row: number; error: string }> = [];
+
+    // Get existing emails for dedup
+    let existingEmails = new Set<string>();
+    if (skipDuplicateEmails) {
+      const prismaModule = await import('../config/database.js');
+      const prisma = prismaModule.default;
+      const existing = await prisma.lead.findMany({
+        where: { tenantId, email: { not: null } },
+        select: { email: true },
+      });
+      existingEmails = new Set(existing.map((l: { email: string | null }) => l.email!.toLowerCase()));
+    }
+
+    for (let i = 0; i < leads.length; i++) {
+      const leadData = leads[i];
+      try {
+        // Skip duplicate emails
+        if (skipDuplicateEmails && leadData.email && existingEmails.has(leadData.email.toLowerCase())) {
+          skipped++;
+          continue;
+        }
+
+        await planLimitsService.enforceLimit(tenantId, 'leads');
+        await leadService.create(tenantId, {
+          name: leadData.name,
+          email: leadData.email,
+          phone: leadData.phone,
+          company: leadData.company,
+          position: leadData.position,
+          status: leadData.status,
+          source: leadData.source,
+          notes: leadData.notes,
+        });
+
+        if (leadData.email) existingEmails.add(leadData.email.toLowerCase());
+        imported++;
+      } catch (error: any) {
+        if (error.message?.includes('limit')) {
+          errors.push({ row: i + 1, error: 'Limite do plano atingido' });
+          break;
+        }
+        errors.push({ row: i + 1, error: error.message || 'Erro desconhecido' });
+      }
+    }
+
+    res.json({
+      status: 200,
+      data: { imported, skipped, failed: errors.length, errors: errors.slice(0, 20) },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
 export default router;
 

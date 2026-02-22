@@ -389,6 +389,13 @@ class ApiClient {
     });
   }
 
+  async importLeads(data: { leads: any[]; skipDuplicateEmails?: boolean }) {
+    return this.request<any>('/api/leads/import', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Tasks
   async getTasks(filters?: any) {
     const params = new URLSearchParams();

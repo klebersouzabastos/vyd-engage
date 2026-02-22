@@ -8,7 +8,8 @@ import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { LeadModal } from "../components/LeadModal";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Plus, Download, Pencil, Trash2, Users, Mail, MessageSquare, X } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, Users, Mail, MessageSquare, X } from "lucide-react";
+import { LeadImportModal } from "../components/leads/LeadImportModal";
 import { Checkbox } from "../components/ui/checkbox";
 import { useTags } from "../contexts/TagsContext";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
@@ -95,6 +96,7 @@ export function Leads() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteSingleLeadId, setDeleteSingleLeadId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const { tags } = useTags();
 
@@ -338,6 +340,11 @@ export function Leads() {
               filterCustomFields={filterCustomFields}
               onFilterChange={setFilterCustomFields}
             />
+
+            <Button variant="outline" className="gap-2" onClick={() => setImportModalOpen(true)}>
+              <Upload size={16} />
+              Importar
+            </Button>
 
             <Button variant="outline" className="gap-2" onClick={handleExportLeads}>
               <Download size={16} />
@@ -593,6 +600,13 @@ export function Leads() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Modal */}
+      <LeadImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportComplete={() => refetch()}
+      />
     </div>
   );
 }
