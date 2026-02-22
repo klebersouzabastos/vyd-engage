@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Download, Calendar } from "lucide-react";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashboard";
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { useDashboard } from "../hooks/useDashboard";
+import { useDashboard, DateRange } from "../hooks/useDashboard";
 // Helper function to format time ago
 function formatTimeAgo(date: string): string {
   const now = new Date();
@@ -21,10 +21,31 @@ function formatTimeAgo(date: string): string {
   return `${Math.floor(diffInSeconds / 604800)} semana${Math.floor(diffInSeconds / 604800) > 1 ? 's' : ''} atrás`;
 }
 
+type RangePreset = "7d" | "30d" | "90d" | "all";
+
+function getDateRange(preset: RangePreset): DateRange {
+  if (preset === "all") return { from: null, to: null };
+  const now = new Date();
+  const days = preset === "7d" ? 7 : preset === "30d" ? 30 : 90;
+  const from = new Date(now);
+  from.setDate(from.getDate() - days);
+  from.setHours(0, 0, 0, 0);
+  return { from, to: now };
+}
+
+const RANGE_LABELS: Record<RangePreset, string> = {
+  "7d": "7 dias",
+  "30d": "30 dias",
+  "90d": "90 dias",
+  all: "Tudo",
+};
+
 export function Dashboard() {
   const [layout, setLayout] = useState<DashboardLayout | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const { stats, loading: dashboardLoading } = useDashboard();
+  const [rangePreset, setRangePreset] = useState<RangePreset>("30d");
+  const dateRange = useMemo(() => getDateRange(rangePreset), [rangePreset]);
+  const { stats, loading: dashboardLoading } = useDashboard(dateRange);
 
   useEffect(() => {
     setLayout(getCurrentLayout());
@@ -70,6 +91,34 @@ export function Dashboard() {
       .filter((item) => item.value > 0);
   }, [stats.leadsBySource]);
 
+  const handleExportCSV = useCallback(() => {
+    const rows: string[][] = [
+      ["Metrica", "Valor"],
+      ["Total de Leads", String(stats.totalLeads)],
+      ["Total de Tarefas", String(stats.totalTasks)],
+      ["Tarefas Vencidas", String(stats.overdueTasks)],
+      ["Vencendo Hoje", String(stats.tasksDueToday)],
+      ["Tarefas Concluidas", String(stats.completedTasks)],
+      [],
+      ["Status do Lead", "Quantidade"],
+      ...Object.entries(stats.leadsByStatus).map(([k, v]) => [k, String(v)]),
+      [],
+      ["Origem do Lead", "Quantidade"],
+      ...Object.entries(stats.leadsBySource).map(([k, v]) => [k, String(v)]),
+      [],
+      ["Leads Recentes", "Email", "Status", "Origem", "Criado em"],
+      ...stats.recentLeads.map(l => [l.name, l.email || "", l.status, l.source, l.createdAt || ""]),
+    ];
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dashboard-${rangePreset}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [stats, rangePreset]);
+
   const handleRemoveWidget = (widgetId: string) => {
     if (!layout) return;
     removeWidget(layout.id, widgetId);
@@ -91,15 +140,36 @@ export function Dashboard() {
       
       <div className="p-8">
         {/* Actions */}
-        <div className="flex items-center justify-end mb-6">
-          <Button
-            variant="outline"
-            onClick={() => setIsEditing(!isEditing)}
-            className="gap-2"
-          >
-            <Settings size={16} />
-            {isEditing ? "Concluir Edição" : "Personalizar"}
-          </Button>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-1">
+            <Calendar size={14} className="text-gray-400 ml-2 mr-1" />
+            {(Object.keys(RANGE_LABELS) as RangePreset[]).map(key => (
+              <button
+                key={key}
+                onClick={() => setRangePreset(key)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  rangePreset === key
+                    ? "bg-primary text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                {RANGE_LABELS[key]}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportCSV} className="gap-2">
+              <Download size={16} /> Exportar
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(!isEditing)}
+              className="gap-2"
+            >
+              <Settings size={16} />
+              {isEditing ? "Concluir Edição" : "Personalizar"}
+            </Button>
+          </div>
         </div>
 
         {/* Widgets Grid */}

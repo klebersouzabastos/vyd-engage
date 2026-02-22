@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api/client';
 import { Lead } from '../types';
 
+export interface DateRange {
+  from: Date | null;
+  to: Date | null;
+}
+
 export interface DashboardStats {
   totalLeads: number;
   leadsByStatus: Record<string, number>;
@@ -13,7 +18,7 @@ export interface DashboardStats {
   completedTasks: number;
 }
 
-export function useDashboard() {
+export function useDashboard(dateRange?: DateRange) {
   const [stats, setStats] = useState<DashboardStats>({
     totalLeads: 0,
     leadsByStatus: {},
@@ -34,11 +39,25 @@ export function useDashboard() {
 
       // Fetch leads
       const leadsResult = await apiClient.getLeads({ limit: 100 });
-      const leads = leadsResult.leads || [];
+      let leads = leadsResult.leads || [];
 
       // Fetch tasks
       const tasksResult = await apiClient.getTasks({ limit: 100 });
-      const tasks = tasksResult.tasks || [];
+      let tasks = tasksResult.tasks || [];
+
+      // Apply date range filter
+      if (dateRange?.from || dateRange?.to) {
+        const from = dateRange.from ? dateRange.from.getTime() : 0;
+        const to = dateRange.to ? dateRange.to.getTime() : Infinity;
+        leads = leads.filter((l: any) => {
+          const t = new Date(l.createdAt).getTime();
+          return t >= from && t <= to;
+        });
+        tasks = tasks.filter((t: any) => {
+          const time = new Date(t.createdAt).getTime();
+          return time >= from && time <= to;
+        });
+      }
 
       // Calculate stats
       const leadsByStatus: Record<string, number> = {};
@@ -109,7 +128,7 @@ export function useDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateRange?.from?.getTime(), dateRange?.to?.getTime()]);
 
   useEffect(() => {
     fetchDashboardData();
