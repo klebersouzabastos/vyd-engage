@@ -438,19 +438,29 @@ export function IntegrationsTab() {
               {emailConfigs.length} / {emailPlanLimits.maxConfigs === Infinity ? "ilimitado" : emailPlanLimits.maxConfigs} configuracoes
             </p>
           </div>
-          {canAddEmailConfig() && !isAddingEmailConfig && !editingEmailConfigId && (
+          <div className="flex items-center gap-2">
+            {canAddEmailConfig() && !isAddingEmailConfig && !editingEmailConfigId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsAddingEmailConfig(true);
+                  setEditingEmailConfigId(null);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Configuracao
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setIsAddingEmailConfig(true);
-                setEditingEmailConfigId(null);
-              }}
+              onClick={() => navigate("/app/email/campaigns")}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Configuracao
+              <FileText className="h-4 w-4 mr-2" />
+              Campanhas
             </Button>
-          )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
