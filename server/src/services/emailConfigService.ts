@@ -7,7 +7,7 @@ export interface CreateEmailConfigData {
   provider: EmailProvider;
   fromEmail: string;
   fromName?: string;
-  config: any; // JSON - encrypted in production
+  config?: any; // JSON - encrypted in production
 }
 
 export interface UpdateEmailConfigData extends Partial<CreateEmailConfigData> {

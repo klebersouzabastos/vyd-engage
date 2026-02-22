@@ -132,11 +132,10 @@ export function getDefaultDateRange(period: "today" | "week" | "month" | "quarte
   return { start, end };
 }
 
-// Buscar dados de leads
+// Buscar dados de leads (stub — real data comes from API via Reports page)
 export function getLeadsData(filters?: ReportFilters): LeadsData {
   try {
-    const stored = localStorage.getItem("leads");
-    let leads: Lead[] = stored ? JSON.parse(stored) : [];
+    let leads: Lead[] = [];
     
     // Aplicar filtros
     if (filters?.dateRange) {
@@ -220,11 +219,10 @@ export function getLeadsData(filters?: ReportFilters): LeadsData {
   }
 }
 
-// Buscar dados do pipeline
+// Buscar dados do pipeline (stub — real data comes from API via useFunnels)
 export function getPipelineData(filters?: ReportFilters): PipelineData {
   try {
-    const stored = localStorage.getItem("pipelines");
-    const funnels = stored ? JSON.parse(stored) : [];
+    const funnels: any[] = [];
     
     // Usar o funil padrão ou o primeiro disponível
     const defaultFunnel = funnels.find((f: any) => f.isDefault) || funnels[0];

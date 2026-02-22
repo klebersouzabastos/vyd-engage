@@ -39,7 +39,7 @@ export const planLimitsService = {
       throw createError('No active subscription found', 404, 'NO_SUBSCRIPTION');
     }
 
-    return subscription.plan.limits as PlanLimits;
+    return subscription.plan.limits as unknown as PlanLimits;
   },
 
   async getUsage(tenantId: string): Promise<PlanUsage> {

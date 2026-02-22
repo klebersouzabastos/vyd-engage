@@ -27,7 +27,7 @@ export interface CreatePreferenceParams {
 }
 
 export const mercadopagoService = {
-  async createPreference(params: CreatePreferenceParams): Promise<Preference> {
+  async createPreference(params: CreatePreferenceParams): Promise<any> {
     if (!accessToken) {
       throw createError('Mercado Pago not configured', 500, 'MP_NOT_CONFIGURED');
     }
@@ -37,6 +37,7 @@ export const mercadopagoService = {
     const preferenceData = {
       items: [
         {
+          id: params.planId,
           title: `VYD Engage - ${params.planName}`,
           quantity: 1,
           unit_price: params.amount,

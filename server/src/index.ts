@@ -187,7 +187,7 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
         name: data.name,
         email: data.email || null,
         phone: data.phone || null,
-        source: 'FORM',
+        source: 'OTHER',
         status: 'NEW',
         customFields: data.customFields || {},
         tenantId: tenant.id,

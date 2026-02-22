@@ -47,7 +47,7 @@ describe('Lead Service', () => {
         name: 'Jane Doe',
         email: 'jane@example.com',
         status: 'NEW',
-        source: 'MANUAL',
+        source: 'OTHER',
       });
 
       expect(lead).toHaveProperty('id');
@@ -67,20 +67,20 @@ describe('Lead Service', () => {
         name: 'Lead 2',
         email: 'lead2@example.com',
         status: 'CONTACTED',
-        source: 'MANUAL',
+        source: 'OTHER',
       });
     });
 
     it('should return all leads for tenant', async () => {
-      const leads = await leadService.findAll(testTenantId, {});
-      expect(leads.length).toBeGreaterThanOrEqual(2);
+      const result = await leadService.findAll(testTenantId, {});
+      expect(result.leads.length).toBeGreaterThanOrEqual(2);
     });
 
     it('should filter leads by status', async () => {
-      const leads = await leadService.findAll(testTenantId, {
+      const result = await leadService.findAll(testTenantId, {
         status: 'NEW',
       });
-      expect(leads.every(lead => lead.status === 'NEW')).toBe(true);
+      expect(result.leads.every(lead => lead.status === 'NEW')).toBe(true);
     });
   });
 });

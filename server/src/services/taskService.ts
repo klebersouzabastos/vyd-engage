@@ -161,9 +161,9 @@ export const taskService = {
     };
 
     // If marking as completed, set completedAt
-    if (data.status === TaskStatus.COMPLETED) {
+    if (data.status === 'COMPLETED') {
       updateData.completedAt = new Date();
-    } else if (data.status && data.status !== TaskStatus.COMPLETED) {
+    } else if (data.status) {
       updateData.completedAt = null;
     }
 

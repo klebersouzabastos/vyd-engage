@@ -61,9 +61,11 @@ export const billingWorker = new Worker(
       }
 
       // Calculate amount based on plan and billing cycle
+      // Plan has a single `price` field (monthly base); yearly = price * 12 * 0.8 (20% discount)
+      const monthlyPrice = Number(subscription.plan.price);
       const amount = subscription.billingCycle === 'YEARLY'
-        ? subscription.plan.yearlyPrice
-        : subscription.plan.monthlyPrice;
+        ? monthlyPrice * 12 * 0.8
+        : monthlyPrice;
 
       // Get first admin user from tenant
       const adminUser = await prisma.user.findFirst({
@@ -151,7 +153,7 @@ export async function initializeBillingJobs(): Promise<void> {
           in: ['ACTIVE', 'TRIAL'],
         },
         renewalDate: {
-          not: null,
+          not: undefined,
         },
       },
     });

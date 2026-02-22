@@ -1,15 +1,14 @@
 import { Lead, LeadScore, ScoreFactor } from "../types";
-import { getAllInteractions } from "./interactions";
+
+// Pure scoring functions (localStorage removed — scores stored in lead.score via API)
 
 const SCORING_RULES = {
-  // Pontos por fonte
   source: {
     meta: 10,
     google: 10,
-    organico: 15, // Leads orgânicos são mais valiosos
+    organico: 15,
     manual: 5,
-  },
-  // Pontos por interações
+  } as Record<string, number>,
   interaction: {
     email_opened: 5,
     email_clicked: 10,
@@ -17,26 +16,17 @@ const SCORING_RULES = {
     call_answered: 20,
     meeting_scheduled: 30,
   },
-  // Pontos por comportamento
-  behavior: {
-    visited_website: 5,
-    downloaded_content: 10,
-    requested_demo: 25,
-    multiple_visits: 10,
-  },
-  // Pontos por tempo
   recency: {
     last_24h: 20,
     last_7d: 10,
     last_30d: 5,
   },
-  // Pontos por status
   status: {
     novo: 0,
     contato: 20,
     fechado: 50,
     perdido: -10,
-  },
+  } as Record<string, number>,
 };
 
 export function calculateLeadScore(lead: Lead): LeadScore {
@@ -75,89 +65,49 @@ export function calculateLeadScore(lead: Lead): LeadScore {
 
     if (emailCount > 0) {
       const points = emailCount * SCORING_RULES.interaction.email_opened;
-      factors.push({
-        type: "interaction",
-        description: `${emailCount} interação(ões) por email`,
-        points,
-      });
+      factors.push({ type: "interaction", description: `${emailCount} interação(ões) por email`, points });
       totalScore += points;
     }
 
     if (whatsappCount > 0) {
       const points = whatsappCount * SCORING_RULES.interaction.whatsapp_replied;
-      factors.push({
-        type: "interaction",
-        description: `${whatsappCount} interação(ões) por WhatsApp`,
-        points,
-      });
+      factors.push({ type: "interaction", description: `${whatsappCount} interação(ões) por WhatsApp`, points });
       totalScore += points;
     }
 
     if (callCount > 0) {
       const points = callCount * SCORING_RULES.interaction.call_answered;
-      factors.push({
-        type: "interaction",
-        description: `${callCount} chamada(s) realizada(s)`,
-        points,
-      });
+      factors.push({ type: "interaction", description: `${callCount} chamada(s) realizada(s)`, points });
       totalScore += points;
     }
 
     if (meetingCount > 0) {
       const points = meetingCount * SCORING_RULES.interaction.meeting_scheduled;
-      factors.push({
-        type: "interaction",
-        description: `${meetingCount} reunião(ões) agendada(s)`,
-        points,
-      });
+      factors.push({ type: "interaction", description: `${meetingCount} reunião(ões) agendada(s)`, points });
       totalScore += points;
     }
 
     // Recência da última interação
-    if (interactions.length > 0) {
-      const lastInteraction = interactions.sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      )[0];
-      const daysSince = Math.floor(
-        (Date.now() - new Date(lastInteraction.timestamp).getTime()) / (1000 * 60 * 60 * 24)
-      );
+    const lastInteraction = interactions.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0];
+    const daysSince = Math.floor(
+      (Date.now() - new Date(lastInteraction.timestamp).getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-      if (daysSince <= 1) {
-        factors.push({
-          type: "recency",
-          description: "Última interação nas últimas 24h",
-          points: SCORING_RULES.recency.last_24h,
-        });
-        totalScore += SCORING_RULES.recency.last_24h;
-      } else if (daysSince <= 7) {
-        factors.push({
-          type: "recency",
-          description: "Última interação nos últimos 7 dias",
-          points: SCORING_RULES.recency.last_7d,
-        });
-        totalScore += SCORING_RULES.recency.last_7d;
-      } else if (daysSince <= 30) {
-        factors.push({
-          type: "recency",
-          description: "Última interação nos últimos 30 dias",
-          points: SCORING_RULES.recency.last_30d,
-        });
-        totalScore += SCORING_RULES.recency.last_30d;
-      }
+    if (daysSince <= 1) {
+      factors.push({ type: "recency", description: "Última interação nas últimas 24h", points: SCORING_RULES.recency.last_24h });
+      totalScore += SCORING_RULES.recency.last_24h;
+    } else if (daysSince <= 7) {
+      factors.push({ type: "recency", description: "Última interação nos últimos 7 dias", points: SCORING_RULES.recency.last_7d });
+      totalScore += SCORING_RULES.recency.last_7d;
+    } else if (daysSince <= 30) {
+      factors.push({ type: "recency", description: "Última interação nos últimos 30 dias", points: SCORING_RULES.recency.last_30d });
+      totalScore += SCORING_RULES.recency.last_30d;
     }
   }
 
-  // Automações ativas
-  if (lead.automations && lead.automations.length > 0) {
-    factors.push({
-      type: "automation",
-      description: `${lead.automations.length} automação(ões) ativa(s)`,
-      points: lead.automations.length * 5,
-    });
-    totalScore += lead.automations.length * 5;
-  }
-
-  // Tags (indicam segmentação)
+  // Tags
   if (lead.tags && lead.tags.length > 0) {
     factors.push({
       type: "tags",
@@ -167,7 +117,6 @@ export function calculateLeadScore(lead: Lead): LeadScore {
     totalScore += lead.tags.length * 3;
   }
 
-  // Garantir que o score não seja negativo
   totalScore = Math.max(0, totalScore);
 
   return {
@@ -178,20 +127,14 @@ export function calculateLeadScore(lead: Lead): LeadScore {
   };
 }
 
-export function getLeadScore(leadId: number): LeadScore | null {
-  try {
-    const stored = localStorage.getItem(`leadScore_${leadId}`);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error("Erro ao carregar score do lead:", error);
-  }
+/** @deprecated Score is now stored in lead.score via API */
+export function getLeadScore(leadId: number | string): LeadScore | null {
   return null;
 }
 
-export function saveLeadScore(score: LeadScore) {
-  localStorage.setItem(`leadScore_${score.leadId}`, JSON.stringify(score));
+/** @deprecated Score is now stored in lead.score via API */
+export function saveLeadScore(_score: LeadScore): void {
+  // no-op — scores are persisted via API
 }
 
 export function getScoreLabel(score: number): { label: string; color: string } {
@@ -200,11 +143,3 @@ export function getScoreLabel(score: number): { label: string; color: string } {
   if (score >= 25) return { label: "Frio", color: "text-blue-600 bg-blue-50" };
   return { label: "Muito Frio", color: "text-gray-600 bg-gray-50" };
 }
-
-
-
-
-
-
-
-

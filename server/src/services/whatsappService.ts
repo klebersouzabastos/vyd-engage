@@ -5,7 +5,7 @@ import { createError } from '../middleware/errorHandler.js';
 export interface CreateWhatsAppConnectionData {
   name: string;
   provider: WhatsAppProvider;
-  config: any; // JSON - encrypted in production
+  config?: any; // JSON - encrypted in production
 }
 
 export interface UpdateWhatsAppConnectionData extends Partial<CreateWhatsAppConnectionData> {

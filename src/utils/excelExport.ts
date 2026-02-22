@@ -1,6 +1,5 @@
 import ExcelJS from 'exceljs';
 import { Buffer } from 'buffer';
-import { getCustomFields } from './customFields';
 import { formatCustomFieldValue } from './customFields';
 
 /**
@@ -294,8 +293,8 @@ export async function exportLeadsToExcel(
   // Adicionar cabeçalho: nome na linha 1, logo na linha 2
   await addHeaderToWorksheet(worksheet, logo, companyName);
   
-  // Buscar campos customizados (deve ser feito antes de usar)
-  const customFields = getCustomFields();
+  // Custom fields now come from API — pass empty array as fallback
+  const customFields: any[] = [];
   
   // Função auxiliar para calcular letra da coluna
   const getColumnLetter = (colNum: number): string => {

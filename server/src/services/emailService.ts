@@ -47,14 +47,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       subject: options.subject,
       html: options.html,
       text: textContent,
-      // Disable ALL tracking to avoid antivirus blocking
-      // This prevents Resend from wrapping links in resend-clicks.com
-      clickTracking: {
-        html: false,
-        text: false,
-      },
-      openTracking: false,
-    });
+    } as any);
 
     if (error) {
       logger.error('Resend API error', error);
