@@ -8,29 +8,47 @@ import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Save, ArrowLeft, Plus, X, Calendar, Mail, FileText, Filter as FilterIcon, Settings } from "lucide-react";
+import { Save, ArrowLeft, Plus, X, FileText, Settings, Loader2 } from "lucide-react";
 import { Report, ReportWidget, ReportSchedule, ReportFilter } from "../types";
 import { generateId } from "../utils/id";
 import { REPORT_TEMPLATES, createReportFromTemplate } from "../utils/reportTemplates";
 import { ReportFilters } from "../components/ReportFilters";
 import { ReportWidgetConfig } from "../components/ReportWidgetConfig";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
+import { apiClient } from "../services/api/client";
 
-const getReports = (): Report[] => {
-  try {
-    const stored = localStorage.getItem("reports");
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error("Erro ao carregar relatórios:", error);
-  }
-  return [];
-};
+function apiToReport(apiReport: any): Report {
+  const config = apiReport.config || {};
+  return {
+    id: apiReport.id,
+    name: apiReport.name,
+    description: apiReport.description || "",
+    type: apiReport.type || "custom",
+    widgets: config.widgets || [],
+    schedule: config.schedule,
+    filters: config.filters,
+    shareSettings: config.shareSettings,
+    templateId: config.templateId,
+    createdAt: apiReport.createdAt,
+    updatedAt: apiReport.updatedAt,
+    createdBy: apiReport.createdBy?.name || apiReport.createdById || "system",
+  };
+}
 
-const saveReports = (reports: Report[]) => {
-  localStorage.setItem("reports", JSON.stringify(reports));
-};
+function reportToApi(report: Report, schedule?: ReportSchedule) {
+  return {
+    name: report.name,
+    description: report.description || undefined,
+    type: report.type,
+    config: {
+      widgets: report.widgets,
+      schedule: schedule?.enabled ? schedule : undefined,
+      filters: report.filters,
+      shareSettings: report.shareSettings,
+      templateId: report.templateId,
+    },
+  };
+}
 
 const widgetTypes = [
   { value: "metric", label: "Métrica" },
@@ -39,29 +57,18 @@ const widgetTypes = [
   { value: "funnel", label: "Funil" },
 ];
 
-const chartTypes = [
-  { value: "bar", label: "Barras" },
-  { value: "line", label: "Linha" },
-  { value: "pie", label: "Pizza" },
-  { value: "area", label: "Área" },
-];
-
 export function ReportBuilder() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = id !== undefined && id !== "new";
-  
+
   const [report, setReport] = useState<Report>({
     id: generateId(),
     name: "",
     description: "",
     type: "custom",
     widgets: [],
-    filters: {
-      dateRange: {
-        type: "month", // Período padrão: último mês
-      },
-    },
+    filters: { dateRange: { type: "month" } },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: "current-user",
@@ -74,33 +81,32 @@ export function ReportBuilder() {
     recipients: [],
     format: "pdf",
   });
-  
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedWidgetForConfig, setSelectedWidgetForConfig] = useState<string | null>(null);
   const [advancedMode, setAdvancedMode] = useState(false);
 
   useEffect(() => {
     if (isEditing && id) {
-      const reports = getReports();
-      const found = reports.find((r) => r.id === id);
-      if (found) {
-        setReport(found);
-        if (found.schedule) {
-          setSchedule(found.schedule);
-        }
-      }
+      setLoading(true);
+      apiClient.getReport(id)
+        .then((result) => {
+          const data = result?.data || result;
+          if (data) {
+            const parsed = apiToReport(data);
+            setReport(parsed);
+            if (parsed.schedule) setSchedule(parsed.schedule);
+          }
+        })
+        .catch((error) => console.error("Erro ao carregar relatório:", error))
+        .finally(() => setLoading(false));
     } else if (!isEditing && id === "new") {
-      // Se é um novo relatório sem template, mostrar diálogo de template
-      // Mas não mostrar se já veio do wizard (que já aplicou template)
-      const reports = getReports();
-      const lastReport = reports[reports.length - 1];
-      // Se o último relatório foi criado há menos de 2 segundos, provavelmente veio do wizard
-      if (!lastReport || new Date().getTime() - new Date(lastReport.createdAt).getTime() > 2000) {
-        setShowTemplateDialog(true);
-      }
+      setShowTemplateDialog(true);
     }
   }, [id, isEditing]);
-  
+
   const handleTemplateSelect = (templateId: string) => {
     try {
       const templateReport = createReportFromTemplate(templateId);
@@ -110,36 +116,34 @@ export function ReportBuilder() {
       console.error("Erro ao criar relatório do template:", error);
     }
   };
-  
+
   const handleSkipTemplate = () => {
     setShowTemplateDialog(false);
   };
-  
+
   const handleFilterChange = (filters: ReportFilter) => {
     setReport({ ...report, filters });
   };
 
-  const handleSave = () => {
-    const reports = getReports();
-    const updatedReport: Report = {
-      ...report,
-      schedule: schedule.enabled ? schedule : undefined,
-      updatedAt: new Date().toISOString(),
-    };
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = reportToApi(report, schedule);
 
-    if (isEditing) {
-      const index = reports.findIndex((r) => r.id === report.id);
-      if (index >= 0) {
-        reports[index] = updatedReport;
+      if (isEditing) {
+        await apiClient.updateReport(report.id, payload);
+      } else {
+        await apiClient.createReport(payload);
       }
-    } else {
-      reports.push(updatedReport);
+      navigate("/app/reports");
+    } catch (error) {
+      console.error("Erro ao salvar relatório:", error);
+      alert("Erro ao salvar relatório. Tente novamente.");
+    } finally {
+      setSaving(false);
     }
-
-    saveReports(reports);
-    navigate("/app/reports");
   };
-  
+
   const handleRecipientAdd = () => {
     const email = prompt("Digite o e-mail do destinatário:");
     if (email && email.includes("@")) {
@@ -151,10 +155,9 @@ export function ReportBuilder() {
   };
 
   const addWidget = () => {
-    // Detectar fonte de dados baseado no tipo de relatório
     let defaultDataSource: ReportWidget["dataSource"] = "leads";
     if (report.type !== "custom") {
-      defaultDataSource = report.type === "tasks" ? "tasks" : 
+      defaultDataSource = report.type === "tasks" ? "tasks" :
                          report.type === "automations" ? "automations" :
                          report.type === "sales" ? "pipeline" : "leads";
     }
@@ -166,7 +169,6 @@ export function ReportBuilder() {
       dataSource: defaultDataSource,
       config: {},
       position: { x: 0, y: 0, w: 4, h: 2 },
-      // Aplicar período padrão do relatório
       dateRange: report.filters?.dateRange || { type: "month" },
     };
     setReport({
@@ -191,7 +193,6 @@ export function ReportBuilder() {
     });
   };
 
-
   const removeRecipient = (email: string) => {
     setSchedule({
       ...schedule,
@@ -199,13 +200,24 @@ export function ReportBuilder() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Carregando relatório..." />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
-      <Header 
-        title={isEditing ? "Editar Relatório" : "Novo Relatório"} 
+      <Header
+        title={isEditing ? "Editar Relatório" : "Novo Relatório"}
         subtitle={isEditing ? "Modifique seu relatório personalizado" : "Crie um relatório personalizado"}
       />
-      
+
       {/* Dialog de Templates */}
       <Dialog open={showTemplateDialog && !isEditing} onOpenChange={setShowTemplateDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -246,86 +258,50 @@ export function ReportBuilder() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <div className="p-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-300">
           <Tabs defaultValue="general" className="w-full">
             <div className="border-b border-gray-300 px-6">
               <div className="flex items-center justify-between">
                 <TabsList className="bg-transparent h-auto p-0 gap-8">
-                  <TabsTrigger 
-                    value="general"
-                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
-                  >
+                  <TabsTrigger value="general" className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0">
                     Geral
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="widgets"
-                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
-                  >
+                  <TabsTrigger value="widgets" className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0">
                     Widgets
                   </TabsTrigger>
                   {(advancedMode || isEditing) && (
                     <>
-                      <TabsTrigger 
-                        value="filters"
-                        className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
-                      >
+                      <TabsTrigger value="filters" className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0">
                         Filtros
                       </TabsTrigger>
-                      <TabsTrigger 
-                        value="schedule"
-                        className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
-                      >
+                      <TabsTrigger value="schedule" className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0">
                         Agendamento
                       </TabsTrigger>
                     </>
                   )}
                 </TabsList>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAdvancedMode(!advancedMode)}
-                  className="gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => setAdvancedMode(!advancedMode)} className="gap-2">
                   <Settings size={14} />
                   {advancedMode ? "Modo Simples" : "Modo Avançado"}
                 </Button>
               </div>
             </div>
 
-            {/* General Tab */}
             <TabsContent value="general" className="p-6">
               <div className="max-w-2xl space-y-6">
                 <div>
                   <Label htmlFor="name">Nome do Relatório</Label>
-                  <Input
-                    id="name"
-                    value={report.name}
-                    onChange={(e) => setReport({ ...report, name: e.target.value })}
-                    className="mt-1.5"
-                    placeholder="Ex: Relatório Semanal de Vendas"
-                  />
+                  <Input id="name" value={report.name} onChange={(e) => setReport({ ...report, name: e.target.value })} className="mt-1.5" placeholder="Ex: Relatório Semanal de Vendas" />
                 </div>
-
                 <div>
                   <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={report.description}
-                    onChange={(e) => setReport({ ...report, description: e.target.value })}
-                    className="mt-1.5"
-                    placeholder="Descreva o propósito deste relatório..."
-                    rows={3}
-                  />
+                  <Textarea id="description" value={report.description} onChange={(e) => setReport({ ...report, description: e.target.value })} className="mt-1.5" placeholder="Descreva o propósito deste relatório..." rows={3} />
                 </div>
-
                 <div>
                   <Label htmlFor="type">Tipo de Relatório</Label>
-                  <Select
-                    value={report.type}
-                    onValueChange={(value: any) => setReport({ ...report, type: value })}
-                  >
+                  <Select value={report.type} onValueChange={(value: any) => setReport({ ...report, type: value })}>
                     <SelectTrigger className="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
@@ -340,34 +316,24 @@ export function ReportBuilder() {
               </div>
             </TabsContent>
 
-            {/* Filters Tab - Only visible in advanced mode */}
             {(advancedMode || isEditing) && (
               <TabsContent value="filters" className="p-6">
                 <div className="max-w-2xl space-y-6">
                   <div>
                     <h3 className="text-gray-900 font-medium mb-1">Filtros Globais</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Configure filtros que serão aplicados a todos os widgets do relatório
-                    </p>
-                    <ReportFilters
-                      filters={report.filters}
-                      onChange={handleFilterChange}
-                      dataSource={report.type === "custom" ? "leads" : report.type}
-                    />
+                    <p className="text-sm text-gray-600 mb-4">Configure filtros que serão aplicados a todos os widgets do relatório</p>
+                    <ReportFilters filters={report.filters} onChange={handleFilterChange} dataSource={report.type === "custom" ? "leads" : report.type} />
                   </div>
                 </div>
               </TabsContent>
             )}
 
-            {/* Widgets Tab */}
             <TabsContent value="widgets" className="p-6">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-gray-900 font-medium mb-1">Widgets do Relatório</h3>
-                    <p className="text-sm text-gray-600">
-                      Adicione widgets para visualizar seus dados
-                    </p>
+                    <p className="text-sm text-gray-600">Adicione widgets para visualizar seus dados</p>
                   </div>
                   <Button onClick={addWidget} className="gap-2">
                     <Plus size={16} />
@@ -386,23 +352,12 @@ export function ReportBuilder() {
                 ) : (
                   <div className="space-y-4">
                     {report.widgets.map((widget) => (
-                      <div
-                        key={widget.id}
-                        className="border border-gray-300 rounded-lg p-4"
-                      >
+                      <div key={widget.id} className="border border-gray-300 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
-                            <ReportWidgetConfig
-                              widget={widget}
-                              onChange={(updates) => updateWidget(widget.id, updates)}
-                            />
+                            <ReportWidgetConfig widget={widget} onChange={(updates) => updateWidget(widget.id, updates)} />
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-error hover:text-error hover:bg-red-50 ml-4"
-                            onClick={() => removeWidget(widget.id)}
-                          >
+                          <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50 ml-4" onClick={() => removeWidget(widget.id)}>
                             <X size={16} />
                           </Button>
                         </div>
@@ -413,178 +368,111 @@ export function ReportBuilder() {
               </div>
             </TabsContent>
 
-            {/* Schedule Tab - Only visible in advanced mode */}
             {(advancedMode || isEditing) && (
               <TabsContent value="schedule" className="p-6">
                 <div className="max-w-2xl space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-gray-900 font-medium mb-1">Agendamento</h3>
-                      <p className="text-sm text-gray-600">
-                        Configure o envio automático deste relatório
-                      </p>
+                      <p className="text-sm text-gray-600">Configure o envio automático deste relatório</p>
                     </div>
-                    <Switch
-                      checked={schedule.enabled}
-                      onCheckedChange={(checked) =>
-                        setSchedule({ ...schedule, enabled: checked })
-                      }
-                    />
+                    <Switch checked={schedule.enabled} onCheckedChange={(checked) => setSchedule({ ...schedule, enabled: checked })} />
                   </div>
 
-                {schedule.enabled && (
-                  <div className="space-y-6 pt-4 border-t border-gray-300">
-                    <div>
-                      <Label>Frequência</Label>
-                      <Select
-                        value={schedule.frequency}
-                        onValueChange={(value: any) =>
-                          setSchedule({ ...schedule, frequency: value })
-                        }
-                      >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="daily">Diário</SelectItem>
-                          <SelectItem value="weekly">Semanal</SelectItem>
-                          <SelectItem value="monthly">Mensal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {schedule.frequency === "weekly" && (
+                  {schedule.enabled && (
+                    <div className="space-y-6 pt-4 border-t border-gray-300">
                       <div>
-                        <Label>Dia da Semana</Label>
-                        <Select
-                          value={schedule.dayOfWeek?.toString() || "0"}
-                          onValueChange={(value) =>
-                            setSchedule({ ...schedule, dayOfWeek: parseInt(value) })
-                          }
-                        >
-                          <SelectTrigger className="mt-1.5">
-                            <SelectValue />
-                          </SelectTrigger>
+                        <Label>Frequência</Label>
+                        <Select value={schedule.frequency} onValueChange={(value: any) => setSchedule({ ...schedule, frequency: value })}>
+                          <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="0">Domingo</SelectItem>
-                            <SelectItem value="1">Segunda-feira</SelectItem>
-                            <SelectItem value="2">Terça-feira</SelectItem>
-                            <SelectItem value="3">Quarta-feira</SelectItem>
-                            <SelectItem value="4">Quinta-feira</SelectItem>
-                            <SelectItem value="5">Sexta-feira</SelectItem>
-                            <SelectItem value="6">Sábado</SelectItem>
+                            <SelectItem value="daily">Diário</SelectItem>
+                            <SelectItem value="weekly">Semanal</SelectItem>
+                            <SelectItem value="monthly">Mensal</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                    )}
 
-                    {schedule.frequency === "monthly" && (
-                      <div>
-                        <Label>Dia do Mês</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="31"
-                          value={schedule.dayOfMonth || 1}
-                          onChange={(e) =>
-                            setSchedule({
-                              ...schedule,
-                              dayOfMonth: parseInt(e.target.value) || 1,
-                            })
-                          }
-                          className="mt-1.5"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <Label>Horário</Label>
-                      <Input
-                        type="time"
-                        value={schedule.time}
-                        onChange={(e) =>
-                          setSchedule({ ...schedule, time: e.target.value })
-                        }
-                        className="mt-1.5"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Formato</Label>
-                      <Select
-                        value={schedule.format}
-                        onValueChange={(value: any) =>
-                          setSchedule({ ...schedule, format: value })
-                        }
-                      >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pdf">PDF</SelectItem>
-                          <SelectItem value="excel">Excel</SelectItem>
-                          <SelectItem value="both">Ambos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Destinatários</Label>
-                        <Button variant="outline" size="sm" onClick={handleRecipientAdd} className="gap-2">
-                          <Plus size={14} />
-                          Adicionar
-                        </Button>
-                      </div>
-                      {schedule.recipients.length === 0 ? (
-                        <p className="text-sm text-gray-600 mt-2">
-                          Nenhum destinatário adicionado
-                        </p>
-                      ) : (
-                        <div className="space-y-2 mt-2">
-                          {schedule.recipients.map((email) => (
-                            <div
-                              key={email}
-                              className="flex items-center justify-between p-2 bg-gray-100 rounded"
-                            >
-                              <span className="text-sm">{email}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeRecipient(email)}
-                                className="text-error hover:text-error"
-                              >
-                                <X size={14} />
-                              </Button>
-                            </div>
-                          ))}
+                      {schedule.frequency === "weekly" && (
+                        <div>
+                          <Label>Dia da Semana</Label>
+                          <Select value={schedule.dayOfWeek?.toString() || "0"} onValueChange={(value) => setSchedule({ ...schedule, dayOfWeek: parseInt(value) })}>
+                            <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">Domingo</SelectItem>
+                              <SelectItem value="1">Segunda-feira</SelectItem>
+                              <SelectItem value="2">Terça-feira</SelectItem>
+                              <SelectItem value="3">Quarta-feira</SelectItem>
+                              <SelectItem value="4">Quinta-feira</SelectItem>
+                              <SelectItem value="5">Sexta-feira</SelectItem>
+                              <SelectItem value="6">Sábado</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       )}
+
+                      {schedule.frequency === "monthly" && (
+                        <div>
+                          <Label>Dia do Mês</Label>
+                          <Input type="number" min="1" max="31" value={schedule.dayOfMonth || 1} onChange={(e) => setSchedule({ ...schedule, dayOfMonth: parseInt(e.target.value) || 1 })} className="mt-1.5" />
+                        </div>
+                      )}
+
+                      <div>
+                        <Label>Horário</Label>
+                        <Input type="time" value={schedule.time} onChange={(e) => setSchedule({ ...schedule, time: e.target.value })} className="mt-1.5" />
+                      </div>
+
+                      <div>
+                        <Label>Formato</Label>
+                        <Select value={schedule.format} onValueChange={(value: any) => setSchedule({ ...schedule, format: value })}>
+                          <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pdf">PDF</SelectItem>
+                            <SelectItem value="excel">Excel</SelectItem>
+                            <SelectItem value="both">Ambos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Destinatários</Label>
+                          <Button variant="outline" size="sm" onClick={handleRecipientAdd} className="gap-2">
+                            <Plus size={14} />
+                            Adicionar
+                          </Button>
+                        </div>
+                        {schedule.recipients.length === 0 ? (
+                          <p className="text-sm text-gray-600 mt-2">Nenhum destinatário adicionado</p>
+                        ) : (
+                          <div className="space-y-2 mt-2">
+                            {schedule.recipients.map((email) => (
+                              <div key={email} className="flex items-center justify-between p-2 bg-gray-100 rounded">
+                                <span className="text-sm">{email}</span>
+                                <Button variant="ghost" size="sm" onClick={() => removeRecipient(email)} className="text-error hover:text-error">
+                                  <X size={14} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
+                  )}
+                </div>
+              </TabsContent>
             )}
           </Tabs>
 
-          {/* Actions */}
           <div className="border-t border-gray-300 p-6 flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/app/reports")}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={() => navigate("/app/reports")} className="gap-2">
               <ArrowLeft size={16} />
               Cancelar
             </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-primary hover:bg-primary-dark gap-2"
-              disabled={!report.name.trim()}
-            >
+            <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark gap-2" disabled={!report.name.trim() || saving}>
               <Save size={16} />
-              Salvar Relatório
+              {saving ? "Salvando..." : "Salvar Relatório"}
             </Button>
           </div>
         </div>
@@ -592,4 +480,3 @@ export function ReportBuilder() {
     </div>
   );
 }
-

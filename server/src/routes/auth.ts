@@ -234,5 +234,122 @@ router.post('/email/verify', async (req, res, next) => {
   }
 });
 
+// Update profile
+const updateProfileSchema = z.object({
+  name: z.string().min(2).optional(),
+  phone: z.string().optional(),
+  avatar: z.string().nullable().optional(),
+});
+
+router.put('/profile', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const data = updateProfileSchema.parse(req.body);
+
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatar: true,
+        role: true,
+        tenantId: true,
+        emailVerified: true,
+        createdAt: true,
+        lastLoginAt: true,
+        tenant: {
+          select: { id: true, name: true, slug: true, logo: true },
+        },
+      },
+    });
+
+    res.json({ user });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// Change password
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
+router.put('/change-password', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+    });
+
+    if (!user) {
+      return next(createError('User not found', 404));
+    }
+
+    const { comparePassword: comparePw } = await import('../utils/password.js');
+    const isValid = await comparePw(currentPassword, user.passwordHash);
+    if (!isValid) {
+      return next(createError('Senha atual incorreta', 400, 'INVALID_PASSWORD'));
+    }
+
+    const { hashPassword: hashPw } = await import('../utils/password.js');
+    const newHash = await hashPw(newPassword);
+
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { passwordHash: newHash },
+    });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// Update tenant (company info)
+const updateTenantSchema = z.object({
+  name: z.string().min(2).optional(),
+  logo: z.string().nullable().optional(),
+});
+
+router.put('/tenant', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const data = updateTenantSchema.parse(req.body);
+
+    const tenant = await prisma.tenant.update({
+      where: { id: req.user.tenantId },
+      data,
+      select: { id: true, name: true, slug: true, logo: true },
+    });
+
+    res.json({ tenant });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
 export default router;
 

@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
-import { InteractionType, InteractionDirection } from '@prisma/client';
+import { InteractionType, InteractionDirection, ScoreEvent } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { scoringService } from './scoringService.js';
 
 export interface CreateInteractionData {
   leadId?: string;
@@ -37,6 +38,11 @@ export const interactionService = {
         },
       },
     });
+
+    // Score interaction event
+    if (interaction.leadId) {
+      scoringService.processEvent(tenantId, interaction.leadId, ScoreEvent.INTERACTION_CREATED).catch(() => {});
+    }
 
     return interaction;
   },
@@ -101,6 +107,127 @@ export const interactionService = {
       },
       orderBy: { createdAt: 'desc' },
     });
+  },
+
+  async deleteInteraction(tenantId: string, id: string) {
+    const interaction = await prisma.interaction.findFirst({
+      where: { id, tenantId },
+    });
+    if (!interaction) {
+      throw createError('Interaction not found', 404);
+    }
+    await prisma.interaction.delete({ where: { id } });
+  },
+
+  /**
+   * Get unified inbox conversations grouped by lead,
+   * showing latest message and unread count per conversation.
+   */
+  async getInboxConversations(tenantId: string, filters: {
+    channel?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 30;
+
+    // Filter by communication channels
+    const channelTypes: InteractionType[] = [];
+    if (!filters.channel || filters.channel === 'all') {
+      channelTypes.push(InteractionType.WHATSAPP, InteractionType.EMAIL);
+    } else if (filters.channel === 'whatsapp') {
+      channelTypes.push(InteractionType.WHATSAPP);
+    } else if (filters.channel === 'email') {
+      channelTypes.push(InteractionType.EMAIL);
+    }
+
+    // Get leads with communication interactions
+    const where: any = {
+      tenantId,
+      type: { in: channelTypes },
+      leadId: { not: null },
+    };
+
+    // Get distinct lead IDs that have interactions
+    const leadInteractions = await prisma.interaction.groupBy({
+      by: ['leadId'],
+      where,
+      _max: { createdAt: true },
+      _count: { id: true },
+      orderBy: { _max: { createdAt: 'desc' } },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalLeads = await prisma.interaction.groupBy({
+      by: ['leadId'],
+      where,
+    });
+
+    // Get lead details and latest interaction for each
+    const conversations = await Promise.all(
+      leadInteractions.map(async (group) => {
+        if (!group.leadId) return null;
+
+        const [lead, latestInteraction, messageCount] = await Promise.all([
+          prisma.lead.findUnique({
+            where: { id: group.leadId },
+            select: { id: true, name: true, email: true, phone: true, status: true },
+          }),
+          prisma.interaction.findFirst({
+            where: { tenantId, leadId: group.leadId, type: { in: channelTypes } },
+            orderBy: { createdAt: 'desc' },
+          }),
+          prisma.interaction.count({
+            where: { tenantId, leadId: group.leadId, type: { in: channelTypes } },
+          }),
+        ]);
+
+        if (!lead || !latestInteraction) return null;
+
+        // Filter by search if provided
+        if (filters.search) {
+          const s = filters.search.toLowerCase();
+          if (
+            !lead.name?.toLowerCase().includes(s) &&
+            !lead.email?.toLowerCase().includes(s) &&
+            !lead.phone?.includes(s)
+          ) {
+            return null;
+          }
+        }
+
+        return {
+          leadId: lead.id,
+          leadName: lead.name,
+          leadEmail: lead.email,
+          leadPhone: lead.phone,
+          leadStatus: lead.status,
+          lastMessage: {
+            id: latestInteraction.id,
+            type: latestInteraction.type,
+            direction: latestInteraction.direction,
+            content: latestInteraction.content,
+            createdAt: latestInteraction.createdAt,
+          },
+          messageCount,
+          lastActivityAt: latestInteraction.createdAt,
+        };
+      })
+    );
+
+    const filtered = conversations.filter(Boolean);
+
+    return {
+      conversations: filtered,
+      pagination: {
+        page,
+        limit,
+        total: totalLeads.length,
+        totalPages: Math.ceil(totalLeads.length / limit),
+      },
+    };
   },
 };
 

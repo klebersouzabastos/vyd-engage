@@ -19,12 +19,10 @@ function base64ToBuffer(base64: string): Buffer {
 }
 
 /**
- * Obtém informações da empresa do localStorage
+ * Obtém informações da empresa
  */
 function getCompanyInfoForExport() {
-  const logo = localStorage.getItem("companyLogo");
-  const companyName = localStorage.getItem("companyName") || "FlowCRM";
-  return { logo, companyName };
+  return { logo: null, companyName: "VYD Engage" };
 }
 
 /**
@@ -77,11 +75,9 @@ async function addLogoToReportWorksheet(worksheet: ExcelJS.Worksheet, logo: stri
   }
 }
 
-// Função auxiliar para obter logo e nome da empresa do localStorage (usado apenas para PDF)
+// Função auxiliar para obter logo e nome da empresa (usado apenas para PDF)
 function getCompanyInfo() {
-  const logo = localStorage.getItem("companyLogo");
-  const companyName = localStorage.getItem("companyName") || "FlowCRM";
-  return { logo, companyName };
+  return { logo: null, companyName: "VYD Engage" };
 }
 
 // Função auxiliar para obter dados reais baseado no widget
@@ -482,7 +478,7 @@ export function exportReportToPDF(report: Report) {
   htmlContent += `
       <div class="footer">
         <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')}</p>
-        <p>FlowCRM - Sistema de Gestão de Leads</p>
+        <p>VYD Engage - Sistema de Gestão de Leads</p>
       </div>
     </body>
     </html>
@@ -946,7 +942,7 @@ export async function exportReportToExcel(report: Report) {
   htmlContent += `
       <div style="margin-top: 50px; text-align: center; color: #6B7280; font-size: 12px;">
         <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')}</p>
-        <p>FlowCRM - Sistema de Gestão de Leads</p>
+        <p>VYD Engage - Sistema de Gestão de Leads</p>
       </div>
     </body>
     </html>

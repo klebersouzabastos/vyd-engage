@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from "react";
+import { useAuth } from "./AuthContext";
+import { apiClient } from "../services/api/client";
 
 interface CompanyContextType {
   logo: string | null;
@@ -10,35 +12,38 @@ interface CompanyContextType {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const [logo, setLogoState] = useState<string | null>(() => {
-    const saved = localStorage.getItem("companyLogo");
-    return saved || null;
-  });
-  
-  const [companyName, setCompanyNameState] = useState<string>(() => {
-    const saved = localStorage.getItem("companyName");
-    return saved || "FlowCRM";
-  });
+  const { user, refreshUser } = useAuth();
 
-  const setLogo = useCallback((newLogo: string | null) => {
-    try {
-      setLogoState(newLogo);
-      if (newLogo) {
-        localStorage.setItem("companyLogo", newLogo);
-      } else {
-        localStorage.removeItem("companyLogo");
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.code === 22) {
-        alert('O arquivo é muito grande. Tente uma imagem menor.');
-      }
+  const [logo, setLogoState] = useState<string | null>(user?.tenant?.logo || null);
+  const [companyName, setCompanyNameState] = useState<string>(user?.tenant?.name || "VYD Engage");
+
+  // Sync from auth user when it changes
+  useEffect(() => {
+    if (user?.tenant) {
+      setLogoState(user.tenant.logo || null);
+      setCompanyNameState(user.tenant.name || "VYD Engage");
     }
-  }, []);
+  }, [user?.tenant?.name, user?.tenant?.logo]);
 
-  const setCompanyName = useCallback((name: string) => {
+  const setLogo = useCallback(async (newLogo: string | null) => {
+    setLogoState(newLogo);
+    try {
+      await apiClient.updateTenant({ logo: newLogo });
+      if (refreshUser) await refreshUser();
+    } catch (error) {
+      console.error("Erro ao atualizar logo:", error);
+    }
+  }, [refreshUser]);
+
+  const setCompanyName = useCallback(async (name: string) => {
     setCompanyNameState(name);
-    localStorage.setItem("companyName", name);
-  }, []);
+    try {
+      await apiClient.updateTenant({ name });
+      if (refreshUser) await refreshUser();
+    } catch (error) {
+      console.error("Erro ao atualizar nome da empresa:", error);
+    }
+  }, [refreshUser]);
 
   const value = useMemo(() => ({
     logo, companyName, setLogo, setCompanyName,
@@ -58,4 +63,3 @@ export function useCompany() {
   }
   return context;
 }
-

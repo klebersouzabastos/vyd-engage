@@ -6,6 +6,7 @@ import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { AutomationStatus } from '@prisma/client';
 import { planLimitsService } from '../services/planLimitsService.js';
+import { dispatchTrigger } from '../jobs/automationEngine.js';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ const createAutomationSchema = z.object({
   conditions: z.any().optional(),
 });
 
-const updateAutomationSchema = createAutomationSchema.extend({
+const updateAutomationSchema = createAutomationSchema.partial().extend({
   id: z.string().uuid(),
   status: z.nativeEnum(AutomationStatus).optional(),
 });
@@ -71,7 +72,7 @@ router.post('/', async (req, res, next) => {
     // Check plan limits
     await planLimitsService.enforceLimit(req.user.tenantId, 'automations');
 
-    const data = createAutomationSchema.parse(req.body);
+    const data = createAutomationSchema.parse(req.body) as any;
     const automation = await automationService.create(req.user.tenantId, data);
     res.status(201).json(automation);
   } catch (error) {
@@ -110,6 +111,51 @@ router.delete('/:id', async (req, res, next) => {
 
     await automationService.delete(req.user.tenantId, req.params.id);
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/automations/:id/execute - Manually trigger automation for a lead
+router.post('/:id/execute', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const { leadId } = req.body;
+    if (!leadId) return next(createError('leadId is required', 400));
+
+    const automation = await automationService.findById(req.user.tenantId, req.params.id);
+    if (automation.status !== 'ACTIVE') {
+      return next(createError('Automação precisa estar ativa para execução manual', 400));
+    }
+
+    const dispatched = await dispatchTrigger(req.user.tenantId, 'manual', leadId);
+    res.json({ status: 200, data: { dispatched } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/automations/:id/stats - Get automation execution stats
+router.get('/:id/stats', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const automation = await automationService.findById(req.user.tenantId, req.params.id);
+    const successRate = automation.runsCount > 0
+      ? Math.round((automation.successCount / automation.runsCount) * 100)
+      : 0;
+
+    res.json({
+      status: 200,
+      data: {
+        runsCount: automation.runsCount,
+        successCount: automation.successCount,
+        errorCount: automation.errorCount,
+        successRate,
+        lastRunAt: automation.lastRunAt,
+      },
+    });
   } catch (error) {
     next(error);
   }

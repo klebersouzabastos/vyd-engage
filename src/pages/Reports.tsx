@@ -4,33 +4,54 @@ import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Plus, FileText, Calendar, Mail, Download, Trash2, Edit, Search, Grid3x3, List, X, Zap } from "lucide-react";
+import { Plus, FileText, Calendar, Mail, Download, Trash2, Edit, Search, Grid3x3, List, X, Zap, Loader2 } from "lucide-react";
 import { Report, ReportSchedule } from "../types";
 import { ReportWizard } from "../components/ReportWizard";
 import { createReportFromTemplate } from "../utils/reportTemplates";
+import { apiClient } from "../services/api/client";
 
-const getReports = (): Report[] => {
-  try {
-    const stored = localStorage.getItem("reports");
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error("Erro ao carregar relatórios:", error);
-  }
-  return [];
-};
+// Convert API format (config JSON) to frontend Report type
+function apiToReport(apiReport: any): Report {
+  const config = apiReport.config || {};
+  return {
+    id: apiReport.id,
+    name: apiReport.name,
+    description: apiReport.description || "",
+    type: apiReport.type || "custom",
+    widgets: config.widgets || [],
+    schedule: config.schedule,
+    filters: config.filters,
+    shareSettings: config.shareSettings,
+    templateId: config.templateId,
+    createdAt: apiReport.createdAt,
+    updatedAt: apiReport.updatedAt,
+    createdBy: apiReport.createdBy?.name || apiReport.createdById || "system",
+  };
+}
 
-const saveReports = (reports: Report[]) => {
-  localStorage.setItem("reports", JSON.stringify(reports));
-};
+// Convert frontend Report to API format
+function reportToApi(report: Report) {
+  return {
+    name: report.name,
+    description: report.description || undefined,
+    type: report.type,
+    config: {
+      widgets: report.widgets,
+      schedule: report.schedule,
+      filters: report.filters,
+      shareSettings: report.shareSettings,
+      templateId: report.templateId,
+    },
+  };
+}
 
 type ViewMode = "grid" | "list";
 type SortOption = "name" | "date" | "type" | "updated";
 
 export function Reports() {
   const navigate = useNavigate();
-  const [reports, setReports] = useState<Report[]>(getReports());
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("updated");
@@ -38,58 +59,57 @@ export function Reports() {
   const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
-    const loadedReports = getReports();
-    
-    // Se não houver relatórios, criar alguns de exemplo (apenas para demonstração)
-    if (loadedReports.length === 0) {
-      // Opcional: descomente a linha abaixo para criar relatórios de exemplo automaticamente
-      // import { createSampleReports } from "../utils/sampleReports";
-      // createSampleReports();
-      // setReports(getReports());
-    } else {
-      setReports(loadedReports);
-    }
+    loadReports();
   }, []);
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este relatório?")) {
-      const updated = reports.filter((r) => r.id !== id);
-      setReports(updated);
-      saveReports(updated);
+  const loadReports = async () => {
+    try {
+      const result = await apiClient.getReports();
+      const list = result?.data || result || [];
+      setReports(list.map(apiToReport));
+    } catch (error) {
+      console.error("Erro ao carregar relatórios:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRun = (report: Report) => {
-    // Abrir visualização do relatório
-    navigate(`/app/reports/view/${report.id}`);
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este relatório?")) {
+      try {
+        await apiClient.deleteReport(id);
+        setReports(reports.filter((r) => r.id !== id));
+      } catch (error) {
+        console.error("Erro ao excluir relatório:", error);
+      }
+    }
   };
 
-  const handleQuickCreate = () => {
-    // Criar relatório rápido usando template padrão
+  const handleQuickCreate = async () => {
     const defaultTemplate = "executive-dashboard";
     const report = createReportFromTemplate(defaultTemplate, `Relatório Rápido ${new Date().toLocaleDateString()}`);
-    
-    // Aplicar período padrão
-    report.filters = {
-      dateRange: {
-        type: "month",
-      },
-    };
+    report.filters = { dateRange: { type: "month" } };
 
-    const updated = [...reports, report];
-    setReports(updated);
-    saveReports(updated);
-    
-    // Ir para visualização do relatório criado
-    navigate(`/app/reports/view/${report.id}`);
+    try {
+      const created = await apiClient.createReport(reportToApi(report));
+      const newReport = apiToReport(created?.data || created);
+      setReports([newReport, ...reports]);
+      navigate(`/app/reports/view/${newReport.id}`);
+    } catch (error) {
+      console.error("Erro ao criar relatório:", error);
+    }
   };
 
-  const handleWizardComplete = (report: Report) => {
+  const handleWizardComplete = async (report: Report) => {
     setShowWizard(false);
-    const updated = [...reports, report];
-    setReports(updated);
-    saveReports(updated);
-    navigate(`/app/reports/${report.id}`);
+    try {
+      const created = await apiClient.createReport(reportToApi(report));
+      const newReport = apiToReport(created?.data || created);
+      setReports([newReport, ...reports]);
+      navigate(`/app/reports/${newReport.id}`);
+    } catch (error) {
+      console.error("Erro ao criar relatório:", error);
+    }
   };
 
   const handleExportPDF = (report: Report, e: React.MouseEvent) => {
@@ -112,7 +132,7 @@ export function Reports() {
 
   const getScheduleLabel = (schedule?: ReportSchedule) => {
     if (!schedule || !schedule.enabled) return "Não agendado";
-    
+
     const time = schedule.time || "09:00";
     if (schedule.frequency === "daily") return `Diário às ${time}`;
     if (schedule.frequency === "weekly") {
@@ -125,22 +145,15 @@ export function Reports() {
     return "Agendado";
   };
 
-  // Filtrar e ordenar relatórios
   const filteredAndSortedReports = reports
     .filter((report) => {
-      // Busca por nome ou descrição
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesName = report.name.toLowerCase().includes(query);
         const matchesDescription = report.description?.toLowerCase().includes(query) || false;
         if (!matchesName && !matchesDescription) return false;
       }
-      
-      // Filtro por tipo
-      if (typeFilter !== "all" && report.type !== typeFilter) {
-        return false;
-      }
-      
+      if (typeFilter !== "all" && report.type !== typeFilter) return false;
       return true;
     })
     .sort((a, b) => {
@@ -164,10 +177,21 @@ export function Reports() {
 
   const hasActiveFilters = searchQuery || typeFilter !== "all";
 
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Relatórios" subtitle="Crie e gerencie relatórios personalizados" />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <Header title="Relatórios" subtitle="Crie e gerencie relatórios personalizados" />
-      
+
       <div className="p-8">
         {/* Actions */}
         <div className="flex items-center justify-between mb-6">
@@ -180,56 +204,9 @@ export function Reports() {
               <Zap size={16} />
               Criar Rápido
             </Button>
-            {reports.length === 0 && (
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => {
-                  // Criar relatório de exemplo para teste
-                  const exampleReport: Report = {
-                    id: `example-${Date.now()}`,
-                    name: "Relatório de Exemplo",
-                    description: "Este é um relatório de exemplo criado automaticamente para demonstração",
-                    type: "custom",
-                    widgets: [
-                      {
-                        id: `widget-${Date.now()}`,
-                        type: "metric",
-                        title: "Total de Leads",
-                        config: { metric: "totalLeads" },
-                        position: { x: 0, y: 0, w: 4, h: 2 },
-                      },
-                      {
-                        id: `widget-${Date.now() + 1}`,
-                        type: "chart",
-                        title: "Gráfico de Vendas",
-                        config: { chartType: "bar" },
-                        position: { x: 4, y: 0, w: 8, h: 4 },
-                      },
-                    ],
-                    schedule: {
-                      enabled: true,
-                      frequency: "weekly",
-                      dayOfWeek: 1,
-                      time: "09:00",
-                      recipients: ["exemplo@empresa.com"],
-                      format: "pdf",
-                    },
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    createdBy: "system",
-                  };
-                  const updated = [...reports, exampleReport];
-                  setReports(updated);
-                  saveReports(updated);
-                }}
-              >
-                Criar Exemplo
-              </Button>
-            )}
           </div>
 
-          <Button 
+          <Button
             className="bg-primary hover:bg-primary-dark gap-2"
             onClick={() => setShowWizard(true)}
           >
@@ -254,7 +231,6 @@ export function Reports() {
         {reports.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" size={16} />
                 <Input
@@ -265,7 +241,6 @@ export function Reports() {
                 />
               </div>
 
-              {/* Type Filter */}
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue />
@@ -280,7 +255,6 @@ export function Reports() {
                 </SelectContent>
               </Select>
 
-              {/* Sort */}
               <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue />
@@ -293,33 +267,17 @@ export function Reports() {
                 </SelectContent>
               </Select>
 
-              {/* View Mode */}
               <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                  className="h-8"
-                >
+                <Button variant={viewMode === "grid" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("grid")} className="h-8">
                   <Grid3x3 size={16} />
                 </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="h-8"
-                >
+                <Button variant={viewMode === "list" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("list")} className="h-8">
                   <List size={16} />
                 </Button>
               </div>
 
-              {/* Clear Filters */}
               {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  onClick={clearFilters}
-                  className="gap-2"
-                >
+                <Button variant="outline" onClick={clearFilters} className="gap-2">
                   <X size={16} />
                   Limpar
                 </Button>
@@ -355,27 +313,14 @@ export function Reports() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/app/reports/view/${report.id}`)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/view/${report.id}`)}>
                           <FileText size={14} className="mr-1" />
                           Visualizar
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/app/reports/${report.id}`)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
                           <Edit size={14} />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-error hover:text-error hover:bg-red-50"
-                          onClick={() => handleDelete(report.id)}
-                        >
+                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => handleDelete(report.id)}>
                           <Trash2 size={14} />
                         </Button>
                       </div>
@@ -391,66 +336,41 @@ export function Reports() {
                         </div>
                       </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <FileText size={14} />
-                      <span>{report.widgets.length} widget{report.widgets.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar size={14} />
-                      <span>{getScheduleLabel(report.schedule)}</span>
-                    </div>
-                    {report.schedule?.enabled && report.schedule.recipients.length > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail size={14} />
-                        <span>{report.schedule.recipients.length} destinatário{report.schedule.recipients.length !== 1 ? 's' : ''}</span>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FileText size={14} />
+                          <span>{report.widgets.length} widget{report.widgets.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Calendar size={14} />
+                          <span>{getScheduleLabel(report.schedule)}</span>
+                        </div>
+                        {report.schedule?.enabled && report.schedule.recipients.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail size={14} />
+                            <span>{report.schedule.recipients.length} destinatário{report.schedule.recipients.length !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
                       <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => navigate(`/app/reports/view/${report.id}`)}
-                        >
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/app/reports/view/${report.id}`)}>
                           <FileText size={14} className="mr-1" />
                           Visualizar
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/app/reports/${report.id}`)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
                           <Edit size={14} />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-error hover:text-error hover:bg-red-50"
-                          onClick={() => handleDelete(report.id)}
-                          title="Excluir"
-                        >
+                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => handleDelete(report.id)} title="Excluir">
                           <Trash2 size={14} />
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 text-xs"
-                          onClick={(e) => handleExportPDF(report, e)}
-                        >
+                        <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={(e) => handleExportPDF(report, e)}>
                           <FileText size={12} className="mr-1" />
                           PDF
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 text-xs"
-                          onClick={(e) => handleExportExcel(report, e)}
-                        >
+                        <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={(e) => handleExportExcel(report, e)}>
                           <Download size={12} className="mr-1" />
                           Excel
                         </Button>
@@ -470,9 +390,9 @@ export function Reports() {
             <p className="text-gray-600 mb-6">
               Comece criando seu primeiro relatório personalizado
             </p>
-            <Button 
+            <Button
               className="bg-primary hover:bg-primary-dark gap-2"
-              onClick={() => navigate("/app/reports/new")}
+              onClick={() => setShowWizard(true)}
             >
               <Plus size={16} />
               Criar Relatório
@@ -487,11 +407,7 @@ export function Reports() {
             <p className="text-gray-600 mb-6">
               Tente ajustar seus filtros de busca
             </p>
-            <Button 
-              variant="outline"
-              onClick={clearFilters}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={clearFilters} className="gap-2">
               <X size={16} />
               Limpar Filtros
             </Button>
@@ -501,4 +417,3 @@ export function Reports() {
     </div>
   );
 }
-

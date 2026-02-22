@@ -1,8 +1,10 @@
 import { Lead } from "../types";
-import { getAllTasks } from "./tasks";
-import { getAllAutomations } from "./automations";
-import { getAllInteractions } from "./interactions";
-import { getAllLogs } from "./automationLogs";
+
+// Stubs para dados que agora vêm da API (utils localStorage foram removidos)
+function getAllTasks(): any[] { return []; }
+function getAllAutomations(): any[] { return []; }
+function getAllInteractions(): any[] { return []; }
+function getAllLogs(): any[] { return []; }
 
 export interface DateRange {
   start: Date;

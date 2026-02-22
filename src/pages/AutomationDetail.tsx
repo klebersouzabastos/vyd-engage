@@ -1,79 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { ArrowLeft, MessageSquare, Clock, Send, Plus, Trash2, X, ArrowDown, AlertCircle } from "lucide-react";
+import { ArrowLeft, MessageSquare, Clock, Send, Plus, Trash2, X, ArrowDown, Loader2 } from "lucide-react";
 import { Switch } from "../components/ui/switch";
-import { useWhatsApp } from "../contexts/WhatsAppContext";
-import { ConnectionStatusBadge } from "../components/whatsapp/ConnectionStatusBadge";
-import { Alert, AlertDescription } from "../components/ui/alert";
+import { apiClient } from "../services/api/client";
 
 interface Step {
   id: number;
   delay: string;
   channel: "whatsapp" | "email";
+  type: string;
   subject?: string;
   message: string;
-  whatsappConnectionId?: string;
+  config?: Record<string, any>;
 }
 
-// Função para formatar o delay para exibição
 const formatDelay = (delay: string): string => {
   if (delay === "0") return "Enviar imediatamente";
-  
-  // Suporte para formato antigo (apenas números) - tratado como dias
   if (/^\d+$/.test(delay)) {
     const numValue = parseInt(delay);
     return `Enviar após ${delay} ${numValue === 1 ? "dia" : "dias"}`;
   }
-  
-  // Formato novo com unidade (ex: "1n", "1h", "2d", "1w", "1m")
   const match = delay.match(/^(\d+)([nhdwm])$/);
   if (!match) return `Enviar após ${delay}`;
-  
   const [, value, unit] = match;
   const numValue = parseInt(value);
-  
   switch (unit) {
-    case "n":
-      return `Enviar após ${value} ${numValue === 1 ? "minuto" : "minutos"}`;
-    case "h":
-      return `Enviar após ${value} ${numValue === 1 ? "hora" : "horas"}`;
-    case "d":
-      return `Enviar após ${value} ${numValue === 1 ? "dia" : "dias"}`;
-    case "w":
-      return `Enviar após ${value} ${numValue === 1 ? "semana" : "semanas"}`;
-    case "m":
-      return `Enviar após ${value} ${numValue === 1 ? "mês" : "meses"}`;
-    default:
-      return `Enviar após ${delay}`;
+    case "n": return `Enviar após ${value} ${numValue === 1 ? "minuto" : "minutos"}`;
+    case "h": return `Enviar após ${value} ${numValue === 1 ? "hora" : "horas"}`;
+    case "d": return `Enviar após ${value} ${numValue === 1 ? "dia" : "dias"}`;
+    case "w": return `Enviar após ${value} ${numValue === 1 ? "semana" : "semanas"}`;
+    case "m": return `Enviar após ${value} ${numValue === 1 ? "mês" : "meses"}`;
+    default: return `Enviar após ${delay}`;
   }
 };
 
-// Função para parsear delay em valor e unidade
 const parseDelay = (delay: string): { value: number; unit: string; isImmediate: boolean } => {
-  if (delay === "0") {
-    return { value: 0, unit: "d", isImmediate: true };
-  }
-  
-  // Suporte para formato antigo (apenas números) - tratado como dias
-  if (/^\d+$/.test(delay)) {
-    return { value: parseInt(delay), unit: "d", isImmediate: false };
-  }
-  
-  // Formato novo com unidade (ex: "1n", "1h", "2d", "1w", "1m")
+  if (delay === "0") return { value: 0, unit: "d", isImmediate: true };
+  if (/^\d+$/.test(delay)) return { value: parseInt(delay), unit: "d", isImmediate: false };
   const match = delay.match(/^(\d+)([nhdwm])$/);
-  if (match) {
-    return { value: parseInt(match[1]), unit: match[2], isImmediate: false };
-  }
-  
+  if (match) return { value: parseInt(match[1]), unit: match[2], isImmediate: false };
   return { value: 1, unit: "d", isImmediate: false };
 };
 
-// Função para construir delay a partir de valor e unidade
 const buildDelay = (value: number, unit: string, isImmediate: boolean): string => {
   if (isImmediate || value === 0) return "0";
   return `${value}${unit}`;
@@ -82,46 +55,97 @@ const buildDelay = (value: number, unit: string, isImmediate: boolean): string =
 export function AutomationDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { connections, getDefaultConnection } = useWhatsApp();
-  
-  const [isActive, setIsActive] = useState(true);
-  const [trigger, setTrigger] = useState("Quando lead é criado");
-  const [triggerConfig, setTriggerConfig] = useState<Record<string, any>>({});
-  const [steps, setSteps] = useState<Step[]>([
-    {
-      id: 1,
-      delay: "0",
-      channel: "whatsapp",
-      message: "Olá {{nome}}! 👋\n\nObrigado por se cadastrar. Estamos felizes em ter você conosco!",
-    },
-    {
-      id: 2,
-      delay: "1d",
-      channel: "whatsapp",
-      message: "Oi {{nome}}! Gostaria de saber mais sobre nossos serviços? Estou aqui para ajudar! 😊",
-    },
-    {
-      id: 3,
-      delay: "3d",
-      channel: "email",
-      subject: "Não perca essa oportunidade!",
-      message: "Olá {{nome}},\n\nNotamos que você demonstrou interesse. Temos uma oferta especial para você!\n\nAté breve,\nEquipe FlowCRM",
-    },
-  ]);
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [automationName, setAutomationName] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [trigger, setTrigger] = useState("lead_created");
+  const [triggerConfig, setTriggerConfig] = useState<Record<string, any>>({});
+  const [steps, setSteps] = useState<Step[]>([]);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (id) loadAutomation();
+  }, [id]);
+
+  const loadAutomation = async () => {
+    setLoading(true);
+    try {
+      const result = await apiClient.getAutomation(id!);
+      const automation = result?.data || result;
+
+      setAutomationName(automation.name || "");
+      setIsActive(automation.active ?? true);
+      setTrigger(automation.trigger || "lead_created");
+      setTriggerConfig(automation.triggerConfig || {});
+
+      // Parse steps from API
+      const apiSteps = (automation.steps || []).map((s: any, i: number) => ({
+        id: i + 1,
+        delay: s.delay || "0",
+        channel: s.type === "send_email" ? "email" : "whatsapp",
+        type: s.type || "send_whatsapp",
+        subject: s.config?.subject || "",
+        message: s.config?.message || s.config?.content || "",
+        config: s.config || {},
+      }));
+      setSteps(apiSteps.length > 0 ? apiSteps : [{ id: 1, delay: "0", channel: "whatsapp", type: "send_whatsapp", message: "" }]);
+
+      // Load recent logs
+      try {
+        const logsResult = await apiClient.getAutomationLogs(id!, 10);
+        setLogs(logsResult?.data || logsResult || []);
+      } catch {
+        // Non-critical
+      }
+    } catch (error) {
+      console.error("Erro ao carregar automação:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const apiSteps = steps.map((s, i) => ({
+        order: i,
+        type: s.channel === "email" ? "send_email" : "send_whatsapp",
+        delay: s.delay,
+        config: {
+          message: s.message,
+          content: s.message,
+          ...(s.subject ? { subject: s.subject } : {}),
+          ...s.config,
+        },
+      }));
+
+      await apiClient.updateAutomation(id!, {
+        name: automationName,
+        active: isActive,
+        trigger,
+        triggerConfig,
+        steps: apiSteps,
+      });
+
+      navigate("/app/automations");
+    } catch (error: any) {
+      alert(error.message || "Erro ao salvar automação");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const currentStep = selectedStep ? steps.find(s => s.id === selectedStep) : null;
 
-  const closeStepEditor = () => {
-    setSelectedStep(null);
-  };
-
   const addStep = () => {
     const newStep: Step = {
-      id: Math.max(...steps.map(s => s.id)) + 1,
+      id: Math.max(0, ...steps.map(s => s.id)) + 1,
       delay: "1d",
       channel: "whatsapp",
+      type: "send_whatsapp",
       message: "",
     };
     setSteps([...steps, newStep]);
@@ -131,442 +155,82 @@ export function AutomationDetail() {
   const deleteStep = (stepId: number) => {
     if (steps.length > 1) {
       setSteps(steps.filter(s => s.id !== stepId));
-      if (selectedStep === stepId) {
-        setSelectedStep(null);
-      }
+      if (selectedStep === stepId) setSelectedStep(null);
     }
   };
 
-  const recentActivities = [
-    { id: 1, lead: "Maria Silva", action: "Step 1 enviado", time: "2 min atrás", status: "success" },
-    { id: 2, lead: "João Santos", action: "Step 2 enviado", time: "15 min atrás", status: "success" },
-    { id: 3, lead: "Ana Costa", action: "Step 1 enviado", time: "1 hora atrás", status: "success" },
-    { id: 4, lead: "Pedro Lima", action: "Step 2 falhou", time: "2 horas atrás", status: "error" },
-  ];
-
-  // Função para renderizar campos dinâmicos baseados no gatilho
-  const renderTriggerFields = () => {
-    const updateConfig = (key: string, value: any) => {
-      setTriggerConfig({ ...triggerConfig, [key]: value });
-    };
-
-    switch (trigger) {
-      case "Quando lead muda de status":
-        return (
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <select
-              id="status"
-              value={triggerConfig.status || ""}
-              onChange={(e) => updateConfig("status", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione um status</option>
-              <option value="novo">Novo</option>
-              <option value="contato">Contato</option>
-              <option value="fechado">Fechado</option>
-              <option value="perdido">Perdido</option>
-            </select>
-          </div>
-        );
-
-      case "Quando lead entra no funil":
-      case "Quando lead sai do funil":
-        return (
-          <div>
-            <Label htmlFor="funnel">Funil</Label>
-            <select
-              id="funnel"
-              value={triggerConfig.funnel || ""}
-              onChange={(e) => updateConfig("funnel", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione um funil</option>
-              <option value="vendas">Funil de Vendas</option>
-              <option value="marketing">Funil de Marketing</option>
-              <option value="suporte">Funil de Suporte</option>
-            </select>
-          </div>
-        );
-
-      case "Quando lead não responde após X dias":
-      case "Quando lead não tem atividade há X dias":
-      case "Quando lead completa X dias no sistema":
-        return (
-          <div>
-            <Label htmlFor="days">Número de dias</Label>
-            <Input
-              id="days"
-              type="number"
-              min="1"
-              value={triggerConfig.days || ""}
-              onChange={(e) => updateConfig("days", parseInt(e.target.value) || 0)}
-              placeholder="Digite o número de dias"
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      case "Quando lead recebe interação":
-        return (
-          <div>
-            <Label htmlFor="interactionType">Tipo de interação</Label>
-            <select
-              id="interactionType"
-              value={triggerConfig.interactionType || ""}
-              onChange={(e) => updateConfig("interactionType", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione o tipo</option>
-              <option value="note">Nota</option>
-              <option value="call">Chamada</option>
-              <option value="email">E-mail</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="meeting">Reunião</option>
-            </select>
-          </div>
-        );
-
-      case "Quando lead completa tarefa":
-        return (
-          <div>
-            <Label htmlFor="taskType">Tipo de tarefa</Label>
-            <select
-              id="taskType"
-              value={triggerConfig.taskType || ""}
-              onChange={(e) => updateConfig("taskType", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione o tipo</option>
-              <option value="any">Qualquer tarefa</option>
-              <option value="specific">Tarefa específica</option>
-            </select>
-            {triggerConfig.taskType === "specific" && (
-              <Input
-                type="text"
-                value={triggerConfig.taskName || ""}
-                onChange={(e) => updateConfig("taskName", e.target.value)}
-                placeholder="Nome da tarefa"
-                className="mt-2"
-              />
-            )}
-          </div>
-        );
-
-      case "Quando lead visita página específica":
-        return (
-          <div>
-            <Label htmlFor="pageUrl">URL da página</Label>
-            <Input
-              id="pageUrl"
-              type="url"
-              value={triggerConfig.pageUrl || ""}
-              onChange={(e) => updateConfig("pageUrl", e.target.value)}
-              placeholder="https://exemplo.com/pagina"
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      case "Quando lead baixa arquivo":
-        return (
-          <div>
-            <Label htmlFor="fileName">Nome do arquivo</Label>
-            <Input
-              id="fileName"
-              type="text"
-              value={triggerConfig.fileName || ""}
-              onChange={(e) => updateConfig("fileName", e.target.value)}
-              placeholder="nome-do-arquivo.pdf"
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      case "Quando lead preenche formulário":
-        return (
-          <div>
-            <Label htmlFor="formId">Formulário</Label>
-            <select
-              id="formId"
-              value={triggerConfig.formId || ""}
-              onChange={(e) => updateConfig("formId", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione um formulário</option>
-              <option value="form1">Formulário de Contato</option>
-              <option value="form2">Formulário de Orçamento</option>
-              <option value="form3">Formulário de Newsletter</option>
-            </select>
-          </div>
-        );
-
-      case "Quando lead clica em link do e-mail":
-      case "Quando lead não abre e-mail":
-        return (
-          <div>
-            <Label htmlFor="emailCampaign">Campanha de e-mail</Label>
-            <select
-              id="emailCampaign"
-              value={triggerConfig.emailCampaign || ""}
-              onChange={(e) => updateConfig("emailCampaign", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione uma campanha</option>
-              <option value="campaign1">Boas-vindas</option>
-              <option value="campaign2">Promoção Especial</option>
-              <option value="campaign3">Newsletter Semanal</option>
-            </select>
-          </div>
-        );
-
-      case "Quando lead recebe tag específica":
-      case "Quando lead perde tag específica":
-        return (
-          <div>
-            <Label htmlFor="tag">Tag</Label>
-            <select
-              id="tag"
-              value={triggerConfig.tag || ""}
-              onChange={(e) => updateConfig("tag", e.target.value)}
-              className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Selecione uma tag</option>
-              <option value="tag1">Cliente VIP</option>
-              <option value="tag2">Interessado</option>
-              <option value="tag3">Follow-up</option>
-              <option value="tag4">Oportunidade</option>
-            </select>
-          </div>
-        );
-
-      case "Quando lead atinge score específico":
-        return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="scoreOperator">Operador</Label>
-              <select
-                id="scoreOperator"
-                value={triggerConfig.scoreOperator || ">="}
-                onChange={(e) => updateConfig("scoreOperator", e.target.value)}
-                className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-              >
-                <option value=">=">Maior ou igual a</option>
-                <option value="<=">Menor ou igual a</option>
-                <option value="=">Igual a</option>
-                <option value=">">Maior que</option>
-                <option value="<">Menor que</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="scoreValue">Valor do score</Label>
-              <Input
-                id="scoreValue"
-                type="number"
-                min="0"
-                max="100"
-                value={triggerConfig.scoreValue || ""}
-                onChange={(e) => updateConfig("scoreValue", parseInt(e.target.value) || 0)}
-                placeholder="0-100"
-                className="mt-1.5"
-              />
-            </div>
-          </div>
-        );
-
-      case "Quando lead faz compra":
-      case "Quando lead fecha negócio":
-        return (
-          <div>
-            <Label htmlFor="minValue">Valor mínimo (opcional)</Label>
-            <Input
-              id="minValue"
-              type="number"
-              min="0"
-              value={triggerConfig.minValue || ""}
-              onChange={(e) => updateConfig("minValue", parseFloat(e.target.value) || 0)}
-              placeholder="0.00"
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      case "Quando lead abandona carrinho":
-        return (
-          <div>
-            <Label htmlFor="abandonTime">Tempo de abandono (horas)</Label>
-            <Input
-              id="abandonTime"
-              type="number"
-              min="1"
-              value={triggerConfig.abandonTime || ""}
-              onChange={(e) => updateConfig("abandonTime", parseInt(e.target.value) || 0)}
-              placeholder="24"
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      case "Quando data específica é atingida":
-        return (
-          <div>
-            <Label htmlFor="specificDate">Data</Label>
-            <Input
-              id="specificDate"
-              type="date"
-              value={triggerConfig.specificDate || ""}
-              onChange={(e) => updateConfig("specificDate", e.target.value)}
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      case "Quando aniversário do lead":
-        return (
-          <div>
-            <Label htmlFor="daysBefore">Dias antes do aniversário</Label>
-            <Input
-              id="daysBefore"
-              type="number"
-              min="0"
-              value={triggerConfig.daysBefore || ""}
-              onChange={(e) => updateConfig("daysBefore", parseInt(e.target.value) || 0)}
-              placeholder="0"
-              className="mt-1.5"
-            />
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Detalhes da Automação" />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <Header title="Detalhes da Automação" />
-      
-      <div className="p-8">
-        {/* Back Button and Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            className="gap-2"
-            onClick={() => navigate("/app/automations")}
-          >
-            <ArrowLeft size={16} />
-            Voltar
-          </Button>
 
+      <div className="p-8">
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" className="gap-2" onClick={() => navigate("/app/automations")}>
+            <ArrowLeft size={16} /> Voltar
+          </Button>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Status:</span>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <span className="text-sm font-medium text-gray-900">
-                {isActive ? "Ativo" : "Pausado"}
-              </span>
+              <span className="text-sm font-medium text-gray-900">{isActive ? "Ativo" : "Pausado"}</span>
             </div>
-            <Button className="bg-primary hover:bg-primary-dark">
+            <Button className="bg-primary hover:bg-primary-dark gap-2" onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 size={16} className="animate-spin" /> : null}
               Salvar Alterações
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Step Editor + Recent Activities */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Automation Info */}
+            {/* Info */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
               <h3 className="text-gray-900 mb-4">Informações</h3>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nome da Automação</Label>
-                  <Input
-                    id="name"
-                    defaultValue="Boas-vindas WhatsApp"
-                    className="mt-1.5"
-                  />
+                  <Input id="name" value={automationName} onChange={(e) => setAutomationName(e.target.value)} className="mt-1.5" />
                 </div>
                 <div>
                   <Label htmlFor="trigger">Gatilho</Label>
                   <select
-                    id="trigger"
-                    value={trigger}
-                    onChange={(e) => {
-                      setTrigger(e.target.value);
-                      setTriggerConfig({}); // Limpa a configuração ao mudar o gatilho
-                    }}
+                    id="trigger" value={trigger}
+                    onChange={(e) => { setTrigger(e.target.value); setTriggerConfig({}); }}
                     className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                   >
-                    <optgroup label="Criação e Status">
-                      <option>Quando lead é criado</option>
-                      <option>Quando lead muda de status</option>
-                      <option>Quando lead entra no funil</option>
-                      <option>Quando lead sai do funil</option>
-                    </optgroup>
-                    <optgroup label="Interações">
-                      <option>Quando lead recebe interação</option>
-                      <option>Quando lead não responde após X dias</option>
-                      <option>Quando lead não tem atividade há X dias</option>
-                      <option>Quando lead completa tarefa</option>
-                    </optgroup>
-                    <optgroup label="Comportamento Digital">
-                      <option>Quando lead visita página específica</option>
-                      <option>Quando lead baixa arquivo</option>
-                      <option>Quando lead preenche formulário</option>
-                      <option>Quando lead clica em link do e-mail</option>
-                      <option>Quando lead não abre e-mail</option>
-                    </optgroup>
-                    <optgroup label="Tags e Score">
-                      <option>Quando lead recebe tag específica</option>
-                      <option>Quando lead atinge score específico</option>
-                      <option>Quando lead perde tag específica</option>
-                    </optgroup>
-                    <optgroup label="Vendas">
-                      <option>Quando lead faz compra</option>
-                      <option>Quando lead abandona carrinho</option>
-                      <option>Quando lead fecha negócio</option>
-                      <option>Quando lead perde negócio</option>
-                    </optgroup>
-                    <optgroup label="Agendamento">
-                      <option>Quando data específica é atingida</option>
-                      <option>Quando aniversário do lead</option>
-                      <option>Quando lead completa X dias no sistema</option>
-                    </optgroup>
+                    <option value="lead_created">Quando lead é criado</option>
+                    <option value="lead_status_changed">Quando lead muda de status</option>
+                    <option value="lead_score_changed">Quando lead atinge score</option>
+                    <option value="lead_tag_added">Quando lead recebe tag</option>
+                    <option value="form_submitted">Quando formulário é preenchido</option>
+                    <option value="scheduled">Agendamento</option>
                   </select>
                 </div>
-                
-                {/* Campos dinâmicos baseados no gatilho */}
-                {(() => {
-                  const fields = renderTriggerFields();
-                  return fields && (
-                    <div className="pt-4 border-t border-gray-300">
-                      {fields}
-                    </div>
-                  );
-                })()}
               </div>
             </div>
 
             {/* Step Editor */}
-            {currentStep ? (
+            {currentStep && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-300">
                 <div className="px-6 pt-6 pb-4 border-b border-gray-300">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-gray-900">
-                      Editar Step {steps.findIndex(s => s.id === selectedStep) + 1}
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={closeStepEditor}
-                      className="h-8 w-8 p-0"
-                    >
+                    <h3 className="text-gray-900">Editar Step {steps.findIndex(s => s.id === selectedStep) + 1}</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedStep(null)} className="h-8 w-8 p-0">
                       <X size={16} />
                     </Button>
                   </div>
                 </div>
-                
                 <div className="p-6 space-y-4">
                   <div>
                     <Label htmlFor="delay">Delay</Label>
@@ -576,76 +240,52 @@ export function AutomationDetail() {
                         <div className="space-y-3 mt-1.5">
                           <div className="flex items-center gap-2">
                             <input
-                              type="checkbox"
-                              id="immediate"
-                              checked={delayParsed.isImmediate}
+                              type="checkbox" id="immediate" checked={delayParsed.isImmediate}
                               onChange={(e) => {
                                 const newDelay = e.target.checked ? "0" : buildDelay(1, "d", false);
-                                setSteps(steps.map(s => 
-                                  s.id === selectedStep ? { ...s, delay: newDelay } : s
-                                ));
+                                setSteps(steps.map(s => s.id === selectedStep ? { ...s, delay: newDelay } : s));
                               }}
                               className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                             />
-                            <Label htmlFor="immediate" className="text-sm font-normal cursor-pointer">
-                              Enviar imediatamente
-                            </Label>
+                            <Label htmlFor="immediate" className="text-sm font-normal cursor-pointer">Enviar imediatamente</Label>
                           </div>
-                          
                           {!delayParsed.isImmediate && (
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <div className="flex-1">
-                                <Input
-                                  type="number"
-                                  id="delayValue"
-                                  min="1"
-                                  value={delayParsed.value}
-                                  onChange={(e) => {
-                                    const newValue = parseInt(e.target.value) || 1;
-                                    const newDelay = buildDelay(newValue, delayParsed.unit, false);
-                                    setSteps(steps.map(s => 
-                                      s.id === selectedStep ? { ...s, delay: newDelay } : s
-                                    ));
-                                  }}
-                                  className="w-full"
-                                  placeholder="Valor"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <select
-                                  id="delayUnit"
-                                  value={delayParsed.unit}
-                                  onChange={(e) => {
-                                    const newDelay = buildDelay(delayParsed.value, e.target.value, false);
-                                    setSteps(steps.map(s => 
-                                      s.id === selectedStep ? { ...s, delay: newDelay } : s
-                                    ));
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                                >
-                                  <option value="n">Minutos</option>
-                                  <option value="h">Horas</option>
-                                  <option value="d">Dias</option>
-                                  <option value="w">Semanas</option>
-                                  <option value="m">Meses</option>
-                                </select>
-                              </div>
+                            <div className="flex gap-2">
+                              <Input
+                                type="number" min="1" value={delayParsed.value}
+                                onChange={(e) => {
+                                  const newDelay = buildDelay(parseInt(e.target.value) || 1, delayParsed.unit, false);
+                                  setSteps(steps.map(s => s.id === selectedStep ? { ...s, delay: newDelay } : s));
+                                }}
+                                className="flex-1"
+                              />
+                              <select
+                                value={delayParsed.unit}
+                                onChange={(e) => {
+                                  const newDelay = buildDelay(delayParsed.value, e.target.value, false);
+                                  setSteps(steps.map(s => s.id === selectedStep ? { ...s, delay: newDelay } : s));
+                                }}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                              >
+                                <option value="n">Minutos</option>
+                                <option value="h">Horas</option>
+                                <option value="d">Dias</option>
+                                <option value="w">Semanas</option>
+                                <option value="m">Meses</option>
+                              </select>
                             </div>
                           )}
                         </div>
                       );
                     })()}
                   </div>
-
                   <div>
                     <Label htmlFor="channel">Canal</Label>
                     <select
-                      id="channel"
-                      value={currentStep.channel}
+                      id="channel" value={currentStep.channel}
                       onChange={(e) => {
-                        setSteps(steps.map(s => 
-                          s.id === selectedStep ? { ...s, channel: e.target.value as "whatsapp" | "email" } : s
-                        ));
+                        const ch = e.target.value as "whatsapp" | "email";
+                        setSteps(steps.map(s => s.id === selectedStep ? { ...s, channel: ch, type: ch === "email" ? "send_email" : "send_whatsapp" } : s));
                       }}
                       className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
                     >
@@ -653,221 +293,101 @@ export function AutomationDetail() {
                       <option value="email">E-mail</option>
                     </select>
                   </div>
-
-                  {currentStep.channel === "whatsapp" && (
-                    <div>
-                      <Label htmlFor="whatsapp-connection">Conexão WhatsApp</Label>
-                      {connections.length === 0 ? (
-                        <Alert className="mt-1.5">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            Nenhuma conexão WhatsApp configurada.{" "}
-                            <a href="/app/settings?tab=integrations" className="text-primary underline">
-                              Configure uma conexão
-                            </a>
-                          </AlertDescription>
-                        </Alert>
-                      ) : (
-                        <>
-                          <select
-                            id="whatsapp-connection"
-                            value={currentStep.whatsappConnectionId || getDefaultConnection()?.id || ""}
-                            onChange={(e) => {
-                              setSteps(steps.map(s => 
-                                s.id === selectedStep ? { ...s, whatsappConnectionId: e.target.value } : s
-                              ));
-                            }}
-                            className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-                          >
-                            {connections.map((conn) => (
-                              <option key={conn.id} value={conn.id}>
-                                {conn.name} {conn.isDefault ? "(Padrão)" : ""}
-                                {conn.status.status === "disconnected" ? " - Desconectado" : ""}
-                              </option>
-                            ))}
-                          </select>
-                          {currentStep.whatsappConnectionId && (
-                            <div className="mt-2">
-                              {(() => {
-                                const selectedConn = connections.find(c => c.id === currentStep.whatsappConnectionId);
-                                return selectedConn ? (
-                                  <ConnectionStatusBadge status={selectedConn.status} />
-                                ) : null;
-                              })()}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-
                   {currentStep.channel === "email" && (
                     <div>
                       <Label htmlFor="subject">Assunto</Label>
                       <Input
-                        id="subject"
-                        value={currentStep.subject || ""}
-                        onChange={(e) => {
-                          setSteps(steps.map(s => 
-                            s.id === selectedStep ? { ...s, subject: e.target.value } : s
-                          ));
-                        }}
-                        placeholder="Assunto do e-mail"
-                        className="mt-1.5"
+                        id="subject" value={currentStep.subject || ""}
+                        onChange={(e) => setSteps(steps.map(s => s.id === selectedStep ? { ...s, subject: e.target.value } : s))}
+                        placeholder="Assunto do e-mail" className="mt-1.5"
                       />
                     </div>
                   )}
-
                   <div>
                     <Label htmlFor="message">Mensagem</Label>
                     <Textarea
-                      id="message"
-                      value={currentStep.message}
-                      onChange={(e) => {
-                        setSteps(steps.map(s => 
-                          s.id === selectedStep ? { ...s, message: e.target.value } : s
-                        ));
-                      }}
-                      placeholder="Digite sua mensagem..."
-                      className="mt-1.5"
-                      rows={6}
+                      id="message" value={currentStep.message}
+                      onChange={(e) => setSteps(steps.map(s => s.id === selectedStep ? { ...s, message: e.target.value } : s))}
+                      placeholder="Digite sua mensagem..." className="mt-1.5" rows={6}
                     />
-                    <p className="text-xs text-gray-600 mt-2">
-                      Use {`{{nome}}`} para personalizar com o nome do lead
-                    </p>
+                    <p className="text-xs text-gray-600 mt-2">Use {`{{nome}}`} para personalizar com o nome do lead</p>
                   </div>
-
-                  <Button variant="outline" className="w-full">
-                    Testar Mensagem
-                  </Button>
-
                   <div className="flex gap-2 pt-2 border-t border-gray-300">
-                    <Button variant="outline" className="flex-1" onClick={closeStepEditor}>
-                      Cancelar
-                    </Button>
-                    <Button 
-                      className="flex-1 bg-primary hover:bg-primary-dark"
-                      onClick={closeStepEditor}
-                    >
-                      Salvar
-                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => setSelectedStep(null)}>Fechar</Button>
                   </div>
                 </div>
               </div>
-            ) : null}
+            )}
 
             {/* Recent Activities */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
               <h3 className="text-gray-900 mb-4">Atividades Recentes</h3>
-              
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="pb-3 border-b border-gray-300 last:border-0">
-                    <p className="font-medium text-sm text-gray-900 mb-1">
-                      {activity.lead}
-                    </p>
-                    <p className="text-sm text-gray-600 mb-1">{activity.action}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600">{activity.time}</span>
-                      <span className={`
-                        text-xs px-2 py-0.5 rounded-full
-                        ${activity.status === "success" 
-                          ? "bg-green-100 text-green-700" 
-                          : "bg-red-100 text-red-700"
-                        }
-                      `}>
-                        {activity.status === "success" ? "Enviado" : "Erro"}
-                      </span>
+              {logs.length === 0 ? (
+                <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
+              ) : (
+                <div className="space-y-3">
+                  {logs.slice(0, 5).map((log: any, i: number) => (
+                    <div key={log.id || i} className="pb-3 border-b border-gray-300 last:border-0">
+                      <p className="font-medium text-sm text-gray-900 mb-1">Step {log.stepOrder != null ? log.stepOrder + 1 : "?"}</p>
+                      <p className="text-sm text-gray-600 mb-1">{log.status === "SUCCESS" ? "Enviado" : log.status === "ERROR" ? "Erro" : log.status}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">{new Date(log.executedAt || log.createdAt).toLocaleString("pt-BR")}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${log.status === "SUCCESS" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                          {log.status === "SUCCESS" ? "Enviado" : "Erro"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right Column - Steps Flow */}
+          {/* Steps Flow */}
           <div className="space-y-6">
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 sticky top-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-gray-900">Fluxo de Mensagens</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={addStep}
-                >
-                  <Plus size={16} />
-                  Adicionar Step
+                <Button variant="outline" size="sm" className="gap-2" onClick={addStep}>
+                  <Plus size={16} /> Adicionar Step
                 </Button>
               </div>
-
               <div className="space-y-4">
                 {steps.map((step, index) => (
                   <div key={step.id}>
                     <div
-                      className={`
-                        p-4 rounded-lg border-2 cursor-pointer transition-all
-                        ${selectedStep === step.id 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-gray-300 hover:border-primary/50'
-                        }
-                      `}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedStep === step.id ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary/50"}`}
                       onClick={() => setSelectedStep(step.id)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
-                          <div className={`
-                            w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                            ${step.channel === "whatsapp" 
-                              ? "bg-green-100 text-green-600" 
-                              : "bg-blue-100 text-blue-600"
-                            }
-                          `}>
-                            {step.channel === "whatsapp" ? (
-                              <MessageSquare size={16} />
-                            ) : (
-                              <Send size={16} />
-                            )}
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.channel === "whatsapp" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"}`}>
+                            {step.channel === "whatsapp" ? <MessageSquare size={16} /> : <Send size={16} />}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-gray-900">
-                                Step {index + 1}
-                              </span>
+                              <span className="font-medium text-gray-900">Step {index + 1}</span>
                               <span className="text-sm text-gray-600">•</span>
-                              <span className="text-sm text-gray-600">
-                                {step.channel === "whatsapp" ? "WhatsApp" : "E-mail"}
-                              </span>
+                              <span className="text-sm text-gray-600">{step.channel === "whatsapp" ? "WhatsApp" : "E-mail"}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                               <Clock size={14} />
-                              <span>
-                                {formatDelay(step.delay)}
-                              </span>
+                              <span>{formatDelay(step.delay)}</span>
                             </div>
                           </div>
                         </div>
                         {steps.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteStep(step.id);
-                            }}
-                            className="text-error hover:text-error hover:bg-red-50"
-                          >
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteStep(step.id); }} className="text-error hover:text-error hover:bg-red-50">
                             <Trash2 size={16} />
                           </Button>
                         )}
                       </div>
                     </div>
-
                     {index < steps.length - 1 && (
                       <div className="flex flex-col items-center py-3">
-                        <div className="w-0.5 h-4 bg-primary"></div>
+                        <div className="w-0.5 h-4 bg-primary" />
                         <ArrowDown size={20} className="text-primary my-1" />
-                        <div className="w-0.5 h-4 bg-primary"></div>
+                        <div className="w-0.5 h-4 bg-primary" />
                       </div>
                     )}
                   </div>

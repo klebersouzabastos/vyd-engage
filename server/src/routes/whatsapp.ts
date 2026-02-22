@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { whatsappService } from '../services/whatsappService.js';
+import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -94,6 +95,49 @@ router.delete('/:id', async (req, res, next) => {
 
     await whatsappService.delete(req.user.tenantId, req.params.id);
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ========================
+// Messaging
+// ========================
+
+const sendMessageSchema = z.object({
+  connectionId: z.string().uuid(),
+  to: z.string().min(10),
+  type: z.enum(['text', 'template', 'image', 'document', 'audio']).default('text'),
+  content: z.string(),
+  templateName: z.string().optional(),
+  templateParams: z.array(z.string()).optional(),
+  mediaUrl: z.string().url().optional(),
+  leadId: z.string().uuid().optional(),
+});
+
+// POST /api/whatsapp/send - Send a message
+router.post('/send', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const data = sendMessageSchema.parse(req.body);
+    const result = await whatsappMessagingService.sendMessage(req.user.tenantId, data);
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// GET /api/whatsapp/:id/templates - Get message templates
+router.get('/:id/templates', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const templates = await whatsappMessagingService.getTemplates(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: templates });
   } catch (error) {
     next(error);
   }

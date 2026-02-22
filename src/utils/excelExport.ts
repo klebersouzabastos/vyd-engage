@@ -13,12 +13,10 @@ function base64ToBuffer(base64: string): Buffer {
 }
 
 /**
- * Obtém informações da empresa do localStorage
+ * Obtém informações da empresa
  */
 function getCompanyInfo() {
-  const logo = localStorage.getItem("companyLogo");
-  const companyName = localStorage.getItem("companyName") || "FlowCRM";
-  return { logo, companyName };
+  return { logo: null, companyName: "VYD Engage" };
 }
 
 /**

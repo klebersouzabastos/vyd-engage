@@ -25,7 +25,14 @@ import { LeadScoreBadge } from "./LeadScoreBadge";
 import { Lead } from "../types";
 import { CommentsSection } from "./CommentsSection";
 import { useLeads } from "../hooks/useLeads";
+import { useFunnels } from "../hooks/useFunnels";
 import { toast } from "sonner";
+
+const DEFAULT_PIPELINE_COLUMNS = [
+  { id: "novo", title: "Novo" },
+  { id: "contato", title: "Em Contato" },
+  { id: "fechado", title: "Fechado" },
+];
 
 interface Automation {
   id: number;
@@ -55,28 +62,6 @@ const availableAutomations: Automation[] = [
   },
 ];
 
-// Função para buscar as colunas do kanban (Pipeline)
-function getPipelineColumns(): Array<{ id: string; title: string }> {
-  try {
-    const stored = localStorage.getItem("pipelineColumns");
-    if (stored) {
-      const columns = JSON.parse(stored);
-      return columns.map((col: any) => ({
-        id: col.id,
-        title: col.title,
-      }));
-    }
-  } catch (error) {
-    console.error("Erro ao carregar colunas do pipeline:", error);
-  }
-  // Retornar colunas padrão se não houver dados salvos
-  return [
-    { id: "novo", title: "Novo" },
-    { id: "contato", title: "Em Contato" },
-    { id: "fechado", title: "Fechado" },
-  ];
-}
-
 interface LeadModalProps {
   open: boolean;
   onClose: () => void;
@@ -88,9 +73,10 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
   const { fields, validateValue } = useCustomFields();
   const { addNotification } = useNotifications();
   const { createLead, updateLead } = useLeads();
+  const { currentFunnel } = useFunnels();
   const [interactions, setInteractions] = useState<any[]>([]);
   const [leadScore, setLeadScore] = useState<{ score: number; factors: Array<{ type: string; description: string; points: number }> } | null>(null);
-  const [pipelineColumns, setPipelineColumns] = useState(getPipelineColumns());
+  const pipelineColumns = currentFunnel?.columns?.map(c => ({ id: c.id, title: c.title })) || DEFAULT_PIPELINE_COLUMNS;
   const [formData, setFormData] = useState({
     name: lead?.name || "",
     email: lead?.email || "",
@@ -104,12 +90,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
   const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Atualizar colunas do pipeline sempre que o modal abrir
-    setPipelineColumns(getPipelineColumns());
-  }, [open]);
-
-  useEffect(() => {
-    const columns = getPipelineColumns();
+    const columns = pipelineColumns;
     // Garantir que sempre há pelo menos uma coluna
     const defaultStatus = columns.length > 0 ? columns[0].id : "novo";
     
@@ -229,9 +210,8 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
       if (lead) {
         // Verificar se o status mudou
         if (lead.status !== formData.status) {
-          const columns = getPipelineColumns();
           const statusLabels: Record<string, string> = {};
-          columns.forEach((col) => {
+          pipelineColumns.forEach((col) => {
             statusLabels[col.id] = col.title;
           });
           

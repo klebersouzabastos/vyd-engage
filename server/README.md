@@ -1,6 +1,6 @@
-# FlowCRM Backend API
+# VYD Engage Backend API
 
-Backend API server for FlowCRM SaaS application.
+Backend API server for VYD Engage SaaS application.
 
 ## Setup
 

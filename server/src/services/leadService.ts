@@ -1,6 +1,8 @@
 import prisma from '../config/database.js';
-import { LeadStatus, LeadSource } from '@prisma/client';
+import { LeadStatus, LeadSource, ScoreEvent } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { scoringService } from './scoringService.js';
+import { dispatchTrigger } from '../jobs/automationEngine.js';
 
 export interface CreateLeadData {
   name: string;
@@ -59,7 +61,20 @@ export const leadService = {
           })
         )
       );
+      // Score for each tag added
+      for (const tagId of data.tagIds) {
+        scoringService.processEvent(tenantId, lead.id, ScoreEvent.TAG_ADDED).catch(() => {});
+      }
     }
+
+    // Score lead creation event
+    scoringService.processEvent(tenantId, lead.id, ScoreEvent.LEAD_CREATED).catch(() => {});
+
+    // Dispatch automation trigger
+    dispatchTrigger(tenantId, 'lead_created', lead.id, {
+      source: data.source || 'WEBSITE',
+      status: data.status || 'NEW',
+    }).catch(() => {});
 
     return this.findById(tenantId, lead.id);
   },
@@ -168,7 +183,7 @@ export const leadService = {
 
   async update(tenantId: string, data: UpdateLeadData) {
     // Verify lead exists and belongs to tenant
-    await this.findById(tenantId, data.id);
+    const existingLead = await this.findById(tenantId, data.id);
 
     const updateData: any = {
       name: data.name,
@@ -203,8 +218,19 @@ export const leadService = {
       },
     });
 
+    // Score and trigger status change
+    if (data.status && data.status !== existingLead.status) {
+      scoringService.processEvent(tenantId, data.id, ScoreEvent.STATUS_CHANGED).catch(() => {});
+      dispatchTrigger(tenantId, 'status_changed', data.id, {
+        oldStatus: existingLead.status,
+        newStatus: data.status,
+      }).catch(() => {});
+    }
+
     // Update tags if provided
     if (data.tagIds !== undefined) {
+      const existingTagIds = existingLead.tags.map((t: any) => t.tagId);
+
       // Remove all existing tags
       await prisma.leadTag.deleteMany({
         where: { leadId: data.id },
@@ -222,6 +248,13 @@ export const leadService = {
             })
           )
         );
+
+        // Score and trigger newly added tags
+        const newTags = data.tagIds.filter(id => !existingTagIds.includes(id));
+        for (const tagId of newTags) {
+          scoringService.processEvent(tenantId, data.id, ScoreEvent.TAG_ADDED).catch(() => {});
+          dispatchTrigger(tenantId, 'tag_added', data.id, { tagId }).catch(() => {});
+        }
       }
     }
 

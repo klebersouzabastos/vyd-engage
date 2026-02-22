@@ -22,7 +22,7 @@ function WhatsAppHelpContent() {
       <div>
         <h3 className="font-semibold mb-2">O que sao Conexoes WhatsApp?</h3>
         <p className="text-gray-600 mb-3">
-          As conexoes WhatsApp permitem integrar o FlowCRM com WhatsApp para enviar e receber mensagens diretamente do CRM.
+          As conexoes WhatsApp permitem integrar o VYD Engage com WhatsApp para enviar e receber mensagens diretamente do CRM.
           Voce pode usar tanto a API oficial do WhatsApp Business quanto solucoes nao oficiais.
         </p>
       </div>
@@ -110,7 +110,7 @@ function EmailHelpContent() {
       <div>
         <h3 className="font-semibold mb-2">O que e o Servico de Email?</h3>
         <p className="text-gray-600 mb-3">
-          O servico de email permite configurar como o FlowCRM envia emails para seus leads e clientes.
+          O servico de email permite configurar como o VYD Engage envia emails para seus leads e clientes.
           Voce pode usar SMTP tradicional ou APIs de servicos de email modernos.
         </p>
       </div>
@@ -129,7 +129,7 @@ function EmailHelpContent() {
       <div>
         <h3 className="font-semibold mb-2">Como funciona?</h3>
         <ol className="list-decimal list-inside space-y-2 text-gray-600">
-          <li>Configure uma ou mais contas de email no FlowCRM</li>
+          <li>Configure uma ou mais contas de email no VYD Engage</li>
           <li>O sistema usara essas contas para enviar emails automaticos e campanhas</li>
           <li>Voce pode definir uma conta padrao para envios automaticos</li>
           <li>Multiplas contas permitem segmentacao por tipo de email ou remetente</li>
@@ -159,7 +159,7 @@ function EmailHelpContent() {
           <li>Crie uma conta no servico escolhido</li>
           <li>Gere uma API Key nas configuracoes da conta</li>
           <li>Configure o dominio de envio (verificacao DNS pode ser necessaria)</li>
-          <li>Cole a API Key no FlowCRM e teste a conexao</li>
+          <li>Cole a API Key no VYD Engage e teste a conexao</li>
           <li>APIs geralmente oferecem melhor deliverability e analytics</li>
         </ol>
       </div>
@@ -274,7 +274,7 @@ export function IntegrationsTab() {
                     <div>
                       <h3 className="font-semibold text-lg mb-2 text-gray-900">Como funciona as Conexoes WhatsApp</h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        Entenda como integrar e usar WhatsApp no FlowCRM para enviar e receber mensagens
+                        Entenda como integrar e usar WhatsApp no VYD Engage para enviar e receber mensagens
                       </p>
                     </div>
                     <WhatsAppHelpContent />
@@ -409,7 +409,7 @@ export function IntegrationsTab() {
                     <div>
                       <h3 className="font-semibold text-lg mb-2 text-gray-900">Como funciona o Servico de Email</h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        Entenda como configurar e usar servicos de email no FlowCRM
+                        Entenda como configurar e usar servicos de email no VYD Engage
                       </p>
                     </div>
                     <EmailHelpContent />

@@ -223,6 +223,57 @@ class ApiClient {
     return this.request<any>('/api/auth/me');
   }
 
+  async updateProfile(data: { name?: string; phone?: string; avatar?: string | null }) {
+    return this.request<any>('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(data: { currentPassword: string; newPassword: string }) {
+    return this.request<any>('/api/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTenant(data: { name?: string; logo?: string | null }) {
+    return this.request<any>('/api/auth/tenant', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getProfileStats() {
+    return this.request<any>('/api/auth/profile/stats');
+  }
+
+  async changePlan(data: { planType: string; billingCycle?: string }) {
+    return this.request<any>('/api/subscriptions/change-plan', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async cancelSubscription() {
+    return this.request<any>('/api/subscriptions/cancel', {
+      method: 'POST',
+    });
+  }
+
+  // Public lead capture (no auth required)
+  async publicCaptureLead(formId: string, data: any) {
+    return this.request<any>(`/api/leads/capture/${formId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Dashboard stats
+  async getDashboardStats() {
+    return this.request<any>('/api/dashboard/stats');
+  }
+
   async requestPasswordReset(email: string) {
     try {
       // Ensure email is trimmed and lowercase
@@ -452,6 +503,22 @@ class ApiClient {
     });
   }
 
+  async getAutomationLogs(id: string, limit?: number) {
+    const query = limit ? `?limit=${limit}` : '';
+    return this.request<any>(`/api/automations/${id}/logs${query}`);
+  }
+
+  async getAutomationStats(id: string) {
+    return this.request<any>(`/api/automations/${id}/stats`);
+  }
+
+  async executeAutomation(id: string, leadId: string) {
+    return this.request<any>(`/api/automations/${id}/execute`, {
+      method: 'POST',
+      body: JSON.stringify({ leadId }),
+    });
+  }
+
   // WhatsApp Connections
   async getWhatsAppConnections() {
     return this.request<any[]>('/api/whatsapp');
@@ -481,6 +548,26 @@ class ApiClient {
     });
   }
 
+  async sendWhatsAppMessage(data: {
+    connectionId: string;
+    to: string;
+    type?: 'text' | 'template' | 'image' | 'document' | 'audio';
+    content: string;
+    templateName?: string;
+    templateParams?: string[];
+    mediaUrl?: string;
+    leadId?: string;
+  }) {
+    return this.request<any>('/api/whatsapp/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getWhatsAppTemplates(connectionId: string) {
+    return this.request<any>(`/api/whatsapp/${connectionId}/templates`);
+  }
+
   // Email Configs
   async getEmailConfigs() {
     return this.request<any[]>('/api/email/configs');
@@ -507,6 +594,40 @@ class ApiClient {
   async deleteEmailConfig(id: string) {
     return this.request(`/api/email/configs/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  async sendEmail(data: {
+    configId: string;
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+    leadId?: string;
+  }) {
+    return this.request<any>('/api/email/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async sendBulkEmail(data: {
+    configId: string;
+    recipients: Array<{ email: string; leadId?: string; variables?: Record<string, string> }>;
+    subject: string;
+    html: string;
+    text?: string;
+  }) {
+    return this.request<any>('/api/email/send-bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async sendTestEmail(configId: string, toEmail: string) {
+    return this.request<any>(`/api/email/configs/${configId}/test`, {
+      method: 'POST',
+      body: JSON.stringify({ toEmail }),
     });
   }
 
@@ -571,6 +692,86 @@ class ApiClient {
     });
   }
 
+  async getInboxConversations(filters?: { channel?: string; search?: string; page?: number; limit?: number }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request<any>(`/api/interactions/inbox${query ? `?${query}` : ''}`);
+  }
+
+  // Funnels (Pipeline)
+  async getFunnels() {
+    return this.request<any>('/api/funnels');
+  }
+
+  async getDefaultFunnel() {
+    return this.request<any>('/api/funnels/default');
+  }
+
+  async getFunnel(id: string) {
+    return this.request<any>(`/api/funnels/${id}`);
+  }
+
+  async createFunnel(data: { name: string; columns?: Array<{ title: string; color?: string; mappedStatus?: string }> }) {
+    return this.request<any>('/api/funnels', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFunnel(id: string, data: { name?: string; order?: number }) {
+    return this.request<any>(`/api/funnels/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFunnel(id: string) {
+    return this.request(`/api/funnels/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addFunnelColumn(funnelId: string, data: { title: string; color?: string; mappedStatus?: string }) {
+    return this.request<any>(`/api/funnels/${funnelId}/columns`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFunnelColumn(funnelId: string, columnId: string, data: { title?: string; color?: string; order?: number }) {
+    return this.request<any>(`/api/funnels/${funnelId}/columns/${columnId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async reorderFunnelColumns(funnelId: string, columnIds: string[]) {
+    return this.request<any>(`/api/funnels/${funnelId}/columns/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ columnIds }),
+    });
+  }
+
+  async deleteFunnelColumn(funnelId: string, columnId: string) {
+    return this.request(`/api/funnels/${funnelId}/columns/${columnId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async moveLead(data: { leadId: string; targetColumnId: string; position: number }) {
+    return this.request<any>('/api/funnels/move-lead', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Notifications
   async getNotifications(filters?: any) {
     const params = new URLSearchParams();
@@ -605,6 +806,101 @@ class ApiClient {
     return this.request(`/api/notifications/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // ========================
+  // Scoring Rules
+  // ========================
+
+  async getScoringRules() {
+    return this.request<any>('/api/scoring-rules');
+  }
+
+  async getDefaultScoringRules() {
+    return this.request<any>('/api/scoring-rules/default');
+  }
+
+  async getScoringRule(id: string) {
+    return this.request<any>(`/api/scoring-rules/${id}`);
+  }
+
+  async createScoringRule(data: { name: string; eventType: string; points: number; description?: string; conditions?: Record<string, any> }) {
+    return this.request<any>('/api/scoring-rules', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateScoringRule(id: string, data: { name?: string; eventType?: string; points?: number; description?: string | null; active?: boolean; conditions?: Record<string, any> | null }) {
+    return this.request<any>(`/api/scoring-rules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteScoringRule(id: string) {
+    return this.request(`/api/scoring-rules/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async recalculateAllScores() {
+    return this.request<any>('/api/scoring-rules/recalculate', {
+      method: 'POST',
+    });
+  }
+
+  async recalculateLeadScore(leadId: string) {
+    return this.request<any>(`/api/scoring-rules/recalculate/${leadId}`, {
+      method: 'POST',
+    });
+  }
+
+  // ========================
+  // Reports
+  // ========================
+
+  async getReports() {
+    return this.request<any[]>('/api/reports');
+  }
+
+  async getReport(id: string) {
+    return this.request<any>(`/api/reports/${id}`);
+  }
+
+  async createReport(data: { name: string; description?: string; type?: string; config?: any }) {
+    return this.request<any>('/api/reports', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateReport(id: string, data: { name?: string; description?: string; type?: string; config?: any }) {
+    return this.request<any>(`/api/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteReport(id: string) {
+    return this.request(`/api/reports/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ========================
+  // Payments (Backend API)
+  // ========================
+
+  async createPaymentIntent(data: { planId: string; planType: string; amount: number; method: string; billingCycle: string }) {
+    return this.request<any>('/api/payments/intent', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPaymentHistory() {
+    return this.request<any[]>('/api/payments/history');
   }
 }
 

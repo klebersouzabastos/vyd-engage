@@ -27,42 +27,44 @@ enum UserStatus {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  name          String
-  avatar        String?
-  role          UserRole  @default(USER)
-  status        UserStatus @default(PENDING)
-  
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatar       String?
+  role         UserRole   @default(USER)
+  status       UserStatus @default(PENDING)
+
   // Tenant relationship
-  tenantId      String
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   // Email verification
-  emailVerified Boolean   @default(false)
+  emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
-  
+
   // Password reset
-  passwordResetToken String?
+  passwordResetToken   String?
   passwordResetExpires DateTime?
-  
+
   // 2FA (optional)
   twoFactorEnabled Boolean @default(false)
   twoFactorSecret  String?
-  
+
   // Timestamps
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
   // Relations
   refreshTokens RefreshToken[]
-  invitations   Invitation[]    @relation("InvitedBy")
-  assignedLeads Lead[]          @relation("LeadAssignment")
-  assignedTasks Task[]          @relation("TaskAssignment")
-  interactions  Interaction[]   @relation("InteractionUser")
-  notifications Notification[]  @relation("NotificationUser")
+  invitations   Invitation[]   @relation("InvitedBy")
+  assignedLeads Lead[]         @relation("LeadAssignment")
+  assignedTasks Task[]         @relation("TaskAssignment")
+  interactions  Interaction[]  @relation("InteractionUser")
+  notifications Notification[] @relation("NotificationUser")
+  reports       Report[]       @relation("ReportCreator")
 
   @@index([email])
   @@index([tenantId])
@@ -76,7 +78,7 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
+
   @@index([userId])
   @@index([token])
 }
@@ -93,7 +95,7 @@ model Invitation {
   accepted  Boolean  @default(false)
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
+
   @@index([token])
   @@index([tenantId])
   @@index([email])
@@ -105,35 +107,38 @@ model Invitation {
 // ============================================
 
 model Tenant {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  logo        String?
-  settings    Json     @default("{}")
-  
+  id       String  @id @default(uuid())
+  name     String
+  slug     String  @unique
+  logo     String?
+  settings Json    @default("{}")
+
   // Subscription
   subscription Subscription?
-  
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  users       User[]
-  invitations Invitation[]
-  leads       Lead[]
-  tasks       Task[]
-  automations Automation[]
-  tags        Tag[]
-  customFields CustomField[]
+  users               User[]
+  invitations         Invitation[]
+  leads               Lead[]
+  tasks               Task[]
+  automations         Automation[]
+  tags                Tag[]
+  customFields        CustomField[]
   whatsappConnections WhatsAppConnection[]
-  emailConfigs EmailConfig[]
-  payments    Payment[]
-  apiKeys     ApiKey[]
-  webhooks    Webhook[]
-  notifications Notification[]
-  interactions Interaction[]
-  
+  emailConfigs        EmailConfig[]
+  payments            Payment[]
+  apiKeys             ApiKey[]
+  webhooks            Webhook[]
+  notifications       Notification[]
+  interactions        Interaction[]
+  funnels             Funnel[]
+  scoreRules          ScoreRule[]
+  reports             Report[]
+
   @@index([slug])
 }
 
@@ -181,80 +186,166 @@ model Plan {
   name        String
   price       Decimal  @db.Decimal(10, 2)
   description String?
-  features    Json     // Store plan features as JSON
-  limits      Json     // Store plan limits as JSON
+  features    Json // Store plan features as JSON
+  limits      Json // Store plan limits as JSON
   highlighted Boolean  @default(false)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   subscriptions Subscription[]
 }
 
 model Subscription {
-  id            String            @id @default(uuid())
-  tenantId      String            @unique
-  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  planId        String
-  plan          Plan              @relation(fields: [planId], references: [id])
-  status        SubscriptionStatus @default(TRIAL)
-  
+  id       String             @id @default(uuid())
+  tenantId String             @unique
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId   String
+  plan     Plan               @relation(fields: [planId], references: [id])
+  status   SubscriptionStatus @default(TRIAL)
+
   // Billing
-  billingCycle  BillingCycle       @default(MONTHLY)
-  startDate     DateTime          @default(now())
-  renewalDate   DateTime
-  cancelledAt   DateTime?
-  trialEndsAt   DateTime?
-  
+  billingCycle BillingCycle @default(MONTHLY)
+  startDate    DateTime     @default(now())
+  renewalDate  DateTime
+  cancelledAt  DateTime?
+  trialEndsAt  DateTime?
+
   // Payment method
-  paymentMethod Json?             // Store payment method details
-  
+  paymentMethod Json? // Store payment method details
+
   // Timestamps
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  payments      Payment[]
-  
+  payments Payment[]
+
   @@index([tenantId])
   @@index([status])
   @@index([planId])
 }
 
 model Payment {
-  id                String   @id @default(uuid())
-  tenantId          String
-  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscriptionId    String?
-  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
-  
+  id             String        @id @default(uuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
   // Payment details
-  amount            Decimal  @db.Decimal(10, 2)
-  currency          String    @default("BRL")
-  method            PaymentMethod
-  status            PaymentStatus @default(PENDING)
-  
+  amount   Decimal       @db.Decimal(10, 2)
+  currency String        @default("BRL")
+  method   PaymentMethod
+  status   PaymentStatus @default(PENDING)
+
   // Mercado Pago
-  mercadoPagoId     String?
+  mercadoPagoId           String?
   mercadoPagoPreferenceId String?
-  mercadoPagoStatus String?
-  
+  mercadoPagoStatus       String?
+
   // Payment data (encrypted)
-  paymentData       Json?
-  
+  paymentData Json?
+
   // Invoice
-  invoiceUrl        String?
-  invoiceNumber     String?
-  
+  invoiceUrl    String?
+  invoiceNumber String?
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  paidAt            DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  paidAt    DateTime?
+
   @@index([tenantId])
   @@index([subscriptionId])
   @@index([status])
   @@index([mercadoPagoId])
+}
+
+// ============================================
+// PIPELINE / FUNNELS
+// ============================================
+
+model Funnel {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  isDefault Boolean @default(false)
+  order     Int     @default(0)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  columns FunnelColumn[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, isDefault])
+}
+
+model FunnelColumn {
+  id       String @id @default(uuid())
+  funnelId String
+  funnel   Funnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  title     String
+  color     String  @default("#3B82F6")
+  order     Int     @default(0)
+  isDefault Boolean @default(false) // "novo" column cannot be deleted
+
+  // Maps to LeadStatus for backend sync
+  mappedStatus LeadStatus?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  leads Lead[] @relation("LeadFunnelColumn")
+
+  @@index([funnelId])
+  @@index([funnelId, order])
+}
+
+// ============================================
+// LEAD SCORING
+// ============================================
+
+enum ScoreEvent {
+  LEAD_CREATED
+  STATUS_CHANGED
+  TAG_ADDED
+  INTERACTION_CREATED
+  EMAIL_OPENED
+  EMAIL_CLICKED
+  WHATSAPP_REPLIED
+  FORM_SUBMITTED
+}
+
+model ScoreRule {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  eventType   ScoreEvent
+  points      Int
+  description String?
+  active      Boolean    @default(true)
+  conditions  Json? // Optional conditions (e.g., specific tag, specific status)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, eventType])
+  @@index([tenantId, active])
 }
 
 // ============================================
@@ -281,56 +372,62 @@ enum LeadSource {
 }
 
 model Lead {
-  id            String   @id @default(uuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   // Basic info
-  name          String
-  email         String?
-  phone         String?
-  company       String?
-  position      String?
-  
+  name     String
+  email    String?
+  phone    String?
+  company  String?
+  position String?
+
   // Status & Source
-  status        LeadStatus @default(NEW)
-  source        LeadSource @default(WEBSITE)
-  score         Int      @default(0)
-  
+  status LeadStatus @default(NEW)
+  source LeadSource @default(WEBSITE)
+  score  Int        @default(0)
+
   // Custom fields (JSON for flexibility)
-  customFields  Json     @default("{}")
-  
+  customFields Json @default("{}")
+
   // Metadata
-  notes         String?
-  assignedTo    String?
-  assignedUser  User?    @relation("LeadAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+  notes        String?
+  assignedTo   String?
+  assignedUser User?   @relation("LeadAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  // Pipeline position
+  funnelColumnId   String?
+  funnelColumn     FunnelColumn? @relation("LeadFunnelColumn", fields: [funnelColumnId], references: [id], onDelete: SetNull)
+  positionInColumn Int           @default(0)
 
   // Timestamps
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  tags          LeadTag[]
+  tags         LeadTag[]
   interactions Interaction[]
-  tasks         Task[]
+  tasks        Task[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, email])
   @@index([tenantId, createdAt])
+  @@index([funnelColumnId])
 }
 
 model Tag {
   id        String   @id @default(uuid())
-  tenantId String
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   color     String   @default("#2563EB")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  leads     LeadTag[]
-  
+
+  leads LeadTag[]
+
   @@unique([tenantId, name])
   @@index([tenantId])
 }
@@ -342,25 +439,25 @@ model LeadTag {
   tagId     String
   tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  
+
   @@unique([leadId, tagId])
   @@index([leadId])
   @@index([tagId])
 }
 
 model CustomField {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  type        CustomFieldType
-  options     Json?    // For select type
-  required    Boolean  @default(false)
-  order       Int      @default(0)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id        String          @id @default(uuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  type      CustomFieldType
+  options   Json? // For select type
+  required  Boolean         @default(false)
+  order     Int             @default(0)
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
   @@unique([tenantId, name])
   @@index([tenantId])
 }
@@ -384,29 +481,29 @@ enum TaskPriority {
 }
 
 model Task {
-  id          String     @id @default(uuid())
-  tenantId    String
-  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   title       String
   description String?
-  status      TaskStatus @default(PENDING)
+  status      TaskStatus   @default(PENDING)
   priority    TaskPriority @default(MEDIUM)
-  
+
   // Assignment
-  assignedTo  String?
-  assignedUser User?     @relation("TaskAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
-  leadId      String?
-  lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  
+  assignedTo   String?
+  assignedUser User?   @relation("TaskAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+  leadId       String?
+  lead         Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
   // Dates
   dueDate     DateTime?
   completedAt DateTime?
-  
+
   // Timestamps
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, assignedTo])
@@ -430,27 +527,27 @@ enum AutomationLogStatus {
 }
 
 model Automation {
-  id          String           @id @default(uuid())
-  tenantId    String
-  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   name        String
   description String?
   status      AutomationStatus @default(DRAFT)
-  trigger     Json            // Store trigger configuration
-  steps       Json            // Store automation steps
-  conditions  Json?           // Store conditions
-  
+  trigger     Json // Store trigger configuration
+  steps       Json // Store automation steps
+  conditions  Json? // Store conditions
+
   // Statistics
-  runsCount   Int             @default(0)
-  successCount Int            @default(0)
-  errorCount  Int             @default(0)
-  
+  runsCount    Int @default(0)
+  successCount Int @default(0)
+  errorCount   Int @default(0)
+
   // Timestamps
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  lastRunAt   DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  lastRunAt DateTime?
+
   // Relations
   logs         AutomationLog[]
   interactions Interaction[]
@@ -460,17 +557,17 @@ model Automation {
 }
 
 model AutomationLog {
-  id            String     @id @default(uuid())
-  automationId  String
-  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  
-  status        AutomationLogStatus
-  message       String?
-  data          Json?
-  error         String?
-  
-  createdAt     DateTime   @default(now())
-  
+  id           String     @id @default(uuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  status  AutomationLogStatus
+  message String?
+  data    Json?
+  error   String?
+
+  createdAt DateTime @default(now())
+
   @@index([automationId])
   @@index([createdAt])
 }
@@ -525,30 +622,30 @@ enum WhatsAppConnectionStatus {
 }
 
 model WhatsAppConnection {
-  id          String                   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  name        String
-  provider    WhatsAppProvider
-  status      WhatsAppConnectionStatus @default(DISCONNECTED)
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name     String
+  provider WhatsAppProvider
+  status   WhatsAppConnectionStatus @default(DISCONNECTED)
+
   // Configuration (encrypted)
-  config      Json
-  
+  config Json
+
   // QR Code (temporary)
-  qrCode      String?
+  qrCode          String?
   qrCodeExpiresAt DateTime?
-  
+
   // Statistics
-  messagesSent Int                     @default(0)
-  messagesReceived Int                 @default(0)
-  
+  messagesSent     Int @default(0)
+  messagesReceived Int @default(0)
+
   // Timestamps
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   lastConnectedAt DateTime?
-  
+
   @@index([tenantId])
   @@index([tenantId, status])
 }
@@ -562,54 +659,54 @@ enum EmailProvider {
 }
 
 model EmailConfig {
-  id          String       @id @default(uuid())
-  tenantId    String
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  name        String
-  provider    EmailProvider
-  fromEmail   String
-  fromName    String?
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  provider  EmailProvider
+  fromEmail String
+  fromName  String?
+
   // Configuration (encrypted)
-  config      Json
-  
+  config Json
+
   // Status
-  verified    Boolean      @default(false)
-  verifiedAt  DateTime?
-  
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+
   // Statistics
-  emailsSent  Int          @default(0)
-  
+  emailsSent Int @default(0)
+
   // Timestamps
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([tenantId])
 }
 
 model Interaction {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  leadId      String?
-  lead        Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  
-  type        InteractionType
-  direction   InteractionDirection
-  subject     String?
-  content     String
-  metadata    Json?
-  
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadId   String?
+  lead     Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  type      InteractionType
+  direction InteractionDirection
+  subject   String?
+  content   String
+  metadata  Json?
+
   // Related entities
   automationId String?
   automation   Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
-  userId      String?
-  user        User?       @relation("InteractionUser", fields: [userId], references: [id], onDelete: SetNull)
+  userId       String?
+  user         User?       @relation("InteractionUser", fields: [userId], references: [id], onDelete: SetNull)
 
   /// Append-only: interactions are immutable communication records
-  createdAt   DateTime @default(now())
-  
+  createdAt DateTime @default(now())
+
   @@index([tenantId])
   @@index([tenantId, leadId])
   @@index([tenantId, createdAt])
@@ -621,63 +718,63 @@ model Interaction {
 // ============================================
 
 model ApiKey {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  name        String
-  key         String   @unique
-  keyHash     String   // Hashed version for verification
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  active      Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name       String
+  key        String    @unique
+  keyHash    String // Hashed version for verification
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  active     Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([tenantId])
   @@index([keyHash])
 }
 
 model Webhook {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  url         String
-  events      String[] // Array of event types
-  secret      String   // Secret for webhook signature
-  active      Boolean  @default(true)
-  
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  url    String
+  events String[] // Array of event types
+  secret String // Secret for webhook signature
+  active Boolean  @default(true)
+
   // Statistics
-  successCount Int      @default(0)
-  failureCount Int      @default(0)
+  successCount    Int       @default(0)
+  failureCount    Int       @default(0)
   lastTriggeredAt DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  logs        WebhookLog[]
-  
+  logs WebhookLog[]
+
   @@index([tenantId])
   @@index([tenantId, active])
 }
 
 model WebhookLog {
-  id          String   @id @default(uuid())
-  webhookId   String
-  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-  
-  event       String
-  status      WebhookLogStatus @default(PENDING)
-  statusCode  Int?
-  response    String?
-  error       String?
-  attempts    Int      @default(1)
-  
-  createdAt   DateTime @default(now())
-  
+  id        String  @id @default(uuid())
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  event      String
+  status     WebhookLogStatus @default(PENDING)
+  statusCode Int?
+  response   String?
+  error      String?
+  attempts   Int              @default(1)
+
+  createdAt DateTime @default(now())
+
   @@index([webhookId])
   @@index([createdAt])
 }
@@ -703,25 +800,46 @@ enum NotificationStatus {
 }
 
 model Notification {
-  id          String            @id @default(uuid())
-  tenantId    String
-  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User              @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
 
-  type        NotificationType
-  title       String
-  message     String
-  status      NotificationStatus @default(UNREAD)
-  link        String?
-  metadata    Json?
-  
-  createdAt   DateTime          @default(now())
-  readAt      DateTime?
-  
+  type     NotificationType
+  title    String
+  message  String
+  status   NotificationStatus @default(UNREAD)
+  link     String?
+  metadata Json?
+
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
   @@index([tenantId, userId])
   @@index([tenantId, userId, status])
   @@index([createdAt])
 }
 
+// ============================================
+// REPORTS
+// ============================================
 
+model Report {
+  id          String  @id @default(uuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("ReportCreator", fields: [createdById], references: [id])
+
+  name        String
+  description String?
+  type        String   @default("custom") // leads, sales, automations, tasks, custom
+  config      Json     @default("{}") // widgets, schedule, filters, shareSettings
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, createdById])
+}

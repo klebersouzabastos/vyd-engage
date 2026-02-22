@@ -64,37 +64,19 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
 export function EmailProvider({ children }: { children: ReactNode }) {
   const [configs, setConfigs] = useState<EmailConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPlan, setCurrentPlan] = useState<PlanType>(() => {
-    try {
-      const saved = localStorage.getItem("currentPlan");
-      if (saved && ["starter", "pro", "enterprise"].includes(saved)) {
-        return saved as PlanType;
-      }
-    } catch (error) {
-      console.error("Erro ao carregar plano:", error);
-    }
-    return "pro"; // Default
-  });
+  const [currentPlan, setCurrentPlan] = useState<PlanType>("pro");
   const planLimits = PLAN_LIMITS[currentPlan];
 
-  // Atualizar plano quando mudar no localStorage
+  // Carregar plano atual da API de assinatura
   useEffect(() => {
-    const handleStorageChange = () => {
-      try {
-        const saved = localStorage.getItem("currentPlan");
-        if (saved && ["starter", "pro", "enterprise"].includes(saved)) {
-          setCurrentPlan(saved as PlanType);
-        }
-      } catch (error) {
-        // Ignore
+    apiClient.getCurrentSubscription().then((sub: any) => {
+      const planType = sub?.subscription?.plan?.type?.toLowerCase();
+      if (planType && ["starter", "pro", "enterprise"].includes(planType)) {
+        setCurrentPlan(planType as PlanType);
       }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    const interval = setInterval(handleStorageChange, 1000);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
+    }).catch(() => {
+      // Manter default "pro" se API falhar
+    });
   }, []);
 
   // Carregar configurações da API

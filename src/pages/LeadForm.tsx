@@ -19,8 +19,17 @@ import { calculateLeadScore, getLeadScore, saveLeadScore } from "../utils/leadSc
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
 import { Lead } from "../types";
 import { CommentsSection } from "../components/CommentsSection";
+import { WhatsAppSendPanel } from "../components/lead/WhatsAppSendPanel";
+import { EmailSendPanel } from "../components/lead/EmailSendPanel";
 import { useLeads } from "../hooks/useLeads";
+import { useFunnels } from "../hooks/useFunnels";
 import { toast } from "sonner";
+
+const DEFAULT_PIPELINE_COLUMNS = [
+  { id: "novo", title: "Novo" },
+  { id: "contato", title: "Em Contato" },
+  { id: "fechado", title: "Fechado" },
+];
 
 interface Automation {
   id: number;
@@ -50,38 +59,17 @@ const availableAutomations: Automation[] = [
   },
 ];
 
-// Função para buscar as colunas do kanban (Pipeline)
-function getPipelineColumns(): Array<{ id: string; title: string }> {
-  try {
-    const stored = localStorage.getItem("pipelineColumns");
-    if (stored) {
-      const columns = JSON.parse(stored);
-      return columns.map((col: any) => ({
-        id: col.id,
-        title: col.title,
-      }));
-    }
-  } catch (error) {
-    console.error("Erro ao carregar colunas do pipeline:", error);
-  }
-  // Retornar colunas padrão se não houver dados salvos
-  return [
-    { id: "novo", title: "Novo" },
-    { id: "contato", title: "Em Contato" },
-    { id: "fechado", title: "Fechado" },
-  ];
-}
-
 export function LeadForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { fields, validateValue } = useCustomFields();
   const { addNotification } = useNotifications();
   const { leads, createLead, updateLead, fetchLeads } = useLeads();
+  const { currentFunnel } = useFunnels();
   const [interactions, setInteractions] = useState<any[]>([]);
   const [leadScore, setLeadScore] = useState<{ score: number; factors: Array<{ type: string; description: string; points: number }> } | null>(null);
   const [lead, setLead] = useState<any>(null);
-  const [pipelineColumns, setPipelineColumns] = useState(getPipelineColumns());
+  const pipelineColumns = currentFunnel?.columns?.map(c => ({ id: c.id, title: c.title })) || DEFAULT_PIPELINE_COLUMNS;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -208,9 +196,8 @@ export function LeadForm() {
       if (lead) {
         // Verificar se o status mudou
         if (lead.status !== formData.status) {
-          const columns = getPipelineColumns();
           const statusLabels: Record<string, string> = {};
-          columns.forEach((col) => {
+          pipelineColumns.forEach((col) => {
             statusLabels[col.id] = col.title;
           });
           
@@ -350,6 +337,7 @@ export function LeadForm() {
               <TabsList className="inline-flex w-full mb-6 h-auto">
                 <TabsTrigger value="info" className="flex-1 py-2">Informações</TabsTrigger>
                 <TabsTrigger value="activity" className="flex-1 py-2">Atividades</TabsTrigger>
+                {id && <TabsTrigger value="communication" className="flex-1 py-2">Comunicação</TabsTrigger>}
                 <TabsTrigger value="comments" className="flex-1 py-2">Comentários</TabsTrigger>
               </TabsList>
 
@@ -550,6 +538,31 @@ export function LeadForm() {
                 ) : (
                   <div className="text-center py-12 text-gray-600">
                     <p>Salve o lead para ver o histórico de interações</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="communication" className="mt-0 outline-none relative">
+                {lead?.id ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="border rounded-lg">
+                      <WhatsAppSendPanel
+                        leadId={String(lead.id)}
+                        leadPhone={lead.phone}
+                        leadName={lead.name}
+                      />
+                    </div>
+                    <div className="border rounded-lg">
+                      <EmailSendPanel
+                        leadId={String(lead.id)}
+                        leadEmail={lead.email}
+                        leadName={lead.name}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-600">
+                    <p>Salve o lead para enviar mensagens</p>
                   </div>
                 )}
               </TabsContent>

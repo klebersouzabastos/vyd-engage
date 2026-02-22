@@ -17,7 +17,7 @@ interface TestMessageModalProps {
 
 export function TestMessageModal({ connection, onTest }: TestMessageModalProps) {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [message, setMessage] = useState("Mensagem de teste do FlowCRM");
+  const [message, setMessage] = useState("Mensagem de teste do VYD Engage");
   const [isSending, setIsSending] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 

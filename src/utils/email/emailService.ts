@@ -72,7 +72,7 @@ export async function testEmailConfig(
   try {
     const testMessage: EmailMessage = {
       to: testEmail,
-      subject: "Teste de Configuração - FlowCRM",
+      subject: "Teste de Configuração - VYD Engage",
       body: "Este é um email de teste para verificar se sua configuração de email está funcionando corretamente.",
       html: false,
     };

@@ -2,38 +2,47 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { ArrowLeft, Download, FileText, Mail, Calendar, RefreshCw, Filter as FilterIcon } from "lucide-react";
+import { ArrowLeft, Download, FileText, Calendar, RefreshCw, Filter as FilterIcon, Loader2 } from "lucide-react";
 import { Report } from "../types";
 import { ReportWidgetRenderer } from "../components/ReportWidgetRenderer";
 import { ReportFilters } from "../components/ReportFilters";
+import { apiClient } from "../services/api/client";
 
-const getReports = (): Report[] => {
-  try {
-    const stored = localStorage.getItem("reports");
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error("Erro ao carregar relatórios:", error);
-  }
-  return [];
-};
-
+function apiToReport(apiReport: any): Report {
+  const config = apiReport.config || {};
+  return {
+    id: apiReport.id,
+    name: apiReport.name,
+    description: apiReport.description || "",
+    type: apiReport.type || "custom",
+    widgets: config.widgets || [],
+    schedule: config.schedule,
+    filters: config.filters,
+    shareSettings: config.shareSettings,
+    templateId: config.templateId,
+    createdAt: apiReport.createdAt,
+    updatedAt: apiReport.updatedAt,
+    createdBy: apiReport.createdBy?.name || apiReport.createdById || "system",
+  };
+}
 
 export function ReportView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (id) {
-      const reports = getReports();
-      const found = reports.find((r) => r.id === id);
-      if (found) {
-        setReport(found);
-      }
+      apiClient.getReport(id)
+        .then((result) => {
+          const data = result?.data || result;
+          if (data) setReport(apiToReport(data));
+        })
+        .catch((error) => console.error("Erro ao carregar relatório:", error))
+        .finally(() => setLoading(false));
     }
   }, [id]);
 
@@ -50,6 +59,17 @@ export function ReportView() {
       exportReportToExcel(report);
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Carregando relatório..." />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
 
   if (!report) {
     return (
@@ -68,15 +88,14 @@ export function ReportView() {
   return (
     <div className="min-h-screen">
       <Header title={report.name} subtitle={report.description || "Visualização do relatório"} />
-      
+
       <div className="p-8">
-        {/* Actions */}
         <div className="flex items-center justify-between mb-6">
           <Button onClick={() => navigate("/app/reports")} variant="outline" className="gap-2">
             <ArrowLeft size={16} />
             Voltar
           </Button>
-          
+
           <div className="flex items-center gap-2">
             {report.schedule && (
               <div className="flex items-center gap-2 text-sm text-gray-600 mr-4">
@@ -88,19 +107,11 @@ export function ReportView() {
                 </span>
               </div>
             )}
-            <Button
-              onClick={() => setShowFilters(!showFilters)}
-              variant="outline"
-              className="gap-2"
-            >
+            <Button onClick={() => setShowFilters(!showFilters)} variant="outline" className="gap-2">
               <FilterIcon size={16} />
               Filtros
             </Button>
-            <Button
-              onClick={() => setRefreshKey(k => k + 1)}
-              variant="outline"
-              className="gap-2"
-            >
+            <Button onClick={() => setRefreshKey(k => k + 1)} variant="outline" className="gap-2">
               <RefreshCw size={16} />
               Atualizar
             </Button>
@@ -115,7 +126,6 @@ export function ReportView() {
           </div>
         </div>
 
-        {/* Report Info */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
@@ -135,7 +145,6 @@ export function ReportView() {
           </div>
         </div>
 
-        {/* Filtros */}
         {showFilters && report.filters && (
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
             <h3 className="text-gray-900 font-medium mb-4">Filtros Aplicados</h3>
@@ -150,7 +159,6 @@ export function ReportView() {
           </div>
         )}
 
-        {/* Widgets */}
         <div className="space-y-6">
           {report.widgets.length === 0 ? (
             <div className="bg-white rounded-lg p-12 text-center border border-gray-300">
@@ -172,4 +180,3 @@ export function ReportView() {
     </div>
   );
 }
-

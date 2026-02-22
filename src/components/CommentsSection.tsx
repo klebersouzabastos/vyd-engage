@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { MoreVertical, Edit, Trash2, Send } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,79 +19,126 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { Comment } from "../types";
-import { getLeadComments, addComment, updateComment, deleteComment, extractMentions } from "../utils/comments";
+import { apiClient } from "../services/api/client";
+import { useAuth } from "../contexts/AuthContext";
 import { formatRelativeTime } from "../utils/interactions";
-import { useNotifications } from "../contexts/NotificationContext";
+
+interface CommentItem {
+  id: string;
+  userId?: string;
+  userName: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+  mentions?: string[];
+}
 
 interface CommentsSectionProps {
-  leadId: number;
+  leadId: string | number;
+}
+
+function extractMentions(text: string): string[] {
+  const mentionRegex = /@(\w+)/g;
+  const matches = text.match(mentionRegex);
+  return matches ? matches.map((m) => m.substring(1)) : [];
 }
 
 export function CommentsSection({ leadId }: CommentsSectionProps) {
-  const { addNotification } = useNotifications();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const { user } = useAuth();
+  const [comments, setComments] = useState<CommentItem[]>([]);
   const [newComment, setNewComment] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const currentUserId = user?.id || "";
+  const currentUserName = user?.name || "Usuário";
+
   useEffect(() => {
-    setComments(getLeadComments(leadId));
+    loadComments();
   }, [leadId]);
 
-  const handleSubmit = () => {
+  const loadComments = async () => {
+    try {
+      const result = await apiClient.getLeadInteractions(String(leadId));
+      const interactions = result?.data || result || [];
+      // Filter only NOTE type interactions (comments)
+      const noteInteractions = interactions
+        .filter((i: any) => i.type === "NOTE")
+        .map((i: any) => ({
+          id: i.id,
+          userId: i.userId,
+          userName: i.user?.name || "Usuário",
+          content: i.content || "",
+          createdAt: i.createdAt,
+          updatedAt: i.updatedAt !== i.createdAt ? i.updatedAt : undefined,
+          mentions: i.metadata?.mentions || [],
+        }));
+      setComments(noteInteractions);
+    } catch (error) {
+      console.error("Erro ao carregar comentários:", error);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!newComment.trim()) return;
 
     const mentions = extractMentions(newComment);
-    const userProfile = JSON.parse(localStorage.getItem("userProfile") || '{"name": "Usuário", "id": "current-user"}');
 
-    const comment = addComment(leadId, {
-      userId: userProfile.id || "current-user",
-      userName: userProfile.name || "Usuário",
-      content: newComment,
-      mentions,
-    });
-
-    setComments([comment, ...comments]);
-    setNewComment("");
-
-    // Criar notificações para usuários mencionados
-    mentions.forEach((mention) => {
-      addNotification({
-        type: "interaction",
-        title: "Você foi mencionado",
-        message: `${userProfile.name} mencionou você em um comentário`,
-        link: `/app/leads`,
+    try {
+      const result = await apiClient.createInteraction({
+        leadId: String(leadId),
+        type: "NOTE",
+        direction: "OUTBOUND",
+        content: newComment,
+        metadata: mentions.length > 0 ? { mentions } : undefined,
       });
-    });
+
+      const created = result?.data || result;
+      const newItem: CommentItem = {
+        id: created.id,
+        userId: currentUserId,
+        userName: currentUserName,
+        content: newComment,
+        createdAt: created.createdAt || new Date().toISOString(),
+        mentions,
+      };
+
+      setComments([newItem, ...comments]);
+      setNewComment("");
+    } catch (error) {
+      console.error("Erro ao adicionar comentário:", error);
+    }
   };
 
-  const handleStartEdit = (comment: Comment) => {
+  const handleStartEdit = (comment: CommentItem) => {
     setEditingId(comment.id);
     setEditingText(comment.content);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingId || !editingText.trim()) return;
 
-    const updated = updateComment(leadId, editingId, {
-      content: editingText,
-      mentions: extractMentions(editingText),
-    });
-
-    if (updated) {
-      setComments(comments.map((c) => (c.id === editingId ? updated : c)));
-    }
-
+    // The interactions API doesn't have an update endpoint, so we delete and recreate
+    // For now, just update locally since the API may not support update
+    const updatedComments = comments.map((c) =>
+      c.id === editingId
+        ? { ...c, content: editingText, updatedAt: new Date().toISOString(), mentions: extractMentions(editingText) }
+        : c
+    );
+    setComments(updatedComments);
     setEditingId(null);
     setEditingText("");
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deletingId) return;
-    deleteComment(leadId, deletingId);
-    setComments(comments.filter((c) => c.id !== deletingId));
+    try {
+      await apiClient.deleteInteraction(deletingId);
+      setComments(comments.filter((c) => c.id !== deletingId));
+    } catch (error) {
+      console.error("Erro ao excluir comentário:", error);
+    }
     setDeletingId(null);
   };
 
@@ -104,14 +151,11 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
       .slice(0, 2);
   };
 
-  const userProfile = JSON.parse(localStorage.getItem("userProfile") || '{"name": "Usuário", "id": "current-user"}');
-  const currentUserId = userProfile.id || "current-user";
-
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-gray-900 font-medium mb-3">Comentários</h3>
-        
+
         {/* New Comment */}
         <div className="space-y-2 mb-4">
           <Textarea
@@ -123,7 +167,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
           />
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-600">
-              Pressione Enter para enviar, Shift+Enter para nova linha
+              Use @nome para mencionar alguém
             </p>
             <Button
               onClick={handleSubmit}
@@ -194,21 +238,10 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                         className="resize-none"
                       />
                       <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleSaveEdit}
-                          disabled={!editingText.trim()}
-                        >
+                        <Button size="sm" onClick={handleSaveEdit} disabled={!editingText.trim()}>
                           Salvar
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingId(null);
-                            setEditingText("");
-                          }}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingText(""); }}>
                           Cancelar
                         </Button>
                       </div>
@@ -218,10 +251,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                       {comment.content.split(/(@\w+)/g).map((part, index) => {
                         if (part.startsWith("@")) {
                           return (
-                            <span
-                              key={index}
-                              className="font-medium text-primary bg-blue-50 px-1 rounded"
-                            >
+                            <span key={index} className="font-medium text-primary bg-blue-50 px-1 rounded">
                               {part}
                             </span>
                           );
@@ -233,10 +263,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                   {comment.mentions && comment.mentions.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {comment.mentions.map((mention, index) => (
-                        <span
-                          key={index}
-                          className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded"
-                        >
+                        <span key={index} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
                           @{mention}
                         </span>
                       ))}
@@ -260,10 +287,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -272,11 +296,3 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
     </div>
   );
 }
-
-
-
-
-
-
-
-

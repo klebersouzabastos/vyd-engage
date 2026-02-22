@@ -58,6 +58,15 @@ if (process.env.ENABLE_BILLING_JOBS === 'true') {
   });
 }
 
+// Initialize automation engine (only in production or when explicitly enabled)
+if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
+  import('./jobs/automationEngine.js').then(({ initializeAutomationEngine }) => {
+    initializeAutomationEngine().catch((error) => {
+      logger.error('Failed to initialize automation engine', error);
+    });
+  });
+}
+
 // Health check
 import { getHealthStatus } from './utils/healthCheck.js';
 
@@ -92,6 +101,9 @@ import customFieldRoutes from './routes/customFields.js';
 import interactionRoutes from './routes/interactions.js';
 import notificationRoutes from './routes/notifications.js';
 import invitationRoutes from './routes/invitations.js';
+import funnelRoutes from './routes/funnels.js';
+import scoringRoutes from './routes/scoring.js';
+import reportRoutes from './routes/reports.js';
 
 // Rate limiting — applied BEFORE routes to actually protect them
 app.use('/api/auth/password', passwordResetLimiter);
@@ -115,6 +127,12 @@ app.use('/api/custom-fields', csrfProtection);
 app.use('/api/interactions', csrfProtection);
 app.use('/api/notifications', csrfProtection);
 app.use('/api/invitations', csrfProtection);
+app.use('/api/funnels', csrfProtection);
+app.use('/api/scoring-rules', csrfProtection);
+app.use('/api/reports', csrfProtection);
+app.use('/api/auth/profile', csrfProtection);
+app.use('/api/auth/change-password', csrfProtection);
+app.use('/api/auth/tenant', csrfProtection);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -132,7 +150,73 @@ app.use('/api/custom-fields', customFieldRoutes);
 app.use('/api/interactions', interactionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/funnels', funnelRoutes);
+app.use('/api/scoring-rules', scoringRoutes);
+app.use('/api/reports', reportRoutes);
 app.use('/api/webhooks', webhookRoutes);
+
+// Public routes (no auth required)
+import { Router as ExpressRouter } from 'express';
+import prisma from './config/database.js';
+import { z as zodLib } from 'zod';
+
+const publicRouter = ExpressRouter();
+
+const captureLeadSchema = zodLib.object({
+  name: zodLib.string().min(1),
+  email: zodLib.string().email().optional(),
+  phone: zodLib.string().optional(),
+  message: zodLib.string().optional(),
+  customFields: zodLib.record(zodLib.any()).optional(),
+});
+
+publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: req.params.tenantSlug },
+    });
+
+    if (!tenant) {
+      return res.status(404).json({ error: 'Form not found' });
+    }
+
+    const data = captureLeadSchema.parse(req.body);
+
+    const lead = await prisma.lead.create({
+      data: {
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        source: 'FORM',
+        status: 'NEW',
+        customFields: data.customFields || {},
+        tenantId: tenant.id,
+      },
+    });
+
+    // Create initial interaction if message provided
+    if (data.message) {
+      await prisma.interaction.create({
+        data: {
+          leadId: lead.id,
+          tenantId: tenant.id,
+          type: 'NOTE',
+          direction: 'INBOUND',
+          content: `Lead criado via formulário público: ${data.message}`,
+        },
+      });
+    }
+
+    res.status(201).json({ status: 201, message: 'Lead captured successfully', leadId: lead.id });
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    next(error);
+  }
+});
+
+app.use('/api/public', publicRouter);
 
 // 404 handler
 app.use((req, res) => {

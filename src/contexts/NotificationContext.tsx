@@ -1,14 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { Notification } from "../types";
-import {
-  getAllNotifications,
-  getUnreadCount,
-  createNotification as createNotificationUtil,
-  markAsRead as markAsReadUtil,
-  markAllAsRead as markAllAsReadUtil,
-  deleteNotification as deleteNotificationUtil,
-  formatNotificationTime,
-} from "../utils/notifications";
+import { apiClient } from "../services/api/client";
+import { formatNotificationTime } from "../utils/notifications";
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -27,10 +20,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const refreshNotifications = useCallback(() => {
-    const all = getAllNotifications();
-    setNotifications(all);
-    setUnreadCount(getUnreadCount());
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const [notifResult, countResult] = await Promise.all([
+        apiClient.getNotifications(),
+        apiClient.getUnreadNotificationsCount(),
+      ]);
+      const notifs = notifResult?.notifications || notifResult || [];
+      setNotifications(notifs);
+      setUnreadCount(countResult?.count ?? notifs.filter((n: any) => !n.read).length);
+    } catch (error) {
+      // API pode não estar disponível, manter estado atual
+      console.error("Erro ao carregar notificações:", error);
+    }
   }, []);
 
   useEffect(() => {
@@ -39,28 +41,59 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [refreshNotifications]);
 
+  // Notificações criadas pelo frontend ficam em memória (transientes)
   const addNotification = useCallback((
     notification: Omit<Notification, "id" | "timestamp" | "read">
   ) => {
-    const newNotification = createNotificationUtil(notification);
-    refreshNotifications();
+    const newNotification: Notification = {
+      ...notification,
+      id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+    setUnreadCount(prev => prev + 1);
     return newNotification;
-  }, [refreshNotifications]);
+  }, []);
 
-  const markAsRead = useCallback((id: string) => {
-    markAsReadUtil(id);
-    refreshNotifications();
-  }, [refreshNotifications]);
+  const markAsRead = useCallback(async (id: string) => {
+    try {
+      if (!id.startsWith("local_")) {
+        await apiClient.markNotificationAsRead(id);
+      }
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Erro ao marcar notificação como lida:", error);
+    }
+  }, []);
 
-  const markAllAsRead = useCallback(() => {
-    markAllAsReadUtil();
-    refreshNotifications();
-  }, [refreshNotifications]);
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await apiClient.markAllNotificationsAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Erro ao marcar todas como lidas:", error);
+    }
+  }, []);
 
-  const deleteNotification = useCallback((id: string) => {
-    deleteNotificationUtil(id);
-    refreshNotifications();
-  }, [refreshNotifications]);
+  const deleteNotification = useCallback(async (id: string) => {
+    try {
+      if (!id.startsWith("local_")) {
+        await apiClient.deleteNotification(id);
+      }
+      setNotifications(prev => {
+        const removed = prev.find(n => n.id === id);
+        if (removed && !removed.read) {
+          setUnreadCount(c => Math.max(0, c - 1));
+        }
+        return prev.filter(n => n.id !== id);
+      });
+    } catch (error) {
+      console.error("Erro ao deletar notificação:", error);
+    }
+  }, []);
 
   const value = useMemo(() => ({
     notifications,

@@ -1,13 +1,14 @@
 import { useSearchParams } from "react-router";
 import { Header } from "../components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Bell, Building2, Plug, CreditCard, Tag } from "lucide-react";
+import { Bell, Building2, Plug, CreditCard, Tag, Target } from "lucide-react";
 import { TagManager } from "../components/TagManager";
 import { CompanyTab } from "../components/settings/CompanyTab";
 import { NotificationsTab } from "../components/settings/NotificationsTab";
 import { IntegrationsTab } from "../components/settings/IntegrationsTab";
 import { BillingTab } from "../components/settings/BillingTab";
 import { CustomFieldsTab } from "../components/settings/CustomFieldsTab";
+import { LeadScoringTab } from "../components/settings/LeadScoringTab";
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -70,6 +71,13 @@ export function Settings() {
                   <Tag size={16} className="mr-2" />
                   Campos Customizados
                 </TabsTrigger>
+                <TabsTrigger
+                  value="lead-scoring"
+                  className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
+                >
+                  <Target size={16} className="mr-2" />
+                  Lead Scoring
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -95,6 +103,10 @@ export function Settings() {
 
             <TabsContent value="custom-fields" className="p-6">
               <CustomFieldsTab />
+            </TabsContent>
+
+            <TabsContent value="lead-scoring" className="p-6">
+              <LeadScoringTab />
             </TabsContent>
           </Tabs>
         </div>

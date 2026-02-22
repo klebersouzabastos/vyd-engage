@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { paymentService } from '../services/paymentService.js';
+import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
+import { emailMessagingService } from '../services/emailMessagingService.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -63,6 +65,98 @@ router.post('/mercadopago', async (req: Request, res: Response) => {
     logger.error('Error processing Mercado Pago webhook', error);
     // Still return 200 to prevent Mercado Pago from retrying
     res.status(200).json({ received: true, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// ========================
+// WhatsApp Webhooks (Meta Business API)
+// ========================
+
+// GET /api/webhooks/whatsapp - Meta webhook verification
+router.get('/whatsapp', (req: Request, res: Response) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    logger.info('WhatsApp webhook verified');
+    res.status(200).send(challenge);
+  } else {
+    logger.warn('WhatsApp webhook verification failed', { mode, tokenMatch: token === verifyToken });
+    res.status(403).send('Forbidden');
+  }
+});
+
+// POST /api/webhooks/whatsapp - Incoming WhatsApp messages & status updates
+router.post('/whatsapp', async (req: Request, res: Response) => {
+  try {
+    // Validate signature if secret is configured
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    if (appSecret) {
+      const signature = req.headers['x-hub-signature-256'] as string | undefined;
+      if (!signature) {
+        logger.warn('WhatsApp webhook: missing signature');
+        res.status(401).json({ error: 'Missing signature' });
+        return;
+      }
+
+      const expectedSignature = 'sha256=' + crypto
+        .createHmac('sha256', appSecret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+        logger.warn('WhatsApp webhook: invalid signature');
+        res.status(401).json({ error: 'Invalid signature' });
+        return;
+      }
+    }
+
+    logger.info('WhatsApp webhook received', { object: req.body?.object });
+
+    // Process webhook asynchronously - always return 200 quickly
+    whatsappMessagingService.processWebhook(req.body).catch(error => {
+      logger.error('Error processing WhatsApp webhook async', error);
+    });
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Error handling WhatsApp webhook', error);
+    res.status(200).json({ received: true });
+  }
+});
+
+// ========================
+// Email Webhooks (SendGrid, Resend, etc.)
+// ========================
+
+// POST /api/webhooks/email/sendgrid - SendGrid event webhook
+router.post('/email/sendgrid', async (req: Request, res: Response) => {
+  try {
+    logger.info('SendGrid webhook received');
+    emailMessagingService.processWebhook('sendgrid', req.body).catch(error => {
+      logger.error('Error processing SendGrid webhook', error);
+    });
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Error handling SendGrid webhook', error);
+    res.status(200).json({ received: true });
+  }
+});
+
+// POST /api/webhooks/email/resend - Resend event webhook
+router.post('/email/resend', async (req: Request, res: Response) => {
+  try {
+    logger.info('Resend webhook received', { type: req.body?.type });
+    emailMessagingService.processWebhook('resend', req.body).catch(error => {
+      logger.error('Error processing Resend webhook', error);
+    });
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Error handling Resend webhook', error);
+    res.status(200).json({ received: true });
   }
 });
 

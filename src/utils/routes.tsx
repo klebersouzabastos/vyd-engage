@@ -50,6 +50,8 @@ const CustomFields = lazyNamed(() => import("../pages/CustomFields"), "CustomFie
 const Tasks = lazyNamed(() => import("../pages/Tasks"), "Tasks");
 const TaskForm = lazyNamed(() => import("../pages/TaskForm"), "TaskForm");
 const Profile = lazyNamed(() => import("../pages/Profile"), "Profile");
+const Inbox = lazyNamed(() => import("../pages/Inbox"), "Inbox");
+const Billing = lazyNamed(() => import("../pages/Billing"), "Billing");
 const Reports = lazyNamed(() => import("../pages/Reports"), "Reports");
 const ReportBuilder = lazyNamed(() => import("../pages/ReportBuilder"), "ReportBuilder");
 const ReportView = lazyNamed(() => import("../pages/ReportView"), "ReportView");
@@ -148,6 +150,14 @@ export const router = createBrowserRouter([
       {
         path: "profile",
         element: Profile,
+      },
+      {
+        path: "inbox",
+        element: Inbox,
+      },
+      {
+        path: "billing",
+        element: Billing,
       },
       {
         path: "reports",

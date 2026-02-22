@@ -46,6 +46,27 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// GET /api/interactions/inbox - Unified inbox (must be before /:id)
+router.get('/inbox', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const channel = req.query.channel as string | undefined;
+    const search = req.query.search as string | undefined;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 30;
+
+    const conversations = await interactionService.getInboxConversations(
+      req.user.tenantId,
+      { channel, search, page, limit }
+    );
+
+    res.json({ status: 200, data: conversations });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/leads/:leadId', async (req, res, next) => {
   try {
     if (!req.user) {
@@ -82,12 +103,17 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.delete('/:id', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    await interactionService.deleteInteraction(req.user.tenantId, req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
-
-
-
-
-
-
-
-

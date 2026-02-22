@@ -14,13 +14,11 @@ import { useTags } from "../contexts/TagsContext";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
 import { TagBadge } from "../components/TagBadge";
 import { CustomFieldDisplay } from "../components/CustomFieldDisplay";
-import { calculateLeadScore, saveLeadScore } from "../utils/leadScoring";
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
 import { Lead } from "../types";
-import { getLeadInteractions } from "../utils/interactions";
 import { exportLeadsToExcel } from "../utils/excelExport";
-import { removeLeadFromPipeline } from "../utils/pipelineSync";
 import { useLeads } from "../hooks/useLeads";
+import { useFunnels } from "../hooks/useFunnels";
 import { Pagination } from "../components/Pagination";
 import { FilterPopover } from "../components/leads/FilterPopover";
 import { CustomFieldsFilter } from "../components/leads/CustomFieldsFilter";
@@ -52,22 +50,11 @@ const getAutomationById = (id: number): Automation | undefined => {
   return availableAutomations.find(automation => automation.id === id);
 };
 
-function getPipelineColumns(): Array<{ id: string; title: string }> {
-  try {
-    const stored = localStorage.getItem("pipelineColumns");
-    if (stored) {
-      const columns = JSON.parse(stored);
-      return columns.map((col: any) => ({ id: col.id, title: col.title }));
-    }
-  } catch (error) {
-    console.error("Erro ao carregar colunas do pipeline:", error);
-  }
-  return [
-    { id: "novo", title: "Novo" },
-    { id: "contato", title: "Em Contato" },
-    { id: "fechado", title: "Fechado" },
-  ];
-}
+const DEFAULT_PIPELINE_COLUMNS = [
+  { id: "novo", title: "Novo" },
+  { id: "contato", title: "Em Contato" },
+  { id: "fechado", title: "Fechado" },
+];
 
 const getStatusLabel = (status: string) => {
   const statusMap: Record<string, string> = {
@@ -94,6 +81,7 @@ export function Leads() {
   const { getTagById } = useTags();
   const { fields: customFields } = useCustomFields();
   const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
+  const { currentFunnel } = useFunnels();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterSource, setFilterSource] = useState<string[]>([]);
@@ -103,7 +91,7 @@ export function Leads() {
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [pipelineColumns] = useState(getPipelineColumns());
+  const pipelineColumns = currentFunnel?.columns?.map(c => ({ id: c.id, title: c.title })) || DEFAULT_PIPELINE_COLUMNS;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteSingleLeadId, setDeleteSingleLeadId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
@@ -408,12 +396,7 @@ export function Leads() {
                         <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.phone}</td>
                         <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.email}</td>
                         <td className="px-6 py-4">
-                          {(() => {
-                            const leadWithInteractions: Lead = { ...lead, interactions: getLeadInteractions(lead.id) };
-                            const score = calculateLeadScore(leadWithInteractions);
-                            saveLeadScore(score);
-                            return <LeadScoreBadge score={score.score} />;
-                          })()}
+                          <LeadScoreBadge score={lead.score || 0} />
                         </td>
                         <td className="px-6 py-4"><LeadStatusBadge status={lead.status} /></td>
                         <td className="px-6 py-4 hidden lg:table-cell"><LeadSourceBadge source={lead.source} /></td>

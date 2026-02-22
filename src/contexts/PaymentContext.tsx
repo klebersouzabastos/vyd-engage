@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode } from "react";
 import {
   PaymentIntent,
   PaymentMethod,
@@ -13,9 +13,7 @@ import {
   processPixPayment,
   processBoletoPayment,
   checkPaymentStatus,
-  validatePaymentForUpgrade,
-  getPaymentIntents,
-  getPaymentIntent,
+  getPaymentHistory,
 } from "../services/paymentService";
 
 interface PaymentContextType {
@@ -36,25 +34,45 @@ interface PaymentContextType {
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
 
 export function PaymentProvider({ children }: { children: ReactNode }) {
-  const [paymentIntents, setPaymentIntents] = useState<PaymentIntent[]>(() => {
-    return getPaymentIntents();
-  });
+  const [paymentIntents, setPaymentIntents] = useState<PaymentIntent[]>([]);
   const [currentPaymentIntent, setCurrentPaymentIntent] = useState<PaymentIntent | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const currentPaymentRef = useRef(currentPaymentIntent);
+  currentPaymentRef.current = currentPaymentIntent;
 
-  // Atualizar lista de pagamentos
-  const refreshPayments = useCallback(() => {
-    const intents = getPaymentIntents();
-    setPaymentIntents(intents);
-    
-    // Atualizar pagamento atual se existir
-    if (currentPaymentIntent) {
-      const updated = intents.find((i) => i.id === currentPaymentIntent.id);
-      if (updated) {
-        setCurrentPaymentIntent(updated);
+  // Carregar histórico de pagamentos da API
+  const refreshPayments = useCallback(async () => {
+    try {
+      const history = await getPaymentHistory();
+      const intents: PaymentIntent[] = (history || []).map((p: any) => ({
+        id: p.id,
+        planId: p.planType || p.planId || "",
+        amount: Number(p.amount) || 0,
+        method: (p.method || "credit_card").toLowerCase() as PaymentMethod,
+        status: (p.status || "pending").toLowerCase() as PaymentStatus,
+        createdAt: p.createdAt || new Date().toISOString(),
+        updatedAt: p.updatedAt || new Date().toISOString(),
+        metadata: p.metadata,
+      }));
+      setPaymentIntents(intents);
+
+      // Atualizar pagamento atual se existir
+      const current = currentPaymentRef.current;
+      if (current) {
+        const updated = intents.find((i) => i.id === current.id);
+        if (updated) {
+          setCurrentPaymentIntent(updated);
+        }
       }
+    } catch (error) {
+      console.error("Erro ao carregar pagamentos:", error);
     }
-  }, [currentPaymentIntent]);
+  }, []);
+
+  // Carregar pagamentos ao montar
+  useEffect(() => {
+    refreshPayments();
+  }, [refreshPayments]);
 
   // Iniciar processo de pagamento
   const startPayment = useCallback(
@@ -64,10 +82,10 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
         const intent = await createPaymentIntent(planId, amount, method, {
           planName: planId,
         });
-        
+
         setCurrentPaymentIntent(intent);
-        refreshPayments();
-        
+        setPaymentIntents((prev) => [intent, ...prev]);
+
         return intent;
       } catch (error) {
         console.error("Erro ao criar intenção de pagamento:", error);
@@ -76,7 +94,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
         setIsProcessing(false);
       }
     },
-    [refreshPayments]
+    []
   );
 
   // Processar pagamento
@@ -87,7 +105,12 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     ): Promise<PaymentResult> => {
       setIsProcessing(true);
       try {
-        const intent = getPaymentIntent(paymentIntentId);
+        // Buscar intent do estado local
+        const allIntents = [...paymentIntents];
+        const intent = currentPaymentRef.current?.id === paymentIntentId
+          ? currentPaymentRef.current
+          : allIntents.find((i) => i.id === paymentIntentId);
+
         if (!intent) {
           throw new Error("Intenção de pagamento não encontrada");
         }
@@ -111,14 +134,8 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
             throw new Error("Método de pagamento não suportado");
         }
 
-        // Atualizar estado
-        refreshPayments();
-        
-        // Atualizar pagamento atual
-        const updatedIntent = getPaymentIntent(paymentIntentId);
-        if (updatedIntent) {
-          setCurrentPaymentIntent(updatedIntent);
-        }
+        // Atualizar estado via API
+        await refreshPayments();
 
         return result;
       } catch (error) {
@@ -128,7 +145,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
         setIsProcessing(false);
       }
     },
-    [refreshPayments]
+    [paymentIntents, refreshPayments]
   );
 
   // Verificar status de pagamento
@@ -136,14 +153,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     async (paymentIntentId: string): Promise<PaymentStatus> => {
       try {
         const status = await checkPaymentStatus(paymentIntentId);
-        refreshPayments();
-        
-        // Atualizar pagamento atual
-        const updatedIntent = getPaymentIntent(paymentIntentId);
-        if (updatedIntent) {
-          setCurrentPaymentIntent(updatedIntent);
-        }
-        
+        await refreshPayments();
         return status;
       } catch (error) {
         console.error("Erro ao verificar status de pagamento:", error);
@@ -153,12 +163,24 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     [refreshPayments]
   );
 
-  // Validar se pode fazer upgrade
+  // Validar se pode fazer upgrade (usa estado local)
   const validateUpgrade = useCallback(
     (planId: PlanType): { isValid: boolean; reason?: string; pendingPayment?: PaymentIntent } => {
-      return validatePaymentForUpgrade(planId);
+      const pendingPayment = paymentIntents.find(
+        (p) => p.status === "pending" || p.status === "processing"
+      );
+
+      if (pendingPayment) {
+        return {
+          isValid: false,
+          reason: "Há um pagamento pendente. Aguarde a confirmação.",
+          pendingPayment,
+        };
+      }
+
+      return { isValid: true };
     },
-    []
+    [paymentIntents]
   );
 
   // Limpar pagamento atual
@@ -176,12 +198,11 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
       );
 
       if (pendingIntents.length > 0) {
-        // Verificar status de cada pagamento pendente
         pendingIntents.forEach((intent) => {
           checkPayment(intent.id).catch(console.error);
         });
       }
-    }, 30000); // Verificar a cada 30 segundos
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [paymentIntents, checkPayment]);

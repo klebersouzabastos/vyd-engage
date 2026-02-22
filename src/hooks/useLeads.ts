@@ -3,7 +3,6 @@ import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Lead } from '../types';
 import { mapStatusToBackend, mapSourceToBackend, mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
-import { syncLeadToPipeline, syncAllLeadsToPipeline, removeLeadFromPipeline } from '../utils/pipelineSync';
 
 export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -49,8 +48,6 @@ export function useLeads() {
         totalPages: 1,
       });
       
-      // Sincronizar leads com o pipeline após carregar da API
-      syncAllLeadsToPipeline(transformedLeads);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar leads');
       toast.error('Erro ao carregar leads');
@@ -96,10 +93,6 @@ export function useLeads() {
       };
 
       setLeads(prev => [newLead, ...prev]);
-      
-      // Sincronizar novo lead com o pipeline
-      syncLeadToPipeline(newLead);
-      
       toast.success('Lead criado com sucesso!');
       return newLead;
     } catch (err: any) {
@@ -145,10 +138,6 @@ export function useLeads() {
       };
 
       setLeads(prev => prev.map(l => l.id === id ? updatedLead : l));
-      
-      // Sincronizar lead atualizado com o pipeline
-      syncLeadToPipeline(updatedLead);
-      
       toast.success('Lead atualizado com sucesso!');
       return updatedLead;
     } catch (err: any) {
@@ -161,10 +150,6 @@ export function useLeads() {
     try {
       await apiClient.deleteLead(id);
       setLeads(prev => prev.filter(l => l.id !== id));
-      
-      // Remover lead do pipeline
-      removeLeadFromPipeline(id);
-      
       toast.success('Lead deletado com sucesso!');
     } catch (err: any) {
       toast.error(err.message || 'Erro ao deletar lead');

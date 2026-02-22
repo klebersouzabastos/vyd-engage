@@ -1,14 +1,15 @@
 import { Link, useLocation, useNavigate } from "react-router";
-import { useState, useEffect } from "react";
-import { 
-  LayoutDashboard, 
-  Users, 
-  GitBranch, 
-  Zap, 
+import {
+  LayoutDashboard,
+  Users,
+  GitBranch,
+  Zap,
   Settings,
   LogOut,
   CheckSquare,
-  BarChart3
+  BarChart3,
+  Inbox,
+  CreditCard
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -19,9 +20,11 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app", tourId: "sidebar-dashboard" },
   { icon: Users, label: "Leads", path: "/app/leads", tourId: "sidebar-leads" },
   { icon: GitBranch, label: "Funil", path: "/app/pipeline", tourId: "sidebar-pipeline" },
+  { icon: Inbox, label: "Inbox", path: "/app/inbox", tourId: "sidebar-inbox" },
   { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },
   { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
   { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
+  { icon: CreditCard, label: "Billing", path: "/app/billing", tourId: "sidebar-billing" },
   { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
 ];
 
@@ -36,11 +39,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
   const { logo, companyName } = useCompany();
   const { tasks } = useTasks();
   
-  const [userProfile, setUserProfile] = useState({
-    name: "João Silva",
-    email: "joao@empresa.com",
-    avatar: null as string | null,
-  });
+  const { user } = useAuth();
+
+  const userProfile = {
+    name: user?.name || "Usuário",
+    email: user?.email || "",
+    avatar: user?.avatar || null,
+  };
 
   // Calcular contador de tarefas pendentes
   const pendingTasksCount = (() => {
@@ -63,25 +68,6 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
     return overdue + todayTasks;
   })();
-
-  // Carregar dados do perfil do localStorage
-  useEffect(() => {
-    const savedProfile = localStorage.getItem("userProfile");
-    const savedAvatar = localStorage.getItem("userAvatar");
-    
-    if (savedProfile) {
-      try {
-        const parsed = JSON.parse(savedProfile);
-        setUserProfile({
-          name: parsed.name || "João Silva",
-          email: parsed.email || "joao@empresa.com",
-          avatar: savedAvatar,
-        });
-      } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
-      }
-    }
-  }, [location.pathname]); // Recarregar quando mudar de página (pode ter atualizado o perfil)
 
   const getInitials = (name: string) => {
     return name

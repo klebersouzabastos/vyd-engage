@@ -6,42 +6,68 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Card } from "../components/ui/card";
-import { Camera, Save, X } from "lucide-react";
-
-const defaultProfileData = {
-  name: "João Silva",
-  email: "joao@empresa.com",
-  phone: "(11) 99999-9999",
-  company: "Empresa Exemplo",
-  role: "Gerente de Vendas",
-  bio: "Especialista em gestão de leads e automações de marketing.",
-  location: "São Paulo, SP",
-  website: "https://www.exemplo.com",
-  linkedin: "joao-silva",
-  twitter: "@joaosilva",
-  avatar: null as string | null,
-};
+import { Camera, Save, X, Loader2 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { apiClient } from "../services/api/client";
 
 export function Profile() {
-  // Carregar dados salvos do localStorage ao montar o componente
-  const [profileData, setProfileData] = useState(() => {
-    const saved = localStorage.getItem("userProfile");
-    const savedAvatar = localStorage.getItem("userAvatar");
-    
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return { ...defaultProfileData, ...parsed, avatar: savedAvatar };
-      } catch (error) {
-        console.error("Erro ao carregar perfil do localStorage:", error);
-        return { ...defaultProfileData, avatar: savedAvatar };
-      }
-    }
-    return { ...defaultProfileData, avatar: savedAvatar };
+  const { user, refreshUser } = useAuth();
+
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    avatar: null as string | null,
+    role: "",
+    createdAt: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [stats, setStats] = useState({ leads: 0, automations: 0, memberSince: "", plan: "" });
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: (user as any).phone || "",
+        avatar: user.avatar || null,
+        role: user.role || "",
+        createdAt: (user as any).createdAt || "",
+      });
+    }
+  }, [user]);
+
+  // Load stats
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [leadsRes, automationsRes, subRes] = await Promise.allSettled([
+          apiClient.getLeads({ limit: 1 }),
+          apiClient.getAutomations({ limit: 1 }),
+          apiClient.getCurrentSubscription(),
+        ]);
+        setStats({
+          leads: leadsRes.status === "fulfilled" ? (leadsRes.value?.pagination?.total || leadsRes.value?.data?.length || 0) : 0,
+          automations: automationsRes.status === "fulfilled" ? (automationsRes.value?.pagination?.total || automationsRes.value?.data?.length || 0) : 0,
+          memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : "—",
+          plan: subRes.status === "fulfilled" ? (subRes.value?.subscription?.plan?.name || "—") : "—",
+        });
+      } catch {
+        // Stats are non-critical
+      }
+    };
+    if (user) loadStats();
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -50,18 +76,14 @@ export function Profile() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validar tipo de arquivo
-      if (!file.type.startsWith('image/')) {
-        alert('Por favor, selecione uma imagem válida');
+      if (!file.type.startsWith("image/")) {
+        alert("Por favor, selecione uma imagem válida");
         return;
       }
-      
-      // Validar tamanho (máximo 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('A imagem deve ter no máximo 5MB');
+        alert("A imagem deve ter no máximo 5MB");
         return;
       }
-
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
@@ -72,56 +94,61 @@ export function Profile() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      // Salvar dados do perfil no localStorage
-      const { avatar, ...profileWithoutAvatar } = profileData;
-      localStorage.setItem("userProfile", JSON.stringify(profileWithoutAvatar));
-      
-      // Salvar avatar separadamente (pode ser grande)
-      if (profileData.avatar || avatarPreview) {
-        const avatarToSave = profileData.avatar || avatarPreview;
-        if (avatarToSave) {
-          localStorage.setItem("userAvatar", avatarToSave);
-          setProfileData((prev) => ({ ...prev, avatar: avatarToSave }));
-          setAvatarPreview(null); // Limpar preview após salvar
-        }
-      } else {
-        localStorage.removeItem("userAvatar");
-      }
-      
-      console.log("Perfil salvo com sucesso!");
+      await apiClient.updateProfile({
+        name: profileData.name,
+        phone: profileData.phone,
+        avatar: profileData.avatar,
+      });
+      if (refreshUser) await refreshUser();
+      setAvatarPreview(null);
       setIsEditing(false);
-    } catch (error) {
-      console.error("Erro ao salvar perfil:", error);
-      if (error instanceof DOMException && error.code === 22) {
-        alert('A foto é muito grande. Tente uma imagem menor.');
-      } else {
-        alert('Erro ao salvar perfil. Tente novamente.');
-      }
+    } catch (error: any) {
+      alert(error.message || "Erro ao salvar perfil. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("As senhas não coincidem");
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+
+    try {
+      await apiClient.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      setPasswordSuccess("Senha alterada com sucesso!");
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error: any) {
+      setPasswordError(error.message || "Erro ao alterar senha");
     }
   };
 
   const handleCancel = () => {
-    // Recarregar dados salvos do localStorage
-    const saved = localStorage.getItem("userProfile");
-    const savedAvatar = localStorage.getItem("userAvatar");
-    
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setProfileData({ ...defaultProfileData, ...parsed, avatar: savedAvatar });
-        setAvatarPreview(savedAvatar);
-      } catch (error) {
-        console.error("Erro ao recarregar perfil:", error);
-        setProfileData(defaultProfileData);
-        setAvatarPreview(null);
-      }
-    } else {
-      setProfileData(defaultProfileData);
-      setAvatarPreview(null);
+    if (user) {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: (user as any).phone || "",
+        avatar: user.avatar || null,
+        role: user.role || "",
+        createdAt: (user as any).createdAt || "",
+      });
     }
-    
+    setAvatarPreview(null);
     setIsEditing(false);
   };
 
@@ -137,82 +164,76 @@ export function Profile() {
   return (
     <div className="min-h-screen">
       <Header title="Perfil" subtitle="Gerencie suas informações pessoais" />
-      
+
       <div className="p-8">
         <div className="max-w-4xl mx-auto">
           {/* Profile Header Card */}
           <Card className="bg-white border-gray-300 shadow-sm mb-6">
             <div className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="relative">
-                <Avatar className="w-20 h-20 border-2 border-white shadow-md">
-                  {profileData.avatar || avatarPreview ? (
-                    <AvatarImage 
-                      src={profileData.avatar || avatarPreview || undefined} 
-                      alt={profileData.name}
-                    />
-                  ) : null}
-                  <AvatarFallback className="bg-primary text-white text-xl font-semibold">
-                    {getInitials(profileData.name)}
-                  </AvatarFallback>
-                </Avatar>
-                {isEditing && (
-                  <label
-                    htmlFor="avatar-upload"
-                    className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-dark transition-colors shadow-md border-2 border-white"
-                  >
-                    <Camera size={14} className="text-white" />
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarChange}
-                    />
-                  </label>
-                )}
-              </div>
-              
-              <div className="flex-1">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-                  {profileData.name}
-                </h2>
-                <p className="text-gray-600 mb-2">{profileData.role}</p>
-                <p className="text-sm text-gray-600">{profileData.company}</p>
-                {profileData.bio && (
-                  <p className="text-sm text-gray-600 mt-3">{profileData.bio}</p>
-                )}
-              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="relative">
+                  <Avatar className="w-20 h-20 border-2 border-white shadow-md">
+                    {profileData.avatar || avatarPreview ? (
+                      <AvatarImage
+                        src={profileData.avatar || avatarPreview || undefined}
+                        alt={profileData.name}
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-primary text-white text-xl font-semibold">
+                      {getInitials(profileData.name || "U")}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isEditing && (
+                    <label
+                      htmlFor="avatar-upload"
+                      className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-dark transition-colors shadow-md border-2 border-white"
+                    >
+                      <Camera size={14} className="text-white" />
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+                    </label>
+                  )}
+                </div>
 
-              <div className="flex gap-2">
-                {isEditing ? (
-                  <>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+                    {profileData.name}
+                  </h2>
+                  <p className="text-gray-600 mb-2">{profileData.role}</p>
+                  <p className="text-sm text-gray-600">{profileData.email}</p>
+                </div>
+
+                <div className="flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <Button variant="outline" onClick={handleCancel} className="gap-2">
+                        <X size={16} />
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="bg-primary hover:bg-primary-dark gap-2"
+                      >
+                        {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        Salvar
+                      </Button>
+                    </>
+                  ) : (
                     <Button
-                      variant="outline"
-                      onClick={handleCancel}
-                      className="gap-2"
+                      onClick={() => setIsEditing(true)}
+                      className="bg-primary hover:bg-primary-dark"
                     >
-                      <X size={16} />
-                      Cancelar
+                      Editar Perfil
                     </Button>
-                    <Button
-                      onClick={handleSave}
-                      className="bg-primary hover:bg-primary-dark gap-2"
-                    >
-                      <Save size={16} />
-                      Salvar
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-primary hover:bg-primary-dark"
-                  >
-                    Editar Perfil
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
             </div>
           </Card>
 
@@ -221,224 +242,140 @@ export function Profile() {
             {/* Personal Information */}
             <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Informações Pessoais
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome completo</Label>
-                  <Input
-                    id="name"
-                    value={profileData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    disabled={!isEditing}
-                    className="mt-1.5"
-                  />
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Informações Pessoais
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nome completo</Label>
+                    <Input
+                      id="name"
+                      value={profileData.name}
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      disabled={!isEditing}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profileData.email}
+                      disabled
+                      className="mt-1.5 bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">O e-mail não pode ser alterado</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={profileData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      disabled={!isEditing}
+                      className="mt-1.5"
+                    />
+                  </div>
                 </div>
-
-                <div>
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    disabled={!isEditing}
-                    className="mt-1.5"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    value={profileData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    disabled={!isEditing}
-                    className="mt-1.5"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="location">Localização</Label>
-                  <Input
-                    id="location"
-                    value={profileData.location}
-                    onChange={(e) => handleInputChange("location", e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Cidade, Estado"
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-              </div>
-            </Card>
-
-            {/* Professional Information */}
-            <Card className="bg-white border-gray-300 shadow-sm">
-              <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Informações Profissionais
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input
-                    id="company"
-                    value={profileData.company}
-                    onChange={(e) => handleInputChange("company", e.target.value)}
-                    disabled={!isEditing}
-                    className="mt-1.5"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="role">Cargo</Label>
-                  <Input
-                    id="role"
-                    value={profileData.role}
-                    onChange={(e) => handleInputChange("role", e.target.value)}
-                    disabled={!isEditing}
-                    className="mt-1.5"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    type="url"
-                    value={profileData.website}
-                    onChange={(e) => handleInputChange("website", e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="https://www.exemplo.com"
-                    className="mt-1.5"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="bio">Biografia</Label>
-                  <Textarea
-                    id="bio"
-                    value={profileData.bio}
-                    onChange={(e) => handleInputChange("bio", e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Conte um pouco sobre você..."
-                    className="mt-1.5"
-                    rows={4}
-                  />
-                </div>
-              </div>
-              </div>
-            </Card>
-
-            {/* Social Media */}
-            <Card className="bg-white border-gray-300 shadow-sm">
-              <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Redes Sociais
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="linkedin">LinkedIn</Label>
-                  <Input
-                    id="linkedin"
-                    value={profileData.linkedin}
-                    onChange={(e) => handleInputChange("linkedin", e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="seu-perfil-linkedin"
-                    className="mt-1.5"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="twitter">Twitter</Label>
-                  <Input
-                    id="twitter"
-                    value={profileData.twitter}
-                    onChange={(e) => handleInputChange("twitter", e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="@seu-usuario"
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
               </div>
             </Card>
 
             {/* Password Security */}
             <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Segurança e Senha
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="current-password">Senha atual</Label>
-                  <Input
-                    id="current-password"
-                    type="password"
-                    disabled={!isEditing}
-                    placeholder="Digite sua senha atual"
-                    className="mt-1.5"
-                  />
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Segurança e Senha
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="current-password">Senha atual</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) =>
+                        setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                      }
+                      placeholder="Digite sua senha atual"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="new-password">Nova senha</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) =>
+                        setPasswordData({ ...passwordData, newPassword: e.target.value })
+                      }
+                      placeholder="Digite sua nova senha"
+                      className="mt-1.5"
+                    />
+                    <p className="text-xs text-gray-600 mt-1.5">
+                      A senha deve ter pelo menos 8 caracteres
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                      }
+                      placeholder="Confirme sua nova senha"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  {passwordError && (
+                    <p className="text-sm text-red-600">{passwordError}</p>
+                  )}
+                  {passwordSuccess && (
+                    <p className="text-sm text-green-600">{passwordSuccess}</p>
+                  )}
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={
+                      !passwordData.currentPassword ||
+                      !passwordData.newPassword ||
+                      !passwordData.confirmPassword
+                    }
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Alterar Senha
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="new-password">Nova senha</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    disabled={!isEditing}
-                    placeholder="Digite sua nova senha"
-                    className="mt-1.5"
-                  />
-                  <p className="text-xs text-gray-600 mt-1.5">
-                    A senha deve ter pelo menos 8 caracteres
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="confirm-password">Confirmar nova senha</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    disabled={!isEditing}
-                    placeholder="Confirme sua nova senha"
-                    className="mt-1.5"
-                  />
-                </div>
-                {!isEditing && (
-                  <p className="text-sm text-gray-600 pt-2">
-                    Clique em "Editar Perfil" para alterar sua senha
-                  </p>
-                )}
-              </div>
               </div>
             </Card>
 
             {/* Account Statistics */}
-            <Card className="bg-white border-gray-300 shadow-sm">
+            <Card className="bg-white border-gray-300 shadow-sm lg:col-span-2">
               <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Estatísticas da Conta
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
-                  <span className="text-sm text-gray-600">Leads criados</span>
-                  <span className="text-lg font-semibold text-gray-900">142</span>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Estatísticas da Conta
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm text-gray-600">Leads criados</span>
+                    <span className="text-lg font-semibold text-gray-900">{stats.leads}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm text-gray-600">Automações</span>
+                    <span className="text-lg font-semibold text-gray-900">{stats.automations}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm text-gray-600">Membro desde</span>
+                    <span className="text-lg font-semibold text-gray-900">{stats.memberSince}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm text-gray-600">Plano</span>
+                    <span className="text-lg font-semibold text-primary">{stats.plan}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
-                  <span className="text-sm text-gray-600">Automações ativas</span>
-                  <span className="text-lg font-semibold text-gray-900">8</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
-                  <span className="text-sm text-gray-600">Membro desde</span>
-                  <span className="text-lg font-semibold text-gray-900">Jan 2024</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
-                  <span className="text-sm text-gray-600">Plano</span>
-                  <span className="text-lg font-semibold text-primary">Premium</span>
-                </div>
-              </div>
               </div>
             </Card>
           </div>
@@ -447,4 +384,3 @@ export function Profile() {
     </div>
   );
 }
-
