@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "react-router";
+import { useState, useMemo } from "react";
+import { useParams, useSearchParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -9,23 +9,48 @@ import { CheckCircle } from "lucide-react";
 
 export function PublicForm() {
   const { formId } = useParams();
+  const [searchParams] = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
+    company: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Detect source from UTM params
+  const utmSource = useMemo(() => {
+    const src = searchParams.get("utm_source");
+    if (src) return src;
+    const ref = searchParams.get("ref");
+    if (ref) return ref;
+    return null;
+  }, [searchParams]);
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = "Nome e obrigatorio";
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Email invalido";
+    }
+    if (formData.phone && formData.phone.replace(/\D/g, "").length < 10) {
+      errors.phone = "Telefone deve ter pelo menos 10 digitos";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setIsSubmitting(true);
     setError("");
 
     try {
-      // Use the formId as tenant slug for the public capture API
       const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       const response = await fetch(`${apiUrl}/api/public/capture/${formId}`, {
         method: "POST",
@@ -34,7 +59,9 @@ export function PublicForm() {
           name: formData.name,
           email: formData.email || undefined,
           phone: formData.phone || undefined,
+          company: formData.company || undefined,
           message: formData.message || undefined,
+          source: utmSource || "WEBSITE",
         }),
       });
 
@@ -95,20 +122,9 @@ export function PublicForm() {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="João Silva"
               required
-              className="mt-1.5"
+              className={`mt-1.5 ${fieldErrors.name ? "border-red-400" : ""}`}
             />
-          </div>
-
-          <div>
-            <Label htmlFor="phone">Telefone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="(11) 99999-9999"
-              className="mt-1.5"
-            />
+            {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
           </div>
 
           <div>
@@ -119,6 +135,31 @@ export function PublicForm() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="seu@email.com"
+              className={`mt-1.5 ${fieldErrors.email ? "border-red-400" : ""}`}
+            />
+            {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="phone">Telefone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="(11) 99999-9999"
+              className={`mt-1.5 ${fieldErrors.phone ? "border-red-400" : ""}`}
+            />
+            {fieldErrors.phone && <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="company">Empresa</Label>
+            <Input
+              id="company"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              placeholder="Nome da empresa"
               className="mt-1.5"
             />
           </div>

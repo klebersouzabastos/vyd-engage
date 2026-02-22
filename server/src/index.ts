@@ -166,7 +166,9 @@ const captureLeadSchema = zodLib.object({
   name: zodLib.string().min(1),
   email: zodLib.string().email().optional(),
   phone: zodLib.string().optional(),
+  company: zodLib.string().optional(),
   message: zodLib.string().optional(),
+  source: zodLib.string().optional(),
   customFields: zodLib.record(zodLib.any()).optional(),
 });
 
@@ -182,12 +184,19 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
 
     const data = captureLeadSchema.parse(req.body);
 
+    const sourceMap: Record<string, string> = {
+      website: 'WEBSITE', social_media: 'SOCIAL_MEDIA', referral: 'REFERRAL',
+      email: 'EMAIL', phone: 'PHONE', other: 'OTHER',
+    };
+    const leadSource = sourceMap[String(data.source || '').toLowerCase()] || 'WEBSITE';
+
     const lead = await prisma.lead.create({
       data: {
         name: data.name,
         email: data.email || null,
         phone: data.phone || null,
-        source: 'OTHER',
+        company: data.company || null,
+        source: leadSource as any,
         status: 'NEW',
         customFields: data.customFields || {},
         tenantId: tenant.id,
