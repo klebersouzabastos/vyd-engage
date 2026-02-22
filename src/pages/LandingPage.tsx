@@ -601,24 +601,23 @@ export function LandingPage() {
             <div>
               <h4 className="text-white font-medium mb-4">Produto</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Funcionalidades</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Preços</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Integrações</a></li>
+                <li><a href="#features" className="hover:text-white transition-colors">Funcionalidades</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Preços</a></li>
+                <li><a href="#faq" className="hover:text-white transition-colors">Perguntas Frequentes</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Empresa</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Sobre</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contato</a></li>
+                <li><a href="#testimonials" className="hover:text-white transition-colors">Depoimentos</a></li>
+                <li><a href="mailto:contato@vydengage.com" className="hover:text-white transition-colors">Contato</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Privacidade</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Termos</a></li>
+                <li><a href="/privacidade" className="hover:text-white transition-colors">Privacidade</a></li>
+                <li><a href="/termos" className="hover:text-white transition-colors">Termos</a></li>
               </ul>
             </div>
           </div>
