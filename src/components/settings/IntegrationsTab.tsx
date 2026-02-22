@@ -212,6 +212,85 @@ function EmailHelpContent() {
   );
 }
 
+function MetaLeadAdsSection() {
+  const [showSetup, setShowSetup] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+
+  return (
+    <div className="p-4 rounded-lg border border-gray-300">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-medium text-gray-900">Meta Lead Ads</h4>
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              Via Webhook
+            </span>
+          </div>
+          <p className="text-sm text-gray-600">Capture leads do Facebook e Instagram automaticamente via webhook</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowSetup(!showSetup)}>
+          {showSetup ? "Fechar" : "Como configurar"}
+        </Button>
+      </div>
+      {showSetup && (
+        <div className="mt-4 bg-blue-50 rounded-lg p-4 space-y-3">
+          <h5 className="text-sm font-medium text-blue-900">Configuracao no Meta Business Suite:</h5>
+          <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+            <li>Acesse o <a href="https://business.facebook.com/latest/leads_center" target="_blank" rel="noopener noreferrer" className="underline font-medium">Central de Leads</a> no Meta Business</li>
+            <li>Va em <strong>Configuracoes &gt; Integracao CRM</strong></li>
+            <li>Selecione <strong>"Conectar via Webhook"</strong></li>
+            <li>Cole a URL do webhook de captura (veja secao Webhook abaixo)</li>
+            <li>Configure o mapeamento: <code className="bg-blue-100 px-1 rounded">full_name</code> → name, <code className="bg-blue-100 px-1 rounded">email</code> → email, <code className="bg-blue-100 px-1 rounded">phone_number</code> → phone</li>
+            <li>Teste enviando um lead de teste pelo Meta</li>
+          </ol>
+          <p className="text-xs text-blue-700 mt-2">
+            Dica: Use o Zapier ou Make.com como intermediario se precisar de transformacao de dados.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GoogleLeadFormsSection() {
+  const [showSetup, setShowSetup] = useState(false);
+
+  return (
+    <div className="p-4 rounded-lg border border-gray-300">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-medium text-gray-900">Google Lead Form Extensions</h4>
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              Via Webhook
+            </span>
+          </div>
+          <p className="text-sm text-gray-600">Capture leads do Google Ads com extensoes de formulario</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowSetup(!showSetup)}>
+          {showSetup ? "Fechar" : "Como configurar"}
+        </Button>
+      </div>
+      {showSetup && (
+        <div className="mt-4 bg-green-50 rounded-lg p-4 space-y-3">
+          <h5 className="text-sm font-medium text-green-900">Configuracao no Google Ads:</h5>
+          <ol className="text-sm text-green-800 space-y-2 list-decimal list-inside">
+            <li>No Google Ads, va em <strong>Ferramentas &gt; Dados vinculados</strong></li>
+            <li>Selecione <strong>"Webhook integration"</strong> para extensoes de formulario de lead</li>
+            <li>Cole a URL do webhook de captura (veja secao Webhook abaixo)</li>
+            <li>Adicione o header <code className="bg-green-100 px-1 rounded">Content-Type: application/json</code></li>
+            <li>Configure o mapeamento de campos do Google para o formato JSON do webhook</li>
+            <li>Envie um lead de teste para verificar</li>
+          </ol>
+          <p className="text-xs text-green-700 mt-2">
+            Alternativa: Use Google Sheets + Zapier para enviar leads automaticamente ao webhook.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WebhookCaptureSection() {
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -368,34 +447,10 @@ export function IntegrationsTab() {
   return (
     <div className="space-y-6">
       {/* Meta Lead Ads */}
-      <div className="p-4 rounded-lg border border-gray-300 opacity-60">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium text-gray-900">Meta Lead Ads</h4>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                Em breve
-              </span>
-            </div>
-            <p className="text-sm text-gray-600">Capture leads do Facebook e Instagram automaticamente</p>
-          </div>
-        </div>
-      </div>
+      <MetaLeadAdsSection />
 
       {/* Google Lead Form Extensions */}
-      <div className="p-4 rounded-lg border border-gray-300 opacity-60">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium text-gray-900">Google Lead Form Extensions</h4>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                Em breve
-              </span>
-            </div>
-            <p className="text-sm text-gray-600">Capture leads do Google Ads com extensoes de formulario</p>
-          </div>
-        </div>
-      </div>
+      <GoogleLeadFormsSection />
 
       {/* WhatsApp Connections */}
       <div className="p-4 rounded-lg border border-gray-300">
