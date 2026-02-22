@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button, buttonVariants } from "../components/ui/button";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
-import { Plus, Phone, Mail, Clock, Edit2, Trash2, X, Check, ChevronDown, Filter, Funnel as FunnelIcon } from "lucide-react";
+import { Plus, Phone, Mail, Clock, Edit2, Trash2, X, Check, ChevronDown, Filter, Funnel as FunnelIcon, Settings, ArrowUp, ArrowDown } from "lucide-react";
 import { useTags } from "../contexts/TagsContext";
 import { TagBadge } from "../components/TagBadge";
 import { Input } from "../components/ui/input";
@@ -48,6 +48,7 @@ export function Pipeline() {
     addColumn: addColumnApi,
     updateColumn: updateColumnApi,
     deleteColumn: deleteColumnApi,
+    reorderColumns: reorderColumnsApi,
     moveLead,
     loadFunnelWithLeads,
   } = useFunnels();
@@ -68,6 +69,8 @@ export function Pipeline() {
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsColumnOrder, setSettingsColumnOrder] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartTime = useRef<number>(0);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
@@ -479,14 +482,27 @@ export function Pipeline() {
                 <p className="text-xs text-red-600">{errorMessage}</p>
               )}
             </div>
-            <Button
-              variant="outline"
-              className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
-              onClick={() => setCreateFunnelOpen(true)}
-            >
-              <Plus size={16} />
-              Novo Funil
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  setSettingsColumnOrder(columns.map(c => c.id));
+                  setSettingsOpen(true);
+                }}
+              >
+                <Settings size={16} />
+                Configurações
+              </Button>
+              <Button
+                variant="outline"
+                className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
+                onClick={() => setCreateFunnelOpen(true)}
+              >
+                <Plus size={16} />
+                Novo Funil
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -941,6 +957,91 @@ export function Pipeline() {
         onClose={handleCloseModal}
         lead={selectedLead}
       />
+
+      {/* Pipeline Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-lg bg-white">
+          <DialogHeader className="text-left space-y-0 pb-4">
+            <DialogTitle className="text-lg font-semibold text-gray-900">
+              Configurações do Pipeline
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Ordem das Colunas</h4>
+              <p className="text-xs text-gray-500 mb-3">Reordene as colunas do funil usando as setas</p>
+              <div className="space-y-2">
+                {settingsColumnOrder.map((colId, index) => {
+                  const col = columns.find(c => c.id === colId);
+                  if (!col) return null;
+                  return (
+                    <div key={colId} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: col.color }} />
+                      <span className="flex-1 text-sm font-medium text-gray-900">{col.title}</span>
+                      <span className="text-xs text-gray-400">{col.leads.length} leads</span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            if (index === 0) return;
+                            const newOrder = [...settingsColumnOrder];
+                            [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+                            setSettingsColumnOrder(newOrder);
+                          }}
+                          disabled={index === 0}
+                          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (index === settingsColumnOrder.length - 1) return;
+                            const newOrder = [...settingsColumnOrder];
+                            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                            setSettingsColumnOrder(newOrder);
+                          }}
+                          disabled={index === settingsColumnOrder.length - 1}
+                          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Informações do Funil</h4>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-sm space-y-1">
+                <p className="text-gray-600">Nome: <span className="font-medium text-gray-900">{currentFunnel?.name}</span></p>
+                <p className="text-gray-600">Colunas: <span className="font-medium text-gray-900">{columns.length}</span></p>
+                <p className="text-gray-600">Total de leads: <span className="font-medium text-gray-900">{columns.reduce((acc, col) => acc + col.leads.length, 0)}</span></p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={async () => {
+                const currentOrder = columns.map(c => c.id);
+                const hasChanged = settingsColumnOrder.some((id, i) => currentOrder[i] !== id);
+                if (hasChanged) {
+                  await reorderColumnsApi(settingsColumnOrder);
+                  await loadFunnelWithLeads(currentFunnelId!);
+                }
+                setSettingsOpen(false);
+              }}
+            >
+              Salvar Ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

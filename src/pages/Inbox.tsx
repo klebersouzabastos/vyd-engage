@@ -61,7 +61,23 @@ export function Inbox() {
   const [composeSubject, setComposeSubject] = useState("");
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [whatsappConnectionId, setWhatsappConnectionId] = useState<string | null>(null);
+  const [emailConfigId, setEmailConfigId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load available WhatsApp connections and Email configs
+  useEffect(() => {
+    apiClient.getWhatsAppConnections().then((result) => {
+      const conns = result?.data || result || [];
+      const connected = conns.find((c: any) => c.status === "CONNECTED") || conns[0];
+      if (connected) setWhatsappConnectionId(connected.id);
+    }).catch(() => {});
+    apiClient.getEmailConfigs().then((result) => {
+      const configs = result?.data || result || [];
+      const verified = configs.find((c: any) => c.isVerified) || configs[0];
+      if (verified) setEmailConfigId(verified.id);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     loadConversations();
@@ -141,42 +157,67 @@ export function Inbox() {
           setSending(false);
           return;
         }
-        // Create interaction record
-        await apiClient.createInteraction({
-          leadId: selectedLead.leadId,
-          type: "WHATSAPP",
-          direction: "OUTBOUND",
-          content: composeMessage,
-        });
-        toast.success("Mensagem WhatsApp registrada");
+
+        if (whatsappConnectionId) {
+          // Send via real WhatsApp API
+          await apiClient.sendWhatsAppMessage({
+            connectionId: whatsappConnectionId,
+            to: selectedLead.leadPhone,
+            type: "text",
+            content: composeMessage,
+            leadId: selectedLead.leadId,
+          });
+          toast.success("Mensagem WhatsApp enviada");
+        } else {
+          // Fallback: record interaction only
+          await apiClient.createInteraction({
+            leadId: selectedLead.leadId,
+            type: "WHATSAPP",
+            direction: "OUTBOUND",
+            content: composeMessage,
+          });
+          toast.success("Mensagem registrada (sem conexão WhatsApp ativa)");
+        }
       } else {
         if (!selectedLead.leadEmail) {
           toast.error("Lead não possui email cadastrado");
           setSending(false);
           return;
         }
-        await apiClient.createInteraction({
-          leadId: selectedLead.leadId,
-          type: "EMAIL",
-          direction: "OUTBOUND",
-          subject: composeSubject || "Sem assunto",
-          content: composeMessage,
-        });
-        toast.success("Email registrado");
+
+        if (emailConfigId) {
+          // Send via real Email API
+          await apiClient.sendEmail({
+            configId: emailConfigId,
+            to: selectedLead.leadEmail,
+            subject: composeSubject || "Sem assunto",
+            html: composeMessage,
+            leadId: selectedLead.leadId,
+          });
+          toast.success("Email enviado");
+        } else {
+          // Fallback: record interaction only
+          await apiClient.createInteraction({
+            leadId: selectedLead.leadId,
+            type: "EMAIL",
+            direction: "OUTBOUND",
+            subject: composeSubject || "Sem assunto",
+            content: composeMessage,
+          });
+          toast.success("Email registrado (sem configuração de email ativa)");
+        }
       }
 
       setComposeMessage("");
       setComposeSubject("");
-      // Reload messages
       await loadMessages(selectedLead.leadId);
-      // Reload conversations to update last message
       loadConversations();
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar mensagem");
     } finally {
       setSending(false);
     }
-  }, [selectedLead, composeMessage, composeChannel, composeSubject]);
+  }, [selectedLead, composeMessage, composeChannel, composeSubject, whatsappConnectionId, emailConfigId]);
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
