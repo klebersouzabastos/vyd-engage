@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../ui/button";
-import { Plus, HelpCircle, X, FileText } from "lucide-react";
+import { Plus, HelpCircle, X, FileText, Copy, Key, Loader2 } from "lucide-react";
+import { apiClient } from "../../services/api/client";
+import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useWhatsApp } from "../../contexts/WhatsAppContext";
 import { useEmail } from "../../contexts/EmailContext";
@@ -206,6 +208,150 @@ function EmailHelpContent() {
           <li>Evite spam e siga as melhores praticas de email marketing</li>
         </ul>
       </div>
+    </div>
+  );
+}
+
+function WebhookCaptureSection() {
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
+
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+
+  useEffect(() => {
+    loadApiKeys();
+  }, []);
+
+  const loadApiKeys = async () => {
+    try {
+      const result = await apiClient.getApiKeys();
+      const keys = result?.data || result || [];
+      setApiKeys(Array.isArray(keys) ? keys : []);
+    } catch { }
+    finally { setLoading(false); }
+  };
+
+  const handleCreateKey = async () => {
+    setCreating(true);
+    try {
+      const result = await apiClient.createApiKey({ name: "Webhook Capture Key" });
+      const data = result?.data || result;
+      if (data?.fullKey) {
+        setNewKeyValue(data.fullKey);
+      }
+      await loadApiKeys();
+      toast.success("Chave API criada");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar chave");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado`);
+  };
+
+  const activeKey = apiKeys.find(k => k.active);
+  const webhookUrl = activeKey ? `${apiUrl}/api/webhooks/capture/YOUR_API_KEY` : null;
+
+  return (
+    <div className="p-4 rounded-lg border border-gray-300">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-medium text-gray-900">Webhook para Captura</h4>
+            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Ativo</span>
+          </div>
+          <p className="text-sm text-gray-600">Receba leads de qualquer fonte externa via webhook HTTP POST</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowDetails(!showDetails)}>
+          {showDetails ? "Fechar" : "Configurar"}
+        </Button>
+      </div>
+
+      {showDetails && (
+        <div className="mt-4 space-y-4">
+          {/* API Key section */}
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+              <Key size={14} /> Chave de API
+            </h5>
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+            ) : activeKey ? (
+              <div className="flex items-center gap-2">
+                <code className="text-xs bg-gray-100 px-3 py-1.5 rounded border border-gray-200 font-mono flex-1 truncate">
+                  {activeKey.key}
+                </code>
+                <span className="text-xs text-green-600">Ativa</span>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleCreateKey} disabled={creating} className="gap-2">
+                {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Criar Chave API
+              </Button>
+            )}
+            {newKeyValue && (
+              <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-xs text-yellow-800 font-medium mb-1">Copie sua chave agora — ela nao sera exibida novamente:</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-white px-2 py-1 rounded border border-yellow-300 font-mono flex-1 break-all">
+                    {newKeyValue}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(newKeyValue, "Chave API")}
+                    className="p-1.5 rounded hover:bg-yellow-100"
+                  >
+                    <Copy size={14} className="text-yellow-700" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Webhook URL */}
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2">URL do Webhook</h5>
+            <div className="flex items-center gap-2">
+              <code className="text-xs bg-gray-100 px-3 py-1.5 rounded border border-gray-200 font-mono flex-1 truncate">
+                POST {apiUrl}/api/webhooks/capture/&#123;sua_api_key&#125;
+              </code>
+              {webhookUrl && (
+                <button
+                  onClick={() => copyToClipboard(webhookUrl, "URL")}
+                  className="p-1.5 rounded hover:bg-gray-100"
+                >
+                  <Copy size={14} className="text-gray-500" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Payload format */}
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2">Formato do Payload (JSON)</h5>
+            <pre className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-3 overflow-x-auto font-mono text-gray-700">
+{`{
+  "name": "Nome do Lead",
+  "email": "email@exemplo.com",
+  "phone": "(11) 99999-0000",
+  "company": "Empresa",
+  "position": "Cargo",
+  "source": "WEBSITE",
+  "notes": "Observacoes"
+}`}
+            </pre>
+            <p className="text-xs text-gray-500 mt-2">
+              Campos aceitos: name (obrigatorio), email, phone/telefone, company/empresa, position/cargo, source, notes/observacao
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -544,19 +690,7 @@ export function IntegrationsTab() {
       </div>
 
       {/* Webhook */}
-      <div className="p-4 rounded-lg border border-gray-300 opacity-60">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium text-gray-900">Webhook para Captura</h4>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                Em breve
-              </span>
-            </div>
-            <p className="text-sm text-gray-600">Receba leads de qualquer fonte externa via webhook</p>
-          </div>
-        </div>
-      </div>
+      <WebhookCaptureSection />
     </div>
   );
 }

@@ -638,6 +638,18 @@ class ApiClient {
     });
   }
 
+  // API Keys
+  async getApiKeys() {
+    return this.request<any[]>('/api/api-keys');
+  }
+
+  async createApiKey(data: { name: string; expiresAt?: string }) {
+    return this.request<any>('/api/api-keys', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Custom Fields
   async getCustomFields(activeOnly?: boolean) {
     const query = activeOnly ? '?active=true' : '';

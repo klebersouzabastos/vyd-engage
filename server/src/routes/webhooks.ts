@@ -160,6 +160,97 @@ router.post('/email/resend', async (req: Request, res: Response) => {
   }
 });
 
+// ========================
+// Lead Capture Webhook (public, authenticated via API key)
+// ========================
+
+// POST /api/webhooks/capture/:apiKey - Capture leads from external systems
+router.post('/capture/:apiKey', async (req: Request, res: Response) => {
+  try {
+    const { apiKey } = req.params;
+    if (!apiKey) {
+      res.status(400).json({ error: 'API key required' });
+      return;
+    }
+
+    // Find API key and resolve tenant
+    const { default: prisma } = await import('../config/database.js');
+    const { default: bcrypt } = await import('bcryptjs');
+
+    // API keys are stored with hash — we need to find by iterating active keys
+    const activeKeys = await prisma.apiKey.findMany({
+      where: { active: true },
+      select: { id: true, tenantId: true, keyHash: true },
+    });
+
+    let tenantId: string | null = null;
+    let keyId: string | null = null;
+
+    for (const key of activeKeys) {
+      const match = await bcrypt.compare(apiKey, key.keyHash);
+      if (match) {
+        tenantId = key.tenantId;
+        keyId = key.id;
+        break;
+      }
+    }
+
+    if (!tenantId || !keyId) {
+      res.status(401).json({ error: 'Invalid API key' });
+      return;
+    }
+
+    // Update last used
+    await prisma.apiKey.update({
+      where: { id: keyId },
+      data: { lastUsedAt: new Date() },
+    });
+
+    // Parse lead data — flexible format
+    const body = req.body;
+    const name = body.name || body.nome || body.full_name || body.fullName || 'Lead via Webhook';
+    const email = body.email || body.e_mail || null;
+    const phone = body.phone || body.telefone || body.whatsapp || body.cel || null;
+    const company = body.company || body.empresa || body.organization || null;
+    const position = body.position || body.cargo || body.job_title || null;
+    const notes = body.notes || body.observacao || body.message || body.mensagem || null;
+    const source = body.source || 'OTHER';
+
+    // Map source strings to enum values
+    const sourceMap: Record<string, string> = {
+      website: 'WEBSITE',
+      social_media: 'SOCIAL_MEDIA',
+      referral: 'REFERRAL',
+      email: 'EMAIL',
+      phone: 'PHONE',
+      other: 'OTHER',
+    };
+    const leadSource = sourceMap[String(source).toLowerCase()] || 'OTHER';
+
+    // Create lead
+    const { leadService } = await import('../services/leadService.js');
+    const lead = await leadService.create(tenantId, {
+      name,
+      email,
+      phone,
+      company,
+      position,
+      notes,
+      source: leadSource as any,
+    });
+
+    logger.info('Lead captured via webhook', { tenantId, leadId: lead.id, source: 'webhook' });
+
+    res.status(201).json({
+      success: true,
+      data: { id: lead.id, name: lead.name },
+    });
+  } catch (error) {
+    logger.error('Error processing capture webhook', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
 
 
