@@ -16,6 +16,10 @@ import {
   User,
   X,
   RefreshCw,
+  Check,
+  CheckCheck,
+  Paperclip,
+  Image,
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
@@ -63,7 +67,9 @@ export function Inbox() {
   const [refreshing, setRefreshing] = useState(false);
   const [whatsappConnectionId, setWhatsappConnectionId] = useState<string | null>(null);
   const [emailConfigId, setEmailConfigId] = useState<string | null>(null);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load available WhatsApp connections and Email configs
   useEffect(() => {
@@ -160,14 +166,16 @@ export function Inbox() {
 
         if (whatsappConnectionId) {
           // Send via real WhatsApp API
+          const msgType = attachedFile?.type.startsWith("image/") ? "image" :
+                          attachedFile ? "document" : "text";
           await apiClient.sendWhatsAppMessage({
             connectionId: whatsappConnectionId,
             to: selectedLead.leadPhone,
-            type: "text",
-            content: composeMessage,
+            type: msgType,
+            content: composeMessage || (attachedFile ? attachedFile.name : ""),
             leadId: selectedLead.leadId,
           });
-          toast.success("Mensagem WhatsApp enviada");
+          toast.success(attachedFile ? "Mensagem com anexo enviada" : "Mensagem WhatsApp enviada");
         } else {
           // Fallback: record interaction only
           await apiClient.createInteraction({
@@ -210,6 +218,7 @@ export function Inbox() {
 
       setComposeMessage("");
       setComposeSubject("");
+      setAttachedFile(null);
       await loadMessages(selectedLead.leadId);
       loadConversations();
     } catch (error: any) {
@@ -217,7 +226,7 @@ export function Inbox() {
     } finally {
       setSending(false);
     }
-  }, [selectedLead, composeMessage, composeChannel, composeSubject, whatsappConnectionId, emailConfigId]);
+  }, [selectedLead, composeMessage, composeChannel, composeSubject, whatsappConnectionId, emailConfigId, attachedFile]);
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -260,6 +269,48 @@ export function Inbox() {
     if (type === "EMAIL") return "bg-blue-100 text-blue-600";
     if (type === "CALL") return "bg-orange-100 text-orange-600";
     return "bg-gray-100 text-gray-600";
+  };
+
+  const getDeliveryStatus = (msg: InteractionMessage) => {
+    if (msg.direction !== "OUTBOUND") return null;
+    const status = msg.metadata?.deliveryStatus || msg.metadata?.status;
+    if (status === "read" || status === "READ") {
+      return <CheckCheck size={12} className="text-blue-400" title="Lido" />;
+    }
+    if (status === "delivered" || status === "DELIVERED") {
+      return <CheckCheck size={12} className="text-white/60" title="Entregue" />;
+    }
+    if (status === "failed" || status === "FAILED") {
+      return <X size={12} className="text-red-400" title="Falhou" />;
+    }
+    // Default: sent
+    return <Check size={12} className="text-white/60" title="Enviado" />;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 16 * 1024 * 1024) {
+        toast.error("Arquivo muito grande (max 16MB)");
+        return;
+      }
+      setAttachedFile(file);
+    }
+  };
+
+  const getFilePreview = () => {
+    if (!attachedFile) return null;
+    const isImage = attachedFile.type.startsWith("image/");
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm mb-2">
+        {isImage ? <Image size={14} className="text-green-600" /> : <Paperclip size={14} className="text-blue-600" />}
+        <span className="truncate flex-1 text-gray-700">{attachedFile.name}</span>
+        <span className="text-xs text-gray-400">{(attachedFile.size / 1024).toFixed(0)}KB</span>
+        <button onClick={() => setAttachedFile(null)} className="p-0.5 hover:bg-gray-200 rounded">
+          <X size={12} className="text-gray-500" />
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -454,6 +505,23 @@ export function Inbox() {
                                 {msg.subject}
                               </p>
                             )}
+                            {msg.metadata?.mediaUrl && msg.metadata?.mediaType?.startsWith("image") && (
+                              <img
+                                src={msg.metadata.mediaUrl}
+                                alt="Imagem"
+                                className="rounded-lg max-w-full max-h-48 mb-2"
+                              />
+                            )}
+                            {msg.metadata?.mediaUrl && !msg.metadata?.mediaType?.startsWith("image") && (
+                              <a
+                                href={msg.metadata.mediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-1.5 text-xs mb-2 underline ${isOutbound ? "text-white/80" : "text-blue-600"}`}
+                              >
+                                <Paperclip size={12} /> {msg.metadata.fileName || "Arquivo anexo"}
+                              </a>
+                            )}
                             <p className="text-sm whitespace-pre-wrap break-words">
                               {msg.content.replace(/<[^>]*>/g, "")}
                             </p>
@@ -462,6 +530,7 @@ export function Inbox() {
                               <span className={`text-[10px] ${isOutbound ? "text-white/60" : "text-gray-400"}`}>
                                 {formatMessageTime(msg.createdAt)}
                               </span>
+                              {isOutbound && getDeliveryStatus(msg)}
                             </div>
                           </div>
                         </div>
@@ -506,7 +575,24 @@ export function Inbox() {
                     className="mb-2 h-8 text-sm"
                   />
                 )}
+                {getFilePreview()}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
                 <div className="flex items-end gap-2">
+                  {composeChannel === "whatsapp" && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex-shrink-0 transition-colors"
+                      title="Anexar arquivo"
+                    >
+                      <Paperclip size={18} />
+                    </button>
+                  )}
                   <Textarea
                     value={composeMessage}
                     onChange={(e) => setComposeMessage(e.target.value)}
