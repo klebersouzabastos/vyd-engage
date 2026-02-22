@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -132,13 +133,15 @@ export function ReportBuilder() {
 
       if (isEditing) {
         await apiClient.updateReport(report.id, payload);
+        toast.success("Relatório atualizado com sucesso");
       } else {
         await apiClient.createReport(payload);
+        toast.success("Relatório criado com sucesso");
       }
       navigate("/app/reports");
     } catch (error) {
       console.error("Erro ao salvar relatório:", error);
-      alert("Erro ao salvar relatório. Tente novamente.");
+      toast.error("Erro ao salvar relatório. Tente novamente.");
     } finally {
       setSaving(false);
     }

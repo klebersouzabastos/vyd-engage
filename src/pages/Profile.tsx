@@ -9,6 +9,7 @@ import { Card } from "../components/ui/card";
 import { Camera, Save, X, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { apiClient } from "../services/api/client";
+import { toast } from "sonner";
 
 export function Profile() {
   const { user, refreshUser } = useAuth();
@@ -77,11 +78,11 @@ export function Profile() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        alert("Por favor, selecione uma imagem válida");
+        toast.error("Por favor, selecione uma imagem válida");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert("A imagem deve ter no máximo 5MB");
+        toast.error("A imagem deve ter no máximo 5MB");
         return;
       }
       const reader = new FileReader();
@@ -105,8 +106,9 @@ export function Profile() {
       if (refreshUser) await refreshUser();
       setAvatarPreview(null);
       setIsEditing(false);
+      toast.success("Perfil atualizado com sucesso");
     } catch (error: any) {
-      alert(error.message || "Erro ao salvar perfil. Tente novamente.");
+      toast.error(error.message || "Erro ao salvar perfil. Tente novamente.");
     } finally {
       setSaving(false);
     }

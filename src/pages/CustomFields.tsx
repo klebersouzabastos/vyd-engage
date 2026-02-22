@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Plus, Edit2, Trash2, GripVertical } from "lucide-react";
@@ -43,7 +44,7 @@ export function CustomFields() {
         setIsCreating(false);
       }
     } catch (error: any) {
-      alert(error.message || "Erro ao salvar campo");
+      toast.error(error.message || "Erro ao salvar campo");
     }
   };
 

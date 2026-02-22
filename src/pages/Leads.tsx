@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -189,7 +190,7 @@ export function Leads() {
       );
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
-      alert('Erro ao exportar relatório. Tente novamente.');
+      toast.error('Erro ao exportar relatório. Tente novamente.');
     }
   };
 
@@ -223,10 +224,10 @@ export function Leads() {
       setSelectedLeads([]);
       setDeleteDialogOpen(false);
       refetch();
-      alert(`${leadToDeleteCount} lead(s) deletado(s) com sucesso!`);
+      toast.success(`${leadToDeleteCount} lead(s) deletado(s) com sucesso!`);
     } catch (error) {
       console.error("Erro ao deletar leads:", error);
-      alert("Erro ao deletar leads. Tente novamente.");
+      toast.error("Erro ao deletar leads. Tente novamente.");
     }
   };
 

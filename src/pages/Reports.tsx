@@ -9,6 +9,7 @@ import { Report, ReportSchedule } from "../types";
 import { ReportWizard } from "../components/ReportWizard";
 import { createReportFromTemplate } from "../utils/reportTemplates";
 import { apiClient } from "../services/api/client";
+import { toast } from "sonner";
 
 // Convert API format (config JSON) to frontend Report type
 function apiToReport(apiReport: any): Report {
@@ -79,6 +80,7 @@ export function Reports() {
       try {
         await apiClient.deleteReport(id);
         setReports(reports.filter((r) => r.id !== id));
+        toast.success("Relatório excluído");
       } catch (error) {
         console.error("Erro ao excluir relatório:", error);
       }
@@ -126,7 +128,7 @@ export function Reports() {
       await exportReportToExcel(report);
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
-      alert('Erro ao exportar relatório. Tente novamente.');
+      toast.error('Erro ao exportar relatório. Tente novamente.');
     }
   };
 
