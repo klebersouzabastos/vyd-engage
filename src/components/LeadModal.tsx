@@ -69,7 +69,6 @@ interface LeadModalProps {
 }
 
 export function LeadModal({ open, onClose, lead }: LeadModalProps) {
-  console.log("LeadModal render - open:", open, "lead:", lead);
   const { fields, validateValue } = useCustomFields();
   const { addNotification } = useNotifications();
   const { createLead, updateLead } = useLeads();

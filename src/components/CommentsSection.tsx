@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -108,6 +109,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
       setNewComment("");
     } catch (error) {
       console.error("Erro ao adicionar comentário:", error);
+      toast.error("Erro ao adicionar comentário");
     }
   };
 
@@ -138,6 +140,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
       setComments(comments.filter((c) => c.id !== deletingId));
     } catch (error) {
       console.error("Erro ao excluir comentário:", error);
+      toast.error("Erro ao excluir comentário");
     }
     setDeletingId(null);
   };

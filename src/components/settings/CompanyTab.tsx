@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -83,13 +84,13 @@ export function CompanyTab() {
                     if (!file) return;
 
                     if (!isValidImageFile(file)) {
-                      alert('Por favor, selecione uma imagem valida (PNG, JPG ou SVG)');
+                      toast.error('Por favor, selecione uma imagem valida (PNG, JPG ou SVG)');
                       e.target.value = '';
                       return;
                     }
 
                     if (!isValidFileSize(file, 5)) {
-                      alert('A imagem deve ter no maximo 5MB');
+                      toast.error('A imagem deve ter no maximo 5MB');
                       e.target.value = '';
                       return;
                     }
@@ -101,11 +102,11 @@ export function CompanyTab() {
                         setLogoPreview(resizedImage);
                         setLogo(resizedImage);
                       } else {
-                        alert('Erro ao processar a imagem. Tente novamente.');
+                        toast.error('Erro ao processar a imagem. Tente novamente.');
                       }
                     } catch (error) {
                       console.error('Erro ao processar logo:', error);
-                      alert('Erro ao processar a imagem. Tente novamente.');
+                      toast.error('Erro ao processar a imagem. Tente novamente.');
                     }
 
                     e.target.value = '';
@@ -164,7 +165,7 @@ export function CompanyTab() {
             if (companyData.name !== companyName) {
               setCompanyName(companyData.name);
             }
-            alert("Configuracoes salvas com sucesso!");
+            toast.success("Configuracoes salvas com sucesso!");
           }}
         >
           Salvar Alteracoes

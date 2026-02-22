@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { WhatsAppConnection } from "../../types/whatsapp";
 import { useWhatsApp } from "../../contexts/WhatsAppContext";
 import { DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
@@ -52,7 +53,7 @@ export function WhatsAppConnectionsModal({ onClose }: WhatsAppConnectionsModalPr
       await deleteConnection(id);
     } catch (error) {
       console.error("Erro ao deletar conexão:", error);
-      alert(error instanceof Error ? error.message : "Erro ao deletar conexão");
+      toast.error(error instanceof Error ? error.message : "Erro ao deletar conexão");
     }
   };
 

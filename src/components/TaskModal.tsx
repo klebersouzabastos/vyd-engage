@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Task } from "../types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -65,12 +66,12 @@ export function TaskModal({
 
   const handleSave = () => {
     if (!formData.title.trim()) {
-      alert("O título da tarefa é obrigatório");
+      toast.error("O título da tarefa é obrigatório");
       return;
     }
 
     if (!formData.leadId) {
-      alert("É necessário vincular a tarefa a um lead");
+      toast.error("É necessário vincular a tarefa a um lead");
       return;
     }
 

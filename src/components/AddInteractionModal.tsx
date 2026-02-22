@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Interaction } from "../types";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -42,7 +43,7 @@ export function AddInteractionModal({
 
   const handleSave = () => {
     if (!formData.content.trim()) {
-      alert("O conteúdo da interação é obrigatório");
+      toast.error("O conteúdo da interação é obrigatório");
       return;
     }
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Trash2, Edit2, Plus, X } from "lucide-react";
 import { Tag } from "../types";
 import { useTags } from "../contexts/TagsContext";
@@ -39,7 +40,7 @@ export function TagManager() {
       setFormData({ name: "", color: TAG_COLORS[0] });
       setIsCreateDialogOpen(false);
     } catch (error: any) {
-      alert(error.message || "Erro ao criar tag");
+      toast.error(error.message || "Erro ao criar tag");
     }
   };
 
@@ -61,7 +62,7 @@ export function TagManager() {
       setFormData({ name: "", color: TAG_COLORS[0] });
       setIsCreateDialogOpen(false);
     } catch (error: any) {
-      alert(error.message || "Erro ao atualizar tag");
+      toast.error(error.message || "Erro ao atualizar tag");
     }
   };
 

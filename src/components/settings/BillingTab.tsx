@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { CheckCircle } from "lucide-react";
 import { usePlan } from "../../contexts/PlanContext";
@@ -342,7 +343,7 @@ export function BillingTab() {
                     setPlanChangeModalOpen(false);
                     setPaymentModalOpen(true);
                   } else {
-                    alert(error.message || "Erro ao mudar plano. Tente novamente.");
+                    toast.error(error.message || "Erro ao mudar plano. Tente novamente.");
                   }
                 } finally {
                   setIsChangingPlan(false);
@@ -375,7 +376,7 @@ export function BillingTab() {
               setSelectedPlanToChange(null);
             } catch (error: any) {
               console.error("Erro ao atualizar plano apos pagamento:", error);
-              alert(error.message || "Erro ao atualizar plano. Entre em contato com o suporte.");
+              toast.error(error.message || "Erro ao atualizar plano. Entre em contato com o suporte.");
             }
           }}
         />

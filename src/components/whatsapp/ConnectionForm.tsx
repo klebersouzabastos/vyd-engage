@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { WhatsAppConnection, WhatsAppProvider, ProviderConfig } from "../../types/whatsapp";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -93,7 +94,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
       });
     } catch (error) {
       console.error("Erro ao salvar conexão:", error);
-      alert(error instanceof Error ? error.message : "Erro ao salvar conexão");
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar conexão");
     } finally {
       setIsSubmitting(false);
     }

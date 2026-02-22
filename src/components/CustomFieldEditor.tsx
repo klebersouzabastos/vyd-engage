@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { CustomField } from "../types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -77,7 +78,7 @@ export function CustomFieldEditor({
 
   const handleSave = () => {
     if (!formData.name.trim()) {
-      alert("O nome do campo é obrigatório");
+      toast.error("O nome do campo é obrigatório");
       return;
     }
 

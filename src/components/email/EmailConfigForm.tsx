@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { EmailConfig, EmailProvider, ProviderConfig } from "../../types/email";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -83,7 +84,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
       });
     } catch (error) {
       console.error("Erro ao salvar configuração:", error);
-      alert(error instanceof Error ? error.message : "Erro ao salvar configuração");
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar configuração");
     } finally {
       setIsSubmitting(false);
     }

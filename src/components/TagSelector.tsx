@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { X, Plus } from "lucide-react";
 import { Tag } from "../types";
 import { useTags } from "../contexts/TagsContext";
@@ -54,7 +55,7 @@ export function TagSelector({
       setNewTagName("");
       setSearchQuery("");
     } catch (error: any) {
-      alert(error.message || "Erro ao criar tag");
+      toast.error(error.message || "Erro ao criar tag");
     }
   };
 

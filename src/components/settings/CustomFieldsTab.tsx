@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Plus, Edit2, Trash2, X } from "lucide-react";
 import { useCustomFields } from "../../contexts/CustomFieldsContext";
@@ -134,7 +135,7 @@ export function CustomFieldsTab() {
                       setIsCreatingCustomField(false);
                     }
                   } catch (error: any) {
-                    alert(error.message || "Erro ao salvar campo");
+                    toast.error(error.message || "Erro ao salvar campo");
                   }
                 }}
               />

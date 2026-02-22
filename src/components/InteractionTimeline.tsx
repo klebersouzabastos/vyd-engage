@@ -1,4 +1,5 @@
 import { Interaction } from "../types";
+import { toast } from "sonner";
 import { formatRelativeTime } from "../utils/interactions";
 import {
   MessageSquare,
@@ -122,7 +123,7 @@ export function InteractionTimeline({
 
   const handleSave = () => {
     if (!formData.content.trim()) {
-      alert("O conteúdo da interação é obrigatório");
+      toast.error("O conteúdo da interação é obrigatório");
       return;
     }
 
