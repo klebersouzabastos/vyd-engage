@@ -7,6 +7,7 @@ import { Report } from "../types";
 import { ReportWidgetRenderer } from "../components/ReportWidgetRenderer";
 import { ReportFilters } from "../components/ReportFilters";
 import { apiClient } from "../services/api/client";
+import { fetchReportMetrics, clearMetricsCache } from "../utils/reportData";
 
 function apiToReport(apiReport: any): Report {
   const config = apiReport.config || {};
@@ -31,6 +32,7 @@ export function ReportView() {
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [metricsLoaded, setMetricsLoaded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -45,6 +47,15 @@ export function ReportView() {
         .finally(() => setLoading(false));
     }
   }, [id]);
+
+  // Fetch metrics from API for widget rendering
+  useEffect(() => {
+    if (!report) return;
+    setMetricsLoaded(false);
+    clearMetricsCache();
+    fetchReportMetrics(report.filters ? { dateRange: report.filters.dateRange } : undefined)
+      .finally(() => setMetricsLoaded(true));
+  }, [report?.id, refreshKey]);
 
   const handleExportPDF = () => {
     if (!report) return;
@@ -163,6 +174,11 @@ export function ReportView() {
           {report.widgets.length === 0 ? (
             <div className="bg-white rounded-lg p-12 text-center border border-gray-300">
               <p className="text-gray-600">Este relatório não possui widgets configurados.</p>
+            </div>
+          ) : !metricsLoaded ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400 mr-2" />
+              <span className="text-gray-500">Carregando métricas...</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

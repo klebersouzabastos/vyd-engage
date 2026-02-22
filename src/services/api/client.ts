@@ -888,6 +888,14 @@ class ApiClient {
     });
   }
 
+  async getReportMetrics(params?: { from?: string; to?: string }) {
+    const query = new URLSearchParams();
+    if (params?.from) query.set('from', params.from);
+    if (params?.to) query.set('to', params.to);
+    const qs = query.toString();
+    return this.request<any>(`/api/reports/metrics${qs ? `?${qs}` : ''}`);
+  }
+
   // ========================
   // Payments (Backend API)
   // ========================
