@@ -55,6 +55,7 @@ const Billing = lazyNamed(() => import("../pages/Billing"), "Billing");
 const Reports = lazyNamed(() => import("../pages/Reports"), "Reports");
 const ReportBuilder = lazyNamed(() => import("../pages/ReportBuilder"), "ReportBuilder");
 const ReportView = lazyNamed(() => import("../pages/ReportView"), "ReportView");
+const WhatsAppTemplates = lazyNamed(() => import("../pages/WhatsAppTemplates"), "WhatsAppTemplates");
 
 export const router = createBrowserRouter([
   {
@@ -162,6 +163,10 @@ export const router = createBrowserRouter([
       {
         path: "billing",
         element: Billing,
+      },
+      {
+        path: "whatsapp/templates",
+        element: WhatsAppTemplates,
       },
       {
         path: "reports",

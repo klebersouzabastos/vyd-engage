@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Button } from "../ui/button";
-import { Plus, HelpCircle, X } from "lucide-react";
+import { Plus, HelpCircle, X, FileText } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useWhatsApp } from "../../contexts/WhatsAppContext";
 import { useEmail } from "../../contexts/EmailContext";
@@ -210,6 +211,7 @@ function EmailHelpContent() {
 }
 
 export function IntegrationsTab() {
+  const navigate = useNavigate();
   const { connections, addConnection, updateConnection, deleteConnection, setDefaultConnection, planLimits, canAddConnection } = useWhatsApp();
   const { configs: emailConfigs, addEmailConfig, updateEmailConfig, deleteEmailConfig, setDefaultEmailConfig, planLimits: emailPlanLimits, canAddEmailConfig } = useEmail();
   const [isAddingConnection, setIsAddingConnection] = useState(false);
@@ -289,19 +291,31 @@ export function IntegrationsTab() {
               {connections.length} / {planLimits.maxConnections === Infinity ? "ilimitado" : planLimits.maxConnections} conexoes
             </p>
           </div>
-          {canAddConnection() && !isAddingConnection && !editingConnectionId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsAddingConnection(true);
-                setEditingConnectionId(null);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Conexao
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {connections.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/app/whatsapp/templates")}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Templates
+              </Button>
+            )}
+            {canAddConnection() && !isAddingConnection && !editingConnectionId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsAddingConnection(true);
+                  setEditingConnectionId(null);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Conexao
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
