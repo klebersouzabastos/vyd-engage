@@ -52,7 +52,13 @@ export function useFunnels() {
       // Ensure default funnel exists and get all funnels
       const defaultRes = await apiClient.getDefaultFunnel();
       const allRes = await apiClient.getFunnels();
-      const funnelList: Funnel[] = allRes.data || allRes || [];
+      const rawList: Funnel[] = allRes.data || allRes || [];
+
+      // Normalize: findAll returns columns without leads, ensure leads defaults to []
+      const funnelList = rawList.map(f => ({
+        ...f,
+        columns: (f.columns || []).map(c => ({ ...c, leads: c.leads || [] })),
+      }));
 
       setFunnels(funnelList);
 
