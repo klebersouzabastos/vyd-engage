@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { NotificationType, NotificationStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { emitToUser } from './socketService.js';
 
 export interface CreateNotificationData {
   userId: string;
@@ -13,7 +14,7 @@ export interface CreateNotificationData {
 
 export const notificationService = {
   async create(tenantId: string, data: CreateNotificationData) {
-    return prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         tenantId,
         userId: data.userId,
@@ -25,6 +26,11 @@ export const notificationService = {
         status: NotificationStatus.UNREAD,
       },
     });
+
+    // Emit real-time notification via WebSocket
+    emitToUser(data.userId, 'notification:new', notification);
+
+    return notification;
   },
 
   async findAll(tenantId: string, userId: string, filters?: {

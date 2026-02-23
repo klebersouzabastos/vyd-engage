@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -11,6 +12,7 @@ import { apiLimiter, authLimiter, passwordResetLimiter } from './middleware/rate
 import { csrfProtection } from './middleware/csrf.js';
 import { initSentry } from './utils/sentry.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { initSocketIO } from './services/socketService.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,7 +21,14 @@ dotenv.config();
 initSentry();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize Socket.IO
+const corsOrigins = process.env.NODE_ENV === 'production'
+  ? (process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:5173'])
+  : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'];
+initSocketIO(httpServer, corsOrigins);
 
 // Middleware
 app.use(cors({
@@ -244,8 +253,8 @@ app.use((req, res) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
+// Start server (use httpServer for Socket.IO support)
+httpServer.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });

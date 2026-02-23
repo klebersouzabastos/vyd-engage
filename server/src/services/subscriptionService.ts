@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
 import { PlanType, SubscriptionStatus, BillingCycle } from '@prisma/client';
 import { logger } from '../utils/logger.js';
+import { planLimitsService } from './planLimitsService.js';
 
 export const subscriptionService = {
   async getCurrentSubscription(tenantId: string) {
@@ -70,6 +71,8 @@ export const subscriptionService = {
       }
     }
 
+    planLimitsService.invalidateLimits(tenantId).catch(() => {});
+
     return updated;
   },
 
@@ -83,6 +86,8 @@ export const subscriptionService = {
         cancelledAt: new Date(),
       },
     });
+
+    planLimitsService.invalidateLimits(tenantId).catch(() => {});
   },
 
   async reactivateSubscription(tenantId: string) {
@@ -118,6 +123,8 @@ export const subscriptionService = {
         logger.error('Failed to schedule billing job:', error);
       }
     }
+
+    planLimitsService.invalidateLimits(tenantId).catch(() => {});
 
     return updated;
   },

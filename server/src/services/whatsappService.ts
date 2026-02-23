@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { WhatsAppProvider, WhatsAppConnectionStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { planLimitsService } from './planLimitsService.js';
 
 export interface CreateWhatsAppConnectionData {
   name: string;
@@ -16,8 +17,6 @@ export interface UpdateWhatsAppConnectionData extends Partial<CreateWhatsAppConn
 
 export const whatsappService = {
   async create(tenantId: string, data: CreateWhatsAppConnectionData) {
-    // Check plan limits
-    const { planLimitsService } = await import('./planLimitsService.js');
     await planLimitsService.enforceLimit(tenantId, 'whatsappConnections');
 
     const connection = await prisma.whatsAppConnection.create({
@@ -29,6 +28,8 @@ export const whatsappService = {
         config: data.config,
       },
     });
+
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
     return this.findById(tenantId, connection.id);
   },
@@ -83,6 +84,7 @@ export const whatsappService = {
     await prisma.whatsAppConnection.delete({
       where: { id },
     });
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
   },
 
   async updateQRCode(id: string, qrCode: string) {

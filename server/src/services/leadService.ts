@@ -3,6 +3,7 @@ import { LeadStatus, LeadSource, ScoreEvent } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { scoringService } from './scoringService.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
+import { planLimitsService } from './planLimitsService.js';
 
 export interface CreateLeadData {
   name: string;
@@ -75,6 +76,8 @@ export const leadService = {
       source: data.source || 'WEBSITE',
       status: data.status || 'NEW',
     }).catch(() => {});
+
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
     return this.findById(tenantId, lead.id);
   },
@@ -266,6 +269,7 @@ export const leadService = {
     await prisma.lead.delete({
       where: { id },
     });
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
   },
 
   async count(tenantId: string) {

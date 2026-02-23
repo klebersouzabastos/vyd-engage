@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { EmailProvider } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { planLimitsService } from './planLimitsService.js';
 
 export interface CreateEmailConfigData {
   name: string;
@@ -17,8 +18,6 @@ export interface UpdateEmailConfigData extends Partial<CreateEmailConfigData> {
 
 export const emailConfigService = {
   async create(tenantId: string, data: CreateEmailConfigData) {
-    // Check plan limits
-    const { planLimitsService } = await import('./planLimitsService.js');
     await planLimitsService.enforceLimit(tenantId, 'emailConfigs');
 
     const config = await prisma.emailConfig.create({
@@ -32,6 +31,8 @@ export const emailConfigService = {
         verified: false,
       },
     });
+
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
     return this.findById(tenantId, config.id);
   },
@@ -87,6 +88,7 @@ export const emailConfigService = {
     await prisma.emailConfig.delete({
       where: { id },
     });
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
   },
 
   async verify(tenantId: string, id: string) {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { paymentService } from '../services/paymentService.js';
+import { invoiceService } from '../services/invoiceService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -37,6 +38,22 @@ router.post('/intent', async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     }
+    next(error);
+  }
+});
+
+// GET /api/payments/:id/invoice - Download invoice PDF
+router.get('/:id/invoice', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const pdf = await invoiceService.generatePDF(req.user.tenantId, req.params.id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${req.params.id.slice(0, 8)}.pdf`);
+    res.send(pdf);
+  } catch (error) {
     next(error);
   }
 });

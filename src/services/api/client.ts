@@ -954,6 +954,16 @@ class ApiClient {
   async getPaymentHistory() {
     return this.request<any[]>('/api/payments/history');
   }
+
+  async downloadInvoice(paymentId: string): Promise<Blob> {
+    const response = await fetch(`${this.baseURL}/api/payments/${paymentId}/invoice`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download invoice');
+    }
+    return response.blob();
+  }
 }
 
 export class ApiError extends Error {

@@ -1,5 +1,10 @@
 import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
+import { cacheGet, cacheSet, cacheDel, cacheDelPattern } from '../config/redis.js';
+
+// Cache TTLs (seconds)
+const PLAN_LIMITS_TTL = 3600;  // 1 hour — plan data rarely changes
+const USAGE_TTL = 300;          // 5 minutes — usage counts change more often
 
 export interface PlanLimits {
   maxLeads: number;
@@ -30,6 +35,10 @@ export interface PlanUsage {
 
 export const planLimitsService = {
   async getLimits(tenantId: string): Promise<PlanLimits> {
+    const cacheKey = `plan:${tenantId}:limits`;
+    const cached = await cacheGet<PlanLimits>(cacheKey);
+    if (cached) return cached;
+
     const subscription = await prisma.subscription.findUnique({
       where: { tenantId },
       include: { plan: true },
@@ -39,10 +48,16 @@ export const planLimitsService = {
       throw createError('No active subscription found', 404, 'NO_SUBSCRIPTION');
     }
 
-    return subscription.plan.limits as unknown as PlanLimits;
+    const limits = subscription.plan.limits as unknown as PlanLimits;
+    await cacheSet(cacheKey, limits, PLAN_LIMITS_TTL);
+    return limits;
   },
 
   async getUsage(tenantId: string): Promise<PlanUsage> {
+    const usageCacheKey = `plan:${tenantId}:usage`;
+    const cached = await cacheGet<PlanUsage>(usageCacheKey);
+    if (cached) return cached;
+
     const limits = await this.getLimits(tenantId);
 
     const [leadsCount, usersCount, automationsCount, whatsappCount, emailCount] =
@@ -59,7 +74,7 @@ export const planLimitsService = {
       return Math.min((current / limit) * 100, 100);
     };
 
-    return {
+    const usage: PlanUsage = {
       leads: {
         current: leadsCount,
         limit: limits.maxLeads === Infinity ? 0 : limits.maxLeads,
@@ -86,6 +101,9 @@ export const planLimitsService = {
         percentage: calculatePercentage(emailCount, limits.maxEmailConfigs),
       },
     };
+
+    await cacheSet(usageCacheKey, usage, USAGE_TTL);
+    return usage;
   },
 
   async checkLimit(
@@ -119,6 +137,16 @@ export const planLimitsService = {
         'PLAN_LIMIT_REACHED'
       );
     }
+  },
+
+  /** Invalidate usage cache when a resource count changes (lead created/deleted, etc.) */
+  async invalidateUsage(tenantId: string): Promise<void> {
+    await cacheDel(`plan:${tenantId}:usage`);
+  },
+
+  /** Invalidate plan limits cache when subscription/plan changes */
+  async invalidateLimits(tenantId: string): Promise<void> {
+    await cacheDel(`plan:${tenantId}:limits`, `plan:${tenantId}:usage`);
   },
 };
 

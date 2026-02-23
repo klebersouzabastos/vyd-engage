@@ -3,6 +3,7 @@ import { Notification } from "../types";
 import { apiClient } from "../services/api/client";
 import { formatNotificationTime } from "../utils/notifications";
 import { useAuth } from "./AuthContext";
+import { useSocket } from "../hooks/useSocket";
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -37,6 +38,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // WebSocket for real-time notifications
+  const { on } = useSocket(!!user);
+
   useEffect(() => {
     if (!user) {
       setNotifications([]);
@@ -44,9 +48,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
     refreshNotifications();
-    const interval = setInterval(refreshNotifications, 60000);
+    // Fallback polling (longer interval since we have WebSocket)
+    const interval = setInterval(refreshNotifications, 300000);
     return () => clearInterval(interval);
   }, [user, refreshNotifications]);
+
+  // Listen for real-time notification events
+  useEffect(() => {
+    if (!user) return;
+    const cleanup = on('notification:new', (data: any) => {
+      const notif: Notification = {
+        id: data.id,
+        type: data.type?.toLowerCase() || 'system',
+        title: data.title,
+        message: data.message,
+        read: false,
+        link: data.link,
+        timestamp: data.createdAt || new Date().toISOString(),
+        metadata: data.metadata,
+      };
+      setNotifications(prev => [notif, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    });
+    return cleanup;
+  }, [user, on]);
 
   // Notificações criadas pelo frontend ficam em memória (transientes)
   const addNotification = useCallback((

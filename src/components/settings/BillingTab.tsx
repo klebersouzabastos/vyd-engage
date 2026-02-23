@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Download } from "lucide-react";
+import { apiClient } from "../../services/api/client";
 import { usePlan } from "../../contexts/PlanContext";
 import { usePayment } from "../../contexts/PaymentContext";
 import { PlanType } from "../../types/plan";
@@ -230,25 +231,49 @@ export function BillingTab() {
                     {new Date(payment.date).toLocaleDateString("pt-BR")}
                   </p>
                 </div>
-                <span
-                  className={`px-3 py-1 text-xs rounded-full ${
-                    payment.status === "paid"
-                      ? "bg-green-100 text-green-700"
+                <div className="flex items-center gap-2">
+                  {payment.status === "paid" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const blob = await apiClient.downloadInvoice(payment.id);
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `fatura-${payment.id.slice(0, 8)}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch {
+                          toast.error("Erro ao baixar fatura");
+                        }
+                      }}
+                      title="Baixar fatura"
+                    >
+                      <Download size={16} />
+                    </Button>
+                  )}
+                  <span
+                    className={`px-3 py-1 text-xs rounded-full ${
+                      payment.status === "paid"
+                        ? "bg-green-100 text-green-700"
+                        : payment.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : payment.status === "failed"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {payment.status === "paid"
+                      ? "Pago"
                       : payment.status === "pending"
-                      ? "bg-yellow-100 text-yellow-700"
+                      ? "Pendente"
                       : payment.status === "failed"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {payment.status === "paid"
-                    ? "Pago"
-                    : payment.status === "pending"
-                    ? "Pendente"
-                    : payment.status === "failed"
-                    ? "Falhou"
-                    : "Reembolsado"}
-                </span>
+                      ? "Falhou"
+                      : "Reembolsado"}
+                  </span>
+                </div>
               </div>
             ))
           ) : (

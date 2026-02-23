@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { AutomationStatus, AutomationLogStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { planLimitsService } from './planLimitsService.js';
 
 export interface CreateAutomationData {
   name: string;
@@ -28,6 +29,8 @@ export const automationService = {
         conditions: data.conditions || null,
       },
     });
+
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
     return this.findById(tenantId, automation.id);
   },
@@ -123,6 +126,7 @@ export const automationService = {
     await prisma.automation.delete({
       where: { id },
     });
+    planLimitsService.invalidateUsage(tenantId).catch(() => {});
   },
 
   async getLogs(tenantId: string, automationId: string, limit: number = 50) {
