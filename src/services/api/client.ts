@@ -77,8 +77,8 @@ class ApiClient {
       credentials: 'include',
     });
 
-    // If unauthorized, try to refresh token via cookie
-    if (response.status === 401) {
+    // If unauthorized, try to refresh token via cookie (only once, skip for auth endpoints)
+    if (response.status === 401 && !endpoint.startsWith('/api/auth/')) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
         // Retry request with new cookie

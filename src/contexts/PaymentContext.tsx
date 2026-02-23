@@ -15,6 +15,7 @@ import {
   checkPaymentStatus,
   getPaymentHistory,
 } from "../services/paymentService";
+import { useAuth } from "./AuthContext";
 
 interface PaymentContextType {
   paymentIntents: PaymentIntent[];
@@ -34,6 +35,7 @@ interface PaymentContextType {
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
 
 export function PaymentProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [paymentIntents, setPaymentIntents] = useState<PaymentIntent[]>([]);
   const [currentPaymentIntent, setCurrentPaymentIntent] = useState<PaymentIntent | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,8 +73,12 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
 
   // Carregar pagamentos ao montar
   useEffect(() => {
+    if (!user) {
+      setPaymentIntents([]);
+      return;
+    }
     refreshPayments();
-  }, [refreshPayments]);
+  }, [user, refreshPayments]);
 
   // Iniciar processo de pagamento
   const startPayment = useCallback(

@@ -1,19 +1,20 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { createError } from '../middleware/errorHandler.js';
 import { BillingCycle } from '@prisma/client';
+import { logger } from '../utils/logger.js';
+import crypto from 'crypto';
 
 const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || '';
 const publicKey = process.env.MERCADOPAGO_PUBLIC_KEY || '';
 
 if (!accessToken) {
-  console.warn('MERCADOPAGO_ACCESS_TOKEN not set. Payment features will not work.');
+  logger.warn('MERCADOPAGO_ACCESS_TOKEN not set. Payment features will not work.');
 }
 
 const client = new MercadoPagoConfig({
   accessToken,
   options: {
     timeout: 5000,
-    idempotencyKey: 'abc',
   },
 });
 
@@ -69,10 +70,13 @@ export const mercadopagoService = {
     };
 
     try {
-      const response = await preference.create({ body: preferenceData });
+      const response = await preference.create({
+        body: preferenceData,
+        requestOptions: { idempotencyKey: crypto.randomUUID() },
+      });
       return response;
     } catch (error) {
-      console.error('Mercado Pago error:', error);
+      logger.error('Mercado Pago error:', error);
       throw createError(
         `Failed to create payment preference: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,

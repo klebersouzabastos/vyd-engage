@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback,
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { getErrorMessage } from '../utils/errors';
+import { useAuth } from './AuthContext';
 
 export interface Tag {
   id: string;
@@ -24,6 +25,7 @@ interface TagsContextType {
 const TagsContext = createContext<TagsContextType | undefined>(undefined);
 
 export function TagsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,8 +82,13 @@ export function TagsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setTags([]);
+      setLoading(false);
+      return;
+    }
     fetchTags();
-  }, [fetchTags]);
+  }, [user, fetchTags]);
 
   const value = useMemo(() => ({
     tags,

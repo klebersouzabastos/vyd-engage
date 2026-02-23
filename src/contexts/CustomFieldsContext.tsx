@@ -4,6 +4,7 @@ import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
 import { getErrorMessage } from "../utils/errors";
 import { validateFieldValue } from "../utils/customFields";
+import { useAuth } from "./AuthContext";
 
 interface CustomFieldsContextType {
   fields: CustomField[];
@@ -20,6 +21,7 @@ interface CustomFieldsContextType {
 const CustomFieldsContext = createContext<CustomFieldsContextType | undefined>(undefined);
 
 export function CustomFieldsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,8 +49,13 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setFields([]);
+      setLoading(false);
+      return;
+    }
     refreshFields();
-  }, [refreshFields]);
+  }, [user, refreshFields]);
 
   const createField = useCallback(async (field: Omit<CustomField, "id">): Promise<CustomField> => {
     try {

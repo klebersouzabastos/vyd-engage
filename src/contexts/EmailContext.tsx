@@ -11,6 +11,7 @@ import {
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
 import { getErrorMessage } from "../utils/errors";
+import { useAuth } from "./AuthContext";
 
 interface EmailContextType {
   configs: EmailConfig[];
@@ -62,6 +63,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
 };
 
 export function EmailProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [configs, setConfigs] = useState<EmailConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<PlanType>("pro");
@@ -69,6 +71,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
 
   // Carregar plano atual da API de assinatura
   useEffect(() => {
+    if (!user) return;
     apiClient.getCurrentSubscription().then((sub: any) => {
       const planType = sub?.subscription?.plan?.type?.toLowerCase();
       if (planType && ["starter", "pro", "enterprise"].includes(planType)) {
@@ -77,7 +80,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
     }).catch(() => {
       // Manter default "pro" se API falhar
     });
-  }, []);
+  }, [user]);
 
   // Carregar configurações da API
   const fetchConfigs = useCallback(async () => {
@@ -111,8 +114,13 @@ export function EmailProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
     fetchConfigs();
-  }, [fetchConfigs]);
+  }, [user, fetchConfigs]);
 
   // Verificar se pode adicionar mais configurações
   const canAddEmailConfig = useCallback(() => {

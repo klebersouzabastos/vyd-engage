@@ -11,8 +11,8 @@ const router = Router();
 function validateMercadoPagoSignature(req: Request): boolean {
   const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
   if (!secret) {
-    logger.warn('MERCADO_PAGO_WEBHOOK_SECRET not configured — skipping signature validation');
-    return true; // Allow in dev without secret configured
+    logger.error('MERCADO_PAGO_WEBHOOK_SECRET not configured — rejecting webhook');
+    return false;
   }
 
   const xSignature = req.headers['x-signature'] as string | undefined;
@@ -39,7 +39,10 @@ function validateMercadoPagoSignature(req: Request): boolean {
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
 
   const hmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(v1));
+
+  // Validate hex string lengths match before timingSafeEqual to prevent length leak
+  if (hmac.length !== v1.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(v1, 'hex'));
 }
 
 // POST /api/webhooks/mercadopago - Mercado Pago webhook

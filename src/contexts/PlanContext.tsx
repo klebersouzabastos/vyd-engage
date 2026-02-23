@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 import { PlanType, Plan, PlanLimits, PlanUsage, PaymentHistory, Subscription } from "../types/plan";
 import { apiClient } from "../services/api/client";
+import { useAuth } from "./AuthContext";
 
 interface PlanContextType {
   currentPlan: PlanType;
@@ -88,6 +89,7 @@ const emptyUsage: PlanUsage = {
 };
 
 export function PlanProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [currentPlan, setCurrentPlan] = useState<PlanType>("pro");
   const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -155,8 +157,12 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     loadFromApi();
-  }, [loadFromApi]);
+  }, [user, loadFromApi]);
 
   const planLimits = useMemo(() => DEFAULT_PLAN_LIMITS[currentPlan], [currentPlan]);
 

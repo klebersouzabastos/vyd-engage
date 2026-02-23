@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:5173'])
-    : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000'],
+    : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
@@ -105,11 +105,16 @@ import funnelRoutes from './routes/funnels.js';
 import scoringRoutes from './routes/scoring.js';
 import reportRoutes from './routes/reports.js';
 
-// Rate limiting — applied BEFORE routes to actually protect them
-app.use('/api/auth/password', passwordResetLimiter);
-app.use('/api/auth', authLimiter);
-app.use('/api/webhooks', apiLimiter); // Webhooks get rate limited too
-app.use('/api', apiLimiter);
+// Rate limiting — only in production (dev floods from contexts cause false 429s)
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/auth/password', passwordResetLimiter);
+  app.use('/api/auth', (req, res, next) => {
+    if (req.path.startsWith('/password')) return next();
+    return authLimiter(req, res, next);
+  });
+  app.use('/api/webhooks', apiLimiter);
+  app.use('/api', apiLimiter);
+}
 
 // CSRF protection — applied to all API routes except webhooks (which use HMAC signatures)
 // Auth login/register/refresh are excluded since they don't have a CSRF cookie yet

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, R
 import { Notification } from "../types";
 import { apiClient } from "../services/api/client";
 import { formatNotificationTime } from "../utils/notifications";
+import { useAuth } from "./AuthContext";
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -17,6 +18,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -36,10 +38,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
     refreshNotifications();
     const interval = setInterval(refreshNotifications, 60000);
     return () => clearInterval(interval);
-  }, [refreshNotifications]);
+  }, [user, refreshNotifications]);
 
   // Notificações criadas pelo frontend ficam em memória (transientes)
   const addNotification = useCallback((

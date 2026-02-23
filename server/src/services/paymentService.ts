@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { mercadopagoService } from './mercadopagoService.js';
 import { createError } from '../middleware/errorHandler.js';
 import { PlanType, PaymentMethod, PaymentStatus, BillingCycle } from '@prisma/client';
+import { logger } from '../utils/logger.js';
 
 export interface CreatePaymentIntentData {
   planId: string;
@@ -85,7 +86,7 @@ export const paymentService = {
       });
 
       if (!payment) {
-        console.warn(`Payment not found for Mercado Pago ID: ${paymentId}`);
+        logger.warn(`Payment not found for Mercado Pago ID: ${paymentId}`);
         return;
       }
 
@@ -162,7 +163,7 @@ export const paymentService = {
         await scheduleBillingJob(updatedSubscription.id, renewalDate);
       } catch (error) {
         // Log but don't fail the operation
-        console.error('Failed to schedule billing job:', error);
+        logger.error('Failed to schedule billing job:', error);
       }
     }
   },

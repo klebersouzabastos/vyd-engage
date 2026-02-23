@@ -157,27 +157,13 @@ const requestPasswordResetSchema = z.object({
 
 router.post('/password/reset-request', async (req, res, next) => {
   try {
-    // Log request body for debugging
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug('Password reset request', { body: req.body });
-    }
-    
     const { email } = requestPasswordResetSchema.parse(req.body);
-    
-    // Log parsed email
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug('Parsed email', { email });
-    }
-    
     await authService.requestPasswordReset(email);
     // Always return success to prevent email enumeration
     res.json({ message: 'If the email exists, a password reset link has been sent.' });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      logger.error('Password reset validation error', { 
-        errors: error.errors,
-        body: req.body 
-      });
+      logger.error('Password reset validation error', { errors: error.errors });
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     }
     next(error);

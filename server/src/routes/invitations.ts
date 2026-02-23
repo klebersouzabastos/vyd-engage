@@ -1,11 +1,20 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import { invitationService } from '../services/invitationService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { requireRole } from '../middleware/auth.js';
 import { createError } from '../middleware/errorHandler.js';
 import { UserRole } from '@prisma/client';
+
+const tokenLookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'development' ? 0 : 20,
+  message: 'Too many invitation token lookups, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router = Router();
 
@@ -60,7 +69,7 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // GET /api/invitations/token/:token - Get invitation by token (public)
-router.get('/token/:token', async (req, res, next) => {
+router.get('/token/:token', tokenLookupLimiter, async (req, res, next) => {
   try {
     const invitation = await invitationService.findByToken(req.params.token);
     res.json(invitation);

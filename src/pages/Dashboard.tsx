@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { Settings, Download, Calendar } from "lucide-react";
+import { Settings, Download, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashboard";
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
@@ -45,7 +45,7 @@ export function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [rangePreset, setRangePreset] = useState<RangePreset>("30d");
   const dateRange = useMemo(() => getDateRange(rangePreset), [rangePreset]);
-  const { stats, loading: dashboardLoading } = useDashboard(dateRange);
+  const { stats, loading: dashboardLoading, error: dashboardError, refetch } = useDashboard(dateRange);
 
   useEffect(() => {
     setLayout(getCurrentLayout());
@@ -130,6 +130,23 @@ export function Dashboard() {
       <div className="min-h-screen">
         <Header title="Dashboard" subtitle="Carregando..." />
         <PageSkeleton type="dashboard" />
+      </div>
+    );
+  }
+
+  if (dashboardError) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Dashboard" subtitle="Erro ao carregar dados" />
+        <div className="flex flex-col items-center justify-center p-16 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Erro ao carregar o dashboard</h2>
+          <p className="text-gray-500 mb-4">{dashboardError}</p>
+          <Button variant="outline" onClick={refetch}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+        </div>
       </div>
     );
   }

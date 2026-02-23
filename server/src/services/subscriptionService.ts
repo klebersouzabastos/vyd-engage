@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
 import { PlanType, SubscriptionStatus, BillingCycle } from '@prisma/client';
+import { logger } from '../utils/logger.js';
 
 export const subscriptionService = {
   async getCurrentSubscription(tenantId: string) {
@@ -65,7 +66,7 @@ export const subscriptionService = {
         await scheduleBillingJob(updated.id, renewalDate);
       } catch (error) {
         // Log but don't fail the operation
-        console.error('Failed to schedule billing job:', error);
+        logger.error('Failed to schedule billing job:', error);
       }
     }
 
@@ -114,7 +115,7 @@ export const subscriptionService = {
         await scheduleBillingJob(updated.id, renewalDate);
       } catch (error) {
         // Log but don't fail the operation
-        console.error('Failed to schedule billing job:', error);
+        logger.error('Failed to schedule billing job:', error);
       }
     }
 
