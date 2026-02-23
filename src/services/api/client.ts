@@ -167,10 +167,10 @@ class ApiClient {
     }
   }
 
-  async login(data: { email: string; password: string }) {
+  async login(data: { email: string; password: string; totpCode?: string }) {
     try {
       // Cookies are set by the server (httpOnly) — no localStorage needed
-      return await this.request<{ user: any }>('/api/auth/login', {
+      return await this.request<{ user: any } | { requiresTwoFactor: true; userId: string }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -235,6 +235,31 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+  }
+
+  // 2FA endpoints
+  async setup2FA() {
+    return this.request<{ secret: string; qrCode: string; otpauthUrl: string }>('/api/auth/2fa/setup', {
+      method: 'POST',
+    });
+  }
+
+  async verify2FA(code: string) {
+    return this.request<{ enabled: boolean }>('/api/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async disable2FA(code: string) {
+    return this.request<{ disabled: boolean }>('/api/auth/2fa/disable', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async get2FAStatus() {
+    return this.request<{ enabled: boolean }>('/api/auth/2fa/status');
   }
 
   async updateTenant(data: { name?: string; logo?: string | null }) {

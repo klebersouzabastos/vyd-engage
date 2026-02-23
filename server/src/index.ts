@@ -104,6 +104,7 @@ import invitationRoutes from './routes/invitations.js';
 import funnelRoutes from './routes/funnels.js';
 import scoringRoutes from './routes/scoring.js';
 import reportRoutes from './routes/reports.js';
+import trackingRoutes from './routes/tracking.js';
 
 // Rate limiting — only in production (dev floods from contexts cause false 429s)
 if (process.env.NODE_ENV === 'production') {
@@ -138,6 +139,9 @@ app.use('/api/reports', csrfProtection);
 app.use('/api/auth/profile', csrfProtection);
 app.use('/api/auth/change-password', csrfProtection);
 app.use('/api/auth/tenant', csrfProtection);
+
+// Tracking routes (public, no auth, no CSRF - must be before CSRF middleware)
+app.use('/api/track', trackingRoutes);
 
 // API Routes
 app.use('/api/auth', authRoutes);

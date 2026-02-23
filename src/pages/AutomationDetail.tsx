@@ -1,23 +1,60 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { ArrowLeft, MessageSquare, Clock, Send, Plus, Trash2, X, ArrowDown, Loader2, Calendar, Settings2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Clock, Send, Plus, Trash2, X, ArrowDown, Loader2, Calendar, Settings2, GitBranch, Tag, UserCog, Timer } from "lucide-react";
 import { Switch } from "../components/ui/switch";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+
+type StepType = "send_whatsapp" | "send_email" | "delay" | "update_lead" | "add_tag" | "remove_tag" | "condition";
 
 interface Step {
   id: number;
   delay: string;
   channel: "whatsapp" | "email";
-  type: string;
+  type: StepType;
   subject?: string;
   message: string;
   config?: Record<string, any>;
+}
+
+const STEP_TYPES: { value: StepType; label: string; icon: string; color: string }[] = [
+  { value: "send_whatsapp", label: "Enviar WhatsApp", icon: "whatsapp", color: "bg-green-100 text-green-600" },
+  { value: "send_email", label: "Enviar E-mail", icon: "email", color: "bg-blue-100 text-blue-600" },
+  { value: "delay", label: "Aguardar (Delay)", icon: "delay", color: "bg-amber-100 text-amber-600" },
+  { value: "update_lead", label: "Atualizar Lead", icon: "update", color: "bg-purple-100 text-purple-600" },
+  { value: "add_tag", label: "Adicionar Tag", icon: "tag", color: "bg-teal-100 text-teal-600" },
+  { value: "remove_tag", label: "Remover Tag", icon: "tag", color: "bg-red-100 text-red-600" },
+  { value: "condition", label: "Condição", icon: "condition", color: "bg-indigo-100 text-indigo-600" },
+];
+
+const VARIABLE_TOKENS = [
+  { token: "{{nome}}", label: "Nome" },
+  { token: "{{email}}", label: "Email" },
+  { token: "{{telefone}}", label: "Telefone" },
+  { token: "{{empresa}}", label: "Empresa" },
+  { token: "{{status}}", label: "Status" },
+  { token: "{{score}}", label: "Score" },
+];
+
+function getStepTypeInfo(type: StepType) {
+  return STEP_TYPES.find(s => s.value === type) || STEP_TYPES[0];
+}
+
+function StepIcon({ type, size = 16 }: { type: StepType; size?: number }) {
+  switch (type) {
+    case "send_whatsapp": return <MessageSquare size={size} />;
+    case "send_email": return <Send size={size} />;
+    case "delay": return <Timer size={size} />;
+    case "update_lead": return <UserCog size={size} />;
+    case "add_tag": case "remove_tag": return <Tag size={size} />;
+    case "condition": return <GitBranch size={size} />;
+    default: return <Settings2 size={size} />;
+  }
 }
 
 interface Schedule {
@@ -71,6 +108,295 @@ const buildDelay = (value: number, unit: string, isImmediate: boolean): string =
   if (isImmediate || value === 0) return "0";
   return `${value}${unit}`;
 };
+
+function VariableTokenPicker({ onInsert }: { onInsert: (token: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {VARIABLE_TOKENS.map(v => (
+        <button
+          key={v.token}
+          type="button"
+          onClick={() => onInsert(v.token)}
+          className="px-2 py-1 text-xs bg-gray-100 hover:bg-primary/10 hover:text-primary border border-gray-200 rounded-md transition-colors font-mono"
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StepEditor({
+  step,
+  stepIndex,
+  onUpdate,
+  onClose,
+}: {
+  step: Step;
+  stepIndex: number;
+  onUpdate: (updates: Partial<Step>) => void;
+  onClose: () => void;
+}) {
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertToken = (token: string) => {
+    const textarea = messageRef.current;
+    if (!textarea) {
+      onUpdate({ message: step.message + token });
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newMessage = step.message.slice(0, start) + token + step.message.slice(end);
+    onUpdate({ message: newMessage });
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
+  const delayParsed = parseDelay(step.delay);
+  const info = getStepTypeInfo(step.type);
+  const isMessaging = step.type === "send_whatsapp" || step.type === "send_email";
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+      <div className="px-6 pt-6 pb-4 border-b border-gray-300">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded flex items-center justify-center ${info.color}`}>
+              <StepIcon type={step.type} size={14} />
+            </div>
+            <h3 className="text-gray-900">Step {stepIndex + 1}: {info.label}</h3>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            <X size={16} />
+          </Button>
+        </div>
+      </div>
+      <div className="p-6 space-y-4">
+        {/* Step type selector */}
+        <div>
+          <Label>Tipo do Step</Label>
+          <select
+            value={step.type}
+            onChange={(e) => {
+              const newType = e.target.value as StepType;
+              const ch = newType === "send_email" ? "email" as const : "whatsapp" as const;
+              onUpdate({
+                type: newType,
+                channel: ch,
+                config: newType === "condition" ? { field: "status", operator: "equals", value: "" } : {},
+              });
+            }}
+            className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+          >
+            {STEP_TYPES.map(st => (
+              <option key={st.value} value={st.value}>{st.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Delay (for non-delay steps) */}
+        {step.type !== "delay" && (
+          <div>
+            <Label>Delay antes deste step</Label>
+            <div className="space-y-3 mt-1.5">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox" id="immediate" checked={delayParsed.isImmediate}
+                  onChange={(e) => onUpdate({ delay: e.target.checked ? "0" : buildDelay(1, "d", false) })}
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                />
+                <Label htmlFor="immediate" className="text-sm font-normal cursor-pointer">Executar imediatamente</Label>
+              </div>
+              {!delayParsed.isImmediate && (
+                <div className="flex gap-2">
+                  <Input
+                    type="number" min="1" value={delayParsed.value}
+                    onChange={(e) => onUpdate({ delay: buildDelay(parseInt(e.target.value) || 1, delayParsed.unit, false) })}
+                    className="flex-1"
+                  />
+                  <select
+                    value={delayParsed.unit}
+                    onChange={(e) => onUpdate({ delay: buildDelay(delayParsed.value, e.target.value, false) })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  >
+                    <option value="n">Minutos</option>
+                    <option value="h">Horas</option>
+                    <option value="d">Dias</option>
+                    <option value="w">Semanas</option>
+                    <option value="m">Meses</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Delay step - just the duration */}
+        {step.type === "delay" && (
+          <div>
+            <Label>Tempo de espera</Label>
+            <div className="flex gap-2 mt-1.5">
+              <Input
+                type="number" min="1" value={delayParsed.value || 1}
+                onChange={(e) => onUpdate({ delay: buildDelay(parseInt(e.target.value) || 1, delayParsed.unit || "d", false) })}
+                className="flex-1"
+              />
+              <select
+                value={delayParsed.unit || "d"}
+                onChange={(e) => onUpdate({ delay: buildDelay(delayParsed.value || 1, e.target.value, false) })}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="n">Minutos</option>
+                <option value="h">Horas</option>
+                <option value="d">Dias</option>
+                <option value="w">Semanas</option>
+                <option value="m">Meses</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Messaging steps (WhatsApp / Email) */}
+        {isMessaging && (
+          <>
+            {step.type === "send_email" && (
+              <div>
+                <Label htmlFor="subject">Assunto</Label>
+                <Input
+                  id="subject" value={step.subject || ""}
+                  onChange={(e) => onUpdate({ subject: e.target.value })}
+                  placeholder="Assunto do e-mail" className="mt-1.5"
+                />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="message">Mensagem</Label>
+              <Textarea
+                ref={messageRef}
+                id="message" value={step.message}
+                onChange={(e) => onUpdate({ message: e.target.value })}
+                placeholder="Digite sua mensagem..." className="mt-1.5" rows={6}
+              />
+              <VariableTokenPicker onInsert={insertToken} />
+            </div>
+          </>
+        )}
+
+        {/* Update Lead step */}
+        {step.type === "update_lead" && (
+          <div className="space-y-3">
+            <div>
+              <Label>Campo a atualizar</Label>
+              <select
+                value={step.config?.field || "status"}
+                onChange={(e) => onUpdate({ config: { ...step.config, field: e.target.value } })}
+                className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="status">Status</option>
+                <option value="assignedTo">Responsável</option>
+              </select>
+            </div>
+            {(step.config?.field || "status") === "status" && (
+              <div>
+                <Label>Novo status</Label>
+                <select
+                  value={step.config?.value || ""}
+                  onChange={(e) => onUpdate({ config: { ...step.config, value: e.target.value } })}
+                  className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="NEW">Novo</option>
+                  <option value="CONTACTED">Contatado</option>
+                  <option value="QUALIFIED">Qualificado</option>
+                  <option value="PROPOSAL">Proposta</option>
+                  <option value="NEGOTIATION">Negociação</option>
+                  <option value="WON">Ganho</option>
+                  <option value="LOST">Perdido</option>
+                </select>
+              </div>
+            )}
+            {step.config?.field === "assignedTo" && (
+              <div>
+                <Label>ID do responsável</Label>
+                <Input
+                  value={step.config?.value || ""}
+                  onChange={(e) => onUpdate({ config: { ...step.config, value: e.target.value } })}
+                  placeholder="ID do usuário" className="mt-1.5"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Add/Remove Tag steps */}
+        {(step.type === "add_tag" || step.type === "remove_tag") && (
+          <div>
+            <Label>Nome da Tag</Label>
+            <Input
+              value={step.config?.tagName || ""}
+              onChange={(e) => onUpdate({ config: { ...step.config, tagName: e.target.value } })}
+              placeholder="Ex: lead-quente" className="mt-1.5"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {step.type === "add_tag" ? "A tag será adicionada ao lead" : "A tag será removida do lead"}
+            </p>
+          </div>
+        )}
+
+        {/* Condition step */}
+        {step.type === "condition" && (
+          <div className="space-y-3">
+            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+              <p className="text-sm text-indigo-700 font-medium mb-2">Condição: Se o lead...</p>
+              <div className="space-y-2">
+                <select
+                  value={step.config?.field || "status"}
+                  onChange={(e) => onUpdate({ config: { ...step.config, field: e.target.value } })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                >
+                  <option value="status">Status</option>
+                  <option value="source">Fonte</option>
+                  <option value="score">Score</option>
+                  <option value="email">Email</option>
+                  <option value="name">Nome</option>
+                  <option value="company">Empresa</option>
+                </select>
+                <select
+                  value={step.config?.operator || "equals"}
+                  onChange={(e) => onUpdate({ config: { ...step.config, operator: e.target.value } })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                >
+                  <option value="equals">é igual a</option>
+                  <option value="not_equals">é diferente de</option>
+                  <option value="contains">contém</option>
+                  <option value="greater_than">é maior que</option>
+                  <option value="less_than">é menor que</option>
+                  <option value="has_tag">possui tag</option>
+                </select>
+                <Input
+                  value={step.config?.value || ""}
+                  onChange={(e) => onUpdate({ config: { ...step.config, value: e.target.value } })}
+                  placeholder="Valor para comparar"
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Se verdadeiro: continua para o próximo step. Se falso: pula para o step seguinte ao próximo.
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-2 border-t border-gray-300">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Fechar</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AutomationDetail() {
   const navigate = useNavigate();
@@ -137,7 +463,7 @@ export function AutomationDetail() {
         id: i + 1,
         delay: s.delay || "0",
         channel: s.type === "send_email" ? "email" as const : "whatsapp" as const,
-        type: s.type || "send_whatsapp",
+        type: (s.type || "send_whatsapp") as StepType,
         subject: s.config?.subject || "",
         message: s.config?.message || s.config?.content || "",
         config: s.config || {},
@@ -162,11 +488,10 @@ export function AutomationDetail() {
   const buildPayload = () => {
     const apiSteps = steps.map((s, i) => ({
       order: i,
-      type: s.channel === "email" ? "send_email" : "send_whatsapp",
+      type: s.type,
       delay: s.delay,
       config: {
-        message: s.message,
-        content: s.message,
+        ...(["send_whatsapp", "send_email"].includes(s.type) ? { message: s.message, content: s.message } : {}),
         ...(s.subject ? { subject: s.subject } : {}),
         ...s.config,
       },
@@ -219,16 +544,21 @@ export function AutomationDetail() {
 
   const currentStep = selectedStep ? steps.find(s => s.id === selectedStep) : null;
 
-  const addStep = () => {
+  const [showStepPicker, setShowStepPicker] = useState(false);
+
+  const addStep = (type: StepType = "send_whatsapp") => {
+    const channel = type === "send_email" ? "email" as const : "whatsapp" as const;
     const newStep: Step = {
       id: Math.max(0, ...steps.map(s => s.id)) + 1,
-      delay: "1d",
-      channel: "whatsapp",
-      type: "send_whatsapp",
+      delay: type === "delay" ? "1d" : "0",
+      channel,
+      type,
       message: "",
+      config: type === "condition" ? { field: "status", operator: "equals", value: "" } : {},
     };
     setSteps([...steps, newStep]);
     setSelectedStep(newStep.id);
+    setShowStepPicker(false);
   };
 
   const deleteStep = (stepId: number) => {
@@ -482,103 +812,12 @@ export function AutomationDetail() {
 
             {/* Step Editor */}
             {currentStep && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300">
-                <div className="px-6 pt-6 pb-4 border-b border-gray-300">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-gray-900">Editar Step {steps.findIndex(s => s.id === selectedStep) + 1}</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedStep(null)} className="h-8 w-8 p-0">
-                      <X size={16} />
-                    </Button>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <Label htmlFor="delay">Delay</Label>
-                    {(() => {
-                      const delayParsed = parseDelay(currentStep.delay);
-                      return (
-                        <div className="space-y-3 mt-1.5">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox" id="immediate" checked={delayParsed.isImmediate}
-                              onChange={(e) => {
-                                const newDelay = e.target.checked ? "0" : buildDelay(1, "d", false);
-                                setSteps(steps.map(s => s.id === selectedStep ? { ...s, delay: newDelay } : s));
-                              }}
-                              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                            />
-                            <Label htmlFor="immediate" className="text-sm font-normal cursor-pointer">Enviar imediatamente</Label>
-                          </div>
-                          {!delayParsed.isImmediate && (
-                            <div className="flex gap-2">
-                              <Input
-                                type="number" min="1" value={delayParsed.value}
-                                onChange={(e) => {
-                                  const newDelay = buildDelay(parseInt(e.target.value) || 1, delayParsed.unit, false);
-                                  setSteps(steps.map(s => s.id === selectedStep ? { ...s, delay: newDelay } : s));
-                                }}
-                                className="flex-1"
-                              />
-                              <select
-                                value={delayParsed.unit}
-                                onChange={(e) => {
-                                  const newDelay = buildDelay(delayParsed.value, e.target.value, false);
-                                  setSteps(steps.map(s => s.id === selectedStep ? { ...s, delay: newDelay } : s));
-                                }}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
-                              >
-                                <option value="n">Minutos</option>
-                                <option value="h">Horas</option>
-                                <option value="d">Dias</option>
-                                <option value="w">Semanas</option>
-                                <option value="m">Meses</option>
-                              </select>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div>
-                    <Label htmlFor="channel">Canal</Label>
-                    <select
-                      id="channel" value={currentStep.channel}
-                      onChange={(e) => {
-                        const ch = e.target.value as "whatsapp" | "email";
-                        setSteps(steps.map(s => s.id === selectedStep ? { ...s, channel: ch, type: ch === "email" ? "send_email" : "send_whatsapp" } : s));
-                      }}
-                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
-                    >
-                      <option value="whatsapp">WhatsApp</option>
-                      <option value="email">E-mail</option>
-                    </select>
-                  </div>
-                  {currentStep.channel === "email" && (
-                    <div>
-                      <Label htmlFor="subject">Assunto</Label>
-                      <Input
-                        id="subject" value={currentStep.subject || ""}
-                        onChange={(e) => setSteps(steps.map(s => s.id === selectedStep ? { ...s, subject: e.target.value } : s))}
-                        placeholder="Assunto do e-mail" className="mt-1.5"
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <Label htmlFor="message">Mensagem</Label>
-                    <Textarea
-                      id="message" value={currentStep.message}
-                      onChange={(e) => setSteps(steps.map(s => s.id === selectedStep ? { ...s, message: e.target.value } : s))}
-                      placeholder="Digite sua mensagem..." className="mt-1.5" rows={6}
-                    />
-                    <p className="text-xs text-gray-600 mt-2">
-                      Variáveis: {`{{nome}}`}, {`{{email}}`}, {`{{telefone}}`}, {`{{empresa}}`}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 pt-2 border-t border-gray-300">
-                    <Button variant="outline" className="flex-1" onClick={() => setSelectedStep(null)}>Fechar</Button>
-                  </div>
-                </div>
-              </div>
+              <StepEditor
+                step={currentStep}
+                stepIndex={steps.findIndex(s => s.id === selectedStep)}
+                onUpdate={(updates) => setSteps(steps.map(s => s.id === selectedStep ? { ...s, ...updates } : s))}
+                onClose={() => setSelectedStep(null)}
+              />
             )}
 
             {/* Recent Activities (only for existing automations) */}
@@ -621,54 +860,101 @@ export function AutomationDetail() {
           <div className="space-y-6">
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 sticky top-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-gray-900">Fluxo de Mensagens</h3>
-                <Button variant="outline" size="sm" className="gap-2" onClick={addStep}>
-                  <Plus size={16} /> Adicionar Step
-                </Button>
+                <h3 className="text-gray-900">Fluxo da Automação</h3>
+                <div className="relative">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowStepPicker(!showStepPicker)}>
+                    <Plus size={16} /> Adicionar Step
+                  </Button>
+                  {showStepPicker && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                      {STEP_TYPES.map(st => (
+                        <button
+                          key={st.value}
+                          type="button"
+                          onClick={() => addStep(st.value)}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left text-sm transition-colors"
+                        >
+                          <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${st.color}`}>
+                            <StepIcon type={st.value} size={14} />
+                          </div>
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-4">
-                {steps.map((step, index) => (
-                  <div key={step.id}>
-                    <div
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedStep === step.id ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary/50"}`}
-                      onClick={() => setSelectedStep(step.id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3 flex-1">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${step.channel === "whatsapp" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"}`}>
-                            {step.channel === "whatsapp" ? <MessageSquare size={16} /> : <Send size={16} />}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-gray-900">Step {index + 1}</span>
-                              <span className="text-sm text-gray-600">•</span>
-                              <span className="text-sm text-gray-600">{step.channel === "whatsapp" ? "WhatsApp" : "E-mail"}</span>
+                {steps.map((step, index) => {
+                  const info = getStepTypeInfo(step.type);
+                  return (
+                    <div key={step.id}>
+                      <div
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedStep === step.id ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary/50"}`}
+                        onClick={() => setSelectedStep(step.id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${info.color}`}>
+                              <StepIcon type={step.type} size={16} />
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Clock size={14} />
-                              <span>{formatDelay(step.delay)}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-gray-900">Step {index + 1}</span>
+                                <span className="text-sm text-gray-600">•</span>
+                                <span className="text-sm text-gray-600">{info.label}</span>
+                              </div>
+                              {step.type === "delay" ? (
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Timer size={14} />
+                                  <span>Aguardar {formatDelay(step.delay).replace("Enviar após ", "")}</span>
+                                </div>
+                              ) : step.type === "condition" ? (
+                                <p className="text-xs text-gray-500">
+                                  Se {step.config?.field || "status"} {step.config?.operator || "equals"} {step.config?.value || "..."}
+                                </p>
+                              ) : step.type === "update_lead" ? (
+                                <p className="text-xs text-gray-500">
+                                  Atualizar {step.config?.field || "status"} → {step.config?.value || "..."}
+                                </p>
+                              ) : step.type === "add_tag" || step.type === "remove_tag" ? (
+                                <p className="text-xs text-gray-500">
+                                  {step.type === "add_tag" ? "Adicionar" : "Remover"}: {step.config?.tagName || "..."}
+                                </p>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <Clock size={14} />
+                                    <span>{formatDelay(step.delay)}</span>
+                                  </div>
+                                  {step.message && (
+                                    <p className="text-xs text-gray-400 mt-1 truncate">{step.message.slice(0, 50)}{step.message.length > 50 ? "..." : ""}</p>
+                                  )}
+                                </>
+                              )}
                             </div>
-                            {step.message && (
-                              <p className="text-xs text-gray-400 mt-1 truncate">{step.message.slice(0, 50)}{step.message.length > 50 ? "..." : ""}</p>
-                            )}
                           </div>
+                          {steps.length > 1 && (
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteStep(step.id); }} className="text-error hover:text-error hover:bg-red-50">
+                              <Trash2 size={16} />
+                            </Button>
+                          )}
                         </div>
-                        {steps.length > 1 && (
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteStep(step.id); }} className="text-error hover:text-error hover:bg-red-50">
-                            <Trash2 size={16} />
-                          </Button>
-                        )}
                       </div>
+                      {index < steps.length - 1 && (
+                        <div className="flex flex-col items-center py-3">
+                          <div className="w-0.5 h-4 bg-primary" />
+                          {step.type === "condition" ? (
+                            <GitBranch size={20} className="text-indigo-500 my-1" />
+                          ) : (
+                            <ArrowDown size={20} className="text-primary my-1" />
+                          )}
+                          <div className="w-0.5 h-4 bg-primary" />
+                        </div>
+                      )}
                     </div>
-                    {index < steps.length - 1 && (
-                      <div className="flex flex-col items-center py-3">
-                        <div className="w-0.5 h-4 bg-primary" />
-                        <ArrowDown size={20} className="text-primary my-1" />
-                        <div className="w-0.5 h-4 bg-primary" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

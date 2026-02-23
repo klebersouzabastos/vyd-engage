@@ -16,10 +16,15 @@ interface User {
   };
 }
 
+interface TwoFactorRequired {
+  requiresTwoFactor: true;
+  userId: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, totpCode?: string) => Promise<TwoFactorRequired | void>;
   register: (data: {
     email: string;
     password: string;
@@ -54,8 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await apiClient.login({ email, password });
+  const login = useCallback(async (email: string, password: string, totpCode?: string): Promise<TwoFactorRequired | void> => {
+    const body: Record<string, string> = { email, password };
+    if (totpCode) body.totpCode = totpCode;
+    const result = await apiClient.login(body as any);
+    if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
+      return result as unknown as TwoFactorRequired;
+    }
     setUser(result.user);
   }, []);
 

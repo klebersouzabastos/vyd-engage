@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authService } from '../services/authService.js';
+import { twoFactorService } from '../services/twoFactorService.js';
 import { authenticate } from '../middleware/auth.js';
 import { createError } from '../middleware/errorHandler.js';
 import { passwordResetLimiter } from '../middleware/rateLimit.js';
@@ -49,6 +50,26 @@ router.post('/login', async (req, res, next) => {
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
+
+    // Check if 2FA is enabled
+    const has2FA = await twoFactorService.isEnabled(result.user.id);
+    if (has2FA) {
+      // If 2FA code provided in request, validate it
+      const totpCode = req.body.totpCode;
+      if (!totpCode) {
+        // Return partial response requiring 2FA
+        return res.json({
+          requiresTwoFactor: true,
+          userId: result.user.id,
+        });
+      }
+
+      const isValid = await twoFactorService.validateCode(result.user.id, totpCode);
+      if (!isValid) {
+        return next(createError('Invalid 2FA code', 401, 'INVALID_TOTP_CODE'));
+      }
+    }
+
     setAuthCookies(res, result.accessToken, result.refreshToken);
     setCsrfCookie(res);
     res.json({ user: result.user });
@@ -129,6 +150,7 @@ router.get('/me', authenticate, async (req, res, next) => {
         role: true,
         tenantId: true,
         emailVerified: true,
+        twoFactorEnabled: true,
         tenant: {
           select: {
             id: true,
@@ -333,6 +355,78 @@ router.put('/tenant', authenticate, async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     }
+    next(error);
+  }
+});
+
+// ========================
+// 2FA endpoints
+// ========================
+
+// Setup 2FA - generates secret and QR code
+router.post('/2fa/setup', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const result = await twoFactorService.setup(req.user.userId);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify and enable 2FA
+const verify2FASchema = z.object({
+  code: z.string().length(6),
+});
+
+router.post('/2fa/verify', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { code } = verify2FASchema.parse(req.body);
+    const result = await twoFactorService.verifyAndEnable(req.user.userId, code);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// Disable 2FA
+const disable2FASchema = z.object({
+  code: z.string().length(6),
+});
+
+router.post('/2fa/disable', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { code } = disable2FASchema.parse(req.body);
+    const result = await twoFactorService.disable(req.user.userId, code);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// Get 2FA status
+router.get('/2fa/status', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const enabled = await twoFactorService.isEnabled(req.user.userId);
+    res.json({ enabled });
+  } catch (error) {
     next(error);
   }
 });

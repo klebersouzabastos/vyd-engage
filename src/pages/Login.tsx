@@ -5,7 +5,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Shield } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -16,19 +16,28 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
+      const result = await login(email, password, requires2FA ? totpCode : undefined);
+      if (result && result.requiresTwoFactor) {
+        setRequires2FA(true);
+        setLoading(false);
+        return;
+      }
       toast.success("Login realizado com sucesso!");
       navigate('/app');
     } catch (error: any) {
-      // Mensagem de erro mais específica
       let errorMessage = "Erro ao fazer login";
-      
-      if (error.message) {
+
+      if (error.details?.code === 'INVALID_TOTP_CODE') {
+        errorMessage = "Código 2FA inválido. Tente novamente.";
+        setTotpCode("");
+      } else if (error.message) {
         errorMessage = error.message;
       } else if (error.details?.code === 'NETWORK_ERROR') {
         errorMessage = "Erro de conexão. Verifique se o servidor está rodando.";
@@ -37,7 +46,7 @@ export function Login() {
       } else if (error.statusCode === 401) {
         errorMessage = "Credenciais inválidas.";
       }
-      
+
       toast.error(errorMessage);
       console.error("Erro de login:", error);
     } finally {
@@ -131,27 +140,50 @@ export function Login() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pt-2">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary cursor-pointer" 
+            {requires2FA ? (
+              <div className="space-y-3 p-4 rounded-lg border border-primary/30 bg-primary/5">
+                <div className="flex items-center gap-2 text-primary">
+                  <Shield size={18} />
+                  <span className="font-medium text-sm sm:text-base">Autenticação de dois fatores</span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Insira o código do seu aplicativo autenticador.
+                </p>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="w-full h-12 sm:h-14 text-center text-xl tracking-widest border border-gray-300 rounded-lg"
+                  autoFocus
                 />
-                <span className="text-sm sm:text-base text-gray-600">Lembrar de mim</span>
-              </label>
-              <Link 
-                to="/forgot-password"
-                className="text-sm sm:text-base text-primary hover:text-primary-dark font-normal transition-colors whitespace-nowrap"
-              >
-                Esqueci minha senha
-              </Link>
-            </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pt-2">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary cursor-pointer"
+                  />
+                  <span className="text-sm sm:text-base text-gray-600">Lembrar de mim</span>
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm sm:text-base text-primary hover:text-primary-dark font-normal transition-colors whitespace-nowrap"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+            )}
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
+              disabled={requires2FA && totpCode.length !== 6}
               className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6"
             >
-              Entrar
+              {requires2FA ? "Verificar" : "Entrar"}
             </Button>
           </form>
 

@@ -120,11 +120,44 @@ export const emailMessagingService = {
       : emailConfig.fromEmail;
 
     try {
+      // Create interaction record first (needed for tracking)
+      let interactionId: string | null = null;
+      let trackedHtml = data.html;
+
+      if (data.leadId) {
+        const interaction = await prisma.interaction.create({
+          data: {
+            tenantId,
+            leadId: data.leadId,
+            type: InteractionType.EMAIL,
+            direction: InteractionDirection.OUTBOUND,
+            subject: data.subject,
+            content: data.html,
+            metadata: {
+              configId: data.configId,
+              to: data.to,
+              provider: emailConfig.provider,
+            },
+          },
+        });
+        interactionId = interaction.id;
+
+        // Inject email tracking (pixel + link rewriting)
+        try {
+          const { emailTrackingService } = await import('./emailTrackingService.js');
+          const trackingToken = await emailTrackingService.createTracking(interaction.id);
+          const baseUrl = process.env.API_URL || process.env.FRONTEND_URL?.replace(':5173', ':3001') || 'http://localhost:3001';
+          trackedHtml = emailTrackingService.applyTracking(data.html, trackingToken, baseUrl);
+        } catch (trackErr: any) {
+          logger.warn('Email tracking injection failed, sending without tracking', { error: trackErr.message });
+        }
+      }
+
       const info = await transport.sendMail({
         from: fromAddress,
         to: data.to,
         subject: data.subject,
-        html: data.html,
+        html: trackedHtml,
         text: data.text || data.html.replace(/<[^>]*>/g, ''),
       });
 
@@ -134,21 +167,18 @@ export const emailMessagingService = {
         data: { emailsSent: { increment: 1 } },
       });
 
-      // Create interaction record
-      if (data.leadId) {
-        await prisma.interaction.create({
+      // Update interaction with messageId
+      if (interactionId) {
+        const existing = await prisma.interaction.findUnique({
+          where: { id: interactionId },
+          select: { metadata: true },
+        });
+        await prisma.interaction.update({
+          where: { id: interactionId },
           data: {
-            tenantId,
-            leadId: data.leadId,
-            type: InteractionType.EMAIL,
-            direction: InteractionDirection.OUTBOUND,
-            subject: data.subject,
-            content: data.html,
             metadata: {
+              ...((existing?.metadata as Record<string, any>) || {}),
               messageId: info.messageId,
-              configId: data.configId,
-              to: data.to,
-              provider: emailConfig.provider,
             },
           },
         });
@@ -159,6 +189,7 @@ export const emailMessagingService = {
         configId: data.configId,
         to: data.to,
         messageId: info.messageId,
+        tracked: !!interactionId,
       });
 
       return {
