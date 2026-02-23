@@ -114,6 +114,7 @@ import funnelRoutes from './routes/funnels.js';
 import scoringRoutes from './routes/scoring.js';
 import reportRoutes from './routes/reports.js';
 import trackingRoutes from './routes/tracking.js';
+import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
 
 // Rate limiting — only in production (dev floods from contexts cause false 429s)
 if (process.env.NODE_ENV === 'production') {
@@ -141,6 +142,7 @@ app.use('/api/email', csrfProtection);
 app.use('/api/custom-fields', csrfProtection);
 app.use('/api/interactions', csrfProtection);
 app.use('/api/notifications', csrfProtection);
+app.use('/api/outgoing-webhooks', csrfProtection);
 app.use('/api/invitations', csrfProtection);
 app.use('/api/funnels', csrfProtection);
 app.use('/api/scoring-rules', csrfProtection);
@@ -172,6 +174,7 @@ app.use('/api/funnels', funnelRoutes);
 app.use('/api/scoring-rules', scoringRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/outgoing-webhooks', outgoingWebhookRoutes);
 
 // Public routes (no auth required)
 import { Router as ExpressRouter } from 'express';

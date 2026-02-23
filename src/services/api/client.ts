@@ -675,6 +675,45 @@ class ApiClient {
     });
   }
 
+  async deleteApiKey(id: string) {
+    return this.request<void>(`/api/api-keys/${id}`, { method: 'DELETE' });
+  }
+
+  // Outgoing Webhooks
+  async getWebhookEvents() {
+    return this.request<string[]>('/api/outgoing-webhooks/events');
+  }
+
+  async getOutgoingWebhooks() {
+    return this.request<any[]>('/api/outgoing-webhooks');
+  }
+
+  async createOutgoingWebhook(data: { url: string; events: string[] }) {
+    return this.request<any>('/api/outgoing-webhooks', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOutgoingWebhook(id: string, data: { url?: string; events?: string[]; active?: boolean }) {
+    return this.request<any>(`/api/outgoing-webhooks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteOutgoingWebhook(id: string) {
+    return this.request<void>(`/api/outgoing-webhooks/${id}`, { method: 'DELETE' });
+  }
+
+  async getWebhookLogs(webhookId: string) {
+    return this.request<any[]>(`/api/outgoing-webhooks/${webhookId}/logs`);
+  }
+
+  async testOutgoingWebhook(id: string) {
+    return this.request<any>(`/api/outgoing-webhooks/${id}/test`, { method: 'POST' });
+  }
+
   // Custom Fields
   async getCustomFields(activeOnly?: boolean) {
     const query = activeOnly ? '?active=true' : '';
