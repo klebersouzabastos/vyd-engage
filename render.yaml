@@ -11,7 +11,7 @@ services:
     runtime: node
     rootDir: server
     buildCommand: npm ci --include=dev && npx prisma generate && npm run build
-    startCommand: npx prisma migrate deploy && node dist/index.js
+    startCommand: npx prisma migrate deploy; node dist/index.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
