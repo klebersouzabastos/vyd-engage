@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button, buttonVariants } from "../components/ui/button";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
-import { Plus, Phone, Mail, Clock, Edit2, Trash2, X, Check, ChevronDown, Filter, Funnel as FunnelIcon, Settings, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Phone, Mail, Clock, Edit2, Trash2, X, Check, ChevronDown, Filter, Funnel as FunnelIcon, Settings, ArrowUp, ArrowDown, AlertTriangle, RefreshCw } from "lucide-react";
 import { useTags } from "../contexts/TagsContext";
 import { TagBadge } from "../components/TagBadge";
 import { Input } from "../components/ui/input";
@@ -41,6 +41,8 @@ export function Pipeline() {
     currentFunnelId,
     columns,
     loading,
+    error: funnelError,
+    loadFunnels: refetchFunnels,
     switchFunnel,
     createFunnel: createFunnelApi,
     updateFunnel: updateFunnelApi,
@@ -409,6 +411,23 @@ export function Pipeline() {
     return <PageSkeleton type="table" />;
   }
 
+  if (funnelError) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Funil de Vendas" subtitle="Erro ao carregar dados" />
+        <div className="flex flex-col items-center justify-center p-16 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Erro ao carregar o pipeline</h2>
+          <p className="text-gray-500 mb-4">{funnelError}</p>
+          <Button variant="outline" onClick={refetchFunnels}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <Header title="Funil de Vendas" subtitle="Visualize e gerencie seu pipeline" />
@@ -420,7 +439,7 @@ export function Pipeline() {
             <div className="flex items-center gap-3 flex-1">
               <FunnelIcon size={20} className="text-gray-600" />
               <div className="flex items-center gap-2 flex-1">
-                {editingFunnelId === currentFunnelId ? (
+                {editingFunnelId !== null && editingFunnelId === currentFunnelId ? (
                   <div className="flex items-center gap-2 flex-1">
                     <Input
                       value={editingFunnelName}
