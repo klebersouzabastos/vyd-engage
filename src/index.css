@@ -2658,3 +2658,21 @@
     transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));
   }
 }
+
+/* Sidebar Layout — explicit CSS (Tailwind v4 pre-compiled doesn't include dynamic responsive classes) */
+@media (min-width: 768px) {
+  aside[data-sidebar] {
+    width: 16rem !important;
+    transition: width 300ms ease-in-out;
+  }
+  aside[data-sidebar="collapsed"] {
+    width: 4rem !important;
+  }
+  #main-content {
+    margin-left: 16rem;
+    transition: margin-left 300ms ease-in-out;
+  }
+  #main-content[data-sidebar="collapsed"] {
+    margin-left: 4rem;
+  }
+}
