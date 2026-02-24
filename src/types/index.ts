@@ -69,9 +69,18 @@ export interface Tag {
   createdAt: string;
 }
 
+export type NotificationType =
+  | "task_due"
+  | "task_overdue"
+  | "lead_assigned"
+  | "automation_error"
+  | "payment_failed"
+  | "subscription_expiring"
+  | "system";
+
 export interface Notification {
   id: string;
-  type: "task_due" | "task_overdue" | "new_lead" | "interaction" | "automation_failed";
+  type: NotificationType;
   title: string;
   message: string;
   read: boolean;

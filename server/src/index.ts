@@ -76,6 +76,13 @@ if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
   });
 }
 
+// Initialize task notification checker (always active — lightweight, no Redis needed)
+import('./jobs/taskNotificationChecker.js').then(({ initializeTaskNotificationChecker }) => {
+  initializeTaskNotificationChecker();
+}).catch((error) => {
+  logger.error('Failed to initialize task notification checker', error);
+});
+
 // Health check
 import { getHealthStatus } from './utils/healthCheck.js';
 

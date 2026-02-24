@@ -12,7 +12,6 @@ import { WhatsAppProvider } from './contexts/WhatsAppContext';
 import { EmailProvider } from './contexts/EmailContext';
 import { PlanProvider } from './contexts/PlanContext';
 import { PaymentProvider } from './contexts/PaymentContext';
-import { TaskNotificationChecker } from './components/TaskNotificationChecker';
 import { MigrationChecker } from './components/MigrationChecker';
 import { composeProviders } from './utils/composeProviders';
 
@@ -34,7 +33,6 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AppProviders>
-          <TaskNotificationChecker />
           <MigrationChecker />
           <RouterProvider router={router} />
           <Toaster />

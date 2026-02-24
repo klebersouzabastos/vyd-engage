@@ -76,12 +76,12 @@ Ativar o sistema de notificacoes em tempo real (infraestrutura 80% pronta mas 0%
 | Assinatura expirando | `SUBSCRIPTION_EXPIRING` | Owner do tenant | Novo: billing job check |
 
 **AC:**
-- [ ] Lead criado via formulario publico gera notificacao real-time para o owner do tenant
-- [ ] Lead criado via API/UI gera notificacao para o usuario que criou
-- [ ] Task atribuida gera notificacao para o assignee
-- [ ] Automacao com erro gera notificacao AUTOMATION_ERROR com link para logs
-- [ ] Cada notificacao aparece no NotificationCenter sem refresh
-- [ ] Cada notificacao e persistida no banco (nao ephemeral)
+- [x] Lead criado via formulario publico gera notificacao real-time para o owner do tenant
+- [x] Lead criado via API/UI gera notificacao para o usuario que criou
+- [x] Task atribuida gera notificacao para o assignee
+- [x] Automacao com erro gera notificacao AUTOMATION_ERROR com link para logs
+- [x] Cada notificacao aparece no NotificationCenter sem refresh
+- [x] Cada notificacao e persistida no banco (nao ephemeral)
 - [ ] Testes: criar lead via API → verificar notificacao criada no DB
 
 **Dev Notes:**

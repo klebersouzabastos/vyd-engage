@@ -1,9 +1,41 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
-import { Notification } from "../types";
+import { Notification, NotificationType } from "../types";
 import { apiClient } from "../services/api/client";
 import { formatNotificationTime } from "../utils/notifications";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "../hooks/useSocket";
+
+/**
+ * Maps backend UPPER_SNAKE notification types to frontend lowercase types.
+ * Backend sends: TASK_DUE, TASK_OVERDUE, LEAD_ASSIGNED, AUTOMATION_ERROR, etc.
+ * Frontend uses: task_due, task_overdue, lead_assigned, automation_error, etc.
+ */
+const BACKEND_TYPE_MAP: Record<string, NotificationType> = {
+  TASK_DUE: "task_due",
+  TASK_OVERDUE: "task_overdue",
+  LEAD_ASSIGNED: "lead_assigned",
+  AUTOMATION_ERROR: "automation_error",
+  PAYMENT_FAILED: "payment_failed",
+  SUBSCRIPTION_EXPIRING: "subscription_expiring",
+  SYSTEM: "system",
+};
+
+function normalizeNotificationType(backendType: string): NotificationType {
+  return BACKEND_TYPE_MAP[backendType] || (backendType?.toLowerCase() as NotificationType) || "system";
+}
+
+function mapBackendNotification(raw: any): Notification {
+  return {
+    id: raw.id,
+    type: normalizeNotificationType(raw.type),
+    title: raw.title,
+    message: raw.message,
+    read: raw.status === "READ" || raw.read === true,
+    link: raw.link || undefined,
+    timestamp: raw.createdAt || raw.timestamp || new Date().toISOString(),
+    metadata: raw.metadata,
+  };
+}
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -29,9 +61,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         apiClient.getNotifications(),
         apiClient.getUnreadNotificationsCount(),
       ]);
-      const notifs = notifResult?.notifications || notifResult || [];
+      const raw = notifResult?.notifications || notifResult || [];
+      const notifs = raw.map(mapBackendNotification);
       setNotifications(notifs);
-      setUnreadCount(countResult?.count ?? notifs.filter((n: any) => !n.read).length);
+      setUnreadCount(countResult?.count ?? notifs.filter((n) => !n.read).length);
     } catch (error) {
       // API pode não estar disponível, manter estado atual
       console.error("Erro ao carregar notificações:", error);
@@ -57,16 +90,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const cleanup = on('notification:new', (data: any) => {
-      const notif: Notification = {
-        id: data.id,
-        type: data.type?.toLowerCase() || 'system',
-        title: data.title,
-        message: data.message,
-        read: false,
-        link: data.link,
-        timestamp: data.createdAt || new Date().toISOString(),
-        metadata: data.metadata,
-      };
+      const notif = mapBackendNotification({ ...data, read: false });
       setNotifications(prev => [notif, ...prev]);
       setUnreadCount(prev => prev + 1);
     });

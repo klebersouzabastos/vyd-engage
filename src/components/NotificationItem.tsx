@@ -11,14 +11,18 @@ interface NotificationItemProps {
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
     case "task_due":
-    case "task_overdue":
       return "📅";
-    case "new_lead":
+    case "task_overdue":
+      return "🔴";
+    case "lead_assigned":
       return "👤";
-    case "interaction":
-      return "💬";
-    case "automation_failed":
+    case "automation_error":
       return "⚠️";
+    case "payment_failed":
+      return "💳";
+    case "subscription_expiring":
+      return "⏰";
+    case "system":
     default:
       return "🔔";
   }
