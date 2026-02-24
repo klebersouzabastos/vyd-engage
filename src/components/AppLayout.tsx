@@ -1,11 +1,30 @@
 import { Outlet } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { OnboardingTour } from "./OnboardingTour";
-import { Menu } from "lucide-react";
+import { Menu, PanelLeftOpen } from "lucide-react";
+
+const SIDEBAR_COLLAPSED_KEY = "vyd-sidebar-collapsed";
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+    } catch {
+      // ignore
+    }
+  }, [collapsed]);
+
+  const toggleCollapse = () => setCollapsed((prev) => !prev);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -39,10 +58,21 @@ export function AppLayout() {
       )}
 
       {/* Sidebar */}
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapse}
+      />
 
       {/* Main content */}
-      <main id="main-content" className="flex-1 ml-0 md:ml-64 pt-14 md:pt-0" role="main">
+      <main
+        id="main-content"
+        className={`flex-1 ml-0 pt-14 md:pt-0 transition-[margin] duration-300 ease-in-out ${
+          collapsed ? "md:ml-16" : "md:ml-64"
+        }`}
+        role="main"
+      >
         <Outlet />
       </main>
 
