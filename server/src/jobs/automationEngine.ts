@@ -257,7 +257,7 @@ export const automationWorker = new Worker(
 
       // Check if still active
       if (automation.status !== 'ACTIVE') {
-        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, 'Automação não está ativa');
+        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, 'Automação não está ativa', null, undefined, { leadId, executionId });
         return;
       }
 
@@ -267,7 +267,7 @@ export const automationWorker = new Worker(
       if (!isWithinSchedule(schedule)) {
         // Re-schedule for 1 hour later
         await automationQueue.add('process-step', job.data, { delay: 3600000 });
-        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, 'Fora do horário permitido, reagendado para 1h');
+        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, 'Fora do horário permitido, reagendado para 1h', null, undefined, { leadId, executionId });
         return;
       }
 
@@ -277,7 +277,7 @@ export const automationWorker = new Worker(
       });
 
       if (!lead) {
-        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, `Lead ${leadId} não encontrado`);
+        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, `Lead ${leadId} não encontrado`, null, undefined, { leadId, executionId });
         return;
       }
 
@@ -285,7 +285,7 @@ export const automationWorker = new Worker(
       const steps = automation.steps as unknown as AutomationStep[];
       if (!steps || currentStepIndex >= steps.length) {
         // All steps completed
-        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa (${steps?.length || 0} steps)`);
+        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa (${steps?.length || 0} steps)`, null, undefined, { leadId, executionId });
         await automationService.updateStats(automationId, true);
         return;
       }
@@ -301,7 +301,8 @@ export const automationWorker = new Worker(
         result.success ? AutomationLogStatus.SUCCESS : AutomationLogStatus.ERROR,
         `Step ${currentStepIndex + 1}/${steps.length} (${step.type}): ${result.message}`,
         { stepIndex: currentStepIndex, stepType: step.type, executionId, leadId, ...result.data },
-        result.success ? undefined : result.message
+        result.success ? undefined : result.message,
+        { leadId, stepOrder: currentStepIndex, stepType: step.type, executionId }
       );
 
       if (!result.success) {
@@ -337,7 +338,7 @@ export const automationWorker = new Worker(
           });
         } else {
           // Execution complete
-          await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`);
+          await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`, null, undefined, { leadId, executionId });
           await automationService.updateStats(automationId, true);
         }
         return;
@@ -356,7 +357,7 @@ export const automationWorker = new Worker(
         });
       } else {
         // All steps completed
-        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`);
+        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`, null, undefined, { leadId, executionId });
         await automationService.updateStats(automationId, true);
       }
     } catch (error: any) {
@@ -379,7 +380,8 @@ export const automationWorker = new Worker(
           AutomationLogStatus.ERROR,
           `Step ${currentStepIndex} falhou após ${job.attemptsMade + 1} tentativas: ${error.message}`,
           { executionId, leadId, attempts: job.attemptsMade + 1 },
-          error.message
+          error.message,
+          { leadId, stepOrder: currentStepIndex, executionId }
         );
         await automationService.updateStats(automationId, false);
 
@@ -481,7 +483,9 @@ export async function dispatchTrigger(
         automation.id,
         AutomationLogStatus.SUCCESS,
         `Trigger ${triggerType} disparado para lead ${leadId}`,
-        { executionId, leadId, triggerData }
+        { executionId, leadId, triggerData },
+        undefined,
+        { leadId, executionId }
       );
 
       dispatched++;

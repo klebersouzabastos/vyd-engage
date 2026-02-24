@@ -139,7 +139,14 @@ export const automationService = {
     });
   },
 
-  async addLog(automationId: string, status: AutomationLogStatus, message?: string, data?: any, error?: string) {
+  async addLog(
+    automationId: string,
+    status: AutomationLogStatus,
+    message?: string,
+    data?: any,
+    error?: string,
+    extra?: { leadId?: string; stepOrder?: number; stepType?: string; executionId?: string }
+  ) {
     return prisma.automationLog.create({
       data: {
         automationId,
@@ -147,6 +154,10 @@ export const automationService = {
         message,
         data: data || null,
         error: error || null,
+        leadId: extra?.leadId || null,
+        stepOrder: extra?.stepOrder ?? null,
+        stepType: extra?.stepType || null,
+        executionId: extra?.executionId || null,
       },
     });
   },

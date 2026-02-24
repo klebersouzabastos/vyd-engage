@@ -407,9 +407,10 @@ model Lead {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tags         LeadTag[]
-  interactions Interaction[]
-  tasks        Task[]
+  tags           LeadTag[]
+  interactions   Interaction[]
+  tasks          Task[]
+  automationLogs AutomationLog[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -567,10 +568,20 @@ model AutomationLog {
   data    Json?
   error   String?
 
+  // Structured fields (previously buried in JSON `data`)
+  leadId      String?
+  lead        Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  stepOrder   Int?
+  stepType    String?
+  executionId String?
+
   createdAt DateTime @default(now())
 
   @@index([automationId])
   @@index([createdAt])
+  @@index([leadId])
+  @@index([executionId])
+  @@index([status])
 }
 
 // ============================================
