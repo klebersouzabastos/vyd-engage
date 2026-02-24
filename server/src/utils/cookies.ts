@@ -31,9 +31,24 @@ export function setAuthCookies(res: Response, accessToken: string, refreshToken:
 
 /**
  * Clear authentication cookies
+ * Options must match those used in setCookie (except expires/maxAge) for browser to clear them
  */
 export function clearAuthCookies(res: Response): void {
-  res.clearCookie('accessToken', { path: '/' });
-  res.clearCookie('refreshToken', { path: '/api/auth' });
-  res.clearCookie('csrf-token', { path: '/' });
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: SAME_SITE,
+    path: '/',
+  });
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: SAME_SITE,
+    path: '/api/auth',
+  });
+  res.clearCookie('csrf-token', {
+    secure: IS_PRODUCTION,
+    sameSite: SAME_SITE,
+    path: '/',
+  });
 }

@@ -90,14 +90,8 @@ router.post('/refresh', async (req, res, next) => {
       return next(createError('Refresh token missing', 401, 'NO_REFRESH_TOKEN'));
     }
     const result = await authService.refreshToken(refreshTokenValue);
-    // Set new accessToken cookie
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-      path: '/',
-    });
+    // Set new accessToken cookie (use setAuthCookies-consistent options)
+    setAuthCookies(res, result.accessToken, refreshTokenValue);
     res.json({ success: true });
   } catch (error) {
     next(error);
