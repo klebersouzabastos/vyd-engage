@@ -16,7 +16,7 @@ export const apiLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 0 : 10, // 0 = disabled in dev
+  max: isDevelopment ? 0 : 30, // 0 = disabled in dev
   message: 'Too many authentication attempts, please try again later.',
   skipSuccessfulRequests: true,
 });

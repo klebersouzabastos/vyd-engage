@@ -15,11 +15,12 @@ function generateCsrfToken(): string {
  * Set CSRF cookie on response (non-httpOnly so JS can read it)
  */
 export function setCsrfCookie(res: Response): string {
+  const IS_PRODUCTION = process.env.NODE_ENV === 'production';
   const token = generateCsrfToken();
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: false, // JS needs to read this to send in header
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: IS_PRODUCTION,
+    sameSite: IS_PRODUCTION ? 'none' as const : 'strict' as const,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
   });
