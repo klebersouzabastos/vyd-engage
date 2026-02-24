@@ -5,7 +5,7 @@ export function Billing() {
   return (
     <div className="min-h-screen">
       <Header title="Billing" subtitle="Gerencie seu plano, uso e pagamentos" />
-      <div className="p-8 max-w-5xl">
+      <div className="p-8 max-w-5xl mx-auto">
         <BillingTab />
       </div>
     </div>

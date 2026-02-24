@@ -27,12 +27,12 @@ export function useTasks() {
     totalPages: 0,
   });
 
-  const fetchTasks = useCallback(async (filters?: any) => {
+  const fetchTasks = useCallback(async (filters?: any, options?: { silent?: boolean }) => {
     try {
       setLoading(true);
       setError(null);
       const result = await apiClient.getTasks(filters);
-      
+
       setTasks(result.tasks || []);
       setPagination(result.pagination || {
         page: 1,
@@ -42,7 +42,9 @@ export function useTasks() {
       });
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar tarefas');
-      toast.error('Erro ao carregar tarefas');
+      if (!options?.silent) {
+        toast.error('Erro ao carregar tarefas');
+      }
     } finally {
       setLoading(false);
     }
@@ -128,7 +130,7 @@ export function useTasks() {
   }, []);
 
   useEffect(() => {
-    fetchTasks();
+    fetchTasks(undefined, { silent: true });
   }, [fetchTasks]);
 
   return {

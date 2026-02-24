@@ -535,14 +535,14 @@ export function Leads() {
                   ))}
                 </tbody>
               </table>
-              <Pagination
-                page={pagination.page}
-                totalPages={pagination.totalPages}
-                total={pagination.total}
-                limit={pagination.limit}
-                onPageChange={(newPage) => fetchLeads({ page: newPage, limit: pagination.limit })}
-              />
             </div>
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              limit={pagination.limit}
+              onPageChange={(newPage) => fetchLeads({ page: newPage, limit: pagination.limit })}
+            />
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300">

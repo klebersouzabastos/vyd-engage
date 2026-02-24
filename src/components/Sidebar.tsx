@@ -123,7 +123,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       </Link>
 
       {/* Menu Items */}
-      <nav aria-label="Navegação do aplicativo" className="flex-1 px-3 py-4">
+      <nav aria-label="Navegação do aplicativo" className="flex-1 overflow-y-auto px-3 py-4">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;

@@ -102,6 +102,16 @@ export function OnboardingTour() {
     setTooltipStyle(style);
   }, [currentStep]);
 
+  // Close tour on Escape key
+  useEffect(() => {
+    if (!isActive) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") completeTour();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isActive]);
+
   useEffect(() => {
     if (!isActive) return;
 
