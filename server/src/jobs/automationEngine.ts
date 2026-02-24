@@ -1,10 +1,11 @@
 import { Queue, Worker, Job, FlowProducer } from 'bullmq';
 import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
-import { AutomationLogStatus } from '@prisma/client';
+import { AutomationLogStatus, NotificationType } from '@prisma/client';
 import { automationService } from '../services/automationService.js';
 import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
+import { notificationService } from '../services/notificationService.js';
 
 // Redis connection configuration
 const redisConnection = {
@@ -305,6 +306,19 @@ export const automationWorker = new Worker(
 
       if (!result.success) {
         await automationService.updateStats(automationId, false);
+
+        // Notify admins on first step failure (before retries)
+        if (job.attemptsMade === 0) {
+          const automationInfo = await prisma.automation.findFirst({ where: { id: automationId }, select: { name: true } });
+          notificationService.notifyTenantAdmins(tenantId, {
+            type: NotificationType.AUTOMATION_ERROR,
+            title: 'Erro em automação',
+            message: `"${automationInfo?.name || 'Automação'}" - Step ${currentStepIndex + 1} (${step.type}) falhou: ${result.message}`,
+            link: `/app/automation-logs`,
+            metadata: { automationId, leadId, executionId, stepIndex: currentStepIndex },
+          }).catch(() => {});
+        }
+
         throw new Error(result.message);
       }
 
@@ -353,7 +367,7 @@ export const automationWorker = new Worker(
         executionId,
       });
 
-      // If final attempt, move to DLQ
+      // If final attempt, move to DLQ and notify admins
       if (job.attemptsMade >= (job.opts.attempts || 3) - 1) {
         await automationDLQ.add('failed-automation', {
           ...job.data,
@@ -368,6 +382,17 @@ export const automationWorker = new Worker(
           error.message
         );
         await automationService.updateStats(automationId, false);
+
+        // Notify tenant admins about the automation failure
+        const automation = await prisma.automation.findFirst({ where: { id: automationId }, select: { name: true } });
+        const lead = await prisma.lead.findFirst({ where: { id: leadId }, select: { name: true } });
+        notificationService.notifyTenantAdmins(tenantId, {
+          type: NotificationType.AUTOMATION_ERROR,
+          title: 'Automação falhou',
+          message: `"${automation?.name || 'Automação'}" falhou no step ${currentStepIndex + 1}${lead?.name ? ` para o lead "${lead.name}"` : ''}: ${error.message}`,
+          link: `/app/automation-logs`,
+          metadata: { automationId, leadId, executionId, stepIndex: currentStepIndex, error: error.message },
+        }).catch(() => {});
       }
 
       throw error;

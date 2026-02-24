@@ -4,7 +4,8 @@ import { leadService } from '../services/leadService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { LeadStatus, LeadSource } from '@prisma/client';
+import { LeadStatus, LeadSource, NotificationType } from '@prisma/client';
+import { notificationService } from '../services/notificationService.js';
 
 const router = Router();
 
@@ -88,6 +89,17 @@ router.post('/', async (req, res, next) => {
 
     const data = createLeadSchema.parse(req.body);
     const lead = await leadService.create(req.user.tenantId, data);
+
+    // Notify the creator that the lead was created
+    notificationService.create(req.user.tenantId, {
+      userId: req.user.userId,
+      type: NotificationType.LEAD_ASSIGNED,
+      title: 'Novo lead criado',
+      message: `Lead "${lead.name}" foi criado com sucesso.`,
+      link: `/app/leads/${lead.id}`,
+      metadata: { leadId: lead.id, leadName: lead.name },
+    }).catch(() => {});
+
     res.status(201).json(lead);
   } catch (error) {
     if (error instanceof z.ZodError) {

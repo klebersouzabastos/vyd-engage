@@ -13,6 +13,31 @@ export interface CreateNotificationData {
 }
 
 export const notificationService = {
+  /**
+   * Get all active ADMIN user IDs for a tenant.
+   * Used for system notifications (public lead capture, automation errors, etc.)
+   */
+  async getTenantAdminIds(tenantId: string): Promise<string[]> {
+    const admins = await prisma.user.findMany({
+      where: { tenantId, role: 'ADMIN', status: 'ACTIVE' },
+      select: { id: true },
+    });
+    return admins.map((a) => a.id);
+  },
+
+  /**
+   * Notify all admins of a tenant. Creates one notification per admin.
+   */
+  async notifyTenantAdmins(tenantId: string, data: Omit<CreateNotificationData, 'userId'>) {
+    const adminIds = await this.getTenantAdminIds(tenantId);
+    const results = await Promise.all(
+      adminIds.map((adminId) =>
+        this.create(tenantId, { ...data, userId: adminId }).catch(() => null)
+      )
+    );
+    return results.filter(Boolean);
+  },
+
   async create(tenantId: string, data: CreateNotificationData) {
     const notification = await prisma.notification.create({
       data: {

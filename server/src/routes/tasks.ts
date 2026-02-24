@@ -4,7 +4,8 @@ import { taskService } from '../services/taskService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { TaskStatus, TaskPriority } from '@prisma/client';
+import { TaskStatus, TaskPriority, NotificationType } from '@prisma/client';
+import { notificationService } from '../services/notificationService.js';
 
 const router = Router();
 
@@ -75,6 +76,19 @@ router.post('/', async (req, res, next) => {
     // Tasks don't have plan limits, but we could add if needed
     const data = createTaskSchema.parse(req.body);
     const task = await taskService.create(req.user.tenantId, data);
+
+    // Notify assignee if task is assigned to someone other than the creator
+    if (data.assignedTo && data.assignedTo !== req.user.userId) {
+      notificationService.create(req.user.tenantId, {
+        userId: data.assignedTo,
+        type: NotificationType.TASK_DUE,
+        title: 'Nova tarefa atribuída',
+        message: `A tarefa "${task.title}" foi atribuída a você.${task.dueDate ? ` Vencimento: ${new Date(task.dueDate).toLocaleDateString('pt-BR')}.` : ''}`,
+        link: `/app/tasks`,
+        metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+      }).catch(() => {});
+    }
+
     res.status(201).json(task);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -95,6 +109,19 @@ router.put('/:id', async (req, res, next) => {
       id: req.params.id,
     });
     const task = await taskService.update(req.user.tenantId, data);
+
+    // Notify new assignee if task was reassigned to someone else
+    if (data.assignedTo && data.assignedTo !== req.user.userId) {
+      notificationService.create(req.user.tenantId, {
+        userId: data.assignedTo,
+        type: NotificationType.TASK_DUE,
+        title: 'Tarefa atribuída a você',
+        message: `A tarefa "${task.title}" foi atribuída a você.${task.dueDate ? ` Vencimento: ${new Date(task.dueDate).toLocaleDateString('pt-BR')}.` : ''}`,
+        link: `/app/tasks`,
+        metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+      }).catch(() => {});
+    }
+
     res.json(task);
   } catch (error) {
     if (error instanceof z.ZodError) {

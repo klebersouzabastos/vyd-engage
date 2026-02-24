@@ -180,6 +180,8 @@ app.use('/api/outgoing-webhooks', outgoingWebhookRoutes);
 import { Router as ExpressRouter } from 'express';
 import prisma from './config/database.js';
 import { z as zodLib } from 'zod';
+import { NotificationType } from '@prisma/client';
+import { notificationService } from './services/notificationService.js';
 
 const publicRouter = ExpressRouter();
 
@@ -236,6 +238,15 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
         },
       });
     }
+
+    // Notify tenant admins about new public lead capture
+    notificationService.notifyTenantAdmins(tenant.id, {
+      type: NotificationType.LEAD_ASSIGNED,
+      title: 'Novo lead via formulário',
+      message: `${data.name}${data.email ? ` (${data.email})` : ''} preencheu o formulário público.`,
+      link: `/app/leads/${lead.id}`,
+      metadata: { leadId: lead.id, leadName: data.name, source: 'public_form' },
+    }).catch(() => {});
 
     res.status(201).json({ status: 201, message: 'Lead captured successfully', leadId: lead.id });
   } catch (error: any) {
