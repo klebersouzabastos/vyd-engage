@@ -544,6 +544,41 @@ class ApiClient {
     return this.request<any>(`/api/automations/${id}/stats`);
   }
 
+  // Tenant-wide automation logs with full filtering
+  async getAutomationLogsAll(filters?: {
+    status?: string;
+    leadId?: string;
+    stepType?: string;
+    automationId?: string;
+    executionId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+    sort?: 'asc' | 'desc';
+  }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any>(`/api/automation-logs${query}`);
+  }
+
+  async getLogsByExecution(executionId: string) {
+    return this.request<any>(`/api/automation-logs/execution/${executionId}`);
+  }
+
+  async getAutomationLogStats(filters?: { from?: string; to?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.from) params.set('from', filters.from);
+    if (filters?.to) params.set('to', filters.to);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any>(`/api/automation-logs/stats${query}`);
+  }
+
   async executeAutomation(id: string, leadId: string) {
     return this.request<any>(`/api/automations/${id}/execute`, {
       method: 'POST',

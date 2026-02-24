@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { AutomationStatus } from '@prisma/client';
+import prisma from '../config/database.js';
 import { planLimitsService } from '../services/planLimitsService.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 
@@ -163,13 +164,42 @@ router.get('/:id/stats', async (req, res, next) => {
 
 router.get('/:id/logs', async (req, res, next) => {
   try {
-    if (!req.user) {
-      return next(createError('Authentication required', 401));
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    // Verify automation belongs to tenant
+    await automationService.findById(req.user.tenantId, req.params.id);
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const skip = (page - 1) * limit;
+
+    const where: any = { automationId: req.params.id };
+    if (req.query.status) where.status = req.query.status;
+    if (req.query.leadId) where.leadId = req.query.leadId;
+    if (req.query.stepType) where.stepType = req.query.stepType;
+    if (req.query.from || req.query.to) {
+      where.createdAt = {};
+      if (req.query.from) where.createdAt.gte = new Date(req.query.from as string);
+      if (req.query.to) where.createdAt.lte = new Date(req.query.to as string);
     }
 
-    const limit = parseInt(req.query.limit as string) || 50;
-    const logs = await automationService.getLogs(req.user.tenantId, req.params.id, limit);
-    res.json(logs);
+    const [logs, total] = await Promise.all([
+      prisma.automationLog.findMany({
+        where,
+        include: {
+          lead: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.automationLog.count({ where }),
+    ]);
+
+    res.json({
+      data: logs,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     next(error);
   }
