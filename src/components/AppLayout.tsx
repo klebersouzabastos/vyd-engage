@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { OnboardingTour } from "./OnboardingTour";
-import { Menu, PanelLeftOpen } from "lucide-react";
+import { Menu } from "lucide-react";
 
 const SIDEBAR_COLLAPSED_KEY = "vyd-sidebar-collapsed";
 
@@ -65,12 +65,11 @@ export function AppLayout() {
         onToggleCollapse={toggleCollapse}
       />
 
-      {/* Main content */}
+      {/* Main content — width/margin controlled via CSS in globals.css using data-sidebar */}
       <main
         id="main-content"
-        className={`flex-1 ml-0 pt-14 md:pt-0 transition-[margin] duration-300 ease-in-out ${
-          collapsed ? "md:ml-16" : "md:ml-64"
-        }`}
+        data-sidebar={collapsed ? "collapsed" : "expanded"}
+        className="flex-1 pt-14 md:pt-0"
         role="main"
       >
         <Outlet />

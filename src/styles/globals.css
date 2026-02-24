@@ -67,6 +67,24 @@
   --color-amber: #FBBF24;
 }
 
+/* Sidebar Layout — explicit CSS to avoid Tailwind v4 spacing issues */
+@media (min-width: 768px) {
+  aside[data-sidebar] {
+    width: 16rem; /* 256px */
+    transition: width 300ms ease-in-out;
+  }
+  aside[data-sidebar="collapsed"] {
+    width: 4rem; /* 64px */
+  }
+  #main-content {
+    margin-left: 16rem;
+    transition: margin-left 300ms ease-in-out;
+  }
+  #main-content[data-sidebar="collapsed"] {
+    margin-left: 4rem;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

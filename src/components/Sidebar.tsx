@@ -97,13 +97,12 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
   return (
     <aside
       aria-label="Menu principal"
+      data-sidebar={collapsed ? "collapsed" : "expanded"}
       className={`
-      bg-white border-r border-gray-300 h-screen fixed left-0 top-0 flex flex-col
-      z-50 transition-all duration-300 ease-in-out
+      w-64 bg-white border-r border-gray-300 h-screen fixed left-0 top-0 flex flex-col
+      z-50 transition-all duration-300 ease-in-out overflow-hidden
       ${open ? 'translate-x-0' : '-translate-x-full'}
       md:translate-x-0
-      ${collapsed ? 'md:w-16' : 'md:w-64'}
-      w-64
     `}>
       {/* Logo + Collapse toggle */}
       <div className="h-16 flex items-center border-b border-gray-300 justify-between">
