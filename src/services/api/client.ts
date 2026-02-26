@@ -421,6 +421,28 @@ class ApiClient {
     });
   }
 
+  async exportLeads(filters?: { status?: string; source?: string; search?: string; tagId?: string }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.set(key, value);
+      });
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any>(`/api/leads/export${query}`);
+  }
+
+  async getLeadDuplicates() {
+    return this.request<any>('/api/leads/duplicates');
+  }
+
+  async mergeLeads(primaryId: string, duplicateIds: string[]) {
+    return this.request<any>('/api/leads/merge', {
+      method: 'POST',
+      body: JSON.stringify({ primaryId, duplicateIds }),
+    });
+  }
+
   async bulkUpdateLeads(ids: string[], action: string, payload?: any) {
     return this.request<{ status: number; data: { affected: number; action: string } }>('/api/leads/bulk', {
       method: 'PATCH',
@@ -979,6 +1001,10 @@ class ApiClient {
     return this.request<any>(`/api/scoring-rules/recalculate/${leadId}`, {
       method: 'POST',
     });
+  }
+
+  async getScoreBreakdown(leadId: string) {
+    return this.request<any>(`/api/scoring-rules/breakdown/${leadId}`);
   }
 
   // ========================

@@ -145,6 +145,156 @@ router.patch('/bulk', async (req, res, next) => {
   }
 });
 
+// GET /api/leads/duplicates — Find duplicate lead groups
+router.get('/duplicates', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const tenantId = req.user.tenantId;
+
+    // Find duplicate emails
+    const emailDupes = await prisma.$queryRaw`
+      SELECT email, array_agg(id) as lead_ids, count(*) as cnt
+      FROM "Lead"
+      WHERE "tenantId" = ${tenantId} AND email IS NOT NULL AND email != ''
+      GROUP BY email
+      HAVING count(*) > 1
+      ORDER BY count(*) DESC
+      LIMIT 100
+    ` as any[];
+
+    // Find duplicate phones (only where email is null, to avoid double-counting)
+    const phoneDupes = await prisma.$queryRaw`
+      SELECT phone, array_agg(id) as lead_ids, count(*) as cnt
+      FROM "Lead"
+      WHERE "tenantId" = ${tenantId} AND phone IS NOT NULL AND phone != ''
+      AND email IS NULL
+      GROUP BY phone
+      HAVING count(*) > 1
+      ORDER BY count(*) DESC
+      LIMIT 100
+    ` as any[];
+
+    // Collect all lead IDs
+    const allIds = new Set<string>();
+    for (const g of [...emailDupes, ...phoneDupes]) {
+      for (const id of g.lead_ids) allIds.add(id);
+    }
+
+    // Fetch full lead data
+    const leads = allIds.size > 0 ? await prisma.lead.findMany({
+      where: { id: { in: Array.from(allIds) } },
+      include: { tags: { include: { tag: true } } },
+    }) : [];
+
+    const leadMap = new Map(leads.map(l => [l.id, l]));
+
+    const groups = [
+      ...emailDupes.map(g => ({
+        matchField: 'email' as const,
+        matchValue: g.email,
+        leads: (g.lead_ids as string[]).map(id => leadMap.get(id)).filter(Boolean),
+      })),
+      ...phoneDupes.map(g => ({
+        matchField: 'phone' as const,
+        matchValue: g.phone,
+        leads: (g.lead_ids as string[]).map(id => leadMap.get(id)).filter(Boolean),
+      })),
+    ];
+
+    res.json({ status: 200, data: { groups, totalGroups: groups.length } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/leads/merge — Merge duplicate leads into primary
+router.post('/merge', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const tenantId = req.user.tenantId;
+
+    const schema = z.object({
+      primaryId: z.string().uuid(),
+      duplicateIds: z.array(z.string().uuid()).min(1).max(50),
+    });
+    const { primaryId, duplicateIds } = schema.parse(req.body);
+
+    // Verify all leads belong to tenant
+    const allIds = [primaryId, ...duplicateIds];
+    const count = await prisma.lead.count({ where: { id: { in: allIds }, tenantId } });
+    if (count !== allIds.length) return next(createError('Some leads not found', 404));
+
+    // Use transaction for atomicity
+    await prisma.$transaction(async (tx) => {
+      // Move interactions to primary
+      await tx.interaction.updateMany({
+        where: { leadId: { in: duplicateIds } },
+        data: { leadId: primaryId },
+      });
+
+      // Move tasks to primary
+      await tx.task.updateMany({
+        where: { leadId: { in: duplicateIds } },
+        data: { leadId: primaryId },
+      });
+
+      // Move automation logs to primary
+      await tx.automationLog.updateMany({
+        where: { leadId: { in: duplicateIds } },
+        data: { leadId: primaryId },
+      });
+
+      // Delete duplicates (cascade will remove LeadTag entries)
+      await tx.lead.deleteMany({
+        where: { id: { in: duplicateIds } },
+      });
+    });
+
+    const primary = await prisma.lead.findUnique({
+      where: { id: primaryId },
+      include: { tags: { include: { tag: true } } },
+    });
+
+    res.json({ status: 200, data: { primary, mergedCount: duplicateIds.length } });
+  } catch (error) {
+    if (error instanceof z.ZodError) return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    next(error);
+  }
+});
+
+// GET /api/leads/export — Export leads as JSON with filters applied
+router.get('/export', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const tenantId = req.user.tenantId;
+
+    const where: any = { tenantId };
+    if (req.query.status) where.status = req.query.status;
+    if (req.query.source) where.source = req.query.source;
+    if (req.query.search) {
+      where.OR = [
+        { name: { contains: req.query.search as string, mode: 'insensitive' } },
+        { email: { contains: req.query.search as string, mode: 'insensitive' } },
+        { company: { contains: req.query.search as string, mode: 'insensitive' } },
+      ];
+    }
+    if (req.query.tagId) {
+      where.tags = { some: { tagId: req.query.tagId as string } };
+    }
+
+    const leads = await prisma.lead.findMany({
+      where,
+      include: { tags: { include: { tag: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 10000, // Safety limit
+    });
+
+    res.json({ status: 200, data: leads });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/leads/:id - Get lead by ID
 router.get('/:id', async (req, res, next) => {
   try {

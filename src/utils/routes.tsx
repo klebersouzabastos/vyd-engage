@@ -59,6 +59,7 @@ const WhatsAppTemplates = lazyNamed(() => import("../pages/WhatsAppTemplates"), 
 const EmailCampaigns = lazyNamed(() => import("../pages/EmailCampaigns"), "EmailCampaigns");
 const TeamManagement = lazyNamed(() => import("../pages/TeamManagement"), "TeamManagement");
 const LeadDetail = lazyNamed(() => import("../pages/LeadDetail"), "LeadDetail");
+const LeadDuplicates = lazyNamed(() => import("../pages/LeadDuplicates"), "LeadDuplicates");
 
 export const router = createBrowserRouter([
   {
@@ -110,6 +111,10 @@ export const router = createBrowserRouter([
       {
         path: "leads/new",
         element: LeadForm,
+      },
+      {
+        path: "leads/duplicates",
+        element: LeadDuplicates,
       },
       {
         path: "leads/:id/edit",

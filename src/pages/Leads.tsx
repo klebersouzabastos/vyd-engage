@@ -9,7 +9,7 @@ import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { LeadModal } from "../components/LeadModal";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Plus, Download, Upload, Pencil, Trash2, Users, Mail, MessageSquare, X, Tag, ChevronDown } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, Users, Mail, MessageSquare, X, Tag, ChevronDown, Copy } from "lucide-react";
 import { LeadImportModal } from "../components/leads/LeadImportModal";
 import { Checkbox } from "../components/ui/checkbox";
 import { useTags } from "../contexts/TagsContext";
@@ -17,6 +17,7 @@ import { useCustomFields } from "../contexts/CustomFieldsContext";
 import { TagBadge } from "../components/TagBadge";
 import { CustomFieldDisplay } from "../components/CustomFieldDisplay";
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
+import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { Lead } from "../types";
 import { exportLeadsToExcel } from "../utils/excelExport";
 import { apiClient } from "../services/api/client";
@@ -105,6 +106,7 @@ export function Leads() {
   const [deleteSingleLeadId, setDeleteSingleLeadId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [scoreLeadId, setScoreLeadId] = useState<string | null>(null);
 
   const { tags } = useTags();
 
@@ -198,6 +200,52 @@ export function Leads() {
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
       toast.error('Erro ao exportar relatório. Tente novamente.');
+    }
+  };
+
+  const handleExportAllFiltered = async () => {
+    try {
+      const filters: { status?: string; source?: string; search?: string; tagId?: string } = {};
+      if (filterStatus.length === 1) filters.status = filterStatus[0];
+      if (filterSource.length === 1) filters.source = filterSource[0];
+      if (searchQuery) filters.search = searchQuery;
+      if (filterTag.length === 1) filters.tagId = filterTag[0];
+
+      toast.info("Exportando todos os leads filtrados...");
+      const response = await apiClient.exportLeads(filters);
+      const leads = response?.data || response || [];
+
+      if (!Array.isArray(leads) || leads.length === 0) {
+        toast.warning("Nenhum lead encontrado para exportar.");
+        return;
+      }
+
+      // Map server data to the format expected by exportLeadsToExcel
+      const mapped = leads.map((lead: any) => ({
+        id: lead.id,
+        name: lead.name || "",
+        phone: lead.phone || "",
+        email: lead.email || "",
+        status: lead.status || "",
+        source: lead.source || "",
+        date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("pt-BR") : "",
+        tags: lead.tags?.map((t: any) => t.tagId || t.tag?.id) || [],
+        customFields: lead.customFields || {},
+      }));
+
+      toast.info(`Exportando ${mapped.length} leads...`);
+      await exportLeadsToExcel(
+        mapped,
+        { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
+        getStatusLabel,
+        getSourceLabel,
+        getAutomationById,
+        getTagById,
+      );
+      toast.success(`${mapped.length} leads exportados com sucesso!`);
+    } catch (error) {
+      console.error("Erro ao exportar leads filtrados:", error);
+      toast.error("Erro ao exportar leads. Tente novamente.");
     }
   };
 
@@ -437,15 +485,33 @@ export function Leads() {
               onFilterChange={setFilterCustomFields}
             />
 
+            <Button variant="outline" className="gap-2" onClick={() => navigate("/app/leads/duplicates")}>
+              <Copy size={16} />
+              Duplicados
+            </Button>
+
             <Button variant="outline" className="gap-2" onClick={() => setImportModalOpen(true)}>
               <Upload size={16} />
               Importar
             </Button>
 
-            <Button variant="outline" className="gap-2" onClick={handleExportLeads}>
-              <Download size={16} />
-              Exportar
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Download size={16} />
+                  Exportar
+                  <ChevronDown size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportLeads}>
+                  Exportar Pagina Atual
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportAllFiltered}>
+                  Exportar Todos (Filtrados)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button
               className="bg-primary hover:bg-primary-dark gap-2"
@@ -504,7 +570,9 @@ export function Leads() {
                         <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.phone}</td>
                         <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.email}</td>
                         <td className="px-6 py-4">
-                          <LeadScoreBadge score={lead.score || 0} />
+                          <button type="button" onClick={() => setScoreLeadId(lead.id)} className="cursor-pointer">
+                            <LeadScoreBadge score={lead.score || 0} />
+                          </button>
                         </td>
                         <td className="px-6 py-4"><LeadStatusBadge status={lead.status} /></td>
                         <td className="px-6 py-4 hidden lg:table-cell"><LeadSourceBadge source={lead.source} /></td>
@@ -707,6 +775,13 @@ export function Leads() {
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         onImportComplete={() => refetch()}
+      />
+
+      {/* Score Breakdown Modal */}
+      <ScoreBreakdownModal
+        leadId={scoreLeadId!}
+        open={!!scoreLeadId}
+        onClose={() => setScoreLeadId(null)}
       />
     </div>
   );

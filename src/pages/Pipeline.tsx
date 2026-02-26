@@ -26,6 +26,8 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { LeadModal } from "../components/LeadModal";
+import { LeadScoreBadge } from "../components/LeadScoreBadge";
+import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { cn } from "../components/ui/utils";
 import { apiClient } from "../services/api/client";
 import { useFunnels, type FunnelLead } from "../hooks/useFunnels";
@@ -74,6 +76,7 @@ export function Pipeline() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsColumnOrder, setSettingsColumnOrder] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [scoreLeadId, setScoreLeadId] = useState<string | null>(null);
   const dragStartTime = useRef<number>(0);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const draggedLead = useRef<FunnelLead | null>(null);
@@ -701,11 +704,13 @@ export function Pipeline() {
                         <h4 className="font-medium text-gray-900 mb-1">{lead.name}</h4>
                         <LeadSourceBadge source={getSourceLabel(lead.source)} />
                       </div>
-                      {lead.score > 0 && (
-                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                          {lead.score}pts
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        className="cursor-pointer flex-shrink-0"
+                        onClick={(e) => { e.stopPropagation(); setScoreLeadId(lead.id); }}
+                      >
+                        <LeadScoreBadge score={lead.score || 0} />
+                      </button>
                     </div>
 
                     <div className="space-y-2 mb-3">
@@ -975,6 +980,13 @@ export function Pipeline() {
         open={modalOpen}
         onClose={handleCloseModal}
         lead={selectedLead}
+      />
+
+      {/* Score Breakdown Modal */}
+      <ScoreBreakdownModal
+        leadId={scoreLeadId!}
+        open={!!scoreLeadId}
+        onClose={() => setScoreLeadId(null)}
       />
 
       {/* Pipeline Settings Dialog */}

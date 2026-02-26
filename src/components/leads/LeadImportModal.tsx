@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "../ui/button";
-import { Upload, X, Loader2, CheckCircle, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { Upload, X, Loader2, CheckCircle, AlertTriangle, FileSpreadsheet, Download, CheckCircle2, XCircle } from "lucide-react";
 import { apiClient } from "../../services/api/client";
 import { toast } from "sonner";
 
@@ -101,6 +101,21 @@ function autoDetectMapping(headers: string[]): ColumnMapping {
   return mapping;
 }
 
+function downloadTemplate() {
+  const headers = "name,email,phone,company,source,status";
+  const example = "Maria Silva,maria@email.com,(11)99999-0000,ABC Ltda,WEBSITE,NEW";
+  const csvContent = `${headers}\n${example}\n`;
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "template-leads.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<"upload" | "mapping" | "preview" | "importing" | "done">("upload");
@@ -152,10 +167,14 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
     }
     if (mapping.notes >= 0 && row[mapping.notes]) lead.notes = row[mapping.notes];
     return lead;
-  }).filter(l => l.name.trim());
+  });
+
+  // Separate valid and invalid leads for display
+  const validLeads = parsedLeads.filter(l => l.name.trim());
+  const invalidCount = parsedLeads.length - validLeads.length;
 
   const handleImport = async () => {
-    if (parsedLeads.length === 0) {
+    if (validLeads.length === 0) {
       toast.error("Nenhum lead valido para importar");
       return;
     }
@@ -163,7 +182,7 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
     setStep("importing");
     try {
       const response = await apiClient.importLeads({
-        leads: parsedLeads,
+        leads: validLeads,
         skipDuplicateEmails: skipDuplicates,
       });
       const data = response?.data || response;
@@ -222,14 +241,19 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <Button onClick={() => fileRef.current?.click()} className="gap-2">
-                <Upload size={16} /> Escolher Arquivo
-              </Button>
-              <div className="mt-6 bg-blue-50 rounded-lg p-4 text-left">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <Button onClick={() => fileRef.current?.click()} className="gap-2">
+                  <Upload size={16} /> Escolher Arquivo
+                </Button>
+                <Button variant="outline" onClick={downloadTemplate} className="gap-2">
+                  <Download size={16} /> Baixar Template
+                </Button>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4 text-left">
                 <p className="text-sm text-blue-800 font-medium mb-2">Exemplo de formato:</p>
                 <code className="text-xs text-blue-700 block">
-                  Nome,Email,Telefone,Empresa,Cargo<br />
-                  Maria Silva,maria@email.com,(11)99999-0000,ABC Ltda,Gerente
+                  name,email,phone,company,source,status<br />
+                  Maria Silva,maria@email.com,(11)99999-0000,ABC Ltda,WEBSITE,NEW
                 </code>
               </div>
             </div>
@@ -250,7 +274,7 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                       value={mapping[field]}
                       onChange={e => handleMappingChange(field, parseInt(e.target.value))}
                     >
-                      <option value={-1}>— Ignorar —</option>
+                      <option value={-1}>-- Ignorar --</option>
                       {headers.map((h, i) => (
                         <option key={i} value={i}>{h}</option>
                       ))}
@@ -285,13 +309,19 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
 
           {step === "preview" && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-3">
-                Preview ({parsedLeads.length} leads validos)
+              <h3 className="font-medium text-gray-900 mb-1">
+                Preview - {validLeads.length} leads validos
               </h3>
+              {invalidCount > 0 && (
+                <p className="text-sm text-red-600 mb-3">
+                  {invalidCount} linha(s) sem nome (campo obrigatorio) serao ignoradas.
+                </p>
+              )}
               <div className="border border-gray-300 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-8"></th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">#</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Nome</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Email</th>
@@ -300,15 +330,27 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                     </tr>
                   </thead>
                   <tbody>
-                    {parsedLeads.slice(0, 50).map((lead, i) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
-                        <td className="px-3 py-1.5 font-medium">{lead.name}</td>
-                        <td className="px-3 py-1.5 text-gray-600">{lead.email || "—"}</td>
-                        <td className="px-3 py-1.5 text-gray-600">{lead.phone || "—"}</td>
-                        <td className="px-3 py-1.5 text-gray-600">{lead.company || "—"}</td>
-                      </tr>
-                    ))}
+                    {parsedLeads.slice(0, 50).map((lead, i) => {
+                      const isValid = lead.name.trim().length > 0;
+                      return (
+                        <tr key={i} className={`border-t border-gray-100 ${!isValid ? "bg-red-50" : ""}`}>
+                          <td className="px-3 py-1.5">
+                            {isValid ? (
+                              <CheckCircle2 size={16} className="text-green-500" />
+                            ) : (
+                              <XCircle size={16} className="text-red-500" />
+                            )}
+                          </td>
+                          <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
+                          <td className={`px-3 py-1.5 font-medium ${!isValid ? "text-red-600" : ""}`}>
+                            {lead.name || <span className="italic text-red-400">Nome vazio</span>}
+                          </td>
+                          <td className="px-3 py-1.5 text-gray-600">{lead.email || "--"}</td>
+                          <td className="px-3 py-1.5 text-gray-600">{lead.phone || "--"}</td>
+                          <td className="px-3 py-1.5 text-gray-600">{lead.company || "--"}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 {parsedLeads.length > 50 && (
@@ -319,8 +361,8 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <Button variant="outline" onClick={() => setStep("mapping")}>Voltar</Button>
-                <Button onClick={handleImport} className="gap-2">
-                  <Upload size={16} /> Importar {parsedLeads.length} Leads
+                <Button onClick={handleImport} disabled={validLeads.length === 0} className="gap-2">
+                  <Upload size={16} /> Confirmar Importacao ({validLeads.length})
                 </Button>
               </div>
             </div>

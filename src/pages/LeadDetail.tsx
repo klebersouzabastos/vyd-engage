@@ -6,6 +6,7 @@ import { LeadStatusBadge } from "../components/LeadStatusBadge";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { TagBadge } from "../components/TagBadge";
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
+import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { CustomFieldDisplay } from "../components/CustomFieldDisplay";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -191,6 +192,7 @@ export function LeadDetail() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [scoreModalOpen, setScoreModalOpen] = useState(false);
 
   const fetchLead = useCallback(async () => {
     if (!id) return;
@@ -546,7 +548,9 @@ export function LeadDetail() {
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">
                     Score
                   </span>
-                  <LeadScoreBadge score={lead.score || 0} />
+                  <button type="button" onClick={() => setScoreModalOpen(true)} className="cursor-pointer">
+                    <LeadScoreBadge score={lead.score || 0} />
+                  </button>
                 </div>
               </div>
 
@@ -616,6 +620,15 @@ export function LeadDetail() {
           </div>
         </div>
       </div>
+
+      {/* Score Breakdown Modal */}
+      {id && (
+        <ScoreBreakdownModal
+          leadId={id}
+          open={scoreModalOpen}
+          onClose={() => setScoreModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
