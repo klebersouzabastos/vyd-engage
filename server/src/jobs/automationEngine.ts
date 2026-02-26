@@ -315,7 +315,7 @@ export const automationWorker = new Worker(
             type: NotificationType.AUTOMATION_ERROR,
             title: 'Erro em automação',
             message: `"${automationInfo?.name || 'Automação'}" - Step ${currentStepIndex + 1} (${step.type}) falhou: ${result.message}`,
-            link: `/app/automation-logs`,
+            link: `/app/automation-logs?automationId=${automationId}`,
             metadata: { automationId, leadId, executionId, stepIndex: currentStepIndex },
           }).catch(() => {});
         }
@@ -392,7 +392,7 @@ export const automationWorker = new Worker(
           type: NotificationType.AUTOMATION_ERROR,
           title: 'Automação falhou',
           message: `"${automation?.name || 'Automação'}" falhou no step ${currentStepIndex + 1}${lead?.name ? ` para o lead "${lead.name}"` : ''}: ${error.message}`,
-          link: `/app/automation-logs`,
+          link: `/app/automation-logs?automationId=${automationId}`,
           metadata: { automationId, leadId, executionId, stepIndex: currentStepIndex, error: error.message },
         }).catch(() => {});
       }

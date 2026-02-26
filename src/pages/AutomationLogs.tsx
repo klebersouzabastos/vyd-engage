@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Header } from "../components/Header";
 import { Input } from "../components/ui/input";
 import { CheckCircle, XCircle, Clock, ArrowLeft, Loader2, BarChart3, TrendingUp, AlertTriangle, ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { apiClient } from "../services/api/client";
+import { useSocket } from "../hooks/useSocket";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
 
@@ -62,6 +64,12 @@ function normalizeLog(raw: any): LogEntry {
 
 export function AutomationLogs() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { on } = useSocket();
+
+  // Pre-apply filters from URL query params (e.g., from notification links)
+  const urlAutomationId = searchParams.get("automationId") || "";
+  const urlStatus = searchParams.get("status") || "";
 
   // Data state
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -71,9 +79,9 @@ export function AutomationLogs() {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // Filter state
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterAutomation, setFilterAutomation] = useState("");
+  // Filter state (initialized from URL params)
+  const [filterStatus, setFilterStatus] = useState(urlStatus);
+  const [filterAutomation, setFilterAutomation] = useState(urlAutomationId);
   const [filterLead, setFilterLead] = useState("");
   const [page, setPage] = useState(1);
 
@@ -101,6 +109,32 @@ export function AutomationLogs() {
       setStats(result?.data || result);
     }).catch(() => {}).finally(() => setStatsLoading(false));
   }, []);
+
+  // WebSocket: listen for new automation logs in real-time
+  useEffect(() => {
+    const cleanup = on("automation:log:new", (raw: any) => {
+      const log = normalizeLog(raw);
+
+      // Only prepend if compatible with current filters
+      const matchesAutomation = !filterAutomation || log.automationId === filterAutomation;
+      const matchesStatus = !filterStatus || log.status === filterStatus;
+
+      if (matchesAutomation && matchesStatus && page === 1) {
+        setLogs((prev) => {
+          // Deduplicate by id
+          if (prev.some((l) => l.id === log.id)) return prev;
+          return [log, ...prev];
+        });
+      }
+
+      toast.info("Nova execução registrada", {
+        description: `${log.automationName} — ${log.status === "ERROR" ? "Erro" : "Sucesso"}`,
+        duration: 4000,
+      });
+    });
+
+    return cleanup;
+  }, [on, filterAutomation, filterStatus, page]);
 
   // Load logs with server-side filters and pagination
   const loadLogs = useCallback(async () => {

@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { AutomationStatus, AutomationLogStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { planLimitsService } from './planLimitsService.js';
+import { emitToTenant } from './socketService.js';
 
 export interface CreateAutomationData {
   name: string;
@@ -147,7 +148,7 @@ export const automationService = {
     error?: string,
     extra?: { leadId?: string; stepOrder?: number; stepType?: string; executionId?: string }
   ) {
-    return prisma.automationLog.create({
+    const log = await prisma.automationLog.create({
       data: {
         automationId,
         status,
@@ -159,7 +160,18 @@ export const automationService = {
         stepType: extra?.stepType || null,
         executionId: extra?.executionId || null,
       },
+      include: {
+        automation: { select: { id: true, name: true, tenantId: true } },
+        lead: { select: { id: true, name: true, email: true } },
+      },
     });
+
+    // Emit real-time event to tenant
+    if (log.automation?.tenantId) {
+      emitToTenant(log.automation.tenantId, 'automation:log:new', log);
+    }
+
+    return log;
   },
 
   async updateStats(automationId: string, success: boolean) {
