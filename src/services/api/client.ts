@@ -288,7 +288,7 @@ class ApiClient {
 
   // Public lead capture (no auth required)
   async publicCaptureLead(formId: string, data: any) {
-    return this.request<any>(`/api/leads/capture/${formId}`, {
+    return this.request<any>(`/api/public/capture/${formId}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

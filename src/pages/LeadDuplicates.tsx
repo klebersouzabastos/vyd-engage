@@ -39,7 +39,7 @@ const statusLabels: Record<string, string> = {
   CONTACTED: "Contatado",
   QUALIFIED: "Qualificado",
   PROPOSAL: "Proposta",
-  NEGOTIATION: "Negociacao",
+  NEGOTIATION: "Negociação",
   WON: "Ganho",
   LOST: "Perdido",
 };

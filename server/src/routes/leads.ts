@@ -295,6 +295,20 @@ router.get('/export', async (req, res, next) => {
   }
 });
 
+// GET /api/leads/stats/count - Get lead count (MUST be before /:id)
+router.get('/stats/count', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const count = await leadService.count(req.user.tenantId);
+    res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/leads/:id - Get lead by ID
 router.get('/:id', async (req, res, next) => {
   try {
@@ -372,20 +386,6 @@ router.delete('/:id', async (req, res, next) => {
 
     await leadService.delete(req.user.tenantId, req.params.id);
     res.status(204).send();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET /api/leads/stats/count - Get lead count
-router.get('/stats/count', async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return next(createError('Authentication required', 401));
-    }
-
-    const count = await leadService.count(req.user.tenantId);
-    res.json({ count });
   } catch (error) {
     next(error);
   }

@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { useLeads } from "../hooks/useLeads";
+import { mapStatusToBackend, mapSourceToBackend } from "../utils/leadEnums";
 import { useFunnels } from "../hooks/useFunnels";
 import { Pagination } from "../components/Pagination";
 import { FilterPopover } from "../components/leads/FilterPopover";
@@ -179,7 +180,7 @@ export function Leads() {
     }
   };
 
-  const handleSelectLead = (id: number) => {
+  const handleSelectLead = (id: string) => {
     if (selectedLeads.includes(id)) {
       setSelectedLeads(selectedLeads.filter(l => l !== id));
     } else {
@@ -206,8 +207,8 @@ export function Leads() {
   const handleExportAllFiltered = async () => {
     try {
       const filters: { status?: string; source?: string; search?: string; tagId?: string } = {};
-      if (filterStatus.length === 1) filters.status = filterStatus[0];
-      if (filterSource.length === 1) filters.source = filterSource[0];
+      if (filterStatus.length === 1) filters.status = mapStatusToBackend(filterStatus[0]);
+      if (filterSource.length === 1) filters.source = mapSourceToBackend(filterSource[0]);
       if (searchQuery) filters.search = searchQuery;
       if (filterTag.length === 1) filters.tagId = filterTag[0];
 
@@ -252,7 +253,6 @@ export function Leads() {
   const handleDeleteLead = async (leadId: string) => {
     try {
       await deleteLeadAPI(leadId);
-      removeLeadFromPipeline(leadId);
       setSelectedLeads(prev => prev.filter(id => id !== leadId));
       if (selectedLead?.id === leadId) {
         setModalOpen(false);
@@ -434,7 +434,12 @@ export function Leads() {
               label="Filtrar por Status"
               allLabel="Todos os status"
               countSuffix="status"
-              options={pipelineColumns.map(col => ({ value: col.id, label: col.title }))}
+              options={[
+                { value: "novo", label: "Novo" },
+                { value: "contato", label: "Em Contato" },
+                { value: "fechado", label: "Fechado" },
+                { value: "perdido", label: "Perdido" },
+              ]}
               selected={filterStatus}
               onChange={setFilterStatus}
             />
@@ -625,7 +630,7 @@ export function Leads() {
                             <span className="text-sm text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{lead.date}</td>
+                        <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '-'}</td>
                         {customFields.length > 0 && (
                           <td className="px-6 py-4 hidden xl:table-cell">
                             {hasCustomFields(lead) ? (
@@ -779,7 +784,7 @@ export function Leads() {
 
       {/* Score Breakdown Modal */}
       <ScoreBreakdownModal
-        leadId={scoreLeadId!}
+        leadId={scoreLeadId ?? ""}
         open={!!scoreLeadId}
         onClose={() => setScoreLeadId(null)}
       />

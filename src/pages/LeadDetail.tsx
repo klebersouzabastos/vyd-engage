@@ -113,11 +113,11 @@ function getInteractionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     EMAIL: "E-mail",
     WHATSAPP: "WhatsApp",
-    CALL: "Ligacao",
-    MEETING: "Reuniao",
+    CALL: "Ligação",
+    MEETING: "Reunião",
     NOTE: "Nota",
-    STATUS_CHANGE: "Mudanca de Status",
-    AUTOMATION: "Automacao",
+    STATUS_CHANGE: "Mudança de Status",
+    AUTOMATION: "Automação",
   };
   return labels[type] || type;
 }

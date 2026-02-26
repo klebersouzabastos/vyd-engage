@@ -35,7 +35,7 @@ export function useLeads() {
         customFields: lead.customFields || {},
         notes: lead.notes || '',
         assignedTo: lead.assignedTo || '',
-        tags: lead.tags?.map((lt: any) => lt.tag) || [],
+        tags: lead.tags?.map((lt: any) => lt.tag?.id || lt.tagId || lt) || [],
         createdAt: lead.createdAt,
         updatedAt: lead.updatedAt,
       }));
@@ -70,7 +70,7 @@ export function useLeads() {
         customFields: data.customFields || {},
         notes: data.notes,
         assignedTo: data.assignedTo,
-        tagIds: data.tags?.map(t => t.id) || [],
+        tagIds: data.tags || [],
       });
 
       // Transform and add to list
@@ -115,7 +115,7 @@ export function useLeads() {
         customFields: data.customFields,
         notes: data.notes,
         assignedTo: data.assignedTo,
-        tagIds: data.tags?.map(t => t.id) || [],
+        tagIds: data.tags || [],
       });
 
       // Transform and update in list

@@ -314,10 +314,10 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
               </h3>
               {invalidCount > 0 && (
                 <p className="text-sm text-red-600 mb-3">
-                  {invalidCount} linha(s) sem nome (campo obrigatorio) serao ignoradas.
+                  {invalidCount} linha(s) sem nome (campo obrigatório) serão ignoradas.
                 </p>
               )}
-              <div className="border border-gray-300 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
+              <div className="border border-gray-300 rounded-lg max-h-[300px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
