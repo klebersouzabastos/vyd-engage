@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
@@ -9,7 +9,7 @@ import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { LeadModal } from "../components/LeadModal";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Plus, Download, Upload, Pencil, Trash2, Users, Mail, MessageSquare, X } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, Users, Mail, MessageSquare, X, Tag, ChevronDown } from "lucide-react";
 import { LeadImportModal } from "../components/leads/LeadImportModal";
 import { Checkbox } from "../components/ui/checkbox";
 import { useTags } from "../contexts/TagsContext";
@@ -19,6 +19,13 @@ import { CustomFieldDisplay } from "../components/CustomFieldDisplay";
 import { LeadScoreBadge } from "../components/LeadScoreBadge";
 import { Lead } from "../types";
 import { exportLeadsToExcel } from "../utils/excelExport";
+import { apiClient } from "../services/api/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { useLeads } from "../hooks/useLeads";
 import { useFunnels } from "../hooks/useFunnels";
 import { Pagination } from "../components/Pagination";
@@ -211,13 +218,11 @@ export function Leads() {
 
   const handleDeleteSelectedLeads = async () => {
     if (selectedLeads.length === 0) return;
-    const leadsToDelete = [...selectedLeads];
-    const leadToDeleteCount = leadsToDelete.length;
+    const leadToDeleteCount = selectedLeads.length;
 
     try {
-      await Promise.all(leadsToDelete.map(id => deleteLeadAPI(id)));
-      leadsToDelete.forEach(id => removeLeadFromPipeline(id));
-      if (selectedLead && leadsToDelete.includes(selectedLead.id)) {
+      await apiClient.bulkUpdateLeads(selectedLeads, 'delete');
+      if (selectedLead && selectedLeads.includes(selectedLead.id)) {
         setModalOpen(false);
         setSelectedLead(null);
       }
@@ -228,6 +233,51 @@ export function Leads() {
     } catch (error) {
       console.error("Erro ao deletar leads:", error);
       toast.error("Erro ao deletar leads. Tente novamente.");
+    }
+  };
+
+  const handleBulkChangeStatus = async (status: string) => {
+    if (selectedLeads.length === 0) return;
+    try {
+      await apiClient.bulkUpdateLeads(selectedLeads, 'change_status', { status });
+      setSelectedLeads([]);
+      refetch();
+      toast.success(`Status atualizado para ${selectedLeads.length} lead(s)!`);
+    } catch (error) {
+      console.error("Erro ao alterar status:", error);
+      toast.error("Erro ao alterar status. Tente novamente.");
+    }
+  };
+
+  const handleBulkAddTag = async (tagId: string) => {
+    if (selectedLeads.length === 0) return;
+    try {
+      await apiClient.bulkUpdateLeads(selectedLeads, 'add_tag', { tagId });
+      setSelectedLeads([]);
+      refetch();
+      toast.success(`Tag adicionada a ${selectedLeads.length} lead(s)!`);
+    } catch (error) {
+      console.error("Erro ao adicionar tag:", error);
+      toast.error("Erro ao adicionar tag. Tente novamente.");
+    }
+  };
+
+  const handleBulkExportCSV = async () => {
+    const selectedLeadData = filteredLeads.filter(l => selectedLeads.includes(l.id));
+    if (selectedLeadData.length === 0) return;
+    try {
+      await exportLeadsToExcel(
+        selectedLeadData,
+        { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
+        getStatusLabel,
+        getSourceLabel,
+        getAutomationById,
+        getTagById,
+      );
+      toast.success(`${selectedLeadData.length} lead(s) exportado(s)!`);
+    } catch (error) {
+      console.error("Erro ao exportar leads:", error);
+      toast.error("Erro ao exportar leads. Tente novamente.");
     }
   };
 
@@ -248,7 +298,7 @@ export function Leads() {
         {/* Bulk Actions Bar */}
         {selectedLeads.length > 0 && (
           <div className="bg-primary text-white rounded-lg p-4 shadow-sm border border-primary mb-4" role="status" aria-live="polite">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <span className="font-medium">
                   {selectedLeads.length} lead{selectedLeads.length > 1 ? "s" : ""} selecionado{selectedLeads.length > 1 ? "s" : ""}
@@ -262,15 +312,60 @@ export function Leads() {
                   <X size={14} />
                 </Button>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="bg-red-600 hover:bg-red-700 gap-2"
-              >
-                <Trash2 size={16} />
-                Deletar Selecionados
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Status Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="sm" className="gap-1">
+                      Status <ChevronDown size={14} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("NEW")}>Novo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("CONTACTED")}>Contatado</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("QUALIFIED")}>Qualificado</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("PROPOSAL")}>Proposta</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("NEGOTIATION")}>Negociacao</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("WON")}>Ganho</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("LOST")}>Perdido</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Tag Dropdown */}
+                {tags.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="sm" className="gap-1">
+                        <Tag size={14} /> Tag <ChevronDown size={14} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {tags.map(tag => (
+                        <DropdownMenuItem key={tag.id} onClick={() => handleBulkAddTag(tag.id)}>
+                          <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
+                          {tag.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Export CSV */}
+                <Button variant="secondary" size="sm" className="gap-1" onClick={handleBulkExportCSV}>
+                  <Download size={14} /> Exportar CSV
+                </Button>
+
+                {/* Delete */}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="bg-red-600 hover:bg-red-700 gap-1"
+                >
+                  <Trash2 size={14} />
+                  Deletar
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -399,7 +494,12 @@ export function Leads() {
                           <Checkbox checked={selectedLeads.includes(lead.id)} onCheckedChange={() => handleSelectLead(lead.id)} aria-label={`Selecionar ${lead.name}`} />
                         </td>
                         <td className="px-6 py-4">
-                          <p className="font-medium text-gray-900">{lead.name}</p>
+                          <Link
+                            to={`/app/leads/${lead.id}`}
+                            className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
+                          >
+                            {lead.name}
+                          </Link>
                         </td>
                         <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.phone}</td>
                         <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.email}</td>

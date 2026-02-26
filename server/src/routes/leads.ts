@@ -6,6 +6,7 @@ import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { LeadStatus, LeadSource, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
+import prisma from '../config/database.js';
 
 const router = Router();
 
@@ -54,6 +55,88 @@ router.get('/', async (req, res, next) => {
     const filters = querySchema.parse(req.query);
     const result = await leadService.findAll(req.user.tenantId, filters);
     res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// PATCH /api/leads/bulk — Bulk operations on leads
+router.patch('/bulk', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const bulkSchema = z.object({
+      ids: z.array(z.string().uuid()).min(1).max(500),
+      action: z.enum(['change_status', 'add_tag', 'remove_tag', 'assign_user', 'delete']),
+      payload: z.any().optional(),
+    });
+
+    const { ids, action, payload } = bulkSchema.parse(req.body);
+    const tenantId = req.user.tenantId;
+
+    // Verify all leads belong to tenant
+    const count = await prisma.lead.count({ where: { id: { in: ids }, tenantId } });
+    if (count !== ids.length) {
+      return next(createError('Some leads not found', 404));
+    }
+
+    let affected = 0;
+
+    switch (action) {
+      case 'change_status': {
+        const statusValue = z.nativeEnum(LeadStatus).parse(payload?.status);
+        await prisma.lead.updateMany({
+          where: { id: { in: ids }, tenantId },
+          data: { status: statusValue },
+        });
+        affected = ids.length;
+        break;
+      }
+      case 'add_tag': {
+        const tagId = z.string().uuid().parse(payload?.tagId);
+        for (const leadId of ids) {
+          await prisma.leadTag.create({
+            data: { leadId, tagId },
+          }).catch(() => {}); // Skip if already connected (unique constraint)
+        }
+        affected = ids.length;
+        break;
+      }
+      case 'remove_tag': {
+        const tagId = z.string().uuid().parse(payload?.tagId);
+        await prisma.leadTag.deleteMany({
+          where: { leadId: { in: ids }, tagId },
+        });
+        affected = ids.length;
+        break;
+      }
+      case 'assign_user': {
+        const userId = payload?.userId ? z.string().uuid().parse(payload.userId) : null;
+        await prisma.lead.updateMany({
+          where: { id: { in: ids }, tenantId },
+          data: { assignedTo: userId },
+        });
+        affected = ids.length;
+        break;
+      }
+      case 'delete': {
+        await prisma.lead.deleteMany({
+          where: { id: { in: ids }, tenantId },
+        });
+        affected = ids.length;
+        // Invalidate plan limits cache
+        const { planLimitsService } = await import('../services/planLimitsService.js');
+        planLimitsService.invalidateUsage(tenantId).catch(() => {});
+        break;
+      }
+    }
+
+    res.json({ status: 200, data: { affected, action } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));

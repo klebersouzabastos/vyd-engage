@@ -57,6 +57,8 @@ const ReportBuilder = lazyNamed(() => import("../pages/ReportBuilder"), "ReportB
 const ReportView = lazyNamed(() => import("../pages/ReportView"), "ReportView");
 const WhatsAppTemplates = lazyNamed(() => import("../pages/WhatsAppTemplates"), "WhatsAppTemplates");
 const EmailCampaigns = lazyNamed(() => import("../pages/EmailCampaigns"), "EmailCampaigns");
+const TeamManagement = lazyNamed(() => import("../pages/TeamManagement"), "TeamManagement");
+const LeadDetail = lazyNamed(() => import("../pages/LeadDetail"), "LeadDetail");
 
 export const router = createBrowserRouter([
   {
@@ -112,6 +114,14 @@ export const router = createBrowserRouter([
       {
         path: "leads/:id/edit",
         element: LeadForm,
+      },
+      {
+        path: "leads/:id",
+        element: LeadDetail,
+      },
+      {
+        path: "team",
+        element: TeamManagement,
       },
       {
         path: "pipeline",

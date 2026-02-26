@@ -421,6 +421,13 @@ class ApiClient {
     });
   }
 
+  async bulkUpdateLeads(ids: string[], action: string, payload?: any) {
+    return this.request<{ status: number; data: { affected: number; action: string } }>('/api/leads/bulk', {
+      method: 'PATCH',
+      body: JSON.stringify({ ids, action, payload }),
+    });
+  }
+
   // Tasks
   async getTasks(filters?: any) {
     const params = new URLSearchParams();
@@ -1012,6 +1019,42 @@ class ApiClient {
     if (params?.to) query.set('to', params.to);
     const qs = query.toString();
     return this.request<any>(`/api/reports/metrics${qs ? `?${qs}` : ''}`);
+  }
+
+  // ========================
+  // Users (Team Management)
+  // ========================
+
+  async getUsers() {
+    return this.request<any[]>('/api/users');
+  }
+
+  async updateUser(id: string, data: { role?: string; status?: string }) {
+    return this.request<any>(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ========================
+  // Invitations (Team Management)
+  // ========================
+
+  async getInvitations() {
+    return this.request<any[]>('/api/invitations');
+  }
+
+  async createInvitation(data: { email: string; role: string }) {
+    return this.request<any>('/api/invitations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async cancelInvitation(id: string) {
+    return this.request<void>(`/api/invitations/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   // ========================

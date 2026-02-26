@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   Users,
+  UsersRound,
   GitBranch,
   Zap,
   Settings,
@@ -21,6 +22,7 @@ import { useTasks } from "../hooks/useTasks";
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app", tourId: "sidebar-dashboard" },
   { icon: Users, label: "Leads", path: "/app/leads", tourId: "sidebar-leads" },
+  { icon: UsersRound, label: "Equipe", path: "/app/team", tourId: "sidebar-team" },
   { icon: GitBranch, label: "Funil", path: "/app/pipeline", tourId: "sidebar-pipeline" },
   { icon: Inbox, label: "Inbox", path: "/app/inbox", tourId: "sidebar-inbox" },
   { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },
