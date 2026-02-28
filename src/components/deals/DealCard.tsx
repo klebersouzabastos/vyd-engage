@@ -1,0 +1,64 @@
+import { Deal } from "../../types";
+import { User, Calendar } from "lucide-react";
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+function formatDate(date: string | null | undefined): string {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+interface DealCardProps {
+  deal: Deal;
+  onDragStart: () => void;
+  onClick: () => void;
+  onEdit: () => void;
+}
+
+export function DealCard({ deal, onDragStart, onClick, onEdit }: DealCardProps) {
+  return (
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onClick={onClick}
+      className="bg-white rounded-lg border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="text-sm font-medium text-gray-900 truncate flex-1">{deal.name}</h4>
+      </div>
+
+      <p className="text-sm font-bold text-gray-800 mb-2">{formatCurrency(deal.value)}</p>
+
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center gap-3">
+          {deal.lead && (
+            <span className="truncate max-w-[100px]" title={deal.lead.name}>
+              {deal.lead.name}
+            </span>
+          )}
+        </div>
+        <span className="text-gray-400">{deal.probability}%</span>
+      </div>
+
+      <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
+        {deal.assignedUser && (
+          <span className="flex items-center gap-1">
+            <User size={10} />
+            {deal.assignedUser.name.split(" ")[0]}
+          </span>
+        )}
+        {deal.expectedCloseDate && (
+          <span className="flex items-center gap-1 ml-auto">
+            <Calendar size={10} />
+            {formatDate(deal.expectedCloseDate)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

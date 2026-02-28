@@ -1098,6 +1098,55 @@ class ApiClient {
     return this.request<any[]>('/api/payments/history');
   }
 
+  // ========================
+  // Deals
+  // ========================
+
+  async getDeals(filters?: any) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request<any>(`/api/deals${query ? `?${query}` : ''}`);
+  }
+
+  async getDeal(id: string) {
+    return this.request<any>(`/api/deals/${id}`);
+  }
+
+  async createDeal(data: any) {
+    return this.request<any>('/api/deals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDeal(id: string, data: any) {
+    return this.request<any>(`/api/deals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteDeal(id: string) {
+    return this.request(`/api/deals/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getDealStats() {
+    return this.request<any>('/api/deals/stats');
+  }
+
+  async getDealInteractions(dealId: string) {
+    return this.request<any[]>(`/api/interactions?dealId=${dealId}`);
+  }
+
   async downloadInvoice(paymentId: string): Promise<Blob> {
     const response = await fetch(`${this.baseURL}/api/payments/${paymentId}/invoice`, {
       credentials: 'include',

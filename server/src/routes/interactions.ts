@@ -13,6 +13,7 @@ router.use(tenantScope);
 
 const createInteractionSchema = z.object({
   leadId: z.string().uuid().optional(),
+  dealId: z.string().uuid().optional(),
   type: z.nativeEnum(InteractionType),
   direction: z.nativeEnum(InteractionDirection),
   subject: z.string().optional(),
@@ -24,6 +25,7 @@ const createInteractionSchema = z.object({
 
 const querySchema = z.object({
   leadId: z.string().uuid().optional(),
+  dealId: z.string().uuid().optional(),
   type: z.string().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),

@@ -62,6 +62,7 @@ model User {
   refreshTokens RefreshToken[]
   invitations   Invitation[]   @relation("InvitedBy")
   assignedLeads Lead[]         @relation("LeadAssignment")
+  assignedDeals Deal[]         @relation("DealAssignment")
   assignedTasks Task[]         @relation("TaskAssignment")
   interactions  Interaction[]  @relation("InteractionUser")
   notifications Notification[] @relation("NotificationUser")
@@ -139,6 +140,7 @@ model Tenant {
   funnels             Funnel[]
   scoreRules          ScoreRule[]
   reports             Report[]
+  deals               Deal[]
 
   @@index([slug])
 }
@@ -350,6 +352,48 @@ model ScoreRule {
 }
 
 // ============================================
+// DEALS
+// ============================================
+
+enum DealStage {
+  QUALIFICATION
+  PROPOSAL
+  NEGOTIATION
+  CLOSING
+  WON
+  LOST
+}
+
+model Deal {
+  id                String     @id @default(uuid())
+  tenantId          String
+  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name              String
+  value             Decimal    @db.Decimal(12, 2)
+  stage             DealStage  @default(QUALIFICATION)
+  probability       Int        @default(20)
+  expectedCloseDate DateTime?
+  leadId            String?
+  lead              Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedTo        String?
+  assignedUser      User?      @relation("DealAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+  notes             String?
+  customFields      Json       @default("{}")
+  lostReason        String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  closedAt          DateTime?
+  interactions      Interaction[]
+  tasks             Task[]
+
+  @@index([tenantId])
+  @@index([tenantId, stage])
+  @@index([tenantId, assignedTo])
+  @@index([tenantId, leadId])
+  @@index([tenantId, expectedCloseDate])
+}
+
+// ============================================
 // LEADS & CRM
 // ============================================
 
@@ -411,6 +455,7 @@ model Lead {
   interactions   Interaction[]
   tasks          Task[]
   automationLogs AutomationLog[]
+  deals          Deal[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -497,6 +542,8 @@ model Task {
   assignedUser User?   @relation("TaskAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
   leadId       String?
   lead         Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  dealId       String?
+  deal         Deal?   @relation(fields: [dealId], references: [id], onDelete: SetNull)
 
   // Dates
   dueDate     DateTime?
@@ -715,12 +762,15 @@ model Interaction {
   automation   Automation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
   userId       String?
   user         User?       @relation("InteractionUser", fields: [userId], references: [id], onDelete: SetNull)
+  dealId       String?
+  deal         Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
 
   /// Append-only: interactions are immutable communication records
   createdAt DateTime @default(now())
 
   @@index([tenantId])
   @@index([tenantId, leadId])
+  @@index([tenantId, dealId])
   @@index([tenantId, createdAt])
   @@index([tenantId, type])
 }

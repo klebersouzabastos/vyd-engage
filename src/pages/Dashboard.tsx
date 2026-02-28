@@ -7,6 +7,7 @@ import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashbo
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { PageSkeleton } from "../components/PageSkeleton";
+import { DealAnalytics } from "../components/deals/DealAnalytics";
 import { useDashboard, DateRange } from "../hooks/useDashboard";
 // Helper function to format time ago
 function formatTimeAgo(date: string): string {
@@ -219,6 +220,14 @@ export function Dashboard() {
               />
             ))}
         </div>
+
+        {/* Deal Stats */}
+        {stats.dealStats && (
+          <div className="mb-8">
+            <h3 className="text-gray-900 font-semibold mb-4">Deals</h3>
+            <DealAnalytics stats={stats.dealStats} compact />
+          </div>
+        )}
 
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

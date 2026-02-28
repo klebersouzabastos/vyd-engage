@@ -121,6 +121,7 @@ import invitationRoutes from './routes/invitations.js';
 import funnelRoutes from './routes/funnels.js';
 import scoringRoutes from './routes/scoring.js';
 import reportRoutes from './routes/reports.js';
+import dealRoutes from './routes/deals.js';
 import trackingRoutes from './routes/tracking.js';
 import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
 
@@ -155,6 +156,7 @@ app.use('/api/outgoing-webhooks', csrfProtection);
 app.use('/api/invitations', csrfProtection);
 app.use('/api/funnels', csrfProtection);
 app.use('/api/scoring-rules', csrfProtection);
+app.use('/api/deals', csrfProtection);
 app.use('/api/reports', csrfProtection);
 app.use('/api/auth/profile', csrfProtection);
 app.use('/api/auth/change-password', csrfProtection);
@@ -183,6 +185,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/funnels', funnelRoutes);
 app.use('/api/scoring-rules', scoringRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/deals', dealRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/outgoing-webhooks', outgoingWebhookRoutes);
 

@@ -32,6 +32,10 @@ import { apiClient } from "../services/api/client";
 import { useTags } from "../contexts/TagsContext";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
 import { mapStatusFromBackend, mapSourceFromBackend } from "../utils/leadEnums";
+import { DealStageBadge } from "../components/deals/DealStageBadge";
+import { DealForm } from "../components/deals/DealForm";
+import { Deal, DealStage } from "../types";
+import { Handshake, DollarSign } from "lucide-react";
 
 // Number of interactions to show per "page"
 const ITEMS_PER_PAGE = 10;
@@ -194,6 +198,10 @@ export function LeadDetail() {
   const [savingNote, setSavingNote] = useState(false);
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
 
+  // Lead-Deal integration
+  const [leadDeals, setLeadDeals] = useState<Deal[]>([]);
+  const [dealFormOpen, setDealFormOpen] = useState(false);
+
   const fetchLead = useCallback(async () => {
     if (!id) return;
     try {
@@ -223,10 +231,21 @@ export function LeadDetail() {
     }
   }, [id]);
 
+  const fetchLeadDeals = useCallback(async () => {
+    if (!id) return;
+    try {
+      const result = await apiClient.getDeals({ leadId: id, limit: 50 });
+      setLeadDeals((result.deals || []).map((d: any) => ({ ...d, value: Number(d.value) })));
+    } catch {
+      // Silent fail
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchLead();
     fetchInteractions();
-  }, [fetchLead, fetchInteractions]);
+    fetchLeadDeals();
+  }, [fetchLead, fetchInteractions, fetchLeadDeals]);
 
   const handleSaveNote = async () => {
     if (!noteContent.trim() || !id) return;
@@ -607,6 +626,44 @@ export function LeadDetail() {
                 </div>
               </div>
 
+              {/* Deals section */}
+              <hr className="border-gray-200" />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                    <Handshake size={12} />
+                    Deals
+                  </span>
+                  <button
+                    onClick={() => setDealFormOpen(true)}
+                    className="text-xs text-primary hover:underline font-medium"
+                  >
+                    + Criar Deal
+                  </button>
+                </div>
+                {leadDeals.length === 0 ? (
+                  <p className="text-xs text-gray-400">Nenhum deal associado</p>
+                ) : (
+                  <div className="space-y-2">
+                    {leadDeals.map(deal => (
+                      <button
+                        key={deal.id}
+                        onClick={() => navigate(`/app/deals/${deal.id}`)}
+                        className="w-full text-left p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-gray-900 truncate">{deal.name}</span>
+                          <DealStageBadge stage={deal.stage} size="sm" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-700">
+                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(deal.value)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Edit button */}
               <Button
                 variant="outline"
@@ -629,6 +686,18 @@ export function LeadDetail() {
           onClose={() => setScoreModalOpen(false)}
         />
       )}
+
+      {/* Deal Form Modal */}
+      <DealForm
+        open={dealFormOpen}
+        onClose={() => setDealFormOpen(false)}
+        onSave={async (data) => {
+          await apiClient.createDeal(data);
+          setDealFormOpen(false);
+          fetchLeadDeals();
+        }}
+        defaultLeadId={id}
+      />
     </div>
   );
 }

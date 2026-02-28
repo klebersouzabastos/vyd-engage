@@ -1,0 +1,255 @@
+import { useState, useEffect } from "react";
+import { Deal, DealStage } from "../../types";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../ui/dialog";
+import { Loader2 } from "lucide-react";
+import { apiClient } from "../../services/api/client";
+
+const STAGES: { value: DealStage; label: string }[] = [
+  { value: "QUALIFICATION", label: "Qualificação" },
+  { value: "PROPOSAL", label: "Proposta" },
+  { value: "NEGOTIATION", label: "Negociação" },
+  { value: "CLOSING", label: "Fechamento" },
+  { value: "WON", label: "Ganho" },
+  { value: "LOST", label: "Perdido" },
+];
+
+interface DealFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (data: any) => Promise<void>;
+  deal?: Deal | null;
+  defaultLeadId?: string;
+}
+
+export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFormProps) {
+  const [name, setName] = useState("");
+  const [value, setValue] = useState("");
+  const [stage, setStage] = useState<DealStage>("QUALIFICATION");
+  const [probability, setProbability] = useState("20");
+  const [expectedCloseDate, setExpectedCloseDate] = useState("");
+  const [leadId, setLeadId] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [notes, setNotes] = useState("");
+  const [lostReason, setLostReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const [leads, setLeads] = useState<Array<{ id: string; name: string }>>([]);
+  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    if (open) {
+      // Load leads and users for selects
+      apiClient.getLeads({ limit: 100 }).then(res => {
+        setLeads(res.leads?.map((l: any) => ({ id: l.id, name: l.name })) || []);
+      }).catch(() => {});
+      apiClient.getUsers().then(res => {
+        const userList = Array.isArray(res) ? res : res.data || [];
+        setUsers(userList.map((u: any) => ({ id: u.id, name: u.name })));
+      }).catch(() => {});
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (deal) {
+      setName(deal.name);
+      setValue(String(deal.value));
+      setStage(deal.stage);
+      setProbability(String(deal.probability));
+      setExpectedCloseDate(deal.expectedCloseDate ? deal.expectedCloseDate.split("T")[0] : "");
+      setLeadId(deal.leadId || "");
+      setAssignedTo(deal.assignedTo || "");
+      setNotes(deal.notes || "");
+      setLostReason(deal.lostReason || "");
+    } else {
+      setName("");
+      setValue("");
+      setStage("QUALIFICATION");
+      setProbability("20");
+      setExpectedCloseDate("");
+      setLeadId(defaultLeadId || "");
+      setAssignedTo("");
+      setNotes("");
+      setLostReason("");
+    }
+  }, [deal, open, defaultLeadId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !value) return;
+
+    setSaving(true);
+    try {
+      await onSave({
+        name: name.trim(),
+        value: parseFloat(value),
+        stage,
+        probability: parseInt(probability),
+        expectedCloseDate: expectedCloseDate || undefined,
+        leadId: leadId || null,
+        assignedTo: assignedTo || null,
+        notes: notes.trim() || undefined,
+        lostReason: stage === "LOST" ? lostReason.trim() || undefined : undefined,
+      });
+      onClose();
+    } catch {
+      // Error handled by parent
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{deal ? "Editar Deal" : "Novo Deal"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="deal-name">Nome *</Label>
+            <Input
+              id="deal-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nome do negócio"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="deal-value">Valor (R$) *</Label>
+              <Input
+                id="deal-value"
+                type="number"
+                min="0"
+                step="0.01"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="deal-stage">Stage</Label>
+              <Select value={stage} onValueChange={(v) => setStage(v as DealStage)}>
+                <SelectTrigger id="deal-stage">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAGES.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="deal-probability">Probabilidade (%)</Label>
+              <Input
+                id="deal-probability"
+                type="number"
+                min="0"
+                max="100"
+                value={probability}
+                onChange={(e) => setProbability(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="deal-close-date">Data de Fechamento</Label>
+              <Input
+                id="deal-close-date"
+                type="date"
+                value={expectedCloseDate}
+                onChange={(e) => setExpectedCloseDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="deal-lead">Lead Associado</Label>
+              <Select value={leadId || "none"} onValueChange={(v) => setLeadId(v === "none" ? "" : v)}>
+                <SelectTrigger id="deal-lead">
+                  <SelectValue placeholder="Nenhum" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {leads.map(l => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="deal-assigned">Responsável</Label>
+              <Select value={assignedTo || "none"} onValueChange={(v) => setAssignedTo(v === "none" ? "" : v)}>
+                <SelectTrigger id="deal-assigned">
+                  <SelectValue placeholder="Nenhum" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="deal-notes">Notas</Label>
+            <Textarea
+              id="deal-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Observações sobre o negócio..."
+              rows={3}
+            />
+          </div>
+
+          {stage === "LOST" && (
+            <div>
+              <Label htmlFor="deal-lost-reason">Motivo da Perda</Label>
+              <Input
+                id="deal-lost-reason"
+                value={lostReason}
+                onChange={(e) => setLostReason(e.target.value)}
+                placeholder="Por que o deal foi perdido?"
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={saving || !name.trim() || !value}>
+              {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
+              {deal ? "Salvar" : "Criar"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

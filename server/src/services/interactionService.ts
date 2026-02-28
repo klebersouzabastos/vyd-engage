@@ -5,6 +5,7 @@ import { scoringService } from './scoringService.js';
 
 export interface CreateInteractionData {
   leadId?: string;
+  dealId?: string;
   type: InteractionType;
   direction: InteractionDirection;
   subject?: string;
@@ -20,6 +21,7 @@ export const interactionService = {
       data: {
         tenantId,
         leadId: data.leadId || null,
+        dealId: data.dealId || null,
         type: data.type,
         direction: data.direction,
         subject: data.subject || null,
@@ -49,6 +51,7 @@ export const interactionService = {
 
   async findAll(tenantId: string, filters?: {
     leadId?: string;
+    dealId?: string;
     type?: string;
     page?: number;
     limit?: number;
@@ -63,6 +66,10 @@ export const interactionService = {
 
     if (filters?.leadId) {
       where.leadId = filters.leadId;
+    }
+
+    if (filters?.dealId) {
+      where.dealId = filters.dealId;
     }
 
     if (filters?.type) {

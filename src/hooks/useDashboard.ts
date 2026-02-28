@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api/client';
-import { Lead } from '../types';
+import { Lead, DealStats } from '../types';
 
 export interface DateRange {
   from: Date | null;
@@ -16,6 +16,7 @@ export interface DashboardStats {
   overdueTasks: number;
   tasksDueToday: number;
   completedTasks: number;
+  dealStats: DealStats | null;
 }
 
 export function useDashboard(dateRange?: DateRange) {
@@ -28,6 +29,7 @@ export function useDashboard(dateRange?: DateRange) {
     overdueTasks: 0,
     tasksDueToday: 0,
     completedTasks: 0,
+    dealStats: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,13 +39,15 @@ export function useDashboard(dateRange?: DateRange) {
       setLoading(true);
       setError(null);
 
-      // Fetch leads
-      const leadsResult = await apiClient.getLeads({ limit: 100 });
+      // Fetch leads, tasks, and deal stats in parallel
+      const [leadsResult, tasksResult, dealStatsResult] = await Promise.all([
+        apiClient.getLeads({ limit: 100 }),
+        apiClient.getTasks({ limit: 100 }),
+        apiClient.getDealStats().catch(() => ({ data: null })),
+      ]);
       let leads = leadsResult.leads || [];
-
-      // Fetch tasks
-      const tasksResult = await apiClient.getTasks({ limit: 100 });
       let tasks = tasksResult.tasks || [];
+      const dealStats = dealStatsResult?.data || null;
 
       // Apply date range filter
       if (dateRange?.from || dateRange?.to) {
@@ -121,6 +125,7 @@ export function useDashboard(dateRange?: DateRange) {
         overdueTasks,
         tasksDueToday,
         completedTasks,
+        dealStats,
       });
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar dados do dashboard');

@@ -193,3 +193,49 @@ export interface Comment {
   updatedAt?: string;
 }
 
+// ========================
+// Deals
+// ========================
+
+export type DealStage = "QUALIFICATION" | "PROPOSAL" | "NEGOTIATION" | "CLOSING" | "WON" | "LOST";
+
+export interface Deal {
+  id: string;
+  tenantId: string;
+  name: string;
+  value: number;
+  stage: DealStage;
+  probability: number;
+  expectedCloseDate?: string | null;
+  leadId?: string | null;
+  lead?: { id: string; name: string; email?: string; phone?: string; company?: string } | null;
+  assignedTo?: string | null;
+  assignedUser?: { id: string; name: string; email: string } | null;
+  notes?: string | null;
+  customFields: Record<string, any>;
+  lostReason?: string | null;
+  closedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DealStats {
+  totalPipelineValue: number;
+  weightedValue: number;
+  wonValue: number;
+  lostValue: number;
+  winRate: number;
+  avgDealSize: number;
+  avgCycleTime: number;
+  byStage: Array<{
+    stage: string;
+    count: number;
+    totalValue: number;
+    weightedValue: number;
+  }>;
+  totalDeals: number;
+  activeDeals: number;
+  wonDeals: number;
+  lostDeals: number;
+}
+
