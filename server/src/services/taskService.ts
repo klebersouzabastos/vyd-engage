@@ -65,6 +65,8 @@ export const taskService = {
     leadId?: string;
     overdue?: boolean;
     dueToday?: boolean;
+    startDate?: Date;
+    endDate?: Date;
     page?: number;
     limit?: number;
   }) {
@@ -92,16 +94,19 @@ export const taskService = {
       where.leadId = filters.leadId;
     }
 
-    if (filters?.overdue) {
+    if (filters?.startDate && filters?.endDate) {
+      where.dueDate = {
+        gte: filters.startDate,
+        lte: new Date(new Date(filters.endDate).setHours(23, 59, 59, 999)),
+      };
+    } else if (filters?.overdue) {
       where.dueDate = {
         lt: new Date(),
       };
       where.status = {
         not: TaskStatus.COMPLETED,
       };
-    }
-
-    if (filters?.dueToday) {
+    } else if (filters?.dueToday) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);

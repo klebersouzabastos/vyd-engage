@@ -1,15 +1,16 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { TaskCard } from "../components/TaskCard";
-import { Calendar } from "../components/ui/calendar";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { useTasks } from "../hooks/useTasks";
 import { Task } from "../types";
-import { Plus, Filter, Calendar as CalendarIcon, AlertCircle, List, Grid } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList } from "lucide-react";
 import { useNotifications } from "../contexts/NotificationContext";
+import { useIsMobile } from "../components/ui/use-mobile";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,13 +21,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
+import type { CalendarViewMode } from "../components/calendar/calendarUtils";
+import {
+  getDateRangeForView,
+  formatMonthTitle,
+  formatWeekTitle,
+  startOfWeek,
+  addMonths,
+  subMonths,
+  addWeeks,
+  subWeeks,
+  addDays,
+  subDays,
+} from "../components/calendar/calendarUtils";
+import { CalendarHeader } from "../components/calendar/CalendarHeader";
+import { CalendarMonthView } from "../components/calendar/CalendarMonthView";
+import { CalendarWeekView } from "../components/calendar/CalendarWeekView";
+import { CalendarAgendaView } from "../components/calendar/CalendarAgendaView";
+import { CalendarTaskPopover } from "../components/calendar/CalendarTaskPopover";
+import { CalendarQuickAdd } from "../components/calendar/CalendarQuickAdd";
 
 export function Tasks() {
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
-  const { tasks, loading, createTask, updateTask, deleteTask, completeTask, uncompleteTask, refetch } = useTasks();
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const isMobile = useIsMobile();
+  const { tasks, loading, createTask, updateTask, deleteTask, completeTask, uncompleteTask, refetch, fetchTasks } = useTasks();
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(() => isMobile ? "agenda" : "list");
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddDate, setQuickAddDate] = useState<Date>(new Date());
+  const [popoverTask, setPopoverTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<
     "all" | "overdue" | "today" | "pending" | "completed"
   >("all");
@@ -180,32 +204,66 @@ export function Tasks() {
     }
   };
 
-  // Agrupar tarefas por data para o calendário (incluindo concluídas)
-  const tasksByDate = useMemo(() => {
-    return filteredTasks.reduce((acc, task) => {
-      if (!task.dueDate) return acc;
-      try {
-    const date = new Date(task.dueDate);
-        if (isNaN(date.getTime())) return acc;
-    const dateKey = date.toISOString().split("T")[0];
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
+  // Refetch baseado no viewMode e calendarDate
+  useEffect(() => {
+    if (viewMode === "list") {
+      fetchTasks(undefined, { silent: true });
+    } else {
+      const { startDate, endDate } = getDateRangeForView(viewMode, calendarDate);
+      fetchTasks({ startDate, endDate, limit: 200 }, { silent: true });
     }
-    acc[dateKey].push(task);
-      } catch (error) {
-        // Skip invalid dates
-      }
-    return acc;
-  }, {} as Record<string, Task[]>);
-  }, [filteredTasks]);
+  }, [viewMode, calendarDate, fetchTasks]);
 
-  // Obter tarefas do dia selecionado
-  const selectedDateTasks = selectedDate
-    ? tasksByDate[selectedDate.toISOString().split("T")[0]] || []
-    : [];
+  // Navegação do calendário
+  const handleCalendarNavigate = useCallback((direction: "prev" | "next" | "today") => {
+    setCalendarDate(prev => {
+      if (direction === "today") return new Date();
+      if (viewMode === "month") return direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1);
+      if (viewMode === "week") return direction === "next" ? addWeeks(prev, 1) : subWeeks(prev, 1);
+      return direction === "next" ? addDays(prev, 14) : subDays(prev, 14);
+    });
+  }, [viewMode]);
 
-  // Obter datas com tarefas para marcar no calendário
-  const datesWithTasks = Object.keys(tasksByDate).map((dateStr) => new Date(dateStr));
+  // Título do calendário
+  const calendarTitle = useMemo(() => {
+    if (viewMode === "month") return formatMonthTitle(calendarDate);
+    if (viewMode === "week") return formatWeekTitle(startOfWeek(calendarDate, { weekStartsOn: 0 }));
+    return "Agenda";
+  }, [viewMode, calendarDate]);
+
+  // Drag-and-drop handler
+  const handleTaskDrop = useCallback(async (taskId: string, newDate: Date) => {
+    try {
+      await updateTask(taskId, { dueDate: newDate.toISOString() });
+      toast.success("Tarefa reagendada");
+    } catch {
+      // Error handled by hook
+    }
+  }, [updateTask]);
+
+  // Quick add handler
+  const handleQuickAdd = useCallback(async (data: { title: string; priority: string; dueDate: string }) => {
+    try {
+      await createTask({
+        title: data.title,
+        priority: data.priority as Task["priority"],
+        dueDate: data.dueDate,
+      });
+    } catch {
+      // Error handled by hook
+    }
+  }, [createTask]);
+
+  // Calendar date click -> quick add
+  const handleCalendarDateClick = useCallback((date: Date) => {
+    setQuickAddDate(date);
+    setQuickAddOpen(true);
+  }, []);
+
+  // Calendar task click -> popover
+  const handleCalendarTaskClick = useCallback((task: Task) => {
+    setPopoverTask(task);
+  }, []);
 
 
   if (loading) {
@@ -302,13 +360,31 @@ export function Tasks() {
                 Lista
               </Button>
               <Button
-                variant={viewMode === "calendar" ? "default" : "outline"}
+                variant={viewMode === "month" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setViewMode("calendar")}
+                onClick={() => setViewMode("month")}
                 className="whitespace-nowrap"
               >
-                <Grid size={14} className="mr-1" />
-                Calendário
+                <CalendarDays size={14} className="mr-1" />
+                Mês
+              </Button>
+              <Button
+                variant={viewMode === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("week")}
+                className="whitespace-nowrap"
+              >
+                <CalendarRange size={14} className="mr-1" />
+                Semana
+              </Button>
+              <Button
+                variant={viewMode === "agenda" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("agenda")}
+                className="whitespace-nowrap"
+              >
+                <LayoutList size={14} className="mr-1" />
+                Agenda
               </Button>
               {isSelectMode && (
                 <>
@@ -467,71 +543,63 @@ export function Tasks() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 bg-white rounded-lg p-8 shadow-sm border border-gray-300">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="w-full"
-                modifiers={{
-                  hasTasks: datesWithTasks,
-                }}
-                modifiersClassNames={{
-                  hasTasks: "bg-blue-100 text-blue-700 font-semibold",
-                }}
-                classNames={{
-                  months: "flex flex-col sm:flex-row gap-6",
-                  month: "flex flex-col gap-6 w-full",
-                  caption: "flex justify-center pt-2 relative items-center w-full mb-4",
-                  caption_label: "text-xl font-semibold",
-                  nav: "flex items-center gap-2",
-                  nav_button: "h-8 w-8",
-                  table: "w-full border-collapse",
-                  head_row: "flex mb-2",
-                  head_cell: "text-muted-foreground rounded-md flex-1 font-semibold text-sm py-2",
-                  row: "flex w-full mt-1",
-                  cell: "relative flex-1 p-1 text-center focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent",
-                  day: "h-16 w-full p-2 font-normal aria-selected:opacity-100 text-base rounded-md flex items-center justify-center",
-                }}
+          <div>
+            <CalendarHeader
+              title={calendarTitle}
+              viewMode={viewMode}
+              onNavigate={handleCalendarNavigate}
+            />
+
+            {viewMode === "month" && (
+              <CalendarMonthView
+                currentDate={calendarDate}
+                tasks={tasks}
+                onTaskClick={handleCalendarTaskClick}
+                onDateClick={handleCalendarDateClick}
+                onTaskDrop={handleTaskDrop}
               />
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {selectedDate
-                  ? `Tarefas para ${selectedDate.toLocaleDateString("pt-BR", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}`
-                  : "Selecione uma data"}
-              </h3>
-              {selectedDateTasks.length > 0 ? (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {selectedDateTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={() => handleToggle(task)}
-                      onEdit={() => handleEdit(task)}
-                      onDelete={() => setDeletingTask(task)}
-                      selected={selectedTasks.has(task.id)}
-                      onSelect={(selected) => handleSelectTask(task.id, selected)}
-                      showCheckbox={isSelectMode}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
-                  <p className="text-gray-600">
-                    {selectedDate
-                      ? "Nenhuma tarefa para esta data"
-                      : "Selecione uma data no calendário para ver as tarefas"}
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
+
+            {viewMode === "week" && (
+              <CalendarWeekView
+                weekStart={startOfWeek(calendarDate, { weekStartsOn: 0 })}
+                tasks={tasks}
+                onTaskClick={handleCalendarTaskClick}
+                onDateClick={handleCalendarDateClick}
+                onTaskDrop={handleTaskDrop}
+              />
+            )}
+
+            {viewMode === "agenda" && (
+              <CalendarAgendaView
+                startDate={new Date()}
+                tasks={tasks}
+                onTaskClick={handleCalendarTaskClick}
+                onDateClick={handleCalendarDateClick}
+              />
+            )}
+
+            <CalendarTaskPopover
+              task={popoverTask}
+              open={!!popoverTask}
+              onClose={() => setPopoverTask(null)}
+              onEdit={(task) => navigate(`/app/tasks/${task.id}/edit`)}
+              onComplete={async (task) => {
+                if (task.status === "COMPLETED") {
+                  await uncompleteTask(task.id);
+                } else {
+                  await completeTask(task.id);
+                }
+              }}
+              onDelete={(task) => setDeletingTask(task)}
+            />
+
+            <CalendarQuickAdd
+              open={quickAddOpen}
+              onClose={() => setQuickAddOpen(false)}
+              defaultDate={quickAddDate}
+              onSave={handleQuickAdd}
+            />
           </div>
         )}
       </div>
