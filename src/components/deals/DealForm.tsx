@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Deal, DealStage } from "../../types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { apiClient } from "../../services/api/client";
 
 const STAGES: { value: DealStage; label: string }[] = [
@@ -52,19 +52,47 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
 
   const [leads, setLeads] = useState<Array<{ id: string; name: string }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const [leadSearch, setLeadSearch] = useState("");
+  const [loadingLeads, setLoadingLeads] = useState(false);
+  const leadSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchLeads = useCallback(async (search?: string) => {
+    try {
+      setLoadingLeads(true);
+      const filters: any = { limit: 50 };
+      if (search?.trim()) filters.search = search.trim();
+      const res = await apiClient.getLeads(filters);
+      setLeads(res.leads?.map((l: any) => ({ id: l.id, name: l.name })) || []);
+    } catch {
+      // silent
+    } finally {
+      setLoadingLeads(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (open) {
-      // Load leads and users for selects
-      apiClient.getLeads({ limit: 100 }).then(res => {
-        setLeads(res.leads?.map((l: any) => ({ id: l.id, name: l.name })) || []);
-      }).catch(() => {});
+      // Load leads (initial) and users for selects
+      fetchLeads();
       apiClient.getUsers().then(res => {
         const userList = Array.isArray(res) ? res : res.data || [];
         setUsers(userList.map((u: any) => ({ id: u.id, name: u.name })));
       }).catch(() => {});
+    } else {
+      setLeadSearch("");
     }
-  }, [open]);
+  }, [open, fetchLeads]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (leadSearchTimerRef.current) clearTimeout(leadSearchTimerRef.current);
+    leadSearchTimerRef.current = setTimeout(() => {
+      fetchLeads(leadSearch);
+    }, 300);
+    return () => {
+      if (leadSearchTimerRef.current) clearTimeout(leadSearchTimerRef.current);
+    };
+  }, [leadSearch, open, fetchLeads]);
 
   useEffect(() => {
     if (deal) {
@@ -193,10 +221,34 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
                   <SelectValue placeholder="Nenhum" />
                 </SelectTrigger>
                 <SelectContent>
+                  <div className="px-2 pb-2">
+                    <div className="relative">
+                      <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Buscar lead..."
+                        value={leadSearch}
+                        onChange={(e) => setLeadSearch(e.target.value)}
+                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  {leads.map(l => (
-                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                  ))}
+                  {loadingLeads ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 size={14} className="animate-spin text-gray-400" />
+                    </div>
+                  ) : leads.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-gray-500 text-center">
+                      Nenhum lead encontrado
+                    </div>
+                  ) : (
+                    leads.map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

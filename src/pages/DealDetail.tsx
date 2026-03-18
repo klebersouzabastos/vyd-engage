@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { DealForm } from "../components/deals/DealForm";
+import { formatCurrency } from "../utils/format";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -88,10 +89,6 @@ function formatRelativeTime(dateStr: string): string {
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
 export function DealDetail() {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "./calendarUtils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -27,6 +27,13 @@ export function CalendarQuickAdd({
 }: CalendarQuickAddProps) {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState("MEDIUM");
+
+  useEffect(() => {
+    if (open) {
+      setTitle("");
+      setPriority("MEDIUM");
+    }
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

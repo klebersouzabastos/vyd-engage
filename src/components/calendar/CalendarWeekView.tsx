@@ -6,6 +6,7 @@ import {
   isToday,
   format,
 } from "./calendarUtils";
+import { ptBR } from "date-fns/locale";
 import { CalendarTaskChip } from "./CalendarTaskChip";
 import { useIsMobile } from "../ui/use-mobile";
 
@@ -48,6 +49,8 @@ export function CalendarWeekView({
 
   return (
     <div
+      role="grid"
+      aria-label="Calendário semanal"
       className={`
         bg-white rounded-lg border border-gray-300 overflow-hidden
         ${isMobile ? "flex flex-col" : "grid grid-cols-7"}
@@ -61,6 +64,9 @@ export function CalendarWeekView({
         return (
           <div
             key={idx}
+            role="gridcell"
+            aria-label={format(day, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            {...(today ? { "aria-current": "date" as const } : {})}
             className={`
               border-r border-gray-100 last:border-r-0
               ${isMobile ? "border-b last:border-b-0" : ""}
@@ -78,7 +84,7 @@ export function CalendarWeekView({
               onClick={() => onDateClick(day)}
             >
               <div className="text-xs font-medium text-gray-500 uppercase">
-                {format(day, "EEE", { locale: undefined })}
+                {format(day, "EEE", { locale: ptBR })}
               </div>
               <div
                 className={`

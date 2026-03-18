@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Deal, DealStage } from "../../types";
 import { DealCard } from "./DealCard";
+import { formatCurrency } from "../../utils/format";
 
 const PIPELINE_STAGES: { stage: DealStage; label: string; color: string }[] = [
   { stage: "QUALIFICATION", label: "Qualificação", color: "#3B82F6" },
@@ -8,10 +10,6 @@ const PIPELINE_STAGES: { stage: DealStage; label: string; color: string }[] = [
   { stage: "NEGOTIATION", label: "Negociação", color: "#F97316" },
   { stage: "CLOSING", label: "Fechamento", color: "#8B5CF6" },
 ];
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
 
 interface DealPipelineBoardProps {
   deals: Deal[];
@@ -43,8 +41,13 @@ export function DealPipelineBoard({ deals, onStageChange, onEdit, onClick }: Dea
       setDraggedDeal(null);
       return;
     }
-    await onStageChange(draggedDeal.id, targetStage);
-    setDraggedDeal(null);
+    try {
+      await onStageChange(draggedDeal.id, targetStage);
+    } catch {
+      toast.error("Erro ao mover deal. Tente novamente.");
+    } finally {
+      setDraggedDeal(null);
+    }
   };
 
   return (

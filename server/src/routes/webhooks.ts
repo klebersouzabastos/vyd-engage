@@ -135,9 +135,27 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
 // Email Webhooks (SendGrid, Resend, etc.)
 // ========================
 
+// Validate email webhook signing secret (shared pattern for SendGrid & Resend)
+function validateEmailWebhookSecret(req: Request): boolean {
+  const secret = process.env.EMAIL_WEBHOOK_SECRET;
+  if (!secret) {
+    // No secret configured — allow through (operator's choice to not protect)
+    return true;
+  }
+  const provided = req.headers['x-webhook-secret'] as string | undefined;
+  if (!provided) return false;
+  if (secret.length !== provided.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(provided));
+}
+
 // POST /api/webhooks/email/sendgrid - SendGrid event webhook
 router.post('/email/sendgrid', async (req: Request, res: Response) => {
   try {
+    if (!validateEmailWebhookSecret(req)) {
+      logger.warn('SendGrid webhook: invalid or missing secret', { ip: req.ip });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
     logger.info('SendGrid webhook received');
     emailMessagingService.processWebhook('sendgrid', req.body).catch(error => {
       logger.error('Error processing SendGrid webhook', error);
@@ -152,6 +170,11 @@ router.post('/email/sendgrid', async (req: Request, res: Response) => {
 // POST /api/webhooks/email/resend - Resend event webhook
 router.post('/email/resend', async (req: Request, res: Response) => {
   try {
+    if (!validateEmailWebhookSecret(req)) {
+      logger.warn('Resend webhook: invalid or missing secret', { ip: req.ip });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
     logger.info('Resend webhook received', { type: req.body?.type });
     emailMessagingService.processWebhook('resend', req.body).catch(error => {
       logger.error('Error processing Resend webhook', error);

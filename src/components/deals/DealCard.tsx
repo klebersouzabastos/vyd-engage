@@ -1,9 +1,6 @@
 import { Deal } from "../../types";
 import { User, Calendar } from "lucide-react";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
+import { formatCurrency } from "../../utils/format";
 
 function formatDate(date: string | null | undefined): string {
   if (!date) return "";

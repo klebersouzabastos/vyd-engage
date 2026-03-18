@@ -38,6 +38,7 @@ import {
   User,
   Calendar,
 } from "lucide-react";
+import { formatCurrency } from "../utils/format";
 
 const STAGE_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Todos os Stages" },
@@ -48,13 +49,6 @@ const STAGE_OPTIONS: { value: string; label: string }[] = [
   { value: "WON", label: "Ganho" },
   { value: "LOST", label: "Perdido" },
 ];
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
 
 function formatDate(date: string | null | undefined): string {
   if (!date) return "—";

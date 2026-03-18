@@ -52,12 +52,13 @@ export function CalendarMonthView({
   const MAX_VISIBLE = isMobile ? 0 : 3;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+    <div role="grid" aria-label="Calendário mensal" className="bg-white rounded-lg border border-gray-300 overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-7 border-b border-gray-200">
+      <div role="row" className="grid grid-cols-7 border-b border-gray-200">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
+            role="columnheader"
             className="py-2 text-center text-xs font-semibold text-gray-500 uppercase"
           >
             {label}
@@ -66,7 +67,7 @@ export function CalendarMonthView({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-7">
+      <div role="row" className="grid grid-cols-7">
         {days.map((day, idx) => {
           const dateKey = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDate.get(dateKey) || [];
@@ -77,6 +78,9 @@ export function CalendarMonthView({
           return (
             <div
               key={idx}
+              role="gridcell"
+              aria-label={format(day, "d 'de' MMMM 'de' yyyy")}
+              {...(today ? { "aria-current": "date" as const } : {})}
               className={`
                 min-h-[90px] border-b border-r border-gray-100 p-1 cursor-pointer
                 transition-colors hover:bg-gray-50

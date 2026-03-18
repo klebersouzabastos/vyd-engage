@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { DealStage } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { logger } from '../utils/logger.js';
 
 const STAGE_PROBABILITY: Record<DealStage, number> = {
   QUALIFICATION: 20,
@@ -183,6 +184,12 @@ export const dealService = {
       }
     });
 
+    // Tenant-safe update: verify ownership before updating
+    const verified = await prisma.deal.findFirst({ where: { id: data.id, tenantId } });
+    if (!verified) {
+      throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
+    }
+
     const deal = await prisma.deal.update({
       where: { id: data.id },
       data: updateData,
@@ -197,80 +204,137 @@ export const dealService = {
       await prisma.lead.update({
         where: { id: deal.leadId },
         data: { status: 'WON' },
-      }).catch(() => {});
+      }).catch((err) => {
+        logger.error('Failed to update lead status to WON after deal won', err, {
+          dealId: deal.id,
+          leadId: deal.leadId,
+          tenantId,
+        });
+      });
     }
 
     return deal;
   },
 
   async delete(tenantId: string, id: string) {
-    await this.findById(tenantId, id);
+    // Tenant-safe delete: verify ownership before deleting
+    const deal = await prisma.deal.findFirst({ where: { id, tenantId } });
+    if (!deal) {
+      throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
+    }
     await prisma.deal.delete({ where: { id } });
   },
 
   async getStats(tenantId: string) {
-    const deals = await prisma.deal.findMany({
-      where: { tenantId },
-      select: {
-        value: true,
-        stage: true,
-        probability: true,
-        createdAt: true,
-        closedAt: true,
-      },
-    });
-
-    const activeStages = new Set<string>([
+    const activeStages: DealStage[] = [
       DealStage.QUALIFICATION,
       DealStage.PROPOSAL,
       DealStage.NEGOTIATION,
       DealStage.CLOSING,
+    ];
+
+    // All aggregations at DB level — no full table load
+    const [
+      totalCount,
+      stageGroups,
+      activeAgg,
+      wonAgg,
+      lostAgg,
+      wonCycleTimeDeals,
+    ] = await Promise.all([
+      // Total deal count
+      prisma.deal.count({ where: { tenantId } }),
+
+      // Group by stage: count + sum value
+      prisma.deal.groupBy({
+        by: ['stage'],
+        where: { tenantId },
+        _count: { id: true },
+        _sum: { value: true },
+      }),
+
+      // Active pipeline aggregation (sum value for active stages)
+      prisma.deal.aggregate({
+        where: { tenantId, stage: { in: activeStages } },
+        _sum: { value: true },
+        _count: { id: true },
+      }),
+
+      // Won deals aggregation
+      prisma.deal.aggregate({
+        where: { tenantId, stage: DealStage.WON },
+        _sum: { value: true },
+        _count: { id: true },
+        _avg: { value: true },
+      }),
+
+      // Lost deals aggregation
+      prisma.deal.aggregate({
+        where: { tenantId, stage: DealStage.LOST },
+        _sum: { value: true },
+        _count: { id: true },
+      }),
+
+      // Won deals with closedAt for cycle time calculation (lightweight select)
+      prisma.deal.findMany({
+        where: { tenantId, stage: DealStage.WON, closedAt: { not: null } },
+        select: { createdAt: true, closedAt: true },
+      }),
     ]);
 
-    const activeDeals = deals.filter(d => activeStages.has(d.stage));
-    const wonDeals = deals.filter(d => d.stage === (DealStage.WON as string));
-    const lostDeals = deals.filter(d => d.stage === (DealStage.LOST as string));
-    const closedDeals = [...wonDeals, ...lostDeals];
+    const totalPipelineValue = Number(activeAgg._sum.value || 0);
+    const wonValue = Number(wonAgg._sum.value || 0);
+    const lostValue = Number(lostAgg._sum.value || 0);
+    const wonCount = wonAgg._count.id;
+    const lostCount = lostAgg._count.id;
+    const activeCount = activeAgg._count.id;
+    const closedCount = wonCount + lostCount;
+    const winRate = closedCount > 0 ? (wonCount / closedCount) * 100 : 0;
+    const avgDealSize = wonCount > 0 ? wonValue / wonCount : 0;
 
-    const totalPipelineValue = activeDeals.reduce((sum, d) => sum + Number(d.value), 0);
-    const weightedValue = activeDeals.reduce((sum, d) => sum + Number(d.value) * (d.probability / 100), 0);
-    const wonValue = wonDeals.reduce((sum, d) => sum + Number(d.value), 0);
-    const lostValue = lostDeals.reduce((sum, d) => sum + Number(d.value), 0);
-    const winRate = closedDeals.length > 0 ? (wonDeals.length / closedDeals.length) * 100 : 0;
-    const avgDealSize = wonDeals.length > 0 ? wonValue / wonDeals.length : 0;
+    // Weighted pipeline value needs per-stage probability, compute from groupBy
+    const stageGroupMap = new Map(stageGroups.map(g => [g.stage, g]));
+    let weightedValue = 0;
+    for (const stage of activeStages) {
+      const group = stageGroupMap.get(stage);
+      if (group && group._sum.value) {
+        weightedValue += Number(group._sum.value) * (STAGE_PROBABILITY[stage] / 100);
+      }
+    }
 
-    // Average cycle time (days from creation to close) for won deals
-    const cycleTimes = wonDeals
-      .filter(d => d.closedAt)
-      .map(d => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-    const avgCycleTime = cycleTimes.length > 0 ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length : 0;
+    // Average cycle time (days) for won deals
+    const cycleTimes = wonCycleTimeDeals.map(
+      d => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const avgCycleTime = cycleTimes.length > 0
+      ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length
+      : 0;
 
     // By stage breakdown
-    const byStage = Array.from(activeStages).map(stage => {
-      const stageDeals = deals.filter(d => d.stage === stage);
-      const total = stageDeals.reduce((sum, d) => sum + Number(d.value), 0);
-      const weighted = stageDeals.reduce((sum, d) => sum + Number(d.value) * (d.probability / 100), 0);
+    const byStage = activeStages.map(stage => {
+      const group = stageGroupMap.get(stage);
+      const totalValue = Number(group?._sum.value || 0);
       return {
         stage,
-        count: stageDeals.length,
-        totalValue: total,
-        weightedValue: weighted,
+        count: group?._count.id || 0,
+        totalValue,
+        weightedValue: totalValue * (STAGE_PROBABILITY[stage] / 100),
       };
     });
 
     return {
       totalPipelineValue,
-      weightedValue,
+      weightedValue: Math.round(weightedValue * 100) / 100,
       wonValue,
       lostValue,
       winRate: Math.round(winRate * 10) / 10,
       avgDealSize: Math.round(avgDealSize * 100) / 100,
       avgCycleTime: Math.round(avgCycleTime * 10) / 10,
       byStage,
-      totalDeals: deals.length,
-      activeDeals: activeDeals.length,
-      wonDeals: wonDeals.length,
-      lostDeals: lostDeals.length,
+      totalDeals: totalCount,
+      activeDeals: activeCount,
+      wonDeals: wonCount,
+      lostDeals: lostCount,
     };
   },
 };
