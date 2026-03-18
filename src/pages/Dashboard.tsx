@@ -160,7 +160,7 @@ export function Dashboard() {
       <div className="p-4 md:p-8">
         {/* Actions */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-1 overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded-lg p-1 overflow-x-auto max-w-full">
             <Calendar size={14} className="text-gray-400 ml-2 mr-1 flex-shrink-0" />
             {(Object.keys(RANGE_LABELS) as RangePreset[]).map(key => (
               <button
@@ -233,7 +233,7 @@ export function Dashboard() {
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Leads */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
             <div className="p-6 border-b border-gray-300">
               <h3 className="text-gray-900">Últimos Leads Capturados</h3>
             </div>
@@ -272,7 +272,7 @@ export function Dashboard() {
           </div>
 
           {/* Task Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
             <div className="p-6 border-b border-gray-300">
               <h3 className="text-gray-900">Resumo de Tarefas</h3>
             </div>

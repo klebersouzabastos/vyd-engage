@@ -68,19 +68,6 @@ export function TagManager() {
 
   const handleDelete = () => {
     if (!deletingTag) return;
-
-    const usageCount = getUsageCount(deletingTag.id);
-    if (usageCount > 0) {
-      if (
-        !confirm(
-          `Esta tag está sendo usada em ${usageCount} lead(s). Deseja realmente deletá-la?`
-        )
-      ) {
-        setDeletingTag(null);
-        return;
-      }
-    }
-
     deleteTag(deletingTag.id);
     setDeletingTag(null);
   };

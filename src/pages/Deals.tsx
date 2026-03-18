@@ -157,7 +157,7 @@ export function Deals() {
 
           <div className="flex items-center gap-2">
             {/* View toggle */}
-            <div className="flex items-center border border-gray-300 rounded-lg p-1 bg-white">
+            <div className="flex items-center border border-gray-300 rounded-lg p-1 bg-gray-50">
               <button
                 onClick={() => setViewMode("list")}
                 className={`p-1.5 rounded ${viewMode === "list" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}
@@ -196,7 +196,7 @@ export function Deals() {
         ) : (
           <>
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+            <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full" aria-label="Lista de deals">
                   <thead>

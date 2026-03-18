@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { EmailConfig } from "../../types/email";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { 
-  Edit, 
-  Trash2, 
-  TestTube, 
-  Star, 
+import {
+  Edit,
+  Trash2,
+  TestTube,
+  Star,
   StarOff,
   Mail,
   CheckCircle,
@@ -18,6 +19,16 @@ import {
   DialogContent,
   DialogTrigger,
 } from "../ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { EmailTestModal } from "./EmailTestModal";
 
 interface EmailConfigCardProps {
@@ -49,6 +60,7 @@ export function EmailConfigCard({
   onSetDefault,
   onTest,
 }: EmailConfigCardProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const providerLabel = PROVIDER_LABELS[config.provider] || config.provider;
   const statusInfo = STATUS_COLORS[config.status.status] || STATUS_COLORS.disconnected;
   const StatusIcon = statusInfo.icon;
@@ -59,9 +71,8 @@ export function EmailConfigCard({
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Tem certeza que deseja deletar a configuração "${config.name}"?`)) {
-      onDelete();
-    }
+    onDelete();
+    setDeleteDialogOpen(false);
   };
 
   return (
@@ -147,13 +158,31 @@ export function EmailConfigCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setDeleteDialogOpen(true)}
               className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Deletar
             </Button>
           </div>
+
+          {/* Delete Confirmation */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Configuração</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja deletar a configuração "{config.name}"? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {config.metadata && (
             <div className="text-xs text-gray-600 pt-2 border-t border-gray-300">

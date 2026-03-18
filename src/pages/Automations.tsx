@@ -4,6 +4,16 @@ import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Plus, Mail, MessageSquare, Play, Pause, Eye, Trash2, Loader2, Zap } from "lucide-react";
 import { Switch } from "../components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
 
@@ -25,6 +35,8 @@ export function Automations() {
   const navigate = useNavigate();
   const [automationsList, setAutomationsList] = useState<AutomationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [automationToDelete, setAutomationToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadAutomations();
@@ -58,14 +70,22 @@ export function Automations() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja deletar esta automação?")) return;
+  const confirmDelete = (id: string) => {
+    setAutomationToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!automationToDelete) return;
     try {
-      await apiClient.deleteAutomation(id);
-      setAutomationsList((prev) => prev.filter((a) => a.id !== id));
+      await apiClient.deleteAutomation(automationToDelete);
+      setAutomationsList((prev) => prev.filter((a) => a.id !== automationToDelete));
       toast.success("Automação deletada");
     } catch (error) {
       toast.error("Erro ao deletar automação");
+    } finally {
+      setDeleteDialogOpen(false);
+      setAutomationToDelete(null);
     }
   };
 
@@ -226,7 +246,7 @@ export function Automations() {
                           variant="outline"
                           size="sm"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDelete(automation.id)}
+                          onClick={() => confirmDelete(automation.id)}
                         >
                           <Trash2 size={16} />
                         </Button>
@@ -262,6 +282,24 @@ export function Automations() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Automação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta automação? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

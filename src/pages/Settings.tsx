@@ -22,7 +22,7 @@ export function Settings() {
       <Header title="Configurações" subtitle="Gerencie as configurações da sua conta" />
 
       <div className="p-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+        <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
           <Tabs
             value={activeTab}
             onValueChange={(value) => {

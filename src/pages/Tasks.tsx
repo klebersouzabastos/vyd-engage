@@ -289,7 +289,7 @@ export function Tasks() {
             ? "bg-red-50 border-red-200"
             : isDueToday
             ? "bg-yellow-50 border-yellow-200"
-            : "bg-white border-gray-300"
+            : "bg-gray-50 border-gray-300"
           }
         `}
       >
@@ -424,7 +424,7 @@ export function Tasks() {
 
       <div className="p-8 overflow-visible">
         {/* Filters */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 mb-6 overflow-visible relative z-10">
+        <div className="bg-gray-50 rounded-lg p-4 shadow-sm border border-gray-300 mb-6 overflow-visible relative z-10">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
               <Input
@@ -619,7 +619,7 @@ export function Tasks() {
             )}
 
             {filteredTasks.length === 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+              <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
                 <EmptyState
                   icon={CheckSquare}
                   title={filter !== "all" || searchQuery ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa criada"}

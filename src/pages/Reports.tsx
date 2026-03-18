@@ -5,6 +5,16 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Plus, FileText, Calendar, Mail, Download, Trash2, Edit, Search, Grid3x3, List, X, Zap, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
 import { Report, ReportSchedule } from "../types";
 import { ReportWizard } from "../components/ReportWizard";
 import { createReportFromTemplate } from "../utils/reportTemplates";
@@ -58,6 +68,8 @@ export function Reports() {
   const [sortBy, setSortBy] = useState<SortOption>("updated");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showWizard, setShowWizard] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadReports();
@@ -75,15 +87,22 @@ export function Reports() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este relatório?")) {
-      try {
-        await apiClient.deleteReport(id);
-        setReports(reports.filter((r) => r.id !== id));
-        toast.success("Relatório excluído");
-      } catch (error) {
-        console.error("Erro ao excluir relatório:", error);
-      }
+  const confirmDelete = (id: string) => {
+    setReportToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!reportToDelete) return;
+    try {
+      await apiClient.deleteReport(reportToDelete);
+      setReports(reports.filter((r) => r.id !== reportToDelete));
+      toast.success("Relatório excluído");
+    } catch (error) {
+      console.error("Erro ao excluir relatório:", error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setReportToDelete(null);
     }
   };
 
@@ -220,7 +239,7 @@ export function Reports() {
         {/* Wizard Dialog */}
         {showWizard && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gray-50 rounded-lg shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
               <ReportWizard
                 onComplete={handleWizardComplete}
                 onCancel={() => setShowWizard(false)}
@@ -231,7 +250,7 @@ export function Reports() {
 
         {/* Search and Filters */}
         {reports.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 mb-6">
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" size={16} />
@@ -294,7 +313,7 @@ export function Reports() {
             {filteredAndSortedReports.map((report) => (
               <div
                 key={report.id}
-                className={`bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow ${
+                className={`bg-gray-50 rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow ${
                   viewMode === "list" ? "flex items-center p-4" : ""
                 }`}
               >
@@ -322,7 +341,7 @@ export function Reports() {
                         <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
                           <Edit size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => handleDelete(report.id)}>
+                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => confirmDelete(report.id)}>
                           <Trash2 size={14} />
                         </Button>
                       </div>
@@ -363,7 +382,7 @@ export function Reports() {
                         <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
                           <Edit size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => handleDelete(report.id)} title="Excluir">
+                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => confirmDelete(report.id)} title="Excluir">
                           <Trash2 size={14} />
                         </Button>
                       </div>
@@ -384,7 +403,7 @@ export function Reports() {
             ))}
           </div>
         ) : reports.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-12 text-center">
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 p-12 text-center">
             <FileText size={48} className="mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nenhum relatório criado
@@ -401,7 +420,7 @@ export function Reports() {
             </Button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-12 text-center">
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 p-12 text-center">
             <Search size={48} className="mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nenhum relatório encontrado
@@ -416,6 +435,24 @@ export function Reports() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Relatório</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este relatório? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

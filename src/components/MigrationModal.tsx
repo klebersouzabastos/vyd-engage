@@ -11,6 +11,16 @@ import { Progress } from './ui/progress';
 import { Alert, AlertDescription } from './ui/alert';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
+import {
   detectLocalStorageData,
   hasDataToMigrate,
   migrateDataToAPI,
@@ -36,6 +46,7 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
   });
   const [migrationErrors, setMigrationErrors] = useState<string[]>([]);
   const [migrating, setMigrating] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -84,12 +95,11 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
   };
 
   const handleClearLocalStorage = () => {
-    if (confirm('Tem certeza que deseja limpar os dados do localStorage? O backup já foi criado.')) {
-      clearMigratedData();
-      toast.success('Dados do localStorage limpos');
-      onComplete();
-      onClose();
-    }
+    clearMigratedData();
+    toast.success('Dados do localStorage limpos');
+    setClearDialogOpen(false);
+    onComplete();
+    onClose();
   };
 
   const getDataSummary = () => {
@@ -296,7 +306,7 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
             )}
 
             <div className="flex gap-2">
-              <Button onClick={handleClearLocalStorage} variant="outline" className="flex-1">
+              <Button onClick={() => setClearDialogOpen(true)} variant="outline" className="flex-1">
                 Limpar localStorage
               </Button>
               <Button onClick={() => { onComplete(); onClose(); }} className="flex-1">
@@ -306,6 +316,24 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
           </div>
         )}
       </DialogContent>
+
+      {/* Clear localStorage Confirmation */}
+      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar localStorage</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja limpar os dados do localStorage? O backup já foi criado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearLocalStorage} className="bg-red-600 hover:bg-red-700">
+              Limpar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

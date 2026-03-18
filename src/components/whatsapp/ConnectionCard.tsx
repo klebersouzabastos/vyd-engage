@@ -1,14 +1,15 @@
+import { useState } from "react";
 import { WhatsAppConnection } from "../../types/whatsapp";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { ConnectionStatusBadge } from "./ConnectionStatusBadge";
 import { Badge } from "../ui/badge";
-import { 
-  Edit, 
-  Trash2, 
-  TestTube, 
-  QrCode, 
-  Star, 
+import {
+  Edit,
+  Trash2,
+  TestTube,
+  QrCode,
+  Star,
   StarOff,
   MessageSquare,
   Phone
@@ -21,6 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { QRCodeModal } from "./QRCodeModal";
 import { TestMessageModal } from "./TestMessageModal";
 
@@ -46,12 +57,12 @@ export function ConnectionCard({
   onSetDefault,
   onTest,
 }: ConnectionCardProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const providerLabel = PROVIDER_LABELS[connection.provider] || connection.provider;
 
   const handleDelete = () => {
-    if (window.confirm(`Tem certeza que deseja deletar a conexão "${connection.name}"?`)) {
-      onDelete();
-    }
+    onDelete();
+    setDeleteDialogOpen(false);
   };
 
   return (
@@ -145,13 +156,31 @@ export function ConnectionCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setDeleteDialogOpen(true)}
               className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Deletar
             </Button>
           </div>
+
+          {/* Delete Confirmation */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Conexão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja deletar a conexão "{connection.name}"? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {connection.metadata && (
             <div className="text-xs text-gray-600 pt-2 border-t border-gray-300">

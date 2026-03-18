@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { Plus, Edit2, Trash2, X } from "lucide-react";
 import { useCustomFields } from "../../contexts/CustomFieldsContext";
 import { CustomFieldEditor } from "../CustomFieldEditor";
@@ -9,6 +19,7 @@ export function CustomFieldsTab() {
   const { fields: customFields, createField, updateField, deleteField } = useCustomFields();
   const [isCreatingCustomField, setIsCreatingCustomField] = useState(false);
   const [editingCustomFieldId, setEditingCustomFieldId] = useState<string | null>(null);
+  const [fieldToDelete, setFieldToDelete] = useState<{ id: string; name: string } | null>(null);
 
   return (
     <div className="space-y-6">
@@ -86,14 +97,7 @@ export function CustomFieldsTab() {
                     <Edit2 size={16} className="text-gray-600" />
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm(`Tem certeza que deseja deletar o campo "${field.name}"?`)) {
-                        deleteField(field.id);
-                        if (editingCustomFieldId === field.id) {
-                          setEditingCustomFieldId(null);
-                        }
-                      }
-                    }}
+                    onClick={() => setFieldToDelete({ id: field.id, name: field.name })}
                     className="p-2 hover:bg-red-50 rounded transition-colors"
                     aria-label="Deletar campo"
                     disabled={!!editingCustomFieldId || isCreatingCustomField}
@@ -143,6 +147,35 @@ export function CustomFieldsTab() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!fieldToDelete} onOpenChange={(open) => !open && setFieldToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Campo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar o campo "{fieldToDelete?.name}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (fieldToDelete) {
+                  deleteField(fieldToDelete.id);
+                  if (editingCustomFieldId === fieldToDelete.id) {
+                    setEditingCustomFieldId(null);
+                  }
+                }
+                setFieldToDelete(null);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
