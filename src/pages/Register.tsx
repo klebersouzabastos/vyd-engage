@@ -88,7 +88,6 @@ export function Register() {
     setFormData((prev) => ({ ...prev, ...data }));
     // Sempre avançar para o Step 3 (Email obrigatório)
     setCurrentStep(3);
-    console.log('Avançando para Step 3 - Email obrigatório');
   };
 
   const handleStep3Submit = async (data: Step3FormData) => {
