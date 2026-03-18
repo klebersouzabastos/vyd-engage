@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { WhatsAppProvider, WhatsAppConnectionStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { planLimitsService } from './planLimitsService.js';
+import { safeEncryptConfig, safeDecryptConfig } from '../utils/encryption.js';
 
 export interface CreateWhatsAppConnectionData {
   name: string;
@@ -25,7 +26,7 @@ export const whatsappService = {
         name: data.name,
         provider: data.provider,
         status: WhatsAppConnectionStatus.DISCONNECTED,
-        config: data.config,
+        config: safeEncryptConfig(data.config) as any,
       },
     });
 
@@ -46,14 +47,22 @@ export const whatsappService = {
       throw createError('WhatsApp connection not found', 404, 'WHATSAPP_CONNECTION_NOT_FOUND');
     }
 
-    return connection;
+    return {
+      ...connection,
+      config: safeDecryptConfig(connection.config),
+    };
   },
 
   async findAll(tenantId: string) {
-    return prisma.whatsAppConnection.findMany({
+    const connections = await prisma.whatsAppConnection.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
     });
+
+    return connections.map(conn => ({
+      ...conn,
+      config: safeDecryptConfig(conn.config),
+    }));
   },
 
   async update(tenantId: string, data: UpdateWhatsAppConnectionData) {
@@ -62,7 +71,7 @@ export const whatsappService = {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.config !== undefined) updateData.config = data.config;
+    if (data.config !== undefined) updateData.config = safeEncryptConfig(data.config);
     if (data.qrCode !== undefined) {
       updateData.qrCode = data.qrCode;
       updateData.qrCodeExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes

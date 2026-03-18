@@ -20,6 +20,14 @@ const createPaymentIntentSchema = z.object({
   billingCycle: z.nativeEnum(BillingCycle),
 });
 
+const processCardPaymentSchema = z.object({
+  paymentId: z.string().uuid(),
+  token: z.string().min(1, 'Card token is required'),
+  paymentMethodId: z.string().min(1),
+  issuerId: z.string().optional(),
+  installments: z.number().int().min(1).max(24).default(1),
+});
+
 // POST /api/payments/intent - Create payment intent
 router.post('/intent', async (req, res, next) => {
   try {
@@ -34,6 +42,30 @@ router.post('/intent', async (req, res, next) => {
       data
     );
     res.status(201).json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// POST /api/payments/process-card - Process card payment with MP SDK token
+// The frontend obtains a secure token via Mercado Pago CardForm (iframe).
+// Raw card data (number, CVV) NEVER reaches this server.
+router.post('/process-card', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const data = processCardPaymentSchema.parse(req.body);
+    const result = await paymentService.processCardPayment(
+      req.user.tenantId,
+      req.user.userId,
+      data
+    );
+    res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));

@@ -46,7 +46,8 @@ export async function createPaymentIntent(
 
 /**
  * Processar pagamento com cartão de crédito.
- * O frontend obtém o token via Mercado Pago SDK e envia ao backend.
+ * O frontend obtém o token via Mercado Pago SDK (iframe seguro) e envia
+ * APENAS o token ao backend. Dados do cartão nunca passam pelo nosso servidor.
  */
 export async function processCreditCardPayment(
   paymentIntentId: string,
@@ -62,16 +63,75 @@ export async function processCreditCardPayment(
     };
   }
 
-  // O fluxo real do Mercado Pago redireciona o usuário para o checkout.
-  // O resultado vem via webhook no backend.
-  // Por enquanto, retornamos que o pagamento foi iniciado.
-  return {
-    success: true,
-    paymentIntentId,
-    status: "pending",
-    message: "Pagamento em processamento. Você será notificado quando for aprovado.",
-    requiresAction: true,
+  try {
+    const result = await apiClient.processCardPayment({
+      paymentId: paymentIntentId,
+      token: tokenData.token,
+      paymentMethodId: tokenData.paymentMethodId,
+      issuerId: tokenData.issuerId,
+      installments: tokenData.installments,
+    });
+
+    const data = result?.data || result;
+    const mpStatus = data.mercadoPagoStatus || data.payment?.status || "pending";
+
+    // Map MP status to our result
+    if (mpStatus === "approved") {
+      return {
+        success: true,
+        paymentIntentId,
+        status: "paid",
+        message: "Pagamento aprovado com sucesso!",
+      };
+    } else if (mpStatus === "rejected") {
+      return {
+        success: false,
+        paymentIntentId,
+        status: "failed",
+        message: data.mercadoPagoStatusDetail
+          ? `Pagamento recusado: ${mapStatusDetail(data.mercadoPagoStatusDetail)}`
+          : "Pagamento recusado. Verifique os dados do cartão.",
+        error: "PAYMENT_REJECTED",
+      };
+    } else {
+      return {
+        success: true,
+        paymentIntentId,
+        status: "pending",
+        message: "Pagamento em processamento. Você será notificado quando for aprovado.",
+        requiresAction: true,
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      paymentIntentId,
+      status: "failed",
+      message: "Erro ao processar pagamento. Tente novamente.",
+      error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+    };
+  }
+}
+
+/**
+ * Traduz status_detail do Mercado Pago para mensagens amigáveis em pt-BR.
+ */
+function mapStatusDetail(detail: string): string {
+  const map: Record<string, string> = {
+    cc_rejected_insufficient_amount: "Saldo insuficiente",
+    cc_rejected_bad_filled_card_number: "Número do cartão incorreto",
+    cc_rejected_bad_filled_date: "Data de validade incorreta",
+    cc_rejected_bad_filled_other: "Dados do cartão incorretos",
+    cc_rejected_bad_filled_security_code: "Código de segurança incorreto",
+    cc_rejected_blacklist: "Cartão bloqueado por segurança",
+    cc_rejected_call_for_authorize: "Ligue para a operadora para autorizar",
+    cc_rejected_card_disabled: "Cartão desabilitado para compras online",
+    cc_rejected_duplicated_payment: "Pagamento duplicado",
+    cc_rejected_high_risk: "Pagamento recusado por risco elevado",
+    cc_rejected_max_attempts: "Número máximo de tentativas excedido",
+    cc_rejected_other_reason: "Cartão recusado",
   };
+  return map[detail] || "Verifique os dados do cartão e tente novamente";
 }
 
 /**

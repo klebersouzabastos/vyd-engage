@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
-import { Lock, Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 declare global {
   interface Window {
@@ -45,9 +45,10 @@ export function CreditCardForm({
 }: CreditCardFormProps) {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState<string | null>(null);
-  const [installments, setInstallments] = useState(1);
   const cardFormRef = useRef<any>(null);
   const mountedRef = useRef(false);
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +111,7 @@ export function CreditCardForm({
               if (!cardFormRef.current) return;
 
               const formData = cardFormRef.current.getCardFormData();
-              onSubmit({
+              onSubmitRef.current({
                 token: formData.token,
                 paymentMethodId: formData.paymentMethodId,
                 issuerId: formData.issuerId,
@@ -139,7 +140,7 @@ export function CreditCardForm({
       }
       mountedRef.current = false;
     };
-  }, [amount, onSubmit]);
+  }, [amount]);
 
   if (sdkError) {
     return (
@@ -207,11 +208,16 @@ export function CreditCardForm({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
-          <Lock size={16} className="text-green-600" />
-          <p className="text-xs text-green-800">
-            Pagamento processado com segurança pelo Mercado Pago. Seus dados do cartão não passam pelo nosso servidor.
-          </p>
+        <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
+          <ShieldCheck size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-medium text-green-900">
+              Ambiente seguro Mercado Pago
+            </p>
+            <p className="text-xs text-green-800 mt-0.5">
+              Os dados do seu cartão são digitados em campos seguros do Mercado Pago (iframe criptografado) e nunca passam pelos nossos servidores. Apenas um token de pagamento é transmitido.
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-2 pt-4">

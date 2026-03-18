@@ -59,6 +59,90 @@ export const paymentService = {
     };
   },
 
+  /**
+   * Process a credit card payment using a secure token from Mercado Pago CardForm.
+   * The token is generated client-side inside MP's secure iframe — raw card data
+   * (number, CVV, expiry) NEVER reaches this server.
+   */
+  async processCardPayment(
+    tenantId: string,
+    userId: string,
+    data: {
+      paymentId: string;
+      token: string;
+      paymentMethodId: string;
+      issuerId?: string;
+      installments: number;
+    }
+  ) {
+    // Verify payment record exists and belongs to tenant
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: data.paymentId,
+        tenantId,
+        status: 'PENDING',
+      },
+      include: {
+        tenant: true,
+      },
+    });
+
+    if (!payment) {
+      throw createError('Payment not found or already processed', 404, 'PAYMENT_NOT_FOUND');
+    }
+
+    // Get user email for MP payer info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (!user) {
+      throw createError('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    // Create payment via Mercado Pago API using the secure token
+    const mpResponse = await mercadopagoService.createPayment({
+      token: data.token,
+      paymentMethodId: data.paymentMethodId,
+      issuerId: data.issuerId,
+      installments: data.installments,
+      amount: Number(payment.amount),
+      description: `VYD Engage - Assinatura`,
+      payerEmail: user.email,
+      externalReference: JSON.stringify({
+        tenantId,
+        userId,
+        paymentId: payment.id,
+      }),
+    });
+
+    // Map MP status to our status
+    const mappedStatus = this.mapMercadoPagoStatus(mpResponse.status || 'pending');
+
+    // Update payment record with MP response
+    const updatedPayment = await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        mercadoPagoId: String(mpResponse.id),
+        mercadoPagoStatus: mpResponse.status,
+        status: mappedStatus,
+        paidAt: mpResponse.status === 'approved' ? new Date() : null,
+      },
+    });
+
+    // If immediately approved, activate subscription
+    if (mpResponse.status === 'approved') {
+      await this.activateSubscription(tenantId, payment.subscriptionId || undefined);
+    }
+
+    return {
+      payment: updatedPayment,
+      mercadoPagoStatus: mpResponse.status,
+      mercadoPagoStatusDetail: mpResponse.status_detail,
+    };
+  },
+
   async handleWebhook(data: Record<string, unknown>) {
     // Handle Mercado Pago webhook
     const { type, data: webhookData } = data as { type: string; data: { id: string; status: string } };

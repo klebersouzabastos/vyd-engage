@@ -2,6 +2,7 @@ import { generateSecret, generateURI, verifySync } from 'otplib';
 import QRCode from 'qrcode';
 import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
+import { safeEncryptField, safeDecryptField } from '../utils/encryption.js';
 
 const APP_NAME = 'VYD Engage';
 
@@ -12,6 +13,13 @@ function verifyTOTP(token: string, secret: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Decrypt twoFactorSecret from DB. Handles both encrypted and plaintext (legacy) values.
+ */
+function decryptSecret(storedSecret: string): string {
+  return safeDecryptField(storedSecret);
 }
 
 export const twoFactorService = {
@@ -30,10 +38,11 @@ export const twoFactorService = {
     const otpauth = generateURI({ issuer: APP_NAME, label: user.email, secret });
     const qrCodeDataUrl = await QRCode.toDataURL(otpauth);
 
-    // Store secret temporarily (not enabled yet until verified)
+    // Store encrypted secret (not enabled yet until verified)
+    const encryptedSecret = safeEncryptField(secret);
     await prisma.user.update({
       where: { id: userId },
-      data: { twoFactorSecret: secret },
+      data: { twoFactorSecret: encryptedSecret },
     });
 
     return {
@@ -58,7 +67,8 @@ export const twoFactorService = {
       throw createError('2FA is already enabled', 400, 'TWO_FACTOR_ALREADY_ENABLED');
     }
 
-    const isValid = verifyTOTP(code, user.twoFactorSecret);
+    const plaintextSecret = decryptSecret(user.twoFactorSecret);
+    const isValid = verifyTOTP(code, plaintextSecret);
     if (!isValid) {
       throw createError('Invalid verification code', 400, 'INVALID_TOTP_CODE');
     }
@@ -80,7 +90,8 @@ export const twoFactorService = {
       return false;
     }
 
-    return verifyTOTP(code, user.twoFactorSecret);
+    const plaintextSecret = decryptSecret(user.twoFactorSecret);
+    return verifyTOTP(code, plaintextSecret);
   },
 
   /**
@@ -94,7 +105,8 @@ export const twoFactorService = {
       throw createError('2FA is not enabled', 400, 'TWO_FACTOR_NOT_ENABLED');
     }
 
-    const isValid = verifyTOTP(code, user.twoFactorSecret!);
+    const plaintextSecret = decryptSecret(user.twoFactorSecret!);
+    const isValid = verifyTOTP(code, plaintextSecret);
     if (!isValid) {
       throw createError('Invalid verification code', 400, 'INVALID_TOTP_CODE');
     }

@@ -1094,6 +1094,19 @@ class ApiClient {
     });
   }
 
+  async processCardPayment(data: {
+    paymentId: string;
+    token: string;
+    paymentMethodId: string;
+    issuerId?: string;
+    installments: number;
+  }) {
+    return this.request<any>('/api/payments/process-card', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getPaymentHistory() {
     return this.request<any[]>('/api/payments/history');
   }

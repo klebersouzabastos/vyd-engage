@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { EmailProvider } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { planLimitsService } from './planLimitsService.js';
+import { safeEncryptConfig, safeDecryptConfig } from '../utils/encryption.js';
 
 export interface CreateEmailConfigData {
   name: string;
@@ -27,7 +28,7 @@ export const emailConfigService = {
         provider: data.provider,
         fromEmail: data.fromEmail,
         fromName: data.fromName,
-        config: data.config,
+        config: safeEncryptConfig(data.config) as any,
         verified: false,
       },
     });
@@ -49,14 +50,22 @@ export const emailConfigService = {
       throw createError('Email config not found', 404, 'EMAIL_CONFIG_NOT_FOUND');
     }
 
-    return config;
+    return {
+      ...config,
+      config: safeDecryptConfig(config.config),
+    };
   },
 
   async findAll(tenantId: string) {
-    return prisma.emailConfig.findMany({
+    const configs = await prisma.emailConfig.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
     });
+
+    return configs.map(cfg => ({
+      ...cfg,
+      config: safeDecryptConfig(cfg.config),
+    }));
   },
 
   async update(tenantId: string, data: UpdateEmailConfigData) {
@@ -67,7 +76,7 @@ export const emailConfigService = {
     if (data.provider !== undefined) updateData.provider = data.provider;
     if (data.fromEmail !== undefined) updateData.fromEmail = data.fromEmail;
     if (data.fromName !== undefined) updateData.fromName = data.fromName;
-    if (data.config !== undefined) updateData.config = data.config;
+    if (data.config !== undefined) updateData.config = safeEncryptConfig(data.config);
     if (data.verified !== undefined) {
       updateData.verified = data.verified;
       if (data.verified) {

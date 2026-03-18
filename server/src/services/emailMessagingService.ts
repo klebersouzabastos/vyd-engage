@@ -4,6 +4,7 @@ import { InteractionType, InteractionDirection, ScoreEvent } from '@prisma/clien
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { scoringService } from './scoringService.js';
+import { safeDecryptConfig } from '../utils/encryption.js';
 
 // ========================
 // Types
@@ -112,7 +113,7 @@ export const emailMessagingService = {
       throw createError('Email config not found or not verified', 400, 'EMAIL_CONFIG_INVALID');
     }
 
-    const config = emailConfig.config as any;
+    const config = safeDecryptConfig(emailConfig.config) as any;
     const transport = createTransport(emailConfig.provider, config);
 
     const fromAddress = emailConfig.fromName
@@ -215,7 +216,7 @@ export const emailMessagingService = {
       throw createError('Email config not found or not verified', 400, 'EMAIL_CONFIG_INVALID');
     }
 
-    const config = emailConfig.config as any;
+    const config = safeDecryptConfig(emailConfig.config) as any;
     const transport = createTransport(emailConfig.provider, config);
 
     const fromAddress = emailConfig.fromName
@@ -307,7 +308,7 @@ export const emailMessagingService = {
       throw createError('Email config not found', 404);
     }
 
-    const config = emailConfig.config as any;
+    const config = safeDecryptConfig(emailConfig.config) as any;
     const transport = createTransport(emailConfig.provider, config);
 
     const fromAddress = emailConfig.fromName

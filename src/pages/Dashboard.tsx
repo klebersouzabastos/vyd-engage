@@ -156,16 +156,16 @@ export function Dashboard() {
     <div className="min-h-screen">
       <Header title="Dashboard" subtitle="Visão geral do seu CRM" />
       
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {/* Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-1">
-            <Calendar size={14} className="text-gray-400 ml-2 mr-1" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-1 overflow-x-auto max-w-full">
+            <Calendar size={14} className="text-gray-400 ml-2 mr-1 flex-shrink-0" />
             {(Object.keys(RANGE_LABELS) as RangePreset[]).map(key => (
               <button
                 key={key}
                 onClick={() => setRangePreset(key)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
                   rangePreset === key
                     ? "bg-primary text-white"
                     : "text-gray-600 hover:bg-gray-100"
@@ -177,7 +177,7 @@ export function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleExportCSV} className="gap-2">
-              <Download size={16} /> Exportar
+              <Download size={16} /> <span className="hidden sm:inline">Exportar</span>
             </Button>
             <Button
               variant="outline"
@@ -185,7 +185,7 @@ export function Dashboard() {
               className="gap-2"
             >
               <Settings size={16} />
-              {isEditing ? "Concluir Edição" : "Personalizar"}
+              <span className="hidden sm:inline">{isEditing ? "Concluir Edição" : "Personalizar"}</span>
             </Button>
           </div>
         </div>

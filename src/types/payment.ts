@@ -12,13 +12,23 @@ export interface CardTokenData {
   installments: number;
 }
 
-// @deprecated — Usar CardTokenData. Mantido para compatibilidade com dados antigos.
+/**
+ * @deprecated NEVER use this interface. Raw card data must NEVER be handled
+ * in application code. Use CardTokenData from Mercado Pago SDK instead.
+ * Kept only for historical migration reference — will be removed.
+ */
 export interface CreditCardData {
+  /** @deprecated */
   cardNumber: string;
+  /** @deprecated */
   cardHolderName: string;
+  /** @deprecated */
   expirationMonth: string;
+  /** @deprecated */
   expirationYear: string;
+  /** @deprecated */
   securityCode: string;
+  /** @deprecated */
   installments?: number;
 }
 
@@ -49,7 +59,7 @@ export interface PaymentIntent {
   updatedAt: string;
   mercadoPagoPreferenceId?: string;
   mercadoPagoPaymentId?: string;
-  paymentData?: CreditCardData | PixPaymentData | BoletoPaymentData;
+  paymentData?: PixPaymentData | BoletoPaymentData;
   errorMessage?: string;
   metadata?: {
     userId?: string;

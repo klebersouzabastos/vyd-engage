@@ -390,7 +390,7 @@ export function Leads() {
     <div className="min-h-screen">
       <Header title="Leads" subtitle="Gerencie todos os seus leads em um só lugar" />
 
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {/* Bulk Actions Bar */}
         {selectedLeads.length > 0 && (
           <div className="bg-primary text-white rounded-lg p-4 shadow-sm border border-primary mb-4" role="status" aria-live="polite">
@@ -467,9 +467,9 @@ export function Leads() {
         )}
 
         {/* Actions Bar with Filters */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 mb-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px]">
+        <div className="bg-white rounded-lg p-3 md:p-4 shadow-sm border border-gray-300 mb-4 md:mb-6">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            <div className="flex-1 min-w-[160px] md:min-w-[200px] w-full md:w-auto">
               <Input
                 placeholder="Buscar por nome, telefone ou e-mail..."
                 value={searchQuery}
@@ -576,9 +576,86 @@ export function Leads() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Mobile Card View */}
+        {filteredLeads.length > 0 && (
+          <div className="block md:hidden space-y-3 mb-4">
+            {filteredLeads.map((lead) => (
+              <div
+                key={lead.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-300 p-4"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Checkbox
+                      checked={selectedLeads.includes(lead.id)}
+                      onCheckedChange={() => handleSelectLead(lead.id)}
+                      aria-label={`Selecionar ${lead.name}`}
+                    />
+                    <Link
+                      to={`/app/leads/${lead.id}`}
+                      className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors truncate"
+                    >
+                      {lead.name}
+                    </Link>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    <button
+                      onClick={() => navigate(`/app/leads/${lead.id}/edit`)}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                      type="button"
+                      aria-label={`Editar ${lead.name}`}
+                    >
+                      <Pencil size={14} className="text-gray-600" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteSingleLeadId(lead.id)}
+                      className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                      type="button"
+                      aria-label={`Deletar ${lead.name}`}
+                    >
+                      <Trash2 size={14} className="text-error" />
+                    </button>
+                  </div>
+                </div>
+                <div className="ml-7 space-y-1.5">
+                  {lead.email && (
+                    <p className="text-sm text-gray-600 truncate">{lead.email}</p>
+                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <LeadStatusBadge status={lead.status} />
+                    <button type="button" onClick={() => setScoreLeadId(lead.id)} className="cursor-pointer">
+                      <LeadScoreBadge score={lead.score || 0} />
+                    </button>
+                    <LeadSourceBadge source={lead.source} />
+                  </div>
+                  {lead.tags && lead.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {lead.tags.slice(0, 3).map((tagId: string) => {
+                        const tag = getTagById(tagId);
+                        if (!tag) return null;
+                        return <TagBadge key={tagId} tag={tag} size="sm" />;
+                      })}
+                      {lead.tags.length > 3 && (
+                        <span className="text-xs text-gray-500">+{lead.tags.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              limit={pagination.limit}
+              onPageChange={(newPage) => fetchLeads(buildServerFilters(newPage))}
+            />
+          </div>
+        )}
+
+        {/* Desktop Table */}
         {filteredLeads.length > 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+          <div className="hidden md:block bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full" aria-label="Lista de leads">
                 <thead className="bg-gray-100 border-b border-gray-300">
@@ -765,7 +842,10 @@ export function Leads() {
               onPageChange={(newPage) => fetchLeads(buildServerFilters(newPage))}
             />
           </div>
-        ) : (
+        ) : null}
+
+        {/* Empty State — both mobile and desktop */}
+        {filteredLeads.length === 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300">
             <EmptyState
               icon={Users}

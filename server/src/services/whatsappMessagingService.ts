@@ -3,6 +3,7 @@ import { InteractionType, InteractionDirection, ScoreEvent } from '@prisma/clien
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { scoringService } from './scoringService.js';
+import { safeDecryptConfig } from '../utils/encryption.js';
 
 // ========================
 // Types
@@ -100,7 +101,7 @@ export const whatsappMessagingService = {
       throw createError('WhatsApp connection not found or not connected', 400, 'WHATSAPP_NOT_CONNECTED');
     }
 
-    const config = connection.config as any;
+    const config = safeDecryptConfig(connection.config) as any;
     const phoneNumberId = config.phoneNumberId;
     const accessToken = config.accessToken;
 
@@ -222,7 +223,7 @@ export const whatsappMessagingService = {
           });
 
           const connection = connections.find(c => {
-            const config = c.config as any;
+            const config = safeDecryptConfig(c.config) as any;
             return config.phoneNumberId === phoneNumberId;
           });
 
@@ -363,7 +364,7 @@ export const whatsappMessagingService = {
       throw createError('Connection not found', 404);
     }
 
-    const config = connection.config as any;
+    const config = safeDecryptConfig(connection.config) as any;
     const wabaId = config.wabaId;
     const accessToken = config.accessToken;
 
