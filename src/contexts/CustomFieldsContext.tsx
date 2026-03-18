@@ -14,7 +14,7 @@ interface CustomFieldsContextType {
   deleteField: (id: string) => Promise<void>;
   reorderFields: (fieldIds: string[]) => Promise<void>;
   getFieldById: (id: string) => CustomField | undefined;
-  validateValue: (field: CustomField, value: any) => { valid: boolean; error?: string };
+  validateValue: (field: CustomField, value: unknown) => { valid: boolean; error?: string };
   refreshFields: () => Promise<void>;
 }
 
@@ -30,7 +30,16 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       const apiFields = await apiClient.getCustomFields(true);
       // Transform API response to match CustomField type
-      const transformedFields: CustomField[] = apiFields.map((field: any) => ({
+      interface ApiCustomField {
+        id: string;
+        name: string;
+        type: CustomField['type'];
+        options?: string[];
+        required?: boolean;
+        order?: number;
+        active?: boolean;
+      }
+      const transformedFields: CustomField[] = apiFields.map((field: ApiCustomField) => ({
         id: field.id,
         name: field.name,
         type: field.type,

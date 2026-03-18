@@ -1,7 +1,7 @@
 import { Queue, Worker, Job, FlowProducer } from 'bullmq';
 import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
-import { AutomationLogStatus, NotificationType } from '@prisma/client';
+import { AutomationLogStatus, AutomationStepType, NotificationType } from '@prisma/client';
 import { automationService } from '../services/automationService.js';
 import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
@@ -37,6 +37,17 @@ export interface AutomationTrigger {
   type: 'lead_created' | 'status_changed' | 'tag_added' | 'manual';
   conditions?: Record<string, any>;
 }
+
+// Map lowercase step type (from JSON config) to Prisma enum value
+const stepTypeToEnum: Record<string, AutomationStepType> = {
+  delay: AutomationStepType.DELAY,
+  update_lead: AutomationStepType.UPDATE_LEAD,
+  add_tag: AutomationStepType.ADD_TAG,
+  remove_tag: AutomationStepType.REMOVE_TAG,
+  condition: AutomationStepType.CONDITION,
+  send_whatsapp: AutomationStepType.SEND_WHATSAPP,
+  send_email: AutomationStepType.SEND_EMAIL,
+};
 
 export interface AutomationSchedule {
   enabled: boolean;
@@ -302,7 +313,7 @@ export const automationWorker = new Worker(
         `Step ${currentStepIndex + 1}/${steps.length} (${step.type}): ${result.message}`,
         { stepIndex: currentStepIndex, stepType: step.type, executionId, leadId, ...result.data },
         result.success ? undefined : result.message,
-        { leadId, stepOrder: currentStepIndex, stepType: step.type, executionId }
+        { leadId, stepOrder: currentStepIndex, stepType: stepTypeToEnum[step.type] || null, executionId }
       );
 
       if (!result.success) {

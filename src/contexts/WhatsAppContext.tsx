@@ -81,8 +81,10 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
   // Carregar plano atual da API de assinatura
   useEffect(() => {
     if (!user) return;
-    apiClient.getCurrentSubscription().then((sub: any) => {
-      const planType = sub?.subscription?.plan?.type?.toLowerCase();
+    apiClient.getCurrentSubscription().then((sub: Record<string, unknown>) => {
+      const subscription = sub?.subscription as Record<string, unknown> | undefined;
+      const plan = subscription?.plan as Record<string, unknown> | undefined;
+      const planType = (plan?.type as string)?.toLowerCase();
       if (planType && ["starter", "pro", "enterprise"].includes(planType)) {
         setCurrentPlan(planType as PlanType);
       }
@@ -92,12 +94,24 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // Carregar conexões da API
+  interface ApiWhatsAppConnection {
+    id: string;
+    name: string;
+    provider: string;
+    status: string;
+    lastConnectedAt?: string;
+    qrCode?: string;
+    config?: ProviderConfig;
+    createdAt: string;
+    updatedAt: string;
+  }
+
   const fetchConnections = useCallback(async () => {
     try {
       setLoading(true);
       const apiConnections = await apiClient.getWhatsAppConnections();
       // Transform API response to match WhatsAppConnection type
-      const transformedConnections: WhatsAppConnection[] = apiConnections.map((conn: any) => ({
+      const transformedConnections: WhatsAppConnection[] = apiConnections.map((conn: ApiWhatsAppConnection) => ({
         id: conn.id,
         name: conn.name,
         provider: conn.provider.toLowerCase() as WhatsAppProviderType,

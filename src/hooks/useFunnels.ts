@@ -69,9 +69,9 @@ export function useFunnels() {
           setCurrentFunnelId(defaultFunnel.id);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load funnels:', err);
-      setError(err.message || 'Erro ao carregar funis');
+      setError(err instanceof Error ? err.message : 'Erro ao carregar funis');
     } finally {
       setLoading(false);
     }
@@ -85,9 +85,9 @@ export function useFunnels() {
 
       setFunnels(prev => prev.map(f => f.id === funnelId ? funnel : f));
       return funnel;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load funnel:', err);
-      setError(err.message || 'Erro ao carregar funil');
+      setError(err instanceof Error ? err.message : 'Erro ao carregar funil');
       return null;
     }
   }, []);
@@ -105,8 +105,8 @@ export function useFunnels() {
       const newFunnel: Funnel = res.data || res;
       setFunnels(prev => [...prev, newFunnel]);
       return newFunnel;
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar funil');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar funil');
       throw err;
     }
   }, []);
@@ -118,8 +118,8 @@ export function useFunnels() {
       const updated: Funnel = res.data || res;
       setFunnels(prev => prev.map(f => f.id === funnelId ? updated : f));
       return updated;
-    } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar funil');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar funil');
       throw err;
     }
   }, []);
@@ -136,8 +136,8 @@ export function useFunnels() {
           setCurrentFunnelId(defaultFunnel.id);
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Erro ao deletar funil');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao deletar funil');
       throw err;
     }
   }, [currentFunnelId, funnels]);
@@ -153,8 +153,8 @@ export function useFunnels() {
         return { ...f, columns: [...f.columns, { ...newColumn, leads: [] }] };
       }));
       return newColumn;
-    } catch (err: any) {
-      setError(err.message || 'Erro ao adicionar coluna');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao adicionar coluna');
       throw err;
     }
   }, [currentFunnelId]);
@@ -171,8 +171,8 @@ export function useFunnels() {
           columns: f.columns.map(c => c.id === columnId ? { ...c, ...data } : c),
         };
       }));
-    } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar coluna');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar coluna');
       throw err;
     }
   }, [currentFunnelId]);
@@ -186,8 +186,8 @@ export function useFunnels() {
         if (f.id !== currentFunnelId) return f;
         return { ...f, columns: f.columns.filter(c => c.id !== columnId) };
       }));
-    } catch (err: any) {
-      setError(err.message || 'Erro ao deletar coluna');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao deletar coluna');
       throw err;
     }
   }, [currentFunnelId]);
@@ -205,8 +205,8 @@ export function useFunnels() {
         }).filter(Boolean) as FunnelColumn[];
         return { ...f, columns: reordered };
       }));
-    } catch (err: any) {
-      setError(err.message || 'Erro ao reordenar colunas');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao reordenar colunas');
       throw err;
     }
   }, [currentFunnelId]);
@@ -245,7 +245,7 @@ export function useFunnels() {
     // Sync with backend
     try {
       await apiClient.moveLead({ leadId, targetColumnId, position });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Revert on error - reload funnel
       console.error('Failed to move lead:', err);
       await loadFunnelWithLeads(currentFunnelId);

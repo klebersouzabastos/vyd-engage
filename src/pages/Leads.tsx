@@ -1,38 +1,25 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, Link } from "react-router";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { LeadStatusBadge } from "../components/LeadStatusBadge";
-import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { LeadModal } from "../components/LeadModal";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Plus, Download, Upload, Pencil, Trash2, Users, Mail, MessageSquare, X, Tag, ChevronDown, Copy } from "lucide-react";
+import { Users } from "lucide-react";
 import { LeadImportModal } from "../components/leads/LeadImportModal";
-import { Checkbox } from "../components/ui/checkbox";
+import { LeadBulkActions } from "../components/leads/LeadBulkActions";
+import { LeadFilters } from "../components/leads/LeadFilters";
+import { LeadTable } from "../components/leads/LeadTable";
+import { LeadMobileCards } from "../components/leads/LeadMobileCards";
+import { Pagination } from "../components/Pagination";
+import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { useTags } from "../contexts/TagsContext";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
-import { TagBadge } from "../components/TagBadge";
-import { CustomFieldDisplay } from "../components/CustomFieldDisplay";
-import { LeadScoreBadge } from "../components/LeadScoreBadge";
-import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { Lead } from "../types";
 import { exportLeadsToExcel } from "../utils/excelExport";
 import { apiClient } from "../services/api/client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
 import { useLeads } from "../hooks/useLeads";
 import { mapStatusToBackend, mapSourceToBackend } from "../utils/leadEnums";
-import { useFunnels } from "../hooks/useFunnels";
-import { Pagination } from "../components/Pagination";
-import { FilterPopover } from "../components/leads/FilterPopover";
-import { CustomFieldsFilter } from "../components/leads/CustomFieldsFilter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
+
+// --- Constants ---
 
 interface Automation {
   id: number;
@@ -60,12 +49,6 @@ const availableAutomations: Automation[] = [
 const getAutomationById = (id: number): Automation | undefined => {
   return availableAutomations.find(automation => automation.id === id);
 };
-
-const DEFAULT_PIPELINE_COLUMNS = [
-  { id: "novo", title: "Novo" },
-  { id: "contato", title: "Em Contato" },
-  { id: "fechado", title: "Fechado" },
-];
 
 const getStatusLabel = (status: string) => {
   const statusMap: Record<string, string> = {
@@ -87,35 +70,41 @@ const getSourceLabel = (source: string) => {
   return sourceMap[source] || source;
 };
 
+// --- Component ---
+
 export function Leads() {
   const navigate = useNavigate();
-  const { getTagById } = useTags();
+  const { getTagById, tags } = useTags();
   const { fields: customFields } = useCustomFields();
   const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
-  const { currentFunnel } = useFunnels();
+  // Selection state
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+
+  // Filter state
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterSource, setFilterSource] = useState<string[]>([]);
   const [filterAutomation, setFilterAutomation] = useState<string[]>([]);
   const [filterTag, setFilterTag] = useState<string[]>([]);
   const [filterCustomFields, setFilterCustomFields] = useState<Record<string, any>>({});
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const pipelineColumns = currentFunnel?.columns?.map(c => ({ id: c.id, title: c.title })) || DEFAULT_PIPELINE_COLUMNS;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteSingleLeadId, setDeleteSingleLeadId] = useState<string | null>(null);
-  const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [scoreLeadId, setScoreLeadId] = useState<string | null>(null);
 
-  const { tags } = useTags();
+  // Table expansion state
+  const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
 
-  // Debounced search value for server-side filtering
+  // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build server-side filter params from current state
+  // --- Server filter params ---
+
   const buildServerFilters = useCallback((page: number = 1) => {
     const serverFilters: Record<string, string | number | undefined> = {
       page,
@@ -136,7 +125,7 @@ export function Leads() {
     return serverFilters;
   }, [filterStatus, filterSource, debouncedSearch, filterTag, pagination.limit]);
 
-  // Debounce search input — 400ms delay before sending to server
+  // Debounce search input
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
@@ -147,50 +136,25 @@ export function Leads() {
     };
   }, [searchQuery]);
 
-  // Send filters to server whenever they change — reset to page 1
+  // Fetch on filter change
   useEffect(() => {
     fetchLeads(buildServerFilters(1));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, filterSource, debouncedSearch, filterTag]);
 
-  const toggleLeadExpansion = (leadId: string) => {
-    setExpandedLeads(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(leadId)) {
-        newSet.delete(leadId);
-      } else {
-        newSet.add(leadId);
-      }
-      return newSet;
-    });
-  };
+  // --- Client-side filtering ---
 
-  const hasCustomFields = (lead: Lead): boolean => {
-    return lead.customFields && Object.keys(lead.customFields).length > 0 &&
-           Object.values(lead.customFields).some(v => v !== null && v !== undefined && v !== "");
-  };
-
-  // Client-side filtering is only needed for filters the server doesn't support:
-  // - Multiple status/source values (server only accepts one)
-  // - Automation filter (not a server param)
-  // - Custom fields filter (not a server param)
-  // When a single value is selected for status/source/tag/search, the server already filters.
   const filteredLeads = leadsData.filter((lead: any) => {
-    // Status: if multiple selected, filter client-side (server can't handle multi-status)
     const matchesStatus = filterStatus.length <= 1 || filterStatus.includes(lead.status);
-    // Source: same logic
     const matchesSource = filterSource.length <= 1 || filterSource.includes(lead.source);
-    // Tag: if multiple tags selected, filter client-side
     const matchesTag = filterTag.length <= 1 ||
       (lead.tags && lead.tags.some((tagId: string) => filterTag.includes(tagId)));
-    // Automation: always client-side (server doesn't support)
     const matchesAutomation = filterAutomation.length === 0 ||
-      filterAutomation.some(filter => {
+      filterAutomation.some((filter: string) => {
         if (filter === "with") return lead.automations && lead.automations.length > 0;
         if (filter === "without") return !lead.automations || lead.automations.length === 0;
         return lead.automations && lead.automations.includes(Number(filter));
       });
-    // Custom fields: always client-side (server doesn't support)
     const matchesCustomFields = Object.keys(filterCustomFields).length === 0 ||
       Object.entries(filterCustomFields).every(([fieldId, filterValue]) => {
         if (filterValue === null || filterValue === undefined || filterValue === "") return true;
@@ -217,10 +181,23 @@ export function Leads() {
     return matchesStatus && matchesSource && matchesAutomation && matchesTag && matchesCustomFields;
   });
 
+  // --- Handlers ---
+
+  const toggleLeadExpansion = (leadId: string) => {
+    setExpandedLeads(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(leadId)) {
+        newSet.delete(leadId);
+      } else {
+        newSet.add(leadId);
+      }
+      return newSet;
+    });
+  };
+
   const handleSelectAll = () => {
     const filteredLeadIds = filteredLeads.map(l => l.id);
     const allFilteredSelected = filteredLeadIds.every(id => selectedLeads.includes(id));
-
     if (allFilteredSelected && filteredLeadIds.length > 0) {
       setSelectedLeads(selectedLeads.filter(id => !filteredLeadIds.includes(id)));
     } else {
@@ -269,7 +246,6 @@ export function Leads() {
         return;
       }
 
-      // Map server data to the format expected by exportLeadsToExcel
       const mapped = leads.map((lead: any) => ({
         id: lead.id,
         name: lead.name || "",
@@ -315,7 +291,6 @@ export function Leads() {
   const handleDeleteSelectedLeads = async () => {
     if (selectedLeads.length === 0) return;
     const leadToDeleteCount = selectedLeads.length;
-
     try {
       await apiClient.bulkUpdateLeads(selectedLeads, 'delete');
       if (selectedLead && selectedLeads.includes(selectedLead.id)) {
@@ -377,6 +352,8 @@ export function Leads() {
     }
   };
 
+  // --- Render ---
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -393,257 +370,50 @@ export function Leads() {
       <div className="p-4 md:p-8">
         {/* Bulk Actions Bar */}
         {selectedLeads.length > 0 && (
-          <div className="bg-primary text-white rounded-lg p-4 shadow-sm border border-primary mb-4" role="status" aria-live="polite">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <span className="font-medium">
-                  {selectedLeads.length} lead{selectedLeads.length > 1 ? "s" : ""} selecionado{selectedLeads.length > 1 ? "s" : ""}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedLeads([])}
-                  className="text-white hover:bg-white/20 h-8 px-2"
-                >
-                  <X size={14} />
-                </Button>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Status Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="sm" className="gap-1">
-                      Status <ChevronDown size={14} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("NEW")}>Novo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("CONTACTED")}>Contatado</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("QUALIFIED")}>Qualificado</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("PROPOSAL")}>Proposta</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("NEGOTIATION")}>Negociacao</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("WON")}>Ganho</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkChangeStatus("LOST")}>Perdido</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Tag Dropdown */}
-                {tags.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" size="sm" className="gap-1">
-                        <Tag size={14} /> Tag <ChevronDown size={14} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {tags.map(tag => (
-                        <DropdownMenuItem key={tag.id} onClick={() => handleBulkAddTag(tag.id)}>
-                          <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
-                          {tag.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-
-                {/* Export CSV */}
-                <Button variant="secondary" size="sm" className="gap-1" onClick={handleBulkExportCSV}>
-                  <Download size={14} /> Exportar CSV
-                </Button>
-
-                {/* Delete */}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="bg-red-600 hover:bg-red-700 gap-1"
-                >
-                  <Trash2 size={14} />
-                  Deletar
-                </Button>
-              </div>
-            </div>
-          </div>
+          <LeadBulkActions
+            selectedCount={selectedLeads.length}
+            tags={tags}
+            onClearSelection={() => setSelectedLeads([])}
+            onChangeStatus={handleBulkChangeStatus}
+            onAddTag={handleBulkAddTag}
+            onExportCSV={handleBulkExportCSV}
+            onDelete={() => setDeleteDialogOpen(true)}
+          />
         )}
 
-        {/* Actions Bar with Filters */}
-        <div className="bg-white rounded-lg p-3 md:p-4 shadow-sm border border-gray-300 mb-4 md:mb-6">
-          <div className="flex flex-wrap items-center gap-2 md:gap-4">
-            <div className="flex-1 min-w-[160px] md:min-w-[200px] w-full md:w-auto">
-              <Input
-                placeholder="Buscar por nome, telefone ou e-mail..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Buscar leads por nome, telefone ou e-mail"
-              />
-            </div>
-
-            <FilterPopover
-              filterId="status"
-              label="Filtrar por Status"
-              allLabel="Todos os status"
-              countSuffix="status"
-              options={[
-                { value: "novo", label: "Novo" },
-                { value: "contato", label: "Em Contato" },
-                { value: "fechado", label: "Fechado" },
-                { value: "perdido", label: "Perdido" },
-              ]}
-              selected={filterStatus}
-              onChange={setFilterStatus}
-            />
-
-            <FilterPopover
-              filterId="source"
-              label="Filtrar por Origem"
-              allLabel="Todas as origens"
-              countSuffix="origem(s)"
-              options={[
-                { value: "meta", label: "Meta Ads" },
-                { value: "google", label: "Google Ads" },
-                { value: "organico", label: "Orgânico" },
-                { value: "manual", label: "Manual" },
-              ]}
-              selected={filterSource}
-              onChange={setFilterSource}
-            />
-
-            <FilterPopover
-              filterId="automation"
-              label="Filtrar por Automação"
-              allLabel="Todas as automações"
-              countSuffix="automação(ões)"
-              options={[
-                { value: "with", label: "Com automações" },
-                { value: "without", label: "Sem automações" },
-                ...availableAutomations.map(a => ({ value: a.id.toString(), label: a.name }))
-              ]}
-              selected={filterAutomation}
-              onChange={setFilterAutomation}
-              showSelectAll={false}
-            />
-
-            <FilterPopover
-              filterId="tag"
-              label="Filtrar por Tag"
-              allLabel="Todas as tags"
-              countSuffix="tag(s)"
-              options={tags.map(t => ({ value: t.id, label: t.name }))}
-              selected={filterTag}
-              onChange={setFilterTag}
-            />
-
-            <CustomFieldsFilter
-              customFields={customFields}
-              filterCustomFields={filterCustomFields}
-              onFilterChange={setFilterCustomFields}
-            />
-
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/app/leads/duplicates")}>
-              <Copy size={16} />
-              Duplicados
-            </Button>
-
-            <Button variant="outline" className="gap-2" onClick={() => setImportModalOpen(true)}>
-              <Upload size={16} />
-              Importar
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Download size={16} />
-                  Exportar
-                  <ChevronDown size={14} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportLeads}>
-                  Exportar Pagina Atual
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportAllFiltered}>
-                  Exportar Todos (Filtrados)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
-              className="bg-primary hover:bg-primary-dark gap-2"
-              onClick={() => navigate("/app/leads/new")}
-            >
-              <Plus size={16} />
-              Novo Lead
-            </Button>
-          </div>
-        </div>
+        {/* Filters Bar */}
+        <LeadFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterStatus={filterStatus}
+          onFilterStatusChange={setFilterStatus}
+          filterSource={filterSource}
+          onFilterSourceChange={setFilterSource}
+          filterAutomation={filterAutomation}
+          onFilterAutomationChange={setFilterAutomation}
+          filterTag={filterTag}
+          onFilterTagChange={setFilterTag}
+          filterCustomFields={filterCustomFields}
+          onFilterCustomFieldsChange={setFilterCustomFields}
+          tags={tags}
+          customFields={customFields}
+          availableAutomations={availableAutomations}
+          onImportClick={() => setImportModalOpen(true)}
+          onExportCurrentPage={handleExportLeads}
+          onExportAllFiltered={handleExportAllFiltered}
+        />
 
         {/* Mobile Card View */}
         {filteredLeads.length > 0 && (
-          <div className="block md:hidden space-y-3 mb-4">
-            {filteredLeads.map((lead) => (
-              <div
-                key={lead.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-300 p-4"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Checkbox
-                      checked={selectedLeads.includes(lead.id)}
-                      onCheckedChange={() => handleSelectLead(lead.id)}
-                      aria-label={`Selecionar ${lead.name}`}
-                    />
-                    <Link
-                      to={`/app/leads/${lead.id}`}
-                      className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors truncate"
-                    >
-                      {lead.name}
-                    </Link>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                    <button
-                      onClick={() => navigate(`/app/leads/${lead.id}/edit`)}
-                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                      type="button"
-                      aria-label={`Editar ${lead.name}`}
-                    >
-                      <Pencil size={14} className="text-gray-600" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteSingleLeadId(lead.id)}
-                      className="p-1.5 hover:bg-red-50 rounded transition-colors"
-                      type="button"
-                      aria-label={`Deletar ${lead.name}`}
-                    >
-                      <Trash2 size={14} className="text-error" />
-                    </button>
-                  </div>
-                </div>
-                <div className="ml-7 space-y-1.5">
-                  {lead.email && (
-                    <p className="text-sm text-gray-600 truncate">{lead.email}</p>
-                  )}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <LeadStatusBadge status={lead.status} />
-                    <button type="button" onClick={() => setScoreLeadId(lead.id)} className="cursor-pointer">
-                      <LeadScoreBadge score={lead.score || 0} />
-                    </button>
-                    <LeadSourceBadge source={lead.source} />
-                  </div>
-                  {lead.tags && lead.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {lead.tags.slice(0, 3).map((tagId: string) => {
-                        const tag = getTagById(tagId);
-                        if (!tag) return null;
-                        return <TagBadge key={tagId} tag={tag} size="sm" />;
-                      })}
-                      {lead.tags.length > 3 && (
-                        <span className="text-xs text-gray-500">+{lead.tags.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="block md:hidden">
+            <LeadMobileCards
+              leads={filteredLeads}
+              selectedLeads={selectedLeads}
+              onSelectLead={handleSelectLead}
+              onDeleteLead={(id) => setDeleteSingleLeadId(id)}
+              onScoreClick={(id) => setScoreLeadId(id)}
+              getTagById={getTagById}
+            />
             <Pagination
               page={pagination.page}
               totalPages={pagination.totalPages}
@@ -656,185 +426,20 @@ export function Leads() {
 
         {/* Desktop Table */}
         {filteredLeads.length > 0 ? (
-          <div className="hidden md:block bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full" aria-label="Lista de leads">
-                <thead className="bg-gray-100 border-b border-gray-300">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left">
-                      <Checkbox
-                        checked={filteredLeads.length > 0 && filteredLeads.every(lead => selectedLeads.includes(lead.id))}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Selecionar todos os leads"
-                      />
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Nome</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden md:table-cell">Telefone</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden md:table-cell">E-mail</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Score</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden lg:table-cell">Origem</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden lg:table-cell">Tags</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden xl:table-cell">Automações</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden lg:table-cell">Data</th>
-                    {customFields.length > 0 && (
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider hidden xl:table-cell">Campos Customizados</th>
-                    )}
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-300">
-                  {filteredLeads.map((lead) => (
-                    <React.Fragment key={lead.id}>
-                      <tr className="hover:bg-gray-100 transition-colors">
-                        <td className="px-6 py-4">
-                          <Checkbox checked={selectedLeads.includes(lead.id)} onCheckedChange={() => handleSelectLead(lead.id)} aria-label={`Selecionar ${lead.name}`} />
-                        </td>
-                        <td className="px-6 py-4">
-                          <Link
-                            to={`/app/leads/${lead.id}`}
-                            className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
-                          >
-                            {lead.name}
-                          </Link>
-                        </td>
-                        <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.phone}</td>
-                        <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.email}</td>
-                        <td className="px-6 py-4">
-                          <button type="button" onClick={() => setScoreLeadId(lead.id)} className="cursor-pointer">
-                            <LeadScoreBadge score={lead.score || 0} />
-                          </button>
-                        </td>
-                        <td className="px-6 py-4"><LeadStatusBadge status={lead.status} /></td>
-                        <td className="px-6 py-4 hidden lg:table-cell"><LeadSourceBadge source={lead.source} /></td>
-                        <td className="px-6 py-4 hidden lg:table-cell">
-                          {lead.tags && lead.tags.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {lead.tags.slice(0, 3).map((tagId: string) => {
-                                const tag = getTagById(tagId);
-                                if (!tag) return null;
-                                return <TagBadge key={tagId} tag={tag} size="sm" />;
-                              })}
-                              {lead.tags.length > 3 && (
-                                <span className="text-xs text-gray-600">+{lead.tags.length - 3}</span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 hidden xl:table-cell">
-                          {lead.automations && lead.automations.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 items-center">
-                              {lead.automations.slice(0, 2).map((automationId: number) => {
-                                const automation = getAutomationById(automationId);
-                                if (!automation) return null;
-                                return (
-                                  <div
-                                    key={automationId}
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
-                                      automation.type === "whatsapp"
-                                        ? "bg-green-50 text-green-700 border border-green-200"
-                                        : "bg-blue-50 text-blue-700 border border-blue-200"
-                                    }`}
-                                    title={automation.name}
-                                  >
-                                    {automation.type === "whatsapp" ? <MessageSquare size={12} className="flex-shrink-0" /> : <Mail size={12} className="flex-shrink-0" />}
-                                    <span className="whitespace-nowrap">
-                                      {automation.name.length > 15 ? automation.name.substring(0, 15) + "..." : automation.name}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                              {lead.automations.length > 2 && (
-                                <div className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 text-gray-600 text-xs font-medium border border-gray-200" title={`Mais ${lead.automations.length - 2} automação(ões)`}>
-                                  +{lead.automations.length - 2}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '-'}</td>
-                        {customFields.length > 0 && (
-                          <td className="px-6 py-4 hidden xl:table-cell">
-                            {hasCustomFields(lead) ? (
-                              <div className="flex items-center gap-2">
-                                <div className="flex flex-wrap gap-1.5 max-w-xs">
-                                  {customFields.slice(0, 2).map((field) => {
-                                    const value = lead.customFields?.[field.id];
-                                    if (!value || value === "" || value === null || value === undefined) return null;
-                                    return (
-                                      <div key={field.id} className="text-xs px-2 py-1 bg-gray-100 border border-gray-300 rounded text-gray-600" title={`${field.name}: ${value}`}>
-                                        <span className="font-medium">{field.name}:</span>{" "}
-                                        <span className="text-gray-900">
-                                          {typeof value === "boolean" ? (value ? "Sim" : "Não") : String(value).substring(0, 15)}
-                                          {String(value).length > 15 ? "..." : ""}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                  {customFields.filter(f => {
-                                    const value = lead.customFields?.[f.id];
-                                    return value && value !== "" && value !== null && value !== undefined;
-                                  }).length > 2 && (
-                                    <button
-                                      onClick={() => toggleLeadExpansion(lead.id)}
-                                      className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors"
-                                    >
-                                      {expandedLeads.has(lead.id) ? "Ocultar" : "Ver mais"}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-gray-400">-</span>
-                            )}
-                          </td>
-                        )}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/app/leads/${lead.id}/edit`); }}
-                              className="p-1.5 hover:bg-gray-300 rounded transition-colors"
-                              type="button"
-                              aria-label={`Editar ${lead.name}`}
-                            >
-                              <Pencil size={16} className="text-gray-600" />
-                            </button>
-                            <button
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteSingleLeadId(lead.id); }}
-                              className="p-1.5 hover:bg-red-50 rounded transition-colors"
-                              type="button"
-                              aria-label={`Deletar ${lead.name}`}
-                            >
-                              <Trash2 size={16} className="text-error" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedLeads.has(lead.id) && hasCustomFields(lead) && (
-                        <tr className="bg-gray-100">
-                          <td colSpan={customFields.length > 0 ? 12 : 11} className="px-6 py-4">
-                            <div className="space-y-3">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Campos Customizados</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {customFields.map((field) => {
-                                  const value = lead.customFields?.[field.id];
-                                  if (!value && value !== false && value !== 0) return null;
-                                  return <CustomFieldDisplay key={field.id} field={field} value={value} mode="full" showLabel={true} />;
-                                })}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="hidden md:block">
+            <LeadTable
+              leads={filteredLeads}
+              selectedLeads={selectedLeads}
+              customFields={customFields}
+              expandedLeads={expandedLeads}
+              onSelectAll={handleSelectAll}
+              onSelectLead={handleSelectLead}
+              onDeleteLead={(id) => setDeleteSingleLeadId(id)}
+              onScoreClick={(id) => setScoreLeadId(id)}
+              onToggleExpansion={toggleLeadExpansion}
+              getTagById={getTagById}
+              getAutomationById={getAutomationById}
+            />
             <Pagination
               page={pagination.page}
               totalPages={pagination.totalPages}
@@ -845,7 +450,7 @@ export function Leads() {
           </div>
         ) : null}
 
-        {/* Empty State — both mobile and desktop */}
+        {/* Empty State */}
         {filteredLeads.length === 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300">
             <EmptyState

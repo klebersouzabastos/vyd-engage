@@ -138,8 +138,8 @@ export function saveLeadScore(_score: LeadScore): void {
 }
 
 export function getScoreLabel(score: number): { label: string; color: string } {
-  if (score >= 80) return { label: "Quente", color: "text-red-600 bg-red-50" };
-  if (score >= 50) return { label: "Morno", color: "text-orange-600 bg-orange-50" };
-  if (score >= 25) return { label: "Frio", color: "text-blue-600 bg-blue-50" };
-  return { label: "Muito Frio", color: "text-gray-600 bg-gray-50" };
+  if (score >= 80) return { label: "Quente", color: "badge-score-hot" };
+  if (score >= 50) return { label: "Morno", color: "badge-score-warm" };
+  if (score >= 25) return { label: "Frio", color: "badge-score-cold" };
+  return { label: "Muito Frio", color: "badge-score-frozen" };
 }

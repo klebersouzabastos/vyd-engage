@@ -46,7 +46,18 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
   const refreshPayments = useCallback(async () => {
     try {
       const history = await getPaymentHistory();
-      const intents: PaymentIntent[] = (history || []).map((p: any) => ({
+      interface ApiPayment {
+        id: string;
+        planType?: string;
+        planId?: string;
+        amount?: number | string;
+        method?: string;
+        status?: string;
+        createdAt?: string;
+        updatedAt?: string;
+        metadata?: Record<string, unknown>;
+      }
+      const intents: PaymentIntent[] = (history || []).map((p: ApiPayment) => ({
         id: p.id,
         planId: p.planType || p.planId || "",
         amount: Number(p.amount) || 0,

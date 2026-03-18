@@ -1,7 +1,6 @@
 import { Task } from "../types";
 import { Checkbox } from "./ui/checkbox";
-import { Edit2, Trash2, Calendar, AlertCircle } from "lucide-react";
-import { Button } from "./ui/button";
+import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2, Clock, Circle, XCircle, AlertTriangle, ArrowUp, ArrowRight, ArrowDown, Flame } from "lucide-react";
 import { formatRelativeTime } from "../utils/interactions";
 
 interface TaskCardProps {
@@ -14,22 +13,22 @@ interface TaskCardProps {
   showCheckbox?: boolean;
 }
 
-const getPriorityColor = (priority: Task["priority"]) => {
+export const getPriorityColor = (priority: Task["priority"]) => {
   switch (priority) {
     case "URGENT":
-      return "bg-red-200 text-red-800 border-red-300";
+      return "badge-priority-urgent";
     case "HIGH":
-      return "bg-red-100 text-red-700 border-red-200";
+      return "badge-priority-high";
     case "MEDIUM":
-      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      return "badge-priority-medium";
     case "LOW":
-      return "bg-blue-100 text-blue-700 border-blue-200";
+      return "badge-priority-low";
     default:
       return "bg-gray-100 text-gray-700 border-gray-200";
   }
 };
 
-const getPriorityLabel = (priority: Task["priority"]) => {
+export const getPriorityLabel = (priority: Task["priority"]) => {
   switch (priority) {
     case "URGENT":
       return "Urgente";
@@ -41,6 +40,36 @@ const getPriorityLabel = (priority: Task["priority"]) => {
       return "Baixa";
     default:
       return priority;
+  }
+};
+
+export const getPriorityIcon = (priority: Task["priority"]) => {
+  switch (priority) {
+    case "URGENT":
+      return <Flame size={12} className="inline mr-0.5" aria-hidden="true" />;
+    case "HIGH":
+      return <ArrowUp size={12} className="inline mr-0.5" aria-hidden="true" />;
+    case "MEDIUM":
+      return <ArrowRight size={12} className="inline mr-0.5" aria-hidden="true" />;
+    case "LOW":
+      return <ArrowDown size={12} className="inline mr-0.5" aria-hidden="true" />;
+    default:
+      return null;
+  }
+};
+
+export const getStatusInfo = (status: Task["status"]) => {
+  switch (status) {
+    case "COMPLETED":
+      return { icon: <CheckCircle2 size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Concluída", className: "bg-green-100 text-green-700 border-green-200" };
+    case "IN_PROGRESS":
+      return { icon: <Clock size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Em andamento", className: "bg-blue-100 text-blue-700 border-blue-200" };
+    case "PENDING":
+      return { icon: <Circle size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Pendente", className: "bg-gray-100 text-gray-700 border-gray-200" };
+    case "CANCELLED":
+      return { icon: <XCircle size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Cancelada", className: "bg-red-100 text-red-600 border-red-200" };
+    default:
+      return { icon: null, label: status, className: "bg-gray-100 text-gray-700 border-gray-200" };
   }
 };
 
@@ -161,11 +190,14 @@ export function TaskCard({
               >
                 {isOverdue && dueDate ? (
                   <>
-                    <AlertCircle size={12} className="inline mr-1" />
+                    <AlertTriangle size={12} className="inline mr-1" aria-hidden="true" />
                     Vencida: {dueDate.toLocaleDateString("pt-BR")}
                   </>
                 ) : isDueToday ? (
-                  "Vence hoje"
+                  <>
+                    <AlertCircle size={12} className="inline mr-1" aria-hidden="true" />
+                    Vence hoje
+                  </>
                 ) : dueDate ? (
                   `Vence em ${formatRelativeTime(task.dueDate!)}`
                 ) : (
@@ -176,13 +208,30 @@ export function TaskCard({
 
             <span
               className={`
-                text-xs px-2 py-0.5 rounded border
+                text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5
                 ${getPriorityColor(task.priority)}
               `}
             >
               <span className="sr-only">Prioridade: </span>
+              {getPriorityIcon(task.priority)}
               {getPriorityLabel(task.priority)}
             </span>
+
+            {/* Status badge with icon — feedback beyond color */}
+            {(() => {
+              const statusInfo = getStatusInfo(task.status);
+              return (
+                <span
+                  className={`
+                    text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5
+                    ${statusInfo.className}
+                  `}
+                >
+                  {statusInfo.icon}
+                  {statusInfo.label}
+                </span>
+              );
+            })()}
           </div>
         </div>
       </div>

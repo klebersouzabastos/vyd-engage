@@ -218,7 +218,7 @@ export interface Deal {
   assignedTo?: string | null;
   assignedUser?: { id: string; name: string; email: string } | null;
   notes?: string | null;
-  customFields: Record<string, any>;
+  customFields: Record<string, string | number | boolean | null>;
   lostReason?: string | null;
   closedAt?: string | null;
   createdAt: string;

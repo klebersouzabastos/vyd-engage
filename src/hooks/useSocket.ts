@@ -45,7 +45,7 @@ export function useSocket(enabled: boolean = true) {
     };
   }, [enabled]);
 
-  const on = useCallback((event: string, handler: (...args: any[]) => void) => {
+  const on = useCallback((event: string, handler: (...args: unknown[]) => void) => {
     const socket = socketRef.current;
     if (!socket) return () => {};
     socket.on(event, handler);

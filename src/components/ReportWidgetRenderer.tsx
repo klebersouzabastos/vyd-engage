@@ -25,6 +25,13 @@ import {
   getDefaultDateRange,
   ReportFilters,
 } from "../utils/reportData";
+import {
+  CHART_COLORS,
+  SOURCE_COLORS,
+  AUTOMATION_TYPE_COLORS,
+  PRIORITY_CHART_COLORS,
+  PRIMARY_COLOR,
+} from "../utils/designTokens";
 
 interface ReportWidgetRendererProps {
   widget: ReportWidget;
@@ -204,7 +211,7 @@ function renderChart(widget: ReportWidget, data: any) {
       chartData = Object.entries(data.bySource || {}).map(([name, value]) => ({
         name: name === "meta" ? "Meta Ads" : name === "google" ? "Google Ads" : name === "organico" ? "Orgânico" : "Manual",
         value: value as number,
-        color: name === "meta" ? "#3B82F6" : name === "google" ? "#DC2626" : name === "organico" ? "#16A34A" : "#6B7280",
+        color: SOURCE_COLORS[name] || CHART_COLORS.gray,
       }));
     } else {
       chartData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
@@ -223,7 +230,7 @@ function renderChart(widget: ReportWidget, data: any) {
       chartData = Object.entries(data.byType || {}).map(([name, value]) => ({
         name: name === "whatsapp" ? "WhatsApp" : "E-mail",
         value: value as number,
-        color: name === "whatsapp" ? "#16A34A" : "#3B82F6",
+        color: AUTOMATION_TYPE_COLORS[name] || CHART_COLORS.blue,
       }));
     } else {
       chartData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
@@ -235,7 +242,7 @@ function renderChart(widget: ReportWidget, data: any) {
     chartData = Object.entries(data.byPriority || {}).map(([name, value]) => ({
       name: name === "LOW" ? "Baixa" : name === "MEDIUM" ? "Média" : name === "HIGH" ? "Alta" : name === "URGENT" ? "Urgente" : name,
       value: value as number,
-      color: name === "LOW" ? "#16A34A" : name === "MEDIUM" ? "#F59E0B" : name === "URGENT" ? "#7C3AED" : "#DC2626",
+      color: PRIORITY_CHART_COLORS[name] || CHART_COLORS.red,
     }));
   } else if (widget.dataSource === "interactions") {
     chartData = Object.entries(data.byType || {}).map(([name, value]) => ({
@@ -269,7 +276,7 @@ function renderChart(widget: ReportWidget, data: any) {
               dataKey="value"
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color || "#3B82F6"} />
+                <Cell key={`cell-${index}`} fill={entry.color || CHART_COLORS.blue} />
               ))}
             </Pie>
             <Tooltip />
@@ -280,7 +287,7 @@ function renderChart(widget: ReportWidget, data: any) {
             <div key={index} className="flex items-center gap-2">
               <div
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.color || "#3B82F6" }}
+                style={{ backgroundColor: item.color || CHART_COLORS.blue }}
               />
               <span className="text-sm text-gray-600">{item.name}</span>
             </div>
@@ -299,7 +306,7 @@ function renderChart(widget: ReportWidget, data: any) {
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={2} />
+            <Line type="monotone" dataKey="value" stroke={PRIMARY_COLOR} strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -315,7 +322,7 @@ function renderChart(widget: ReportWidget, data: any) {
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Area type="monotone" dataKey="value" stroke="#2563EB" fill="#2563EB" fillOpacity={0.3} />
+            <Area type="monotone" dataKey="value" stroke={PRIMARY_COLOR} fill={PRIMARY_COLOR} fillOpacity={0.3} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -333,7 +340,7 @@ function renderChart(widget: ReportWidget, data: any) {
           <Tooltip />
           <Bar dataKey="value" radius={[8, 8, 0, 0]}>
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color || "#3B82F6"} />
+              <Cell key={`cell-${index}`} fill={entry.color || CHART_COLORS.blue} />
             ))}
           </Bar>
         </BarChart>
@@ -416,7 +423,7 @@ function renderFunnel(widget: ReportWidget, data: any) {
                   className="h-full rounded-full flex items-center justify-end pr-4"
                   style={{
                     width: `${percentage}%`,
-                    backgroundColor: stage.color || "#3B82F6",
+                    backgroundColor: stage.color || CHART_COLORS.blue,
                   }}
                 >
                   <span className="text-white text-sm font-medium">{stage.count}</span>

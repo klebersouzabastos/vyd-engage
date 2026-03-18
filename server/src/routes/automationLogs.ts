@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import prisma from '../config/database.js';
-import { AutomationLogStatus } from '@prisma/client';
+import { AutomationLogStatus, AutomationStepType } from '@prisma/client';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ router.use(tenantScope);
 const logFiltersSchema = z.object({
   status: z.nativeEnum(AutomationLogStatus).optional(),
   leadId: z.string().uuid().optional(),
-  stepType: z.string().optional(),
+  stepType: z.nativeEnum(AutomationStepType).optional(),
   automationId: z.string().uuid().optional(),
   executionId: z.string().optional(),
   from: z.coerce.date().optional(),

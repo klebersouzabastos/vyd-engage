@@ -24,7 +24,20 @@ function normalizeNotificationType(backendType: string): NotificationType {
   return BACKEND_TYPE_MAP[backendType] || (backendType?.toLowerCase() as NotificationType) || "system";
 }
 
-function mapBackendNotification(raw: any): Notification {
+interface RawNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  status?: string;
+  read?: boolean;
+  link?: string;
+  createdAt?: string;
+  timestamp?: string;
+  metadata?: Record<string, string | number | boolean | null>;
+}
+
+function mapBackendNotification(raw: RawNotification): Notification {
   return {
     id: raw.id,
     type: normalizeNotificationType(raw.type),
@@ -89,8 +102,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Listen for real-time notification events
   useEffect(() => {
     if (!user) return;
-    const cleanup = on('notification:new', (data: any) => {
-      const notif = mapBackendNotification({ ...data, read: false });
+    const cleanup = on('notification:new', (data: unknown) => {
+      const notif = mapBackendNotification({ ...(data as RawNotification), read: false });
       setNotifications(prev => [notif, ...prev]);
       setUnreadCount(prev => prev + 1);
     });

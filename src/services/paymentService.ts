@@ -15,7 +15,7 @@ export async function createPaymentIntent(
   planId: string,
   amount: number,
   method: PaymentMethod,
-  metadata?: Record<string, any>
+  metadata?: Record<string, string | number | boolean | undefined>
 ): Promise<PaymentIntent> {
   const result = await apiClient.createPaymentIntent({
     planId,
@@ -176,7 +176,7 @@ export async function checkPaymentStatus(
   try {
     const history = await apiClient.getPaymentHistory();
     const payments = history?.data || history || [];
-    const payment = payments.find((p: any) => p.id === paymentIntentId);
+    const payment = payments.find((p: { id: string; status: string }) => p.id === paymentIntentId);
     if (!payment) return "failed";
 
     const statusMap: Record<string, PaymentStatus> = {
@@ -204,7 +204,7 @@ export async function validatePaymentForUpgrade(
     const payments = history?.data || history || [];
 
     const pendingPayment = payments.find(
-      (p: any) => p.status === "PENDING" || p.status === "PROCESSING"
+      (p: { status: string }) => p.status === "PENDING" || p.status === "PROCESSING"
     );
 
     if (pendingPayment) {
@@ -240,7 +240,7 @@ function mapMethodToBackend(method: PaymentMethod): string {
 /**
  * Criar preferência de pagamento (agora via backend).
  */
-export async function createMercadoPagoPreference(preference: any) {
+export async function createMercadoPagoPreference(preference: Record<string, unknown>) {
   // A preferência é criada pelo backend durante createPaymentIntent.
   // Esta função mantém compatibilidade com código existente.
   return preference;

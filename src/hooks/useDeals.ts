@@ -14,16 +14,16 @@ export function useDeals() {
     totalPages: 0,
   });
 
-  const fetchDeals = useCallback(async (filters?: any) => {
+  const fetchDeals = useCallback(async (filters?: Record<string, string | number | undefined>) => {
     try {
       setLoading(true);
       setError(null);
       const result = await apiClient.getDeals(filters);
 
-      const transformedDeals: Deal[] = result.deals.map((deal: any) => ({
+      const transformedDeals: Deal[] = result.deals.map((deal: Record<string, unknown>) => ({
         ...deal,
         value: Number(deal.value),
-      }));
+      } as Deal));
 
       setDeals(transformedDeals);
       setPagination(result.pagination || {
@@ -32,8 +32,9 @@ export function useDeals() {
         total: transformedDeals.length,
         totalPages: 1,
       });
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar deals');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar deals';
+      setError(message);
       toast.error('Erro ao carregar deals');
     } finally {
       setLoading(false);
@@ -47,8 +48,9 @@ export function useDeals() {
       setDeals(prev => [newDeal, ...prev]);
       toast.success('Deal criado com sucesso!');
       return newDeal;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao criar deal');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao criar deal';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -60,8 +62,9 @@ export function useDeals() {
       setDeals(prev => prev.map(d => d.id === id ? updated : d));
       toast.success('Deal atualizado com sucesso!');
       return updated;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao atualizar deal');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar deal';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -71,8 +74,9 @@ export function useDeals() {
       await apiClient.deleteDeal(id);
       setDeals(prev => prev.filter(d => d.id !== id));
       toast.success('Deal removido com sucesso!');
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao remover deal');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao remover deal';
+      toast.error(message);
       throw err;
     }
   }, []);

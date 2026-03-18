@@ -37,6 +37,9 @@ interface EmailTemplate {
   createdAt: string;
 }
 
+// TECH DEBT (FE-30): Email templates are stored in localStorage because there is
+// no backend API for email templates yet. When an API endpoint is created
+// (e.g. POST/GET /api/email-templates), migrate these functions to use it.
 const TEMPLATES_KEY = "vyd_email_templates";
 
 function loadLocalTemplates(): EmailTemplate[] {

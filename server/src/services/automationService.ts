@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { AutomationStatus, AutomationLogStatus } from '@prisma/client';
+import { AutomationStatus, AutomationLogStatus, AutomationStepType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { planLimitsService } from './planLimitsService.js';
 import { emitToTenant } from './socketService.js';
@@ -146,7 +146,7 @@ export const automationService = {
     message?: string,
     data?: any,
     error?: string,
-    extra?: { leadId?: string; stepOrder?: number; stepType?: string; executionId?: string }
+    extra?: { leadId?: string; stepOrder?: number; stepType?: AutomationStepType | null; executionId?: string }
   ) {
     const log = await prisma.automationLog.create({
       data: {

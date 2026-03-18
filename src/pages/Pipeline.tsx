@@ -34,6 +34,9 @@ import { useFunnels, type FunnelLead } from "../hooks/useFunnels";
 import { mapStatusFromBackend, mapSourceFromBackend } from "../utils/leadEnums";
 import { PageSkeleton } from "../components/PageSkeleton";
 
+// Pipeline column colors stored in DB as hex — cannot use CSS var() references here
+const PIPELINE_COLUMN_COLORS = ["#3B82F6", "#EAB308", "#16A34A", "#8B5CF6", "#EC4899", "#6366F1"];
+
 export function Pipeline() {
   const navigate = useNavigate();
   const { getTagById } = useTags();
@@ -278,8 +281,7 @@ export function Pipeline() {
     }
 
     setErrorMessage("");
-    const colors = ["#3B82F6", "#F59E0B", "#10B981", "#8B5CF6", "#EC4899", "#6366F1"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const randomColor = PIPELINE_COLUMN_COLORS[Math.floor(Math.random() * PIPELINE_COLUMN_COLORS.length)];
 
     try {
       await addColumnApi(trimmedTitle, randomColor);

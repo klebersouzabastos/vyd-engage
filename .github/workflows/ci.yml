@@ -51,6 +51,9 @@ jobs:
       - name: Lint
         run: cd server && npm run lint
 
+      - name: Format check
+        run: cd server && npm run format:check
+
       - name: Build
         run: cd server && npm run build
 
@@ -79,6 +82,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
 
       - name: Build
         run: npm run build

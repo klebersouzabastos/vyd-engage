@@ -575,6 +575,16 @@ enum AutomationLogStatus {
   SKIPPED
 }
 
+enum AutomationStepType {
+  DELAY
+  UPDATE_LEAD
+  ADD_TAG
+  REMOVE_TAG
+  CONDITION
+  SEND_WHATSAPP
+  SEND_EMAIL
+}
+
 model Automation {
   id       String @id @default(uuid())
   tenantId String
@@ -617,9 +627,9 @@ model AutomationLog {
 
   // Structured fields (previously buried in JSON `data`)
   leadId      String?
-  lead        Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead        Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   stepOrder   Int?
-  stepType    String?
+  stepType    AutomationStepType?
   executionId String?
 
   createdAt DateTime @default(now())
@@ -887,6 +897,14 @@ model Notification {
 // REPORTS
 // ============================================
 
+enum ReportType {
+  LEADS
+  SALES
+  AUTOMATIONS
+  TASKS
+  CUSTOM
+}
+
 model Report {
   id          String  @id @default(uuid())
   tenantId    String
@@ -896,8 +914,8 @@ model Report {
 
   name        String
   description String?
-  type        String   @default("custom") // leads, sales, automations, tasks, custom
-  config      Json     @default("{}") // widgets, schedule, filters, shareSettings
+  type        ReportType @default(CUSTOM)
+  config      Json       @default("{}") // widgets, schedule, filters, shareSettings
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

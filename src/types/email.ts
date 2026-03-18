@@ -85,7 +85,7 @@ export interface EmailTestResult {
   message: string;
   error?: string;
   responseTime?: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Resultado de envio de email
@@ -93,7 +93,7 @@ export interface SendEmailResult {
   success: boolean;
   messageId?: string;
   error?: string;
-  providerResponse?: Record<string, any>;
+  providerResponse?: Record<string, unknown>;
 }
 
 // Email para envio

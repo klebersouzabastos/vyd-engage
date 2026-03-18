@@ -27,7 +27,7 @@ export function useTasks() {
     totalPages: 0,
   });
 
-  const fetchTasks = useCallback(async (filters?: any, options?: { silent?: boolean }) => {
+  const fetchTasks = useCallback(async (filters?: Record<string, string | number | undefined>, options?: { silent?: boolean }) => {
     try {
       setLoading(true);
       setError(null);
@@ -40,8 +40,9 @@ export function useTasks() {
         total: result.tasks?.length || 0,
         totalPages: 1,
       });
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar tarefas');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar tarefas';
+      setError(message);
       if (!options?.silent) {
         toast.error('Erro ao carregar tarefas');
       }
@@ -65,8 +66,9 @@ export function useTasks() {
       setTasks(prev => [result, ...prev]);
       toast.success('Tarefa criada com sucesso!');
       return result;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao criar tarefa');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao criar tarefa';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -86,8 +88,9 @@ export function useTasks() {
       setTasks(prev => prev.map(t => t.id === id ? result : t));
       toast.success('Tarefa atualizada com sucesso!');
       return result;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao atualizar tarefa');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar tarefa';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -97,8 +100,9 @@ export function useTasks() {
       await apiClient.deleteTask(id);
       setTasks(prev => prev.filter(t => t.id !== id));
       toast.success('Tarefa deletada com sucesso!');
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao deletar tarefa');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao deletar tarefa';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -110,8 +114,9 @@ export function useTasks() {
       });
       setTasks(prev => prev.map(t => t.id === id ? result : t));
       return result;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao completar tarefa');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao completar tarefa';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -123,8 +128,9 @@ export function useTasks() {
       });
       setTasks(prev => prev.map(t => t.id === id ? result : t));
       return result;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao reabrir tarefa');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao reabrir tarefa';
+      toast.error(message);
       throw err;
     }
   }, []);

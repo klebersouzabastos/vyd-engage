@@ -72,8 +72,10 @@ export function EmailProvider({ children }: { children: ReactNode }) {
   // Carregar plano atual da API de assinatura
   useEffect(() => {
     if (!user) return;
-    apiClient.getCurrentSubscription().then((sub: any) => {
-      const planType = sub?.subscription?.plan?.type?.toLowerCase();
+    apiClient.getCurrentSubscription().then((sub: Record<string, unknown>) => {
+      const subscription = sub?.subscription as Record<string, unknown> | undefined;
+      const plan = subscription?.plan as Record<string, unknown> | undefined;
+      const planType = (plan?.type as string)?.toLowerCase();
       if (planType && ["starter", "pro", "enterprise"].includes(planType)) {
         setCurrentPlan(planType as PlanType);
       }
@@ -83,12 +85,25 @@ export function EmailProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // Carregar configurações da API
+  interface ApiEmailConfig {
+    id: string;
+    name: string;
+    provider: string;
+    fromEmail: string;
+    fromName?: string;
+    config?: ProviderConfig;
+    verified?: boolean;
+    verifiedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+
   const fetchConfigs = useCallback(async () => {
     try {
       setLoading(true);
       const apiConfigs = await apiClient.getEmailConfigs();
       // Transform API response to match EmailConfig type
-      const transformedConfigs: EmailConfig[] = apiConfigs.map((config: any) => ({
+      const transformedConfigs: EmailConfig[] = apiConfigs.map((config: ApiEmailConfig) => ({
         id: config.id,
         name: config.name,
         provider: config.provider.toLowerCase() as EmailProviderType,

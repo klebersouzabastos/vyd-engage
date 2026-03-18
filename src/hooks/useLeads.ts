@@ -46,7 +46,28 @@ export function useLeads() {
       const result = await apiClient.getLeads(serverParams);
 
       // Transform API response to match Lead type
-      const transformedLeads = result.leads.map((lead: any) => ({
+      interface ApiLeadTag {
+        tag?: { id: string; name: string; color: string };
+        tagId?: string;
+      }
+      interface ApiLead {
+        id: string;
+        name: string;
+        email?: string;
+        phone?: string;
+        company?: string;
+        position?: string;
+        status: string;
+        source: string;
+        score?: number;
+        customFields?: Record<string, string | number | boolean | null>;
+        notes?: string;
+        assignedTo?: string;
+        tags?: Array<ApiLeadTag | string>;
+        createdAt?: string;
+        updatedAt?: string;
+      }
+      const transformedLeads = result.leads.map((lead: ApiLead) => ({
         id: lead.id,
         name: lead.name,
         email: lead.email || '',
@@ -59,7 +80,10 @@ export function useLeads() {
         customFields: lead.customFields || {},
         notes: lead.notes || '',
         assignedTo: lead.assignedTo || '',
-        tags: lead.tags?.map((lt: any) => lt.tag?.id || lt.tagId || lt) || [],
+        tags: lead.tags?.map((lt: ApiLeadTag | string) => {
+          if (typeof lt === 'string') return lt;
+          return lt.tag?.id || lt.tagId || '';
+        }) || [],
         createdAt: lead.createdAt,
         updatedAt: lead.updatedAt,
       }));
@@ -72,8 +96,9 @@ export function useLeads() {
         totalPages: 1,
       });
 
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar leads');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar leads';
+      setError(message);
       toast.error('Erro ao carregar leads');
     } finally {
       setLoading(false);
@@ -105,13 +130,13 @@ export function useLeads() {
         phone: result.phone || '',
         company: result.company || '',
         position: result.position || '',
-        status: mapStatusFromBackend(result.status) as any,
-        source: mapSourceFromBackend(result.source) as any,
+        status: mapStatusFromBackend(result.status) as Lead['status'],
+        source: mapSourceFromBackend(result.source) as Lead['source'],
         score: result.score || 0,
         customFields: result.customFields || {},
         notes: result.notes || '',
         assignedTo: result.assignedTo || '',
-        tags: result.tags?.map((lt: any) => lt.tag) || [],
+        tags: result.tags?.map((lt: { tag?: { id: string } }) => lt.tag) || [],
         createdAt: result.createdAt,
         updatedAt: result.updatedAt,
       };
@@ -119,8 +144,9 @@ export function useLeads() {
       setLeads(prev => [newLead, ...prev]);
       toast.success('Lead criado com sucesso!');
       return newLead;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao criar lead');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao criar lead';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -150,13 +176,13 @@ export function useLeads() {
         phone: result.phone || '',
         company: result.company || '',
         position: result.position || '',
-        status: mapStatusFromBackend(result.status) as any,
-        source: mapSourceFromBackend(result.source) as any,
+        status: mapStatusFromBackend(result.status) as Lead['status'],
+        source: mapSourceFromBackend(result.source) as Lead['source'],
         score: result.score || 0,
         customFields: result.customFields || {},
         notes: result.notes || '',
         assignedTo: result.assignedTo || '',
-        tags: result.tags?.map((lt: any) => lt.tag) || [],
+        tags: result.tags?.map((lt: { tag?: { id: string } }) => lt.tag) || [],
         createdAt: result.createdAt,
         updatedAt: result.updatedAt,
       };
@@ -164,8 +190,9 @@ export function useLeads() {
       setLeads(prev => prev.map(l => l.id === id ? updatedLead : l));
       toast.success('Lead atualizado com sucesso!');
       return updatedLead;
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao atualizar lead');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar lead';
+      toast.error(message);
       throw err;
     }
   }, []);
@@ -175,8 +202,9 @@ export function useLeads() {
       await apiClient.deleteLead(id);
       setLeads(prev => prev.filter(l => l.id !== id));
       toast.success('Lead deletado com sucesso!');
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao deletar lead');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao deletar lead';
+      toast.error(message);
       throw err;
     }
   }, []);

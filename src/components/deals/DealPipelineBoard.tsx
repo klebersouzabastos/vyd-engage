@@ -5,10 +5,10 @@ import { DealCard } from "./DealCard";
 import { formatCurrency } from "../../utils/format";
 
 const PIPELINE_STAGES: { stage: DealStage; label: string; color: string }[] = [
-  { stage: "QUALIFICATION", label: "Qualificação", color: "#3B82F6" },
-  { stage: "PROPOSAL", label: "Proposta", color: "#EAB308" },
-  { stage: "NEGOTIATION", label: "Negociação", color: "#F97316" },
-  { stage: "CLOSING", label: "Fechamento", color: "#8B5CF6" },
+  { stage: "QUALIFICATION", label: "Qualificação", color: "var(--color-stage-qualification-accent)" },
+  { stage: "PROPOSAL", label: "Proposta", color: "var(--color-stage-proposal-accent)" },
+  { stage: "NEGOTIATION", label: "Negociação", color: "var(--color-stage-negotiation-accent)" },
+  { stage: "CLOSING", label: "Fechamento", color: "var(--color-stage-closing-accent)" },
 ];
 
 interface DealPipelineBoardProps {

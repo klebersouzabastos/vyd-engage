@@ -26,6 +26,73 @@
   --color-error: #DC2626;
   --color-amber: #F59E0B;
 
+  /* ── Lead Status Tokens ── */
+  --color-status-new-bg: #DBEAFE;
+  --color-status-new-text: #1D4ED8;
+  --color-status-contacted-bg: #FEF9C3;
+  --color-status-contacted-text: #A16207;
+  --color-status-qualified-bg: #DCFCE7;
+  --color-status-qualified-text: #15803D;
+  --color-status-converted-bg: #DCFCE7;
+  --color-status-converted-text: #15803D;
+  --color-status-lost-bg: #FEE2E2;
+  --color-status-lost-text: #B91C1C;
+
+  /* ── Priority Tokens ── */
+  --color-priority-low-bg: #DBEAFE;
+  --color-priority-low-text: #1D4ED8;
+  --color-priority-low-border: #BFDBFE;
+  --color-priority-medium-bg: #FEF9C3;
+  --color-priority-medium-text: #A16207;
+  --color-priority-medium-border: #FDE68A;
+  --color-priority-high-bg: #FEE2E2;
+  --color-priority-high-text: #B91C1C;
+  --color-priority-high-border: #FECACA;
+  --color-priority-urgent-bg: #FECDD3;
+  --color-priority-urgent-text: #9F1239;
+  --color-priority-urgent-border: #FDA4AF;
+
+  /* ── Score Tokens ── */
+  --color-score-hot-bg: #FEF2F2;
+  --color-score-hot-text: #DC2626;
+  --color-score-warm-bg: #FFF7ED;
+  --color-score-warm-text: #EA580C;
+  --color-score-cold-bg: #EFF6FF;
+  --color-score-cold-text: #2563EB;
+  --color-score-frozen-bg: #F9FAFB;
+  --color-score-frozen-text: #4B5563;
+
+  /* ── Deal Stage Tokens ── */
+  --color-stage-qualification-bg: #DBEAFE;
+  --color-stage-qualification-text: #1D4ED8;
+  --color-stage-qualification-accent: #3B82F6;
+  --color-stage-proposal-bg: #FEF9C3;
+  --color-stage-proposal-text: #A16207;
+  --color-stage-proposal-accent: #EAB308;
+  --color-stage-negotiation-bg: #FFEDD5;
+  --color-stage-negotiation-text: #C2410C;
+  --color-stage-negotiation-accent: #F97316;
+  --color-stage-closing-bg: #EDE9FE;
+  --color-stage-closing-text: #6D28D9;
+  --color-stage-closing-accent: #8B5CF6;
+  --color-stage-won-bg: #DCFCE7;
+  --color-stage-won-text: #15803D;
+  --color-stage-won-accent: #16A34A;
+  --color-stage-lost-bg: #FEE2E2;
+  --color-stage-lost-text: #B91C1C;
+  --color-stage-lost-accent: #DC2626;
+
+  /* ── Chart Palette ── */
+  --color-chart-blue: #3B82F6;
+  --color-chart-red: #DC2626;
+  --color-chart-green: #16A34A;
+  --color-chart-yellow: #EAB308;
+  --color-chart-orange: #F97316;
+  --color-chart-purple: #8B5CF6;
+  --color-chart-pink: #EC4899;
+  --color-chart-indigo: #6366F1;
+  --color-chart-gray: #6B7280;
+
   /* Spacing System */
   --spacing-xs: 8px;
   --spacing-sm: 16px;
@@ -65,6 +132,56 @@
   --color-warning: #F97316;
   --color-error: #EF4444;
   --color-amber: #FBBF24;
+
+  /* ── Lead Status (Dark) ── */
+  --color-status-new-bg: #1E3A5F;
+  --color-status-new-text: #93C5FD;
+  --color-status-contacted-bg: #422006;
+  --color-status-contacted-text: #FDE68A;
+  --color-status-qualified-bg: #14532D;
+  --color-status-qualified-text: #86EFAC;
+  --color-status-converted-bg: #14532D;
+  --color-status-converted-text: #86EFAC;
+  --color-status-lost-bg: #450A0A;
+  --color-status-lost-text: #FCA5A5;
+
+  /* ── Priority (Dark) ── */
+  --color-priority-low-bg: #1E3A5F;
+  --color-priority-low-text: #93C5FD;
+  --color-priority-low-border: #1E40AF;
+  --color-priority-medium-bg: #422006;
+  --color-priority-medium-text: #FDE68A;
+  --color-priority-medium-border: #92400E;
+  --color-priority-high-bg: #450A0A;
+  --color-priority-high-text: #FCA5A5;
+  --color-priority-high-border: #991B1B;
+  --color-priority-urgent-bg: #4C0519;
+  --color-priority-urgent-text: #FDA4AF;
+  --color-priority-urgent-border: #881337;
+
+  /* ── Score (Dark) ── */
+  --color-score-hot-bg: #450A0A;
+  --color-score-hot-text: #FCA5A5;
+  --color-score-warm-bg: #431407;
+  --color-score-warm-text: #FDBA74;
+  --color-score-cold-bg: #1E3A5F;
+  --color-score-cold-text: #93C5FD;
+  --color-score-frozen-bg: #1F2937;
+  --color-score-frozen-text: #9CA3AF;
+
+  /* ── Deal Stage (Dark) ── */
+  --color-stage-qualification-bg: #1E3A5F;
+  --color-stage-qualification-text: #93C5FD;
+  --color-stage-proposal-bg: #422006;
+  --color-stage-proposal-text: #FDE68A;
+  --color-stage-negotiation-bg: #431407;
+  --color-stage-negotiation-text: #FDBA74;
+  --color-stage-closing-bg: #2E1065;
+  --color-stage-closing-text: #C4B5FD;
+  --color-stage-won-bg: #14532D;
+  --color-stage-won-text: #86EFAC;
+  --color-stage-lost-bg: #450A0A;
+  --color-stage-lost-text: #FCA5A5;
 }
 
 /* Sidebar Layout — explicit CSS to avoid Tailwind v4 spacing issues */
@@ -136,4 +253,33 @@
     font-size: 0.875rem;
     line-height: 1.25rem;
   }
+}
+
+/* ── Design Token Utility Classes ── */
+@layer utilities {
+  /* Lead Status */
+  .badge-status-novo       { background-color: var(--color-status-new-bg);       color: var(--color-status-new-text); }
+  .badge-status-contato    { background-color: var(--color-status-contacted-bg); color: var(--color-status-contacted-text); }
+  .badge-status-fechado    { background-color: var(--color-status-qualified-bg); color: var(--color-status-qualified-text); }
+  .badge-status-perdido    { background-color: var(--color-status-lost-bg);      color: var(--color-status-lost-text); }
+
+  /* Priority */
+  .badge-priority-low      { background-color: var(--color-priority-low-bg);     color: var(--color-priority-low-text);    border-color: var(--color-priority-low-border); }
+  .badge-priority-medium   { background-color: var(--color-priority-medium-bg);  color: var(--color-priority-medium-text); border-color: var(--color-priority-medium-border); }
+  .badge-priority-high     { background-color: var(--color-priority-high-bg);    color: var(--color-priority-high-text);   border-color: var(--color-priority-high-border); }
+  .badge-priority-urgent   { background-color: var(--color-priority-urgent-bg);  color: var(--color-priority-urgent-text); border-color: var(--color-priority-urgent-border); }
+
+  /* Score */
+  .badge-score-hot         { background-color: var(--color-score-hot-bg);    color: var(--color-score-hot-text); }
+  .badge-score-warm        { background-color: var(--color-score-warm-bg);   color: var(--color-score-warm-text); }
+  .badge-score-cold        { background-color: var(--color-score-cold-bg);   color: var(--color-score-cold-text); }
+  .badge-score-frozen      { background-color: var(--color-score-frozen-bg); color: var(--color-score-frozen-text); }
+
+  /* Deal Stage */
+  .badge-stage-qualification { background-color: var(--color-stage-qualification-bg); color: var(--color-stage-qualification-text); }
+  .badge-stage-proposal      { background-color: var(--color-stage-proposal-bg);      color: var(--color-stage-proposal-text); }
+  .badge-stage-negotiation   { background-color: var(--color-stage-negotiation-bg);   color: var(--color-stage-negotiation-text); }
+  .badge-stage-closing       { background-color: var(--color-stage-closing-bg);       color: var(--color-stage-closing-text); }
+  .badge-stage-won           { background-color: var(--color-stage-won-bg);           color: var(--color-stage-won-text); }
+  .badge-stage-lost          { background-color: var(--color-stage-lost-bg);          color: var(--color-stage-lost-text); }
 }

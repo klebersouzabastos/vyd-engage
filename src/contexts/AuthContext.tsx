@@ -62,11 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string, totpCode?: string): Promise<TwoFactorRequired | void> => {
     const body: Record<string, string> = { email, password };
     if (totpCode) body.totpCode = totpCode;
-    const result = await apiClient.login(body as any);
+    const result = await apiClient.login(body as { email: string; password: string; totpCode?: string });
     if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
-      return result as unknown as TwoFactorRequired;
+      return result as TwoFactorRequired;
     }
-    setUser(result.user);
+    if ('user' in result) {
+      setUser(result.user);
+    }
   }, []);
 
   const register = useCallback(async (data: {

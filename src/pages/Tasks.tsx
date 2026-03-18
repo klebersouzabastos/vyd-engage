@@ -1,16 +1,18 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { TaskCard } from "../components/TaskCard";
+import { TaskCard, getPriorityColor, getPriorityLabel, getPriorityIcon, getStatusInfo } from "../components/TaskCard";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { useTasks } from "../hooks/useTasks";
 import { Task } from "../types";
-import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList, AlertTriangle, Edit2, Trash2 } from "lucide-react";
 import { useNotifications } from "../contexts/NotificationContext";
 import { useIsMobile } from "../components/ui/use-mobile";
+import { Checkbox } from "../components/ui/checkbox";
 import { toast } from "sonner";
+import { formatRelativeTime } from "../utils/interactions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -266,6 +268,146 @@ export function Tasks() {
   }, []);
 
 
+  // Mobile card renderer for tasks (compact, touch-friendly)
+  const renderMobileTaskCard = (task: Task) => {
+    const now = new Date();
+    const isCompleted = task.status === 'COMPLETED';
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+    const isOverdue = !isCompleted && dueDate && dueDate < now;
+    const isDueToday = !isCompleted && dueDate && dueDate.toDateString() === now.toDateString();
+    const statusInfo = getStatusInfo(task.status);
+
+    return (
+      <div
+        key={task.id}
+        className={`
+          border rounded-lg p-4 space-y-2 transition-all
+          ${isCompleted
+            ? "bg-gray-100 border-gray-300 opacity-60"
+            : isOverdue
+            ? "bg-red-50 border-red-200"
+            : isDueToday
+            ? "bg-yellow-50 border-yellow-200"
+            : "bg-white border-gray-300"
+          }
+        `}
+      >
+        <div className="flex justify-between items-start gap-2">
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            <Checkbox
+              checked={isCompleted}
+              onCheckedChange={() => handleToggle(task)}
+              className="mt-0.5"
+              aria-label={isCompleted ? `Marcar tarefa "${task.title}" como pendente` : `Marcar tarefa "${task.title}" como concluída`}
+            />
+            <h3 className={`font-medium text-sm leading-tight ${isCompleted ? "text-gray-400 line-through" : "text-gray-900"}`}>
+              {task.title}
+            </h3>
+          </div>
+          <span className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5 flex-shrink-0 ${getPriorityColor(task.priority)}`}>
+            {getPriorityIcon(task.priority)}
+            {getPriorityLabel(task.priority)}
+          </span>
+        </div>
+
+        {task.description && (
+          <p className={`text-xs pl-7 ${isCompleted ? "text-gray-400" : "text-gray-500"}`}>
+            {task.description.length > 80 ? task.description.substring(0, 80) + "..." : task.description}
+          </p>
+        )}
+
+        <div className="flex items-center gap-2 pl-7 flex-wrap">
+          {/* Due date with a11y icon */}
+          <span className={`text-xs inline-flex items-center gap-1 ${isOverdue ? "text-red-600 font-medium" : isDueToday ? "text-yellow-600 font-medium" : "text-gray-500"}`}>
+            {isOverdue ? (
+              <>
+                <AlertTriangle size={12} aria-hidden="true" />
+                Vencida: {dueDate!.toLocaleDateString("pt-BR")}
+              </>
+            ) : isDueToday ? (
+              <>
+                <AlertCircle size={12} aria-hidden="true" />
+                Vence hoje
+              </>
+            ) : dueDate ? (
+              <>
+                <CalendarIcon size={12} aria-hidden="true" />
+                {formatRelativeTime(task.dueDate!)}
+              </>
+            ) : (
+              <>
+                <CalendarIcon size={12} aria-hidden="true" />
+                Sem data
+              </>
+            )}
+          </span>
+
+          {/* Status badge with icon */}
+          <span className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5 ${statusInfo.className}`}>
+            {statusInfo.icon}
+            {statusInfo.label}
+          </span>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 pt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(task)}
+            className="h-8 px-2 text-xs"
+            aria-label="Editar tarefa"
+          >
+            <Edit2 size={14} className="mr-1" />
+            Editar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeletingTask(task)}
+            className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+            aria-label="Deletar tarefa"
+          >
+            <Trash2 size={14} className="mr-1" />
+            Deletar
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Renders a task group section with desktop and mobile views
+  const renderTaskGroup = (title: string, taskList: Task[], titleClassName: string, icon?: ReactNode) => {
+    if (taskList.length === 0) return null;
+    return (
+      <div>
+        <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${titleClassName}`}>
+          {icon}
+          {title} ({taskList.length})
+        </h3>
+        {/* Desktop: full TaskCard */}
+        <div className="hidden md:block space-y-3">
+          {taskList.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onToggle={() => handleToggle(task)}
+              onEdit={() => handleEdit(task)}
+              onDelete={() => setDeletingTask(task)}
+              selected={selectedTasks.has(task.id)}
+              onSelect={(selected) => handleSelectTask(task.id, selected)}
+              showCheckbox={isSelectMode}
+            />
+          ))}
+        </div>
+        {/* Mobile: compact card view */}
+        <div className="block md:hidden space-y-3">
+          {taskList.map((task) => renderMobileTaskCard(task))}
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -449,94 +591,30 @@ export function Tasks() {
         {/* Tasks View */}
         {viewMode === "list" ? (
           <div className="space-y-6">
-            {groupedTasks.overdue.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
-                  <AlertCircle size={20} />
-                  Tarefas Vencidas ({groupedTasks.overdue.length})
-                </h3>
-                <div className="space-y-3">
-                  {groupedTasks.overdue.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={() => handleToggle(task)}
-                      onEdit={() => handleEdit(task)}
-                      onDelete={() => setDeletingTask(task)}
-                      selected={selectedTasks.has(task.id)}
-                      onSelect={(selected) => handleSelectTask(task.id, selected)}
-                      showCheckbox={isSelectMode}
-                    />
-                  ))}
-                </div>
-              </div>
+            {renderTaskGroup(
+              "Tarefas Vencidas",
+              groupedTasks.overdue,
+              "text-red-600",
+              <AlertCircle size={20} />
             )}
 
-            {groupedTasks.today.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <CalendarIcon size={20} />
-                  Vencem Hoje ({groupedTasks.today.length})
-                </h3>
-                <div className="space-y-3">
-                  {groupedTasks.today.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={() => handleToggle(task)}
-                      onEdit={() => handleEdit(task)}
-                      onDelete={() => setDeletingTask(task)}
-                      selected={selectedTasks.has(task.id)}
-                      onSelect={(selected) => handleSelectTask(task.id, selected)}
-                      showCheckbox={isSelectMode}
-                    />
-                  ))}
-                </div>
-              </div>
+            {renderTaskGroup(
+              "Vencem Hoje",
+              groupedTasks.today,
+              "text-gray-900",
+              <CalendarIcon size={20} />
             )}
 
-            {groupedTasks.upcoming.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Próximas ({groupedTasks.upcoming.length})
-                </h3>
-                <div className="space-y-3">
-                  {groupedTasks.upcoming.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={() => handleToggle(task)}
-                      onEdit={() => handleEdit(task)}
-                      onDelete={() => setDeletingTask(task)}
-                      selected={selectedTasks.has(task.id)}
-                      onSelect={(selected) => handleSelectTask(task.id, selected)}
-                      showCheckbox={isSelectMode}
-                    />
-                  ))}
-                </div>
-              </div>
+            {renderTaskGroup(
+              "Próximas",
+              groupedTasks.upcoming,
+              "text-gray-900"
             )}
 
-            {groupedTasks.completed.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Concluídas ({groupedTasks.completed.length})
-                </h3>
-                <div className="space-y-3">
-                  {groupedTasks.completed.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={() => handleToggle(task)}
-                      onEdit={() => handleEdit(task)}
-                      onDelete={() => setDeletingTask(task)}
-                      selected={selectedTasks.has(task.id)}
-                      onSelect={(selected) => handleSelectTask(task.id, selected)}
-                      showCheckbox={isSelectMode}
-                    />
-                  ))}
-                </div>
-              </div>
+            {renderTaskGroup(
+              "Concluídas",
+              groupedTasks.completed,
+              "text-gray-900"
             )}
 
             {filteredTasks.length === 0 && (

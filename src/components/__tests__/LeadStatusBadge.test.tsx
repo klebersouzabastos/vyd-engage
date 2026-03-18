@@ -41,8 +41,7 @@ describe('LeadStatusBadge', () => {
   it('should apply correct CSS classes for known statuses', () => {
     const { container } = render(<LeadStatusBadge status="novo" />);
     const badge = container.querySelector('span');
-    expect(badge?.className).toContain('bg-blue-100');
-    expect(badge?.className).toContain('text-blue-700');
+    expect(badge?.className).toContain('badge-status-novo');
   });
 
   it('should apply gray classes for unknown statuses', () => {

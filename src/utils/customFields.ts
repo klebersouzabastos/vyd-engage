@@ -2,7 +2,7 @@ import { CustomField } from "../types";
 
 // Pure utility functions for custom fields (localStorage CRUD removed — use CustomFieldsContext/API)
 
-export function validateFieldValue(field: CustomField, value: any): { valid: boolean; error?: string } {
+export function validateFieldValue(field: CustomField, value: unknown): { valid: boolean; error?: string } {
   if (field.required && (value === null || value === undefined || value === "")) {
     return { valid: false, error: `${field.name} é obrigatório` };
   }
@@ -14,12 +14,12 @@ export function validateFieldValue(field: CustomField, value: any): { valid: boo
       }
       break;
     case "date":
-      if (value && isNaN(Date.parse(value))) {
+      if (value && typeof value === 'string' && isNaN(Date.parse(value))) {
         return { valid: false, error: `${field.name} deve ser uma data válida` };
       }
       break;
     case "select":
-      if (value && field.options && !field.options.includes(value)) {
+      if (value && typeof value === 'string' && field.options && !field.options.includes(value)) {
         return { valid: false, error: `${field.name} deve ser uma das opções disponíveis` };
       }
       break;
@@ -28,7 +28,7 @@ export function validateFieldValue(field: CustomField, value: any): { valid: boo
   return { valid: true };
 }
 
-export function isCustomFieldEmpty(value: any): boolean {
+export function isCustomFieldEmpty(value: unknown): boolean {
   if (value === null || value === undefined || value === "") {
     return true;
   }
@@ -41,7 +41,7 @@ export function isCustomFieldEmpty(value: any): boolean {
   return false;
 }
 
-export function formatCustomFieldValue(field: CustomField, value: any): string | null {
+export function formatCustomFieldValue(field: CustomField, value: unknown): string | null {
   if (isCustomFieldEmpty(value)) {
     return null;
   }
@@ -61,7 +61,7 @@ export function formatCustomFieldValue(field: CustomField, value: any): string |
 
     case "date":
       try {
-        const date = new Date(value);
+        const date = new Date(String(value));
         if (isNaN(date.getTime())) return String(value);
         return new Intl.DateTimeFormat("pt-BR", {
           day: "2-digit",
@@ -83,7 +83,7 @@ export function formatCustomFieldValue(field: CustomField, value: any): string |
   }
 }
 
-export function getCustomFieldDisplayValue(field: CustomField, value: any): string {
+export function getCustomFieldDisplayValue(field: CustomField, value: unknown): string {
   const formattedValue = formatCustomFieldValue(field, value);
   if (formattedValue === null) {
     return `${field.name}: Não informado`;

@@ -100,7 +100,7 @@ export interface ConnectionTestResult {
   message: string;
   error?: string;
   responseTime?: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Resultado de envio de mensagem
@@ -108,7 +108,7 @@ export interface SendMessageResult {
   success: boolean;
   messageId?: string;
   error?: string;
-  providerResponse?: Record<string, any>;
+  providerResponse?: Record<string, unknown>;
 }
 
 // Mensagem para envio
@@ -137,7 +137,7 @@ export interface WhatsAppWebhookPayload {
   timestamp: string;
   type: "text" | "image" | "video" | "audio" | "document" | "location" | "contact";
   mediaUrl?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Validação de conexão

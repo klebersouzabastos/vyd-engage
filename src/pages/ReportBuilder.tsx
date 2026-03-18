@@ -86,7 +86,6 @@ export function ReportBuilder() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [selectedWidgetForConfig, setSelectedWidgetForConfig] = useState<string | null>(null);
   const [advancedMode, setAdvancedMode] = useState(false);
 
   useEffect(() => {

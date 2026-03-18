@@ -122,7 +122,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
         if (sub?.payments) {
           setPaymentHistory(
-            sub.payments.map((p: any) => ({
+            sub.payments.map((p: { id: string; createdAt?: string; amount: number | string; status?: string }) => ({
               id: p.id,
               date: p.createdAt,
               amount: Number(p.amount),
@@ -138,7 +138,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       }
 
       if (plansResult.status === "fulfilled" && Array.isArray(plansResult.value)) {
-        const apiPlans = plansResult.value.map((p: any) => ({
+        const apiPlans = plansResult.value.map((p: { type: string; name: string; price: number | string; description?: string; features?: string[]; limits?: PlanLimits; highlighted?: boolean }) => ({
           id: p.type.toLowerCase() as PlanType,
           name: p.name,
           price: Number(p.price),

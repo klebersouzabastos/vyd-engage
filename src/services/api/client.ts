@@ -125,11 +125,11 @@ class ApiClient {
   }) {
     try {
       // Cookies are set by the server (httpOnly) — no localStorage needed
-      return await this.request<{ user: any }>('/api/auth/register', {
+      return await this.request<{ user: { id: string; email: string; name: string; role: string; tenantId: string } }>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Detectar erros de rede
       if (
         error instanceof TypeError &&
@@ -140,23 +140,24 @@ class ApiClient {
         throw new ApiError(
           'Erro de conexão. Verifique sua internet e tente novamente.',
           0,
-          { code: 'NETWORK_ERROR', originalError: error }
+          { code: 'NETWORK_ERROR', originalError: String(error) }
         );
       }
 
       // Detectar timeout (se aplicável)
-      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout'))) {
         throw new ApiError(
           'A requisição demorou muito. Tente novamente.',
           408,
-          { code: 'TIMEOUT', originalError: error }
+          { code: 'TIMEOUT', originalError: String(error) }
         );
       }
 
       // Se já é um ApiError, verificar se tem código do backend
       if (error instanceof ApiError && error.details) {
         // Extrair código de erro do backend se disponível
-        const backendCode = error.details.code || error.details.error?.code;
+        const errorDetails = error.details.error as Record<string, unknown> | undefined;
+        const backendCode = error.details.code || errorDetails?.code;
         if (backendCode) {
           error.details.code = backendCode;
         }
@@ -170,11 +171,11 @@ class ApiClient {
   async login(data: { email: string; password: string; totpCode?: string }) {
     try {
       // Cookies are set by the server (httpOnly) — no localStorage needed
-      return await this.request<{ user: any } | { requiresTwoFactor: true; userId: string }>('/api/auth/login', {
+      return await this.request<{ user: { id: string; email: string; name: string; role: string; tenantId: string } } | { requiresTwoFactor: true; userId: string }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Detectar erros de rede
       if (
         error instanceof TypeError &&
@@ -185,23 +186,24 @@ class ApiClient {
         throw new ApiError(
           'Erro de conexão. Verifique se o servidor está rodando e tente novamente.',
           0,
-          { code: 'NETWORK_ERROR', originalError: error }
+          { code: 'NETWORK_ERROR', originalError: String(error) }
         );
       }
 
       // Detectar timeout (se aplicável)
-      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout'))) {
         throw new ApiError(
           'A requisição demorou muito. Tente novamente.',
           408,
-          { code: 'TIMEOUT', originalError: error }
+          { code: 'TIMEOUT', originalError: String(error) }
         );
       }
 
       // Se já é um ApiError, verificar se tem código do backend
       if (error instanceof ApiError && error.details) {
         // Extrair código de erro do backend se disponível
-        const backendCode = error.details.code || error.details.error?.code;
+        const errorDetails = error.details.error as Record<string, unknown> | undefined;
+        const backendCode = error.details.code || errorDetails?.code;
         if (backendCode) {
           error.details.code = backendCode;
         }
@@ -220,18 +222,18 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.request<any>('/api/auth/me');
+    return this.request<{ user: { id: string; email: string; name: string; avatar?: string | null; role: string; tenantId: string; tenant?: { id: string; name: string; slug: string; logo?: string | null } } }>('/api/auth/me');
   }
 
   async updateProfile(data: { name?: string; phone?: string; avatar?: string | null }) {
-    return this.request<any>('/api/auth/profile', {
+    return this.request<{ id: string; name: string; email: string; phone?: string; avatar?: string | null }>('/api/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async changePassword(data: { currentPassword: string; newPassword: string }) {
-    return this.request<any>('/api/auth/change-password', {
+    return this.request<{ message: string }>('/api/auth/change-password', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -263,32 +265,32 @@ class ApiClient {
   }
 
   async updateTenant(data: { name?: string; logo?: string | null }) {
-    return this.request<any>('/api/auth/tenant', {
+    return this.request<{ id: string; name: string; slug: string; logo?: string | null }>('/api/auth/tenant', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async getProfileStats() {
-    return this.request<any>('/api/auth/profile/stats');
+    return this.request<Record<string, unknown>>('/api/auth/profile/stats');
   }
 
   async changePlan(data: { planType: string; billingCycle?: string }) {
-    return this.request<any>('/api/subscriptions/change-plan', {
+    return this.request<{ message: string }>('/api/subscriptions/change-plan', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async cancelSubscription() {
-    return this.request<any>('/api/subscriptions/cancel', {
+    return this.request<{ message: string }>('/api/subscriptions/cancel', {
       method: 'POST',
     });
   }
 
   // Public lead capture (no auth required)
-  async publicCaptureLead(formId: string, data: any) {
-    return this.request<any>(`/api/public/capture/${formId}`, {
+  async publicCaptureLead(formId: string, data: Record<string, unknown>) {
+    return this.request<{ id: string }>(`/api/public/capture/${formId}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -296,7 +298,7 @@ class ApiClient {
 
   // Dashboard stats
   async getDashboardStats() {
-    return this.request<any>('/api/dashboard/stats');
+    return this.request<Record<string, unknown>>('/api/dashboard/stats');
   }
 
   async requestPasswordReset(email: string) {
@@ -312,7 +314,7 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify({ email: normalizedEmail }),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Detectar erros de rede
       if (
         error instanceof TypeError &&
@@ -323,16 +325,16 @@ class ApiClient {
         throw new ApiError(
           'Erro de conexão. Verifique se o servidor está rodando e tente novamente.',
           0,
-          { code: 'NETWORK_ERROR', originalError: error }
+          { code: 'NETWORK_ERROR', originalError: String(error) }
         );
       }
 
       // Detectar timeout (se aplicável)
-      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout'))) {
         throw new ApiError(
           'A requisição demorou muito. Tente novamente.',
           408,
-          { code: 'TIMEOUT', originalError: error }
+          { code: 'TIMEOUT', originalError: String(error) }
         );
       }
 
@@ -347,7 +349,7 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify({ token, password }),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Detectar erros de rede
       if (
         error instanceof TypeError &&
@@ -358,16 +360,16 @@ class ApiClient {
         throw new ApiError(
           'Erro de conexão. Verifique se o servidor está rodando e tente novamente.',
           0,
-          { code: 'NETWORK_ERROR', originalError: error }
+          { code: 'NETWORK_ERROR', originalError: String(error) }
         );
       }
 
       // Detectar timeout (se aplicável)
-      if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout'))) {
         throw new ApiError(
           'A requisição demorou muito. Tente novamente.',
           408,
-          { code: 'TIMEOUT', originalError: error }
+          { code: 'TIMEOUT', originalError: String(error) }
         );
       }
 
@@ -377,7 +379,7 @@ class ApiClient {
   }
 
   // Leads
-  async getLeads(filters?: any) {
+  async getLeads(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -387,22 +389,22 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/leads${query ? `?${query}` : ''}`);
+    return this.request<{ leads: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/leads${query ? `?${query}` : ''}`);
   }
 
   async getLead(id: string) {
-    return this.request<any>(`/api/leads/${id}`);
+    return this.request<Record<string, unknown>>(`/api/leads/${id}`);
   }
 
-  async createLead(data: any) {
-    return this.request<any>('/api/leads', {
+  async createLead(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/leads', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateLead(id: string, data: any) {
-    return this.request<any>(`/api/leads/${id}`, {
+  async updateLead(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/leads/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -414,8 +416,8 @@ class ApiClient {
     });
   }
 
-  async importLeads(data: { leads: any[]; skipDuplicateEmails?: boolean }) {
-    return this.request<any>('/api/leads/import', {
+  async importLeads(data: { leads: Record<string, unknown>[]; skipDuplicateEmails?: boolean }) {
+    return this.request<{ imported: number; skipped: number }>('/api/leads/import', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -429,21 +431,21 @@ class ApiClient {
       });
     }
     const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request<any>(`/api/leads/export${query}`);
+    return this.request<{ leads: Record<string, unknown>[] }>(`/api/leads/export${query}`);
   }
 
   async getLeadDuplicates() {
-    return this.request<any>('/api/leads/duplicates');
+    return this.request<{ duplicates: Record<string, unknown>[] }>('/api/leads/duplicates');
   }
 
   async mergeLeads(primaryId: string, duplicateIds: string[]) {
-    return this.request<any>('/api/leads/merge', {
+    return this.request<{ id: string }>('/api/leads/merge', {
       method: 'POST',
       body: JSON.stringify({ primaryId, duplicateIds }),
     });
   }
 
-  async bulkUpdateLeads(ids: string[], action: string, payload?: any) {
+  async bulkUpdateLeads(ids: string[], action: string, payload?: Record<string, unknown>) {
     return this.request<{ status: number; data: { affected: number; action: string } }>('/api/leads/bulk', {
       method: 'PATCH',
       body: JSON.stringify({ ids, action, payload }),
@@ -451,7 +453,7 @@ class ApiClient {
   }
 
   // Tasks
-  async getTasks(filters?: any) {
+  async getTasks(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -461,22 +463,22 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/tasks${query ? `?${query}` : ''}`);
+    return this.request<{ tasks: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/tasks${query ? `?${query}` : ''}`);
   }
 
   async getTask(id: string) {
-    return this.request<any>(`/api/tasks/${id}`);
+    return this.request<Record<string, unknown>>(`/api/tasks/${id}`);
   }
 
-  async createTask(data: any) {
-    return this.request<any>('/api/tasks', {
+  async createTask(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/tasks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateTask(id: string, data: any) {
-    return this.request<any>(`/api/tasks/${id}`, {
+  async updateTask(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -490,22 +492,22 @@ class ApiClient {
 
   // Tags
   async getTags() {
-    return this.request<any[]>('/api/tags');
+    return this.request<Array<{ id: string; name: string; color: string; createdAt: string }>>('/api/tags');
   }
 
   async getTag(id: string) {
-    return this.request<any>(`/api/tags/${id}`);
+    return this.request<{ id: string; name: string; color: string; createdAt: string }>(`/api/tags/${id}`);
   }
 
   async createTag(data: { name: string; color?: string }) {
-    return this.request<any>('/api/tags', {
+    return this.request<{ id: string; name: string; color: string; createdAt: string }>('/api/tags', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateTag(id: string, data: { name?: string; color?: string }) {
-    return this.request<any>(`/api/tags/${id}`, {
+    return this.request<{ id: string; name: string; color: string; createdAt: string }>(`/api/tags/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -519,15 +521,15 @@ class ApiClient {
 
   // Subscriptions
   async getCurrentSubscription() {
-    return this.request<any>('/api/subscriptions/current');
+    return this.request<Record<string, unknown>>('/api/subscriptions/current');
   }
 
   async getPlans() {
-    return this.request<any[]>('/api/subscriptions/plans');
+    return this.request<Array<Record<string, unknown>>>('/api/subscriptions/plans');
   }
 
   // Automations
-  async getAutomations(filters?: any) {
+  async getAutomations(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -537,22 +539,22 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/automations${query ? `?${query}` : ''}`);
+    return this.request<Record<string, unknown>>(`/api/automations${query ? `?${query}` : ''}`);
   }
 
   async getAutomation(id: string) {
-    return this.request<any>(`/api/automations/${id}`);
+    return this.request<Record<string, unknown>>(`/api/automations/${id}`);
   }
 
-  async createAutomation(data: any) {
-    return this.request<any>('/api/automations', {
+  async createAutomation(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/automations', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateAutomation(id: string, data: any) {
-    return this.request<any>(`/api/automations/${id}`, {
+  async updateAutomation(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/automations/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -566,11 +568,11 @@ class ApiClient {
 
   async getAutomationLogs(id: string, limit?: number) {
     const query = limit ? `?limit=${limit}` : '';
-    return this.request<any>(`/api/automations/${id}/logs${query}`);
+    return this.request<Record<string, unknown>>(`/api/automations/${id}/logs${query}`);
   }
 
   async getAutomationStats(id: string) {
-    return this.request<any>(`/api/automations/${id}/stats`);
+    return this.request<Record<string, unknown>>(`/api/automations/${id}/stats`);
   }
 
   // Tenant-wide automation logs with full filtering
@@ -593,11 +595,11 @@ class ApiClient {
       });
     }
     const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request<any>(`/api/automation-logs${query}`);
+    return this.request<Record<string, unknown>>(`/api/automation-logs${query}`);
   }
 
   async getLogsByExecution(executionId: string) {
-    return this.request<any>(`/api/automation-logs/execution/${executionId}`);
+    return this.request<Record<string, unknown>>(`/api/automation-logs/execution/${executionId}`);
   }
 
   async getAutomationLogStats(filters?: { from?: string; to?: string }) {
@@ -605,11 +607,11 @@ class ApiClient {
     if (filters?.from) params.set('from', filters.from);
     if (filters?.to) params.set('to', filters.to);
     const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request<any>(`/api/automation-logs/stats${query}`);
+    return this.request<Record<string, unknown>>(`/api/automation-logs/stats${query}`);
   }
 
   async executeAutomation(id: string, leadId: string) {
-    return this.request<any>(`/api/automations/${id}/execute`, {
+    return this.request<Record<string, unknown>>(`/api/automations/${id}/execute`, {
       method: 'POST',
       body: JSON.stringify({ leadId }),
     });
@@ -617,22 +619,22 @@ class ApiClient {
 
   // WhatsApp Connections
   async getWhatsAppConnections() {
-    return this.request<any[]>('/api/whatsapp');
+    return this.request<Array<Record<string, unknown>>>('/api/whatsapp');
   }
 
   async getWhatsAppConnection(id: string) {
-    return this.request<any>(`/api/whatsapp/${id}`);
+    return this.request<Record<string, unknown>>(`/api/whatsapp/${id}`);
   }
 
-  async createWhatsAppConnection(data: any) {
-    return this.request<any>('/api/whatsapp', {
+  async createWhatsAppConnection(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/whatsapp', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateWhatsAppConnection(id: string, data: any) {
-    return this.request<any>(`/api/whatsapp/${id}`, {
+  async updateWhatsAppConnection(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/whatsapp/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -654,34 +656,34 @@ class ApiClient {
     mediaUrl?: string;
     leadId?: string;
   }) {
-    return this.request<any>('/api/whatsapp/send', {
+    return this.request<{ messageId?: string; success: boolean }>('/api/whatsapp/send', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getWhatsAppTemplates(connectionId: string) {
-    return this.request<any>(`/api/whatsapp/${connectionId}/templates`);
+    return this.request<Array<Record<string, unknown>>>(`/api/whatsapp/${connectionId}/templates`);
   }
 
   // Email Configs
   async getEmailConfigs() {
-    return this.request<any[]>('/api/email/configs');
+    return this.request<Array<Record<string, unknown>>>('/api/email/configs');
   }
 
   async getEmailConfig(id: string) {
-    return this.request<any>(`/api/email/configs/${id}`);
+    return this.request<Record<string, unknown>>(`/api/email/configs/${id}`);
   }
 
-  async createEmailConfig(data: any) {
-    return this.request<any>('/api/email/configs', {
+  async createEmailConfig(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/email/configs', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateEmailConfig(id: string, data: any) {
-    return this.request<any>(`/api/email/configs/${id}`, {
+  async updateEmailConfig(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/email/configs/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -701,7 +703,7 @@ class ApiClient {
     text?: string;
     leadId?: string;
   }) {
-    return this.request<any>('/api/email/send', {
+    return this.request<{ messageId?: string; success: boolean }>('/api/email/send', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -714,14 +716,14 @@ class ApiClient {
     html: string;
     text?: string;
   }) {
-    return this.request<any>('/api/email/send-bulk', {
+    return this.request<{ sent: number; failed: number }>('/api/email/send-bulk', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async sendTestEmail(configId: string, toEmail: string) {
-    return this.request<any>(`/api/email/configs/${configId}/test`, {
+    return this.request<{ success: boolean; message?: string }>(`/api/email/configs/${configId}/test`, {
       method: 'POST',
       body: JSON.stringify({ toEmail }),
     });
@@ -729,11 +731,11 @@ class ApiClient {
 
   // API Keys
   async getApiKeys() {
-    return this.request<any[]>('/api/api-keys');
+    return this.request<Array<{ id: string; name: string; key?: string; lastUsedAt?: string; expiresAt?: string; createdAt: string }>>('/api/api-keys');
   }
 
   async createApiKey(data: { name: string; expiresAt?: string }) {
-    return this.request<any>('/api/api-keys', {
+    return this.request<{ id: string; name: string; key: string; expiresAt?: string; createdAt: string }>('/api/api-keys', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -749,18 +751,18 @@ class ApiClient {
   }
 
   async getOutgoingWebhooks() {
-    return this.request<any[]>('/api/outgoing-webhooks');
+    return this.request<Array<Record<string, unknown>>>('/api/outgoing-webhooks');
   }
 
   async createOutgoingWebhook(data: { url: string; events: string[] }) {
-    return this.request<any>('/api/outgoing-webhooks', {
+    return this.request<Record<string, unknown>>('/api/outgoing-webhooks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateOutgoingWebhook(id: string, data: { url?: string; events?: string[]; active?: boolean }) {
-    return this.request<any>(`/api/outgoing-webhooks/${id}`, {
+    return this.request<Record<string, unknown>>(`/api/outgoing-webhooks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -771,32 +773,32 @@ class ApiClient {
   }
 
   async getWebhookLogs(webhookId: string) {
-    return this.request<any[]>(`/api/outgoing-webhooks/${webhookId}/logs`);
+    return this.request<Array<Record<string, unknown>>>(`/api/outgoing-webhooks/${webhookId}/logs`);
   }
 
   async testOutgoingWebhook(id: string) {
-    return this.request<any>(`/api/outgoing-webhooks/${id}/test`, { method: 'POST' });
+    return this.request<{ success: boolean; statusCode?: number }>(`/api/outgoing-webhooks/${id}/test`, { method: 'POST' });
   }
 
   // Custom Fields
   async getCustomFields(activeOnly?: boolean) {
     const query = activeOnly ? '?active=true' : '';
-    return this.request<any[]>(`/api/custom-fields${query}`);
+    return this.request<Array<Record<string, unknown>>>(`/api/custom-fields${query}`);
   }
 
   async getCustomField(id: string) {
-    return this.request<any>(`/api/custom-fields/${id}`);
+    return this.request<Record<string, unknown>>(`/api/custom-fields/${id}`);
   }
 
-  async createCustomField(data: any) {
-    return this.request<any>('/api/custom-fields', {
+  async createCustomField(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/custom-fields', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateCustomField(id: string, data: any) {
-    return this.request<any>(`/api/custom-fields/${id}`, {
+  async updateCustomField(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/custom-fields/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -809,7 +811,7 @@ class ApiClient {
   }
 
   // Interactions
-  async getInteractions(filters?: any) {
+  async getInteractions(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -819,15 +821,15 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/interactions${query ? `?${query}` : ''}`);
+    return this.request<Record<string, unknown>>(`/api/interactions${query ? `?${query}` : ''}`);
   }
 
   async getLeadInteractions(leadId: string) {
-    return this.request<any[]>(`/api/interactions/leads/${leadId}`);
+    return this.request<Array<Record<string, unknown>>>(`/api/interactions/leads/${leadId}`);
   }
 
-  async createInteraction(data: any) {
-    return this.request<any>('/api/interactions', {
+  async createInteraction(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/interactions', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -849,31 +851,31 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/interactions/inbox${query ? `?${query}` : ''}`);
+    return this.request<Record<string, unknown>>(`/api/interactions/inbox${query ? `?${query}` : ''}`);
   }
 
   // Funnels (Pipeline)
   async getFunnels() {
-    return this.request<any>('/api/funnels');
+    return this.request<Record<string, unknown>>('/api/funnels');
   }
 
   async getDefaultFunnel() {
-    return this.request<any>('/api/funnels/default');
+    return this.request<Record<string, unknown>>('/api/funnels/default');
   }
 
   async getFunnel(id: string) {
-    return this.request<any>(`/api/funnels/${id}`);
+    return this.request<Record<string, unknown>>(`/api/funnels/${id}`);
   }
 
   async createFunnel(data: { name: string; columns?: Array<{ title: string; color?: string; mappedStatus?: string }> }) {
-    return this.request<any>('/api/funnels', {
+    return this.request<Record<string, unknown>>('/api/funnels', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateFunnel(id: string, data: { name?: string; order?: number }) {
-    return this.request<any>(`/api/funnels/${id}`, {
+    return this.request<Record<string, unknown>>(`/api/funnels/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -886,21 +888,21 @@ class ApiClient {
   }
 
   async addFunnelColumn(funnelId: string, data: { title: string; color?: string; mappedStatus?: string }) {
-    return this.request<any>(`/api/funnels/${funnelId}/columns`, {
+    return this.request<Record<string, unknown>>(`/api/funnels/${funnelId}/columns`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateFunnelColumn(funnelId: string, columnId: string, data: { title?: string; color?: string; order?: number }) {
-    return this.request<any>(`/api/funnels/${funnelId}/columns/${columnId}`, {
+    return this.request<Record<string, unknown>>(`/api/funnels/${funnelId}/columns/${columnId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async reorderFunnelColumns(funnelId: string, columnIds: string[]) {
-    return this.request<any>(`/api/funnels/${funnelId}/columns/reorder`, {
+    return this.request<Record<string, unknown>>(`/api/funnels/${funnelId}/columns/reorder`, {
       method: 'PUT',
       body: JSON.stringify({ columnIds }),
     });
@@ -913,14 +915,14 @@ class ApiClient {
   }
 
   async moveLead(data: { leadId: string; targetColumnId: string; position: number }) {
-    return this.request<any>('/api/funnels/move-lead', {
+    return this.request<Record<string, unknown>>('/api/funnels/move-lead', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   // Notifications
-  async getNotifications(filters?: any) {
+  async getNotifications(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -930,7 +932,7 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/notifications${query ? `?${query}` : ''}`);
+    return this.request<Record<string, unknown>>(`/api/notifications${query ? `?${query}` : ''}`);
   }
 
   async getUnreadNotificationsCount() {
@@ -938,13 +940,13 @@ class ApiClient {
   }
 
   async markNotificationAsRead(id: string) {
-    return this.request<any>(`/api/notifications/${id}/read`, {
+    return this.request<{ success: boolean }>(`/api/notifications/${id}/read`, {
       method: 'PUT',
     });
   }
 
   async markAllNotificationsAsRead() {
-    return this.request<any>('/api/notifications/read-all', {
+    return this.request<{ success: boolean }>('/api/notifications/read-all', {
       method: 'PUT',
     });
   }
@@ -960,26 +962,26 @@ class ApiClient {
   // ========================
 
   async getScoringRules() {
-    return this.request<any>('/api/scoring-rules');
+    return this.request<Record<string, unknown>>('/api/scoring-rules');
   }
 
   async getDefaultScoringRules() {
-    return this.request<any>('/api/scoring-rules/default');
+    return this.request<Record<string, unknown>>('/api/scoring-rules/default');
   }
 
   async getScoringRule(id: string) {
-    return this.request<any>(`/api/scoring-rules/${id}`);
+    return this.request<Record<string, unknown>>(`/api/scoring-rules/${id}`);
   }
 
-  async createScoringRule(data: { name: string; eventType: string; points: number; description?: string; conditions?: Record<string, any> }) {
-    return this.request<any>('/api/scoring-rules', {
+  async createScoringRule(data: { name: string; eventType: string; points: number; description?: string; conditions?: Record<string, unknown> }) {
+    return this.request<Record<string, unknown>>('/api/scoring-rules', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateScoringRule(id: string, data: { name?: string; eventType?: string; points?: number; description?: string | null; active?: boolean; conditions?: Record<string, any> | null }) {
-    return this.request<any>(`/api/scoring-rules/${id}`, {
+  async updateScoringRule(id: string, data: { name?: string; eventType?: string; points?: number; description?: string | null; active?: boolean; conditions?: Record<string, unknown> | null }) {
+    return this.request<Record<string, unknown>>(`/api/scoring-rules/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -992,19 +994,19 @@ class ApiClient {
   }
 
   async recalculateAllScores() {
-    return this.request<any>('/api/scoring-rules/recalculate', {
+    return this.request<{ updated: number }>('/api/scoring-rules/recalculate', {
       method: 'POST',
     });
   }
 
   async recalculateLeadScore(leadId: string) {
-    return this.request<any>(`/api/scoring-rules/recalculate/${leadId}`, {
+    return this.request<{ score: number }>(`/api/scoring-rules/recalculate/${leadId}`, {
       method: 'POST',
     });
   }
 
   async getScoreBreakdown(leadId: string) {
-    return this.request<any>(`/api/scoring-rules/breakdown/${leadId}`);
+    return this.request<Record<string, unknown>>(`/api/scoring-rules/breakdown/${leadId}`);
   }
 
   // ========================
@@ -1012,22 +1014,22 @@ class ApiClient {
   // ========================
 
   async getReports() {
-    return this.request<any[]>('/api/reports');
+    return this.request<Array<Record<string, unknown>>>('/api/reports');
   }
 
   async getReport(id: string) {
-    return this.request<any>(`/api/reports/${id}`);
+    return this.request<Record<string, unknown>>(`/api/reports/${id}`);
   }
 
-  async createReport(data: { name: string; description?: string; type?: string; config?: any }) {
-    return this.request<any>('/api/reports', {
+  async createReport(data: { name: string; description?: string; type?: string; config?: Record<string, unknown> }) {
+    return this.request<Record<string, unknown>>('/api/reports', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateReport(id: string, data: { name?: string; description?: string; type?: string; config?: any }) {
-    return this.request<any>(`/api/reports/${id}`, {
+  async updateReport(id: string, data: { name?: string; description?: string; type?: string; config?: Record<string, unknown> }) {
+    return this.request<Record<string, unknown>>(`/api/reports/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -1044,7 +1046,7 @@ class ApiClient {
     if (params?.from) query.set('from', params.from);
     if (params?.to) query.set('to', params.to);
     const qs = query.toString();
-    return this.request<any>(`/api/reports/metrics${qs ? `?${qs}` : ''}`);
+    return this.request<Record<string, unknown>>(`/api/reports/metrics${qs ? `?${qs}` : ''}`);
   }
 
   // ========================
@@ -1052,11 +1054,11 @@ class ApiClient {
   // ========================
 
   async getUsers() {
-    return this.request<any[]>('/api/users');
+    return this.request<Array<{ id: string; name: string; email: string; role: string; status?: string; createdAt?: string }>>('/api/users');
   }
 
   async updateUser(id: string, data: { role?: string; status?: string }) {
-    return this.request<any>(`/api/users/${id}`, {
+    return this.request<{ id: string; name: string; email: string; role: string }>(`/api/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -1067,11 +1069,11 @@ class ApiClient {
   // ========================
 
   async getInvitations() {
-    return this.request<any[]>('/api/invitations');
+    return this.request<Array<{ id: string; email: string; role: string; status: string; createdAt: string }>>('/api/invitations');
   }
 
   async createInvitation(data: { email: string; role: string }) {
-    return this.request<any>('/api/invitations', {
+    return this.request<{ id: string; email: string; role: string; status: string }>('/api/invitations', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1088,7 +1090,7 @@ class ApiClient {
   // ========================
 
   async createPaymentIntent(data: { planId: string; planType: string; amount: number; method: string; billingCycle: string }) {
-    return this.request<any>('/api/payments/intent', {
+    return this.request<Record<string, unknown>>('/api/payments/intent', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1101,21 +1103,21 @@ class ApiClient {
     issuerId?: string;
     installments: number;
   }) {
-    return this.request<any>('/api/payments/process-card', {
+    return this.request<Record<string, unknown>>('/api/payments/process-card', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getPaymentHistory() {
-    return this.request<any[]>('/api/payments/history');
+    return this.request<Array<Record<string, unknown>>>('/api/payments/history');
   }
 
   // ========================
   // Deals
   // ========================
 
-  async getDeals(filters?: any) {
+  async getDeals(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -1125,22 +1127,22 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<any>(`/api/deals${query ? `?${query}` : ''}`);
+    return this.request<{ deals: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/deals${query ? `?${query}` : ''}`);
   }
 
   async getDeal(id: string) {
-    return this.request<any>(`/api/deals/${id}`);
+    return this.request<Record<string, unknown>>(`/api/deals/${id}`);
   }
 
-  async createDeal(data: any) {
-    return this.request<any>('/api/deals', {
+  async createDeal(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/deals', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateDeal(id: string, data: any) {
-    return this.request<any>(`/api/deals/${id}`, {
+  async updateDeal(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/deals/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -1153,11 +1155,11 @@ class ApiClient {
   }
 
   async getDealStats() {
-    return this.request<any>('/api/deals/stats');
+    return this.request<{ data: Record<string, unknown> }>('/api/deals/stats');
   }
 
   async getDealInteractions(dealId: string) {
-    return this.request<any[]>(`/api/interactions?dealId=${dealId}`);
+    return this.request<Array<Record<string, unknown>>>(`/api/interactions?dealId=${dealId}`);
   }
 
   async downloadInvoice(paymentId: string): Promise<Blob> {
@@ -1175,7 +1177,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public statusCode: number,
-    public details?: any
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';

@@ -6,24 +6,8 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ArrowLeft, ArrowRight, Check, FileText, Zap, TrendingUp, BarChart3, Users } from "lucide-react";
 import { REPORT_TEMPLATES, createReportFromTemplate } from "../utils/reportTemplates";
-import { Report, ReportFilter } from "../types";
+import { Report } from "../types";
 import { generateId } from "../utils/id";
-
-const getReports = (): Report[] => {
-  try {
-    const stored = localStorage.getItem("reports");
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error("Erro ao carregar relatórios:", error);
-  }
-  return [];
-};
-
-const saveReports = (reports: Report[]) => {
-  localStorage.setItem("reports", JSON.stringify(reports));
-};
 
 const PERIOD_OPTIONS = [
   { value: "today", label: "Hoje" },
@@ -60,7 +44,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
   const [reportName, setReportName] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [period, setPeriod] = useState<"today" | "week" | "month" | "quarter" | "year" | "all">("month");
-  const [advancedMode, setAdvancedMode] = useState(false);
+  // advancedMode removed — was dead state (setter never called)
 
   const totalSteps = 4;
 
@@ -118,20 +102,11 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
       };
     }
 
-    // Salvar relatório
-    const reports = getReports();
-    reports.push(report);
-    saveReports(reports);
-
+    // Delegate persistence to parent via onComplete (API-backed)
     if (onComplete) {
       onComplete(report);
     } else {
-      // Se não há template ou é modo rápido, ir para edição
-      if (!selectedTemplateId || !advancedMode) {
-        navigate(`/app/reports/${report.id}`);
-      } else {
-        navigate("/app/reports");
-      }
+      navigate(`/app/reports/${report.id}`);
     }
   };
 
@@ -145,7 +120,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
     
     if (defaultTemplate) {
       const report = createReportFromTemplate(defaultTemplate.id, reportName || "Relatório Rápido");
-      
+
       // Aplicar período padrão
       report.filters = {
         dateRange: {
@@ -153,11 +128,12 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
         },
       };
 
-      const reports = getReports();
-      reports.push(report);
-      saveReports(reports);
-
-      navigate("/app/reports");
+      // Delegate persistence to parent via onComplete (API-backed)
+      if (onComplete) {
+        onComplete(report);
+      } else {
+        navigate("/app/reports");
+      }
     }
   };
 
@@ -174,7 +150,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
       case 1:
         return reportName.trim().length > 0;
       case 2:
-        return selectedTemplateId !== null || advancedMode;
+        return true; // Any selection (template or custom) is valid
       case 3:
         return true;
       case 4:

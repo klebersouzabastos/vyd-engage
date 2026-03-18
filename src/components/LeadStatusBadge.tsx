@@ -5,19 +5,19 @@ interface LeadStatusBadgeProps {
 const statusConfig: Record<string, { label: string; className: string }> = {
   novo: {
     label: 'Novo',
-    className: 'bg-blue-100 text-blue-700',
+    className: 'badge-status-novo',
   },
   contato: {
     label: 'Em Contato',
-    className: 'bg-yellow-100 text-yellow-700',
+    className: 'badge-status-contato',
   },
   fechado: {
     label: 'Fechado',
-    className: 'bg-green-100 text-green-700',
+    className: 'badge-status-fechado',
   },
   perdido: {
     label: 'Perdido',
-    className: 'bg-red-100 text-red-700',
+    className: 'badge-status-perdido',
   },
 };
 

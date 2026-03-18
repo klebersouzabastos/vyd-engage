@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
+import { ReportType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -13,7 +14,7 @@ router.use(tenantScope);
 const reportSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  type: z.string().default('custom'),
+  type: z.nativeEnum(ReportType).default(ReportType.CUSTOM),
   config: z.any().default({}),
 });
 

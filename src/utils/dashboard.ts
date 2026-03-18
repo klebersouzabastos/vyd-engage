@@ -1,3 +1,6 @@
+// Dashboard layout persistence — UI preference, intentionally kept in localStorage.
+// Layouts define widget positions/visibility and are user-specific view customizations,
+// not business data. No API migration needed (Story 3.3 audit: FE-30).
 import { generateId } from "./id";
 
 export interface DashboardWidget {
@@ -142,10 +145,6 @@ export function removeWidget(layoutId: string, widgetId: string) {
   layout.widgets = layout.widgets.filter((w) => w.id !== widgetId);
   saveDashboardLayouts(layouts);
 }
-
-
-
-
 
 
 

@@ -26,7 +26,7 @@ export function useTaskNotifications() {
       });
 
       // Verificar tarefas vencidas que ainda não foram notificadas
-      overdue.forEach((task: any) => {
+      overdue.forEach((task: { id: string; title: string; status: string; dueDate?: string }) => {
         const alreadyNotified = notifications.some(
           (n) =>
             n.type === "task_overdue" &&
@@ -46,7 +46,7 @@ export function useTaskNotifications() {
       });
 
       // Verificar tarefas que vencem hoje
-      todayTasks.forEach((task: any) => {
+      todayTasks.forEach((task: { id: string; title: string; status: string; dueDate?: string }) => {
         const alreadyNotified = notifications.some(
           (n) =>
             n.type === "task_due" &&

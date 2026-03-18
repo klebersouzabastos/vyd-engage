@@ -24,7 +24,7 @@ export function useWhatsAppConnection(id: string) {
  */
 export function useWhatsAppConnectionsByProvider(provider: string) {
   const { getConnectionsByProvider } = useWhatsAppContext();
-  return getConnectionsByProvider(provider as any);
+  return getConnectionsByProvider(provider as WhatsAppConnection['provider']);
 }
 
 /**

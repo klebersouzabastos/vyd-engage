@@ -53,11 +53,11 @@ export function useDashboard(dateRange?: DateRange) {
       if (dateRange?.from || dateRange?.to) {
         const from = dateRange.from ? dateRange.from.getTime() : 0;
         const to = dateRange.to ? dateRange.to.getTime() : Infinity;
-        leads = leads.filter((l: any) => {
+        leads = leads.filter((l: { createdAt: string }) => {
           const t = new Date(l.createdAt).getTime();
           return t >= from && t <= to;
         });
-        tasks = tasks.filter((t: any) => {
+        tasks = tasks.filter((t: { createdAt: string }) => {
           const time = new Date(t.createdAt).getTime();
           return time >= from && time <= to;
         });
@@ -67,10 +67,28 @@ export function useDashboard(dateRange?: DateRange) {
       const leadsByStatus: Record<string, number> = {};
       const leadsBySource: Record<string, number> = {};
 
-      leads.forEach((lead: any) => {
+      interface ApiLeadRaw {
+        id: string;
+        name: string;
+        email?: string;
+        phone?: string;
+        company?: string;
+        position?: string;
+        status: string;
+        source: string;
+        score?: number;
+        customFields?: Record<string, string | number | boolean | null>;
+        notes?: string;
+        assignedTo?: string;
+        tags?: Array<{ tag?: { id: string } } | string>;
+        createdAt: string;
+        updatedAt?: string;
+      }
+
+      leads.forEach((lead: ApiLeadRaw) => {
         const status = lead.status?.toLowerCase() || 'unknown';
         const source = lead.source?.toLowerCase() || 'unknown';
-        
+
         leadsByStatus[status] = (leadsByStatus[status] || 0) + 1;
         leadsBySource[source] = (leadsBySource[source] || 0) + 1;
       });
@@ -78,7 +96,7 @@ export function useDashboard(dateRange?: DateRange) {
       // Get recent leads (last 5)
       const recentLeads: Lead[] = leads
         .slice(0, 5)
-        .map((lead: any) => ({
+        .map((lead: ApiLeadRaw) => ({
           id: lead.id,
           name: lead.name,
           email: lead.email || '',
@@ -91,7 +109,7 @@ export function useDashboard(dateRange?: DateRange) {
           customFields: lead.customFields || {},
           notes: lead.notes || '',
           assignedTo: lead.assignedTo || '',
-          tags: lead.tags?.map((lt: any) => lt.tag) || [],
+          tags: lead.tags?.map((lt: { tag?: { id: string } } | string) => typeof lt === 'string' ? lt : lt.tag) || [],
           createdAt: lead.createdAt,
           updatedAt: lead.updatedAt,
         }));
@@ -103,18 +121,24 @@ export function useDashboard(dateRange?: DateRange) {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const overdueTasks = tasks.filter((task: any) => {
+      interface ApiTaskRaw {
+        status: string;
+        dueDate?: string;
+        createdAt: string;
+      }
+
+      const overdueTasks = tasks.filter((task: ApiTaskRaw) => {
         if (task.status === 'COMPLETED' || !task.dueDate) return false;
         return new Date(task.dueDate) < now;
       }).length;
 
-      const tasksDueToday = tasks.filter((task: any) => {
+      const tasksDueToday = tasks.filter((task: ApiTaskRaw) => {
         if (task.status === 'COMPLETED' || !task.dueDate) return false;
         const dueDate = new Date(task.dueDate);
         return dueDate >= today && dueDate < tomorrow;
       }).length;
 
-      const completedTasks = tasks.filter((task: any) => task.status === 'COMPLETED').length;
+      const completedTasks = tasks.filter((task: ApiTaskRaw) => task.status === 'COMPLETED').length;
 
       setStats({
         totalLeads: leads.length,
@@ -127,8 +151,9 @@ export function useDashboard(dateRange?: DateRange) {
         completedTasks,
         dealStats,
       });
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados do dashboard');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar dados do dashboard';
+      setError(message);
       console.error('Erro ao carregar dashboard:', err);
     } finally {
       setLoading(false);

@@ -9,6 +9,7 @@ import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { DealAnalytics } from "../components/deals/DealAnalytics";
 import { useDashboard, DateRange } from "../hooks/useDashboard";
+import { CHART_COLORS } from "../utils/designTokens";
 // Helper function to format time ago
 function formatTimeAgo(date: string): string {
   const now = new Date();
@@ -68,7 +69,7 @@ export function Dashboard() {
       .map(([status, value]) => ({
         name: statusMap[status] || status,
         value,
-        color: status === "won" ? "#16A34A" : status === "new" ? "#3B82F6" : "#F59E0B",
+        color: status === "won" ? CHART_COLORS.green : status === "new" ? CHART_COLORS.blue : CHART_COLORS.yellow,
       }))
       .filter((item) => item.value > 0);
   }, [stats.leadsByStatus]);
@@ -87,7 +88,7 @@ export function Dashboard() {
       .map(([source, value]) => ({
         name: sourceMap[source] || source,
         value,
-        color: source === "website" ? "#3B82F6" : source === "social_media" ? "#DC2626" : "#16A34A",
+        color: source === "website" ? CHART_COLORS.blue : source === "social_media" ? CHART_COLORS.red : CHART_COLORS.green,
       }))
       .filter((item) => item.value > 0);
   }, [stats.leadsBySource]);
