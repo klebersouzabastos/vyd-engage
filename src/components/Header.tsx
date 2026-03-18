@@ -20,7 +20,7 @@ export function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-300 px-4 md:px-8 flex items-center justify-between">
+    <header className="h-16 bg-gray-50 border-b border-gray-300 px-4 md:px-8 flex items-center justify-between">
       <div>
         <h1 className="text-gray-900">{title}</h1>
         {subtitle && <p className="text-sm text-gray-600 mt-0.5">{subtitle}</p>}
@@ -34,7 +34,7 @@ export function Header({ title, subtitle }: HeaderProps) {
 
         <button 
           onClick={handleLogout}
-          className="p-2 hover:bg-red-50 rounded-lg transition-colors group"
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors group"
           title="Sair"
         >
           <LogOut size={20} className="text-gray-600 group-hover:text-red-600 transition-colors" />

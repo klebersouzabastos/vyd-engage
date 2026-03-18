@@ -7,8 +7,9 @@ import { TaskCard, getPriorityColor, getPriorityLabel, getPriorityIcon, getStatu
 import { PageSkeleton } from "../components/PageSkeleton";
 import { useTasks } from "../hooks/useTasks";
 import { Task } from "../types";
-import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList, AlertTriangle, Edit2, Trash2 } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList, AlertTriangle, Edit2, Trash2, CheckSquare } from "lucide-react";
 import { useNotifications } from "../contexts/NotificationContext";
+import { EmptyState } from "../components/EmptyState";
 import { useIsMobile } from "../components/ui/use-mobile";
 import { Checkbox } from "../components/ui/checkbox";
 import { toast } from "sonner";
@@ -618,8 +619,18 @@ export function Tasks() {
             )}
 
             {filteredTasks.length === 0 && (
-              <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
-                <p className="text-gray-600">Nenhuma tarefa encontrada</p>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+                <EmptyState
+                  icon={CheckSquare}
+                  title={filter !== "all" || searchQuery ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa criada"}
+                  description={
+                    filter !== "all" || searchQuery
+                      ? "Tente ajustar os filtros ou termos de busca"
+                      : "Comece criando sua primeira tarefa para organizar suas atividades"
+                  }
+                  actionLabel="Nova Tarefa"
+                  onAction={() => navigate("/app/tasks/new")}
+                />
               </div>
             )}
           </div>

@@ -39,9 +39,79 @@ function useScrollAnimation() {
   return { ref, isVisible };
 }
 
+interface PricingPlan {
+  name: string;
+  price: string;
+  features: string[];
+  highlighted?: boolean;
+}
+
+const fallbackPlans: PricingPlan[] = [
+  {
+    name: "Starter",
+    price: "97",
+    features: [
+      "Até 250 leads",
+      "1 usuário",
+      "5 automações",
+      "WhatsApp + E-mail",
+      "Suporte por e-mail",
+    ],
+  },
+  {
+    name: "Pro",
+    price: "197",
+    features: [
+      "Até 1.000 leads",
+      "5 usuários",
+      "Automações ilimitadas",
+      "WhatsApp + E-mail",
+      "Suporte prioritário",
+      "Integrações avançadas",
+    ],
+    highlighted: true,
+  },
+  {
+    name: "Enterprise",
+    price: "497",
+    features: [
+      "Leads ilimitados",
+      "Usuários ilimitados",
+      "Automações ilimitadas",
+      "WhatsApp + E-mail + SMS",
+      "Suporte 24/7",
+      "API customizada",
+      "Gerente de conta dedicado",
+    ],
+  },
+];
+
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>(fallbackPlans);
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/public/plans`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((plans: Array<{ name: string; price: number | string; features: unknown; highlighted?: boolean }>) => {
+        if (Array.isArray(plans) && plans.length > 0) {
+          setPricingPlans(
+            plans.map((p) => ({
+              name: p.name,
+              price: String(Math.round(Number(p.price))),
+              features: Array.isArray(p.features) ? p.features as string[] : [],
+              highlighted: p.highlighted ?? false,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // Keep fallback plans on error
+      });
+  }, []);
+
   const heroAnim = useScrollAnimation();
   const featuresAnim = useScrollAnimation();
   const benefitsAnim = useScrollAnimation();
@@ -101,45 +171,6 @@ export function LandingPage() {
     },
   ];
 
-  const pricingPlans = [
-    {
-      name: "Starter",
-      price: "97",
-      features: [
-        "Até 250 leads",
-        "1 usuário",
-        "5 automações",
-        "WhatsApp + E-mail",
-        "Suporte por e-mail",
-      ],
-    },
-    {
-      name: "Pro",
-      price: "197",
-      features: [
-        "Até 1.000 leads",
-        "5 usuários",
-        "Automações ilimitadas",
-        "WhatsApp + E-mail",
-        "Suporte prioritário",
-        "Integrações avançadas",
-      ],
-      highlighted: true,
-    },
-    {
-      name: "Enterprise",
-      price: "497",
-      features: [
-        "Leads ilimitados",
-        "Usuários ilimitados",
-        "Automações ilimitadas",
-        "WhatsApp + E-mail + SMS",
-        "Suporte 24/7",
-        "API customizada",
-        "Gerente de conta dedicado",
-      ],
-    },
-  ];
 
   const faqs = [
     {

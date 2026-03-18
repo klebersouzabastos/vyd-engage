@@ -166,6 +166,7 @@ export function LeadFilters({
         <Button
           className="bg-primary hover:bg-primary-dark gap-2"
           onClick={() => navigate("/app/leads/new")}
+          data-tour="create-lead-btn"
         >
           <Plus size={16} />
           Novo Lead

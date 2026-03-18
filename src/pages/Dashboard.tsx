@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { Settings, Download, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
+import { Settings, Download, Calendar, AlertTriangle, RefreshCw, Users, CheckSquare } from "lucide-react";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashboard";
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
@@ -240,7 +240,13 @@ export function Dashboard() {
             {dashboardLoading ? (
               <div className="p-6 text-center text-gray-600">Carregando...</div>
             ) : stats.recentLeads.length === 0 ? (
-              <div className="p-6 text-center text-gray-600">Nenhum lead encontrado</div>
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <Users size={24} className="text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Nenhum lead capturado</p>
+                <p className="text-xs text-gray-500 mt-1">Seus leads mais recentes aparecerão aqui</p>
+              </div>
             ) : (
               <div className="divide-y divide-gray-300">
                 {stats.recentLeads.map((lead) => {
@@ -272,6 +278,14 @@ export function Dashboard() {
             </div>
             {dashboardLoading ? (
               <div className="p-6 text-center text-gray-600">Carregando...</div>
+            ) : stats.totalTasks === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <CheckSquare size={24} className="text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Nenhuma tarefa criada</p>
+                <p className="text-xs text-gray-500 mt-1">Crie tarefas para acompanhar suas atividades</p>
+              </div>
             ) : (
               <div className="p-6">
                 <div className="space-y-4">

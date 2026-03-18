@@ -103,7 +103,7 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
       aria-label="Menu principal"
       data-sidebar={collapsed ? "collapsed" : "expanded"}
       className={`
-      w-64 bg-white border-r border-gray-300 h-screen fixed left-0 top-0 flex flex-col
+      w-64 bg-gray-50 border-r border-gray-300 h-screen fixed left-0 top-0 flex flex-col
       z-50 transition-all duration-300 ease-in-out overflow-hidden
       ${open ? 'translate-x-0' : '-translate-x-full'}
       md:translate-x-0
@@ -116,7 +116,7 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
         >
           <div className={`flex items-center ${collapsed ? '' : 'gap-2.5'}`}>
             {logo ? (
-              <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-gray-300 p-1 flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center bg-gray-50 border border-gray-300 p-1 flex-shrink-0">
                 <img
                   src={logo}
                   alt={`${companyName} logo`}
@@ -224,7 +224,7 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
           aria-label="Sair da conta"
           title={collapsed ? "Sair" : undefined}
           className={`
-            w-full border-t border-gray-300 flex items-center text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors
+            w-full border-t border-gray-300 flex items-center text-gray-600 hover:bg-gray-200 hover:text-error transition-colors
             ${collapsed ? 'justify-center p-3' : 'gap-3 p-4'}
           `}
         >

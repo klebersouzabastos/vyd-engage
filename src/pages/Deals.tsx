@@ -24,6 +24,7 @@ import { DealStageBadge } from "../components/deals/DealStageBadge";
 import { DealForm } from "../components/deals/DealForm";
 import { DealPipelineBoard } from "../components/deals/DealPipelineBoard";
 import { PageSkeleton } from "../components/PageSkeleton";
+import { EmptyState } from "../components/EmptyState";
 import { useDeals } from "../hooks/useDeals";
 import { Deal, DealStage } from "../types";
 import {
@@ -37,6 +38,7 @@ import {
   ChevronRight,
   User,
   Calendar,
+  Handshake,
 } from "lucide-react";
 import { formatCurrency } from "../utils/format";
 
@@ -212,8 +214,18 @@ export function Deals() {
                   <tbody>
                     {deals.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="text-center py-12 text-gray-500">
-                          Nenhum deal encontrado. Crie o primeiro!
+                        <td colSpan={8}>
+                          <EmptyState
+                            icon={Handshake}
+                            title={search.trim() || stageFilter !== "ALL" ? "Nenhum deal encontrado" : "Nenhum deal criado"}
+                            description={
+                              search.trim() || stageFilter !== "ALL"
+                                ? "Tente ajustar os filtros ou termos de busca"
+                                : "Comece adicionando seu primeiro deal para gerenciar seu pipeline de vendas"
+                            }
+                            actionLabel="Novo Deal"
+                            onAction={() => { setEditingDeal(null); setFormOpen(true); }}
+                          />
                         </td>
                       </tr>
                     ) : (

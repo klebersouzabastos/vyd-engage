@@ -37,7 +37,7 @@ export function AppLayout() {
       </a>
 
       {/* Mobile hamburger header */}
-      <div className="fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 bg-white border-b border-gray-300 md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 bg-gray-50 border-b border-gray-300 md:hidden">
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"

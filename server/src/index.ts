@@ -270,6 +270,28 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
   }
 });
 
+// GET /api/public/plans - Public pricing plans (no auth required)
+publicRouter.get('/plans', async (_req, res, next) => {
+  try {
+    const plans = await prisma.plan.findMany({
+      where: { active: true },
+      orderBy: { price: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        price: true,
+        description: true,
+        features: true,
+        highlighted: true,
+      },
+    });
+    res.json(plans);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.use('/api/public', publicRouter);
 
 // 404 handler

@@ -16,7 +16,7 @@ import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { useTags } from "../contexts/TagsContext";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
 import { Lead } from "../types";
-import { exportLeadsToExcel } from "../utils/excelExport";
+// excelExport is dynamically imported to avoid bundling ExcelJS eagerly
 import { apiClient } from "../services/api/client";
 import { useLeads } from "../hooks/useLeads";
 import { mapStatusToBackend, mapSourceToBackend } from "../utils/leadEnums";
@@ -215,6 +215,7 @@ export function Leads() {
 
   const handleExportLeads = async () => {
     try {
+      const { exportLeadsToExcel } = await import("../utils/excelExport");
       await exportLeadsToExcel(
         filteredLeads,
         { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
@@ -259,6 +260,7 @@ export function Leads() {
       }));
 
       toast.info(`Exportando ${mapped.length} leads...`);
+      const { exportLeadsToExcel } = await import("../utils/excelExport");
       await exportLeadsToExcel(
         mapped,
         { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
@@ -337,6 +339,7 @@ export function Leads() {
     const selectedLeadData = filteredLeads.filter(l => selectedLeads.includes(l.id));
     if (selectedLeadData.length === 0) return;
     try {
+      const { exportLeadsToExcel } = await import("../utils/excelExport");
       await exportLeadsToExcel(
         selectedLeadData,
         { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },

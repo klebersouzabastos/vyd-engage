@@ -282,7 +282,7 @@ export function backupLocalStorageData(): string {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `flowcrm-backup-${new Date().toISOString()}.json`;
+  a.download = `vyd-engage-backup-${new Date().toISOString()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
