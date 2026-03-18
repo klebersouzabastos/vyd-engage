@@ -6,7 +6,7 @@
 **Origem:** Product Audit — Morgan (PM) — 24 Fev 2026
 **Data:** 2026-02-24
 **Agente:** @pm (Morgan)
-**Status:** Draft
+**Status:** Done
 
 ---
 
@@ -82,7 +82,7 @@ Ativar o sistema de notificacoes em tempo real (infraestrutura 80% pronta mas 0%
 - [x] Automacao com erro gera notificacao AUTOMATION_ERROR com link para logs
 - [x] Cada notificacao aparece no NotificationCenter sem refresh
 - [x] Cada notificacao e persistida no banco (nao ephemeral)
-- [ ] Testes: criar lead via API → verificar notificacao criada no DB
+- [x] Testes: criar lead via API → verificar notificacao criada no DB
 
 **Dev Notes:**
 - Usar `notificationService.create()` que ja faz DB + WebSocket emit
@@ -103,12 +103,12 @@ Frontend: task_due, task_overdue, new_lead, interaction, automation_failed (inco
 ```
 
 **AC:**
-- [ ] NotificationContext converte tipos do backend corretamente
-- [ ] NotificationItem renderiza icone e cor para todos os 7 tipos
-- [ ] Tipos `PAYMENT_FAILED` e `SUBSCRIPTION_EXPIRING` tem icone e label
-- [ ] Tipo `SYSTEM` tem icone generico
-- [ ] Nenhum tipo chega como "unknown" ou sem icone
-- [ ] Testes: mock de cada tipo → verificar render correto
+- [x]NotificationContext converte tipos do backend corretamente
+- [x]NotificationItem renderiza icone e cor para todos os 7 tipos
+- [x]Tipos `PAYMENT_FAILED` e `SUBSCRIPTION_EXPIRING` tem icone e label
+- [x]Tipo `SYSTEM` tem icone generico
+- [x]Nenhum tipo chega como "unknown" ou sem icone
+- [x]Testes: mock de cada tipo → verificar render correto
 
 **Arquivos a modificar:**
 - `src/contexts/NotificationContext.tsx` — mapping de tipos
@@ -122,13 +122,13 @@ Frontend: task_due, task_overdue, new_lead, interaction, automation_failed (inco
 **Descricao:** Substituir o `TaskNotificationChecker` client-side (ephemeral, perde no refresh) por notificacoes geradas no backend. Criar um job que verifica tarefas overdue/due-today e gera notificacoes persistentes.
 
 **AC:**
-- [ ] Job backend roda a cada 15 minutos verificando tarefas overdue
-- [ ] Tarefas que vencem hoje geram notificacao `TASK_DUE` ao amanhecer (1x/dia)
-- [ ] Tarefas overdue geram notificacao `TASK_OVERDUE` (1x por tarefa, nao repete)
-- [ ] Deduplicacao: nao criar notificacao se ja existe uma UNREAD para mesma task
-- [ ] TaskNotificationChecker removido ou simplificado (sem criar notificacoes)
-- [ ] Notificacao inclui link direto para a tarefa: `/app/tasks` ou `/app/tasks/${taskId}`
-- [ ] Testes: criar task com dueDate no passado → verificar notificacao criada
+- [x]Job backend roda a cada 15 minutos verificando tarefas overdue
+- [x]Tarefas que vencem hoje geram notificacao `TASK_DUE` ao amanhecer (1x/dia)
+- [x]Tarefas overdue geram notificacao `TASK_OVERDUE` (1x por tarefa, nao repete)
+- [x]Deduplicacao: nao criar notificacao se ja existe uma UNREAD para mesma task
+- [x]TaskNotificationChecker removido ou simplificado (sem criar notificacoes)
+- [x]Notificacao inclui link direto para a tarefa: `/app/tasks` ou `/app/tasks/${taskId}`
+- [x]Testes: criar task com dueDate no passado → verificar notificacao criada
 
 **Dev Notes:**
 - Usar BullMQ repeatable job (padrao ja usado em billing.ts)
@@ -170,14 +170,14 @@ model AutomationLog {
 ```
 
 **AC:**
-- [ ] Migration criada e aplicada com sucesso
-- [ ] Novos campos: `leadId` (FK nullable), `stepOrder`, `stepType`, `executionId`
-- [ ] Indices adicionados em leadId, executionId, status
-- [ ] Relacao `lead Lead?` com onDelete: SetNull
-- [ ] `automationEngine.ts` atualizado para popular campos diretamente (nao so no JSON)
-- [ ] Logs existentes no banco nao sao afetados (campos novos sao nullable)
-- [ ] `npm run prisma:migrate` e `npm run build` passam sem erro
-- [ ] Testes: executar automacao → verificar que leadId e stepType estao preenchidos
+- [x]Migration criada e aplicada com sucesso
+- [x]Novos campos: `leadId` (FK nullable), `stepOrder`, `stepType`, `executionId`
+- [x]Indices adicionados em leadId, executionId, status
+- [x]Relacao `lead Lead?` com onDelete: SetNull
+- [x]`automationEngine.ts` atualizado para popular campos diretamente (nao so no JSON)
+- [x]Logs existentes no banco nao sao afetados (campos novos sao nullable)
+- [x]`npm run prisma:migrate` e `npm run build` passam sem erro
+- [x]Testes: executar automacao → verificar que leadId e stepType estao preenchidos
 
 **Dev Notes:**
 - Migration deve ser safe (ADD COLUMN, nullable, sem data loss)
@@ -210,13 +210,13 @@ model AutomationLog {
 - `sort` — createdAt ASC/DESC (default DESC)
 
 **AC:**
-- [ ] `GET /api/automation-logs` retorna logs paginados do tenant com filtros
-- [ ] `GET /api/automations/:id/logs` aceita filtros (status, leadId, stepType, dateRange)
-- [ ] `GET /api/automation-logs/execution/:executionId` retorna todos os steps agrupados
-- [ ] `GET /api/automation-logs/stats` retorna: total, por status, por automacao, taxa de sucesso
-- [ ] Response inclui `{ data: [...], pagination: { page, limit, total, totalPages } }`
-- [ ] Queries usam indices (leadId, executionId, status) — nao full table scan
-- [ ] Testes: filtrar por status=ERROR → verificar apenas errors retornados
+- [x]`GET /api/automation-logs` retorna logs paginados do tenant com filtros
+- [x]`GET /api/automations/:id/logs` aceita filtros (status, leadId, stepType, dateRange)
+- [x]`GET /api/automation-logs/execution/:executionId` retorna todos os steps agrupados
+- [x]`GET /api/automation-logs/stats` retorna: total, por status, por automacao, taxa de sucesso
+- [x]Response inclui `{ data: [...], pagination: { page, limit, total, totalPages } }`
+- [x]Queries usam indices (leadId, executionId, status) — nao full table scan
+- [x]Testes: filtrar por status=ERROR → verificar apenas errors retornados
 
 **Dev Notes:**
 - Criar `server/src/routes/automationLogs.ts` para os novos endpoints
@@ -241,16 +241,16 @@ model AutomationLog {
 | Filtros client-side | Filtros via query params |
 
 **AC:**
-- [ ] Pagina carrega com 1-2 requests (logs + stats), nao N+1
-- [ ] Filtro por automacao funciona via API (nao client-side)
-- [ ] Filtro por status funciona via API
-- [ ] Filtro por lead funciona via API
-- [ ] Filtro por date range funciona
-- [ ] Paginacao funciona (botoes prev/next, total de paginas)
-- [ ] Clicar em executionId abre todos os steps daquela execucao
-- [ ] Metricas (total, success rate, chart) usam endpoint de stats
-- [ ] Performance: tempo de carregamento < 2s
-- [ ] Sem regressao visual (layout, cores, icones mantidos)
+- [x]Pagina carrega com 1-2 requests (logs + stats), nao N+1
+- [x]Filtro por automacao funciona via API (nao client-side)
+- [x]Filtro por status funciona via API
+- [x]Filtro por lead funciona via API
+- [x]Filtro por date range funciona
+- [x]Paginacao funciona (botoes prev/next, total de paginas)
+- [x]Clicar em executionId abre todos os steps daquela execucao
+- [x]Metricas (total, success rate, chart) usam endpoint de stats
+- [x]Performance: tempo de carregamento < 2s
+- [x]Sem regressao visual (layout, cores, icones mantidos)
 
 **Dev Notes:**
 - Atualizar `apiClient` com novos metodos: `getAutomationLogsAll(filters)`, `getLogsByExecution(executionId)`, `getAutomationLogStats()`
@@ -264,14 +264,14 @@ model AutomationLog {
 **Descricao:** Quando uma automacao falha, alem de gravar no log, emitir notificacao real-time para o owner do tenant. Tambem adicionar streaming de logs novos via WebSocket na pagina de logs.
 
 **AC:**
-- [ ] Automacao com step que falha emite `notification:new` com tipo `AUTOMATION_ERROR`
-- [ ] Notificacao inclui: nome da automacao, nome do lead, tipo do step que falhou, mensagem de erro
-- [ ] Link na notificacao aponta para `/app/automation-logs` com filtro pre-aplicado
-- [ ] Na pagina AutomationLogs: novos logs aparecem em real-time sem refresh
-- [ ] WebSocket event `automation:log:new` emitido quando log e criado
-- [ ] Frontend escuta evento e prependa log na lista (se filtros compatem)
-- [ ] Toast "Nova execucao registrada" ao receber log em real-time
-- [ ] Testes: disparar automacao com step invalido → verificar notificacao + log streaming
+- [x]Automacao com step que falha emite `notification:new` com tipo `AUTOMATION_ERROR`
+- [x]Notificacao inclui: nome da automacao, nome do lead, tipo do step que falhou, mensagem de erro
+- [x]Link na notificacao aponta para `/app/automation-logs` com filtro pre-aplicado
+- [x]Na pagina AutomationLogs: novos logs aparecem em real-time sem refresh
+- [x]WebSocket event `automation:log:new` emitido quando log e criado
+- [x]Frontend escuta evento e prependa log na lista (se filtros compatem)
+- [x]Toast "Nova execucao registrada" ao receber log em real-time
+- [x]Testes: disparar automacao com step invalido → verificar notificacao + log streaming
 
 **Dev Notes:**
 - No `automationEngine.ts`, apos `addLog()` com status ERROR, chamar `notificationService.create()` E `emitToTenant(tenantId, 'automation:log:new', logData)`
@@ -342,15 +342,24 @@ Sprint 2 (Stories 5-7):
 
 ## Definicao de Pronto (Epic-Level)
 
-- [ ] Vendedor recebe notificacao real-time quando lead entra pelo formulario publico
-- [ ] Vendedor recebe notificacao quando tarefa esta vencendo
-- [ ] Gestor consegue ver todos os logs de automacao filtrados por lead, status, tipo
-- [ ] Gestor consegue ver todos os steps de uma execucao agrupados
-- [ ] Logs aparecem em real-time na pagina sem refresh
-- [ ] Zero notificacoes perdidas (todas persistidas no banco)
-- [ ] Frontend carrega logs em < 2s (sem N+1)
+- [x]Vendedor recebe notificacao real-time quando lead entra pelo formulario publico
+- [x]Vendedor recebe notificacao quando tarefa esta vencendo
+- [x]Gestor consegue ver todos os logs de automacao filtrados por lead, status, tipo
+- [x]Gestor consegue ver todos os steps de uma execucao agrupados
+- [x]Logs aparecem em real-time na pagina sem refresh
+- [x]Zero notificacoes perdidas (todas persistidas no banco)
+- [x]Frontend carrega logs em < 2s (sem N+1)
 
 ---
 
 *Criado por Morgan (PM) em 24 Fev 2026*
 *Base: Product audit completo — frontend (26 paginas) + backend (21 rotas, 27 modelos)*
+
+---
+
+## Notas de Fechamento
+
+**Fechado por:** Pax (PO) — 2026-03-18
+**Commits:** d8bf607, d0a7573, 93e0934, 4d5b3cf, 2b23d77, 4482ccb
+**Todos os 7 stories implementados e ACs marcados.**
+**QA Gate:** Pendente validação formal — delegar para @qa.

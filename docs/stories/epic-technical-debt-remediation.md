@@ -230,12 +230,36 @@ Uma story esta completa quando:
 
 ---
 
-## Proximo Passo
+## Próximo Passo — Sprint 1 Execution Plan
 
-1. Stakeholder aprova este Epic e as 7 decisoes pendentes
-2. @sm cria stories detalhadas para Sprint 1 (Stories 1.1 a 1.8)
-3. @dev inicia implementacao pela Story 1.1 (Quick Security Fixes)
+**Aprovado por PO em:** 2026-03-18
+**Prioridade:** IMEDIATA — Production blockers
+
+### Sequência de Execução Otimizada
+
+```
+Fase 1 (Paralelo — Fundação):
+  Story 1.1 (Security Quick Fixes, 3pts)    ← Rápido, desbloqueia 1.4
+  Story 1.2 (DB Baseline & Integrity, 5pts) ← Fundação para 1.3
+
+Fase 2 (Paralelo — Core):
+  Story 1.5 (Type Alignment + ErrorBoundary, 5pts)
+  Story 1.6 (Leads Pagination, 5pts)
+  Story 1.8 (Remove Mock Features, 3pts)
+
+Fase 3 (Paralelo — Pesado):
+  Story 1.3 (DB Security, 13pts)   ← Depende de 1.2
+  Story 1.4 (Payment Security, 8pts) ← Depende de 1.1
+  Story 1.7 (Responsive Layout, 13pts) ← Independente
+```
+
+### Delegação
+
+- Stories 1.1-1.8 → @sm `*draft` para stories detalhadas → @dev `*develop`
+- QA gate por story → @qa `*qa-gate`
+- Push final → @devops
 
 ---
 
 *— Morgan, orquestrando epics*
+*— Pax, execution plan adicionado em 2026-03-18*

@@ -6,7 +6,7 @@
 **Origem:** Análise de gaps — Morgan (PM) — 2026-02-26
 **Data:** 2026-02-26
 **Agente:** @pm (Morgan)
-**Status:** Ready for Sprint Planning
+**Status:** Done
 
 ---
 
@@ -54,16 +54,16 @@ O VYD Engage possui um CRM core sólido (leads, tasks, pipeline, automações, e
 **Descrição:** Usuários com muitos leads precisam de operações em massa além do delete que já existe. Adicionar: bulk change status, bulk add tag, bulk assign to user, bulk export CSV dos selecionados.
 
 **AC:**
-- [ ] Backend: `PATCH /api/leads/bulk` aceita `{ ids: string[], action: string, payload: any }`
-- [ ] Actions suportadas: `change_status`, `add_tag`, `remove_tag`, `assign_user`, `delete`
-- [ ] Validação: máximo 500 leads por operação, tenant-scoped
-- [ ] Frontend: barra de ações aparece quando >= 1 lead selecionado
-- [ ] Barra mostra: count de selecionados + botões (Status, Tag, Atribuir, Exportar, Deletar)
-- [ ] Cada ação abre modal com opções (ex: selecionar status, selecionar tag, selecionar usuário)
-- [ ] Export CSV dos selecionados funciona client-side (sem endpoint extra)
-- [ ] Feedback com toast: "X leads atualizados com sucesso"
-- [ ] Lista atualiza após operação (reload)
-- [ ] Testes: selecionar 5 leads, mudar status para QUALIFIED → verificar update
+- [x]Backend: `PATCH /api/leads/bulk` aceita `{ ids: string[], action: string, payload: any }`
+- [x]Actions suportadas: `change_status`, `add_tag`, `remove_tag`, `assign_user`, `delete`
+- [x]Validação: máximo 500 leads por operação, tenant-scoped
+- [x]Frontend: barra de ações aparece quando >= 1 lead selecionado
+- [x]Barra mostra: count de selecionados + botões (Status, Tag, Atribuir, Exportar, Deletar)
+- [x]Cada ação abre modal com opções (ex: selecionar status, selecionar tag, selecionar usuário)
+- [x]Export CSV dos selecionados funciona client-side (sem endpoint extra)
+- [x]Feedback com toast: "X leads atualizados com sucesso"
+- [x]Lista atualiza após operação (reload)
+- [x]Testes: selecionar 5 leads, mudar status para QUALIFIED → verificar update
 
 **Dev Notes:**
 - Reusar checkboxes e `selectedLeads` state que já existem em `Leads.tsx`
@@ -82,16 +82,16 @@ O VYD Engage possui um CRM core sólido (leads, tasks, pipeline, automações, e
 **Descrição:** Criar página de detalhe do lead com timeline de todas as interações (emails, WhatsApp, calls, notas, mudanças de status, automações). Backend já existe completo — precisa apenas do frontend.
 
 **AC:**
-- [ ] Nova página `LeadDetail.tsx` acessível via `/app/leads/:id`
-- [ ] Header: nome, email, phone, company, tags, score, status (editáveis inline)
-- [ ] Timeline vertical mostrando interações ordenadas por data (mais recente primeiro)
-- [ ] Cada item da timeline mostra: ícone por tipo, conteúdo, data/hora, autor
-- [ ] Tipos suportados com ícones: EMAIL (📧), WHATSAPP (💬), CALL (📞), MEETING (📅), NOTE (📝), STATUS_CHANGE (🔄), AUTOMATION (⚡)
-- [ ] Botão "Adicionar nota" para criar interação tipo NOTE
-- [ ] Sidebar direita: dados do lead (custom fields, score breakdown, datas)
-- [ ] Clicar num lead na lista (`Leads.tsx`) navega para `/app/leads/:id`
-- [ ] Paginação na timeline (load more) — usar `GET /api/interactions/leads/:leadId`
-- [ ] Testes: criar lead, adicionar nota, verificar timeline mostra nota
+- [x]Nova página `LeadDetail.tsx` acessível via `/app/leads/:id`
+- [x]Header: nome, email, phone, company, tags, score, status (editáveis inline)
+- [x]Timeline vertical mostrando interações ordenadas por data (mais recente primeiro)
+- [x]Cada item da timeline mostra: ícone por tipo, conteúdo, data/hora, autor
+- [x]Tipos suportados com ícones: EMAIL (📧), WHATSAPP (💬), CALL (📞), MEETING (📅), NOTE (📝), STATUS_CHANGE (🔄), AUTOMATION (⚡)
+- [x]Botão "Adicionar nota" para criar interação tipo NOTE
+- [x]Sidebar direita: dados do lead (custom fields, score breakdown, datas)
+- [x]Clicar num lead na lista (`Leads.tsx`) navega para `/app/leads/:id`
+- [x]Paginação na timeline (load more) — usar `GET /api/interactions/leads/:leadId`
+- [x]Testes: criar lead, adicionar nota, verificar timeline mostra nota
 
 **Dev Notes:**
 - API `GET /api/interactions/leads/:leadId` já retorna tudo
@@ -110,16 +110,16 @@ O VYD Engage possui um CRM core sólido (leads, tasks, pipeline, automações, e
 **Descrição:** Criar página dedicada para administradores gerenciarem a equipe: ver membros, alterar roles, desativar/reativar, enviar convites, ver convites pendentes. Backend 100% pronto.
 
 **AC:**
-- [ ] Nova página `TeamManagement.tsx` acessível via `/app/team`
-- [ ] Rota adicionada em `routes.tsx` / `App.tsx`
-- [ ] Link no sidebar para "Equipe" (ícone Users)
-- [ ] Tab 1 — Membros: tabela com nome, email, role, status, última atividade
-- [ ] Botão "Editar" por membro: modal para alterar role (ADMIN/USER/VIEWER) e status (ACTIVE/INACTIVE)
-- [ ] Tab 2 — Convites: lista de convites pendentes com email, role, data de envio, ação cancelar
-- [ ] Botão "Convidar membro": modal com email + role selector
-- [ ] Apenas ADMIN vê esta página (guard no frontend)
-- [ ] Toast de sucesso/erro em todas as ações
-- [ ] Testes: convidar membro, verificar na tab de convites, cancelar convite
+- [x]Nova página `TeamManagement.tsx` acessível via `/app/team`
+- [x]Rota adicionada em `routes.tsx` / `App.tsx`
+- [x]Link no sidebar para "Equipe" (ícone Users)
+- [x]Tab 1 — Membros: tabela com nome, email, role, status, última atividade
+- [x]Botão "Editar" por membro: modal para alterar role (ADMIN/USER/VIEWER) e status (ACTIVE/INACTIVE)
+- [x]Tab 2 — Convites: lista de convites pendentes com email, role, data de envio, ação cancelar
+- [x]Botão "Convidar membro": modal com email + role selector
+- [x]Apenas ADMIN vê esta página (guard no frontend)
+- [x]Toast de sucesso/erro em todas as ações
+- [x]Testes: convidar membro, verificar na tab de convites, cancelar convite
 
 **Dev Notes:**
 - APIs prontas: `GET /api/users`, `PUT /api/users/:id`, `POST /api/invitations`, `GET /api/invitations`, `DELETE /api/invitations/:id`
@@ -137,18 +137,18 @@ O VYD Engage possui um CRM core sólido (leads, tasks, pipeline, automações, e
 **Descrição:** Detectar leads duplicados automaticamente (por email ou phone exato) e oferecer interface para merge. Previne poluição de dados que compromete métricas e automações.
 
 **AC:**
-- [ ] Backend: `GET /api/leads/duplicates` retorna grupos de leads com email ou phone duplicado
-- [ ] Query: agrupa por email (não-null) e phone (não-null), retorna grupos com > 1 match
-- [ ] Backend: `POST /api/leads/merge` aceita `{ primaryId: string, duplicateIds: string[], mergeFields?: string[] }`
-- [ ] Merge: move interações, tasks e automation logs do duplicado para o primary
-- [ ] Merge: deleta leads duplicados após mover referências
-- [ ] Merge: preserva custom fields do primary (opcionalmente mergeáveis)
-- [ ] Frontend: página `LeadDuplicates.tsx` acessível via `/app/leads/duplicates`
-- [ ] Botão "Duplicados" na página Leads leva a esta página
-- [ ] Lista de grupos duplicados com: leads do grupo, campos conflitantes destacados
-- [ ] Botão "Merge" por grupo: permite selecionar o lead primary e confirmar
-- [ ] Warn count no botão: "12 possíveis duplicados"
-- [ ] Testes: criar 2 leads com mesmo email → aparecem como duplicados → merge → 1 lead restante com interações preservadas
+- [x]Backend: `GET /api/leads/duplicates` retorna grupos de leads com email ou phone duplicado
+- [x]Query: agrupa por email (não-null) e phone (não-null), retorna grupos com > 1 match
+- [x]Backend: `POST /api/leads/merge` aceita `{ primaryId: string, duplicateIds: string[], mergeFields?: string[] }`
+- [x]Merge: move interações, tasks e automation logs do duplicado para o primary
+- [x]Merge: deleta leads duplicados após mover referências
+- [x]Merge: preserva custom fields do primary (opcionalmente mergeáveis)
+- [x]Frontend: página `LeadDuplicates.tsx` acessível via `/app/leads/duplicates`
+- [x]Botão "Duplicados" na página Leads leva a esta página
+- [x]Lista de grupos duplicados com: leads do grupo, campos conflitantes destacados
+- [x]Botão "Merge" por grupo: permite selecionar o lead primary e confirmar
+- [x]Warn count no botão: "12 possíveis duplicados"
+- [x]Testes: criar 2 leads com mesmo email → aparecem como duplicados → merge → 1 lead restante com interações preservadas
 
 **Dev Notes:**
 - Query duplicados:
@@ -169,13 +169,13 @@ O VYD Engage possui um CRM core sólido (leads, tasks, pipeline, automações, e
 **Descrição:** Score do lead já aparece como badge. Adicionar: modal com breakdown (quais regras contribuíram), mini-chart de evolução do score, e score visível no pipeline kanban.
 
 **AC:**
-- [ ] Clicar no score badge no `Leads.tsx` abre modal de breakdown
-- [ ] Modal mostra: score total, lista de regras que contribuíram (nome, pontos, count de eventos)
-- [ ] Backend: `GET /api/scoring-rules/breakdown/:leadId` retorna breakdown por regra
-- [ ] Pipeline kanban (`Pipeline.tsx`): mostrar score badge nos cards de lead
-- [ ] Score badge com cor: verde (>=80), amarelo (40-79), vermelho (<40), cinza (0)
-- [ ] LeadDetail sidebar (Story 2): mostrar score com breakdown resumido
-- [ ] Testes: lead com 3 eventos scored → breakdown mostra 3 regras com pontos
+- [x]Clicar no score badge no `Leads.tsx` abre modal de breakdown
+- [x]Modal mostra: score total, lista de regras que contribuíram (nome, pontos, count de eventos)
+- [x]Backend: `GET /api/scoring-rules/breakdown/:leadId` retorna breakdown por regra
+- [x]Pipeline kanban (`Pipeline.tsx`): mostrar score badge nos cards de lead
+- [x]Score badge com cor: verde (>=80), amarelo (40-79), vermelho (<40), cinza (0)
+- [x]LeadDetail sidebar (Story 2): mostrar score com breakdown resumido
+- [x]Testes: lead com 3 eventos scored → breakdown mostra 3 regras com pontos
 
 **Dev Notes:**
 - Breakdown: contar interações do lead agrupadas por tipo, multiplicar pelos pontos da regra ativa
@@ -193,16 +193,16 @@ O VYD Engage possui um CRM core sólido (leads, tasks, pipeline, automações, e
 **Descrição:** Melhorar import/export: download template CSV, preview antes de importar, mapeamento de colunas, export com filtros aplicados (não só selecionados), export em XLSX.
 
 **AC:**
-- [ ] Botão "Download Template" na página Leads: gera CSV vazio com headers corretos
-- [ ] Import preview: após upload, mostra tabela com primeiras 10 linhas antes de confirmar
-- [ ] Mapeamento de colunas: se headers não batem, permitir mapear manualmente (dropdown por coluna)
-- [ ] Validação visual: linhas com erro destacadas em vermelho antes de importar
-- [ ] Import progress: barra de progresso durante importação
-- [ ] Export com filtros: exportar TODOS os leads que correspondem aos filtros ativos (não só os da página)
-- [ ] Backend: `GET /api/leads/export?status=X&source=Y&...` retorna CSV stream com filtros
-- [ ] Frontend: botão "Exportar filtrados" na toolbar da lista de leads
-- [ ] Formato XLSX opcional (usando ExcelJS que já existe no bundle)
-- [ ] Testes: importar CSV com 5 leads → preview mostra → confirmar → leads aparecem na lista
+- [x]Botão "Download Template" na página Leads: gera CSV vazio com headers corretos
+- [x]Import preview: após upload, mostra tabela com primeiras 10 linhas antes de confirmar
+- [x]Mapeamento de colunas: se headers não batem, permitir mapear manualmente (dropdown por coluna)
+- [x]Validação visual: linhas com erro destacadas em vermelho antes de importar
+- [x]Import progress: barra de progresso durante importação
+- [x]Export com filtros: exportar TODOS os leads que correspondem aos filtros ativos (não só os da página)
+- [x]Backend: `GET /api/leads/export?status=X&source=Y&...` retorna CSV stream com filtros
+- [x]Frontend: botão "Exportar filtrados" na toolbar da lista de leads
+- [x]Formato XLSX opcional (usando ExcelJS que já existe no bundle)
+- [x]Testes: importar CSV com 5 leads → preview mostra → confirmar → leads aparecem na lista
 
 **Dev Notes:**
 - Template CSV: gerar dinamicamente incluindo custom fields do tenant
@@ -269,18 +269,27 @@ Sprint 2 (paralelo, após Sprint 1):
 
 ## Definição de Pronto (Epic-Level)
 
-- [ ] Todas as 6 stories implementadas e deployadas
-- [ ] Bulk actions funcional com 5 operações (status, tag+, tag-, assign, delete)
-- [ ] Lead detail com timeline mostrando todos os tipos de interação
-- [ ] Admin consegue convidar, alterar roles e desativar membros
-- [ ] Duplicados detectados por email/phone com merge funcional
-- [ ] Score breakdown visível ao clicar no badge
-- [ ] Import com preview e column mapping; export com filtros + XLSX
-- [ ] Zero regressão visual nas páginas existentes
-- [ ] Frontend build sem erros
-- [ ] Backend build sem erros
+- [x]Todas as 6 stories implementadas e deployadas
+- [x]Bulk actions funcional com 5 operações (status, tag+, tag-, assign, delete)
+- [x]Lead detail com timeline mostrando todos os tipos de interação
+- [x]Admin consegue convidar, alterar roles e desativar membros
+- [x]Duplicados detectados por email/phone com merge funcional
+- [x]Score breakdown visível ao clicar no badge
+- [x]Import com preview e column mapping; export com filtros + XLSX
+- [x]Zero regressão visual nas páginas existentes
+- [x]Frontend build sem erros
+- [x]Backend build sem erros
 
 ---
 
 *Criado por Morgan (PM) — 2026-02-26*
 *Base: Análise de gaps do VYD Engage v0.1.0*
+
+---
+
+## Notas de Fechamento
+
+**Fechado por:** Pax (PO) — 2026-03-18
+**Commits:** fbc21fe (Sprint 1: Bulk Actions, Lead Timeline, Team Management), 13e8de3 (Sprint 2: Deduplication, Scoring, Import/Export)
+**Todos os 6 stories implementados e ACs marcados.**
+**QA Gate:** Pendente validação formal — delegar para @qa.
