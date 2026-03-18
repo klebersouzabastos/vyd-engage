@@ -127,74 +127,84 @@ import dealRoutes from './routes/deals.js';
 import trackingRoutes from './routes/tracking.js';
 import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
 
-// Rate limiting — applied unconditionally; limiters self-disable in dev (max: 0)
-app.use('/api/auth/password', passwordResetLimiter);
-app.use('/api/auth', (req, res, next) => {
-  if (req.path.startsWith('/password')) return next();
-  return authLimiter(req, res, next);
-});
-app.use('/api/webhooks', apiLimiter);
-app.use('/api', apiLimiter);
-
-// CSRF protection — applied to all API routes except webhooks (which use HMAC signatures)
-// Auth login/register/refresh are excluded since they don't have a CSRF cookie yet
-app.use('/api/leads', csrfProtection);
-app.use('/api/tasks', csrfProtection);
-app.use('/api/tags', csrfProtection);
-app.use('/api/subscriptions', csrfProtection);
-app.use('/api/payments', csrfProtection);
-app.use('/api/users', csrfProtection);
-app.use('/api/api-keys', csrfProtection);
-app.use('/api/automations', csrfProtection);
-app.use('/api/automation-logs', csrfProtection);
-app.use('/api/whatsapp', csrfProtection);
-app.use('/api/email', csrfProtection);
-app.use('/api/custom-fields', csrfProtection);
-app.use('/api/interactions', csrfProtection);
-app.use('/api/notifications', csrfProtection);
-app.use('/api/outgoing-webhooks', csrfProtection);
-app.use('/api/invitations', csrfProtection);
-app.use('/api/funnels', csrfProtection);
-app.use('/api/scoring-rules', csrfProtection);
-app.use('/api/deals', csrfProtection);
-app.use('/api/reports', csrfProtection);
-app.use('/api/auth/profile', csrfProtection);
-app.use('/api/auth/change-password', csrfProtection);
-app.use('/api/auth/tenant', csrfProtection);
-
-// Tracking routes (public, no auth, no CSRF - must be before CSRF middleware)
-app.use('/api/track', trackingRoutes);
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/leads', leadRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/tags', tagRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/api-keys', apiKeyRoutes);
-app.use('/api/automations', automationRoutes);
-app.use('/api/automation-logs', automationLogRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
-app.use('/api/email', emailRoutes);
-app.use('/api/custom-fields', customFieldRoutes);
-app.use('/api/interactions', interactionRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/invitations', invitationRoutes);
-app.use('/api/funnels', funnelRoutes);
-app.use('/api/scoring-rules', scoringRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/deals', dealRoutes);
-app.use('/api/webhooks', webhookRoutes);
-app.use('/api/outgoing-webhooks', outgoingWebhookRoutes);
-
-// Public routes (no auth required)
 import { Router as ExpressRouter } from 'express';
 import prisma from './config/database.js';
 import { z as zodLib } from 'zod';
 import { NotificationType } from '@prisma/client';
 import { notificationService } from './services/notificationService.js';
+
+// ============================================
+// Versioned API Router (v1)
+// ============================================
+const v1Router = ExpressRouter();
+
+// Rate limiting — applied unconditionally; limiters self-disable in dev (max: 0)
+v1Router.use('/auth/password', passwordResetLimiter);
+v1Router.use('/auth', (req, res, next) => {
+  if (req.path.startsWith('/password')) return next();
+  return authLimiter(req, res, next);
+});
+v1Router.use('/webhooks', apiLimiter);
+v1Router.use('/', apiLimiter);
+
+// CSRF protection — applied to all API routes except webhooks (which use HMAC signatures)
+// Auth login/register/refresh are excluded since they don't have a CSRF cookie yet
+v1Router.use('/leads', csrfProtection);
+v1Router.use('/tasks', csrfProtection);
+v1Router.use('/tags', csrfProtection);
+v1Router.use('/subscriptions', csrfProtection);
+v1Router.use('/payments', csrfProtection);
+v1Router.use('/users', csrfProtection);
+v1Router.use('/api-keys', csrfProtection);
+v1Router.use('/automations', csrfProtection);
+v1Router.use('/automation-logs', csrfProtection);
+v1Router.use('/whatsapp', csrfProtection);
+v1Router.use('/email', csrfProtection);
+v1Router.use('/custom-fields', csrfProtection);
+v1Router.use('/interactions', csrfProtection);
+v1Router.use('/notifications', csrfProtection);
+v1Router.use('/outgoing-webhooks', csrfProtection);
+v1Router.use('/invitations', csrfProtection);
+v1Router.use('/funnels', csrfProtection);
+v1Router.use('/scoring-rules', csrfProtection);
+v1Router.use('/deals', csrfProtection);
+v1Router.use('/reports', csrfProtection);
+v1Router.use('/auth/profile', csrfProtection);
+v1Router.use('/auth/change-password', csrfProtection);
+v1Router.use('/auth/tenant', csrfProtection);
+
+// Tracking routes (public, no auth, no CSRF)
+v1Router.use('/track', trackingRoutes);
+
+// API Routes
+v1Router.use('/auth', authRoutes);
+v1Router.use('/leads', leadRoutes);
+v1Router.use('/tasks', taskRoutes);
+v1Router.use('/tags', tagRoutes);
+v1Router.use('/subscriptions', subscriptionRoutes);
+v1Router.use('/payments', paymentRoutes);
+v1Router.use('/users', userRoutes);
+v1Router.use('/api-keys', apiKeyRoutes);
+v1Router.use('/automations', automationRoutes);
+v1Router.use('/automation-logs', automationLogRoutes);
+v1Router.use('/whatsapp', whatsappRoutes);
+v1Router.use('/email', emailRoutes);
+v1Router.use('/custom-fields', customFieldRoutes);
+v1Router.use('/interactions', interactionRoutes);
+v1Router.use('/notifications', notificationRoutes);
+v1Router.use('/invitations', invitationRoutes);
+v1Router.use('/funnels', funnelRoutes);
+v1Router.use('/scoring-rules', scoringRoutes);
+v1Router.use('/reports', reportRoutes);
+v1Router.use('/deals', dealRoutes);
+v1Router.use('/webhooks', webhookRoutes);
+v1Router.use('/outgoing-webhooks', outgoingWebhookRoutes);
+
+// Mount v1 router at /api/v1 (canonical) and /api (backwards-compatible alias)
+app.use('/api/v1', v1Router);
+app.use('/api', v1Router);
+
+// Public routes (no auth required)
 
 const publicRouter = ExpressRouter();
 
@@ -292,7 +302,8 @@ publicRouter.get('/plans', async (_req, res, next) => {
   }
 });
 
-app.use('/api/public', publicRouter);
+app.use('/api/v1/public', publicRouter);
+app.use('/api/public', publicRouter); // backwards-compatible alias
 
 // 404 handler
 app.use((req, res) => {

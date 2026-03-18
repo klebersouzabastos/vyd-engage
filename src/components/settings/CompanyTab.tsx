@@ -60,6 +60,9 @@ export function CompanyTab() {
                       src={logoPreview}
                       alt="Logo da empresa"
                       className="max-w-full max-h-full object-contain"
+                      width={128}
+                      height={128}
+                      loading="lazy"
                     />
                   </div>
                   <button

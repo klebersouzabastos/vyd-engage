@@ -56,6 +56,8 @@ export function useDeals() {
   }, []);
 
   const updateDeal = useCallback(async (id: string, data: Partial<Deal>) => {
+    const backup = [...deals];
+    setDeals(prev => prev.map(d => d.id === id ? { ...d, ...data } : d));
     try {
       const result = await apiClient.updateDeal(id, data);
       const updated: Deal = { ...result, value: Number(result.value) };
@@ -63,23 +65,26 @@ export function useDeals() {
       toast.success('Deal atualizado com sucesso!');
       return updated;
     } catch (err: unknown) {
+      setDeals(backup);
       const message = err instanceof Error ? err.message : 'Erro ao atualizar deal';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [deals]);
 
   const deleteDeal = useCallback(async (id: string) => {
+    const backup = [...deals];
+    setDeals(prev => prev.filter(d => d.id !== id));
     try {
       await apiClient.deleteDeal(id);
-      setDeals(prev => prev.filter(d => d.id !== id));
       toast.success('Deal removido com sucesso!');
     } catch (err: unknown) {
+      setDeals(backup);
       const message = err instanceof Error ? err.message : 'Erro ao remover deal';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [deals]);
 
   useEffect(() => {
     fetchDeals();

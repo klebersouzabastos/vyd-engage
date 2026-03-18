@@ -141,9 +141,8 @@ export function Tasks() {
     } else {
         await completeTask(task.id);
     }
-      await refetch();
     } catch (error) {
-      // Error already handled by hook
+      // Error already handled by hook — optimistic rollback in useTasks
     }
   };
 
@@ -153,12 +152,11 @@ export function Tasks() {
 
   const handleDelete = async () => {
     if (!deletingTask) return;
+    setDeletingTask(undefined);
     try {
       await deleteTask(deletingTask.id);
-      await refetch();
-    setDeletingTask(undefined);
     } catch (error) {
-      // Error already handled by hook
+      // Error already handled by hook — optimistic rollback in useTasks
     }
   };
 

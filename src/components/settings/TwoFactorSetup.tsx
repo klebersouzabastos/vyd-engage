@@ -155,7 +155,7 @@ export function TwoFactorSetup() {
               Use um aplicativo autenticador como Google Authenticator, Authy ou 1Password.
             </p>
             <div className="flex justify-center">
-              <img src={qrCode} alt="QR Code 2FA" className="w-48 h-48" loading="lazy" />
+              <img src={qrCode} alt="QR Code 2FA" className="w-48 h-48" width={192} height={192} loading="lazy" />
             </div>
           </div>
 

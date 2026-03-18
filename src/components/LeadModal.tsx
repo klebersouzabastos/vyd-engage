@@ -319,14 +319,8 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
-        className="flex flex-col overflow-hidden p-0"
-        style={{ 
-          width: '900px', 
-          height: '700px',
-          maxWidth: '90vw',
-          maxHeight: '90vh'
-        }}
+      <DialogContent
+        className="flex flex-col overflow-hidden p-0 w-[900px] h-[700px] max-w-[90vw] max-h-[90vh]"
       >
         <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-300 px-6 pt-6">
           <div className="flex items-center justify-between">

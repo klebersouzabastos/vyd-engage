@@ -367,7 +367,7 @@ export function AutomationLogs() {
               <div className="flex items-end gap-1.5 h-40">
                 {dailyData.map((day) => (
                   <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex flex-col-reverse" style={{ height: "120px" }}>
+                    <div className="w-full flex flex-col-reverse h-[120px]">
                       {day.total > 0 && (
                         <>
                           <div
@@ -384,7 +384,7 @@ export function AutomationLogs() {
                           )}
                         </>
                       )}
-                      {day.total === 0 && <div className="w-full bg-gray-100 rounded-t-sm" style={{ height: "4px" }} />}
+                      {day.total === 0 && <div className="w-full bg-gray-100 rounded-t-sm h-1" />}
                     </div>
                     <span className="text-[10px] text-gray-500">{day.label}</span>
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -8,6 +8,8 @@ import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { ArrowLeft, Eye, EyeOff, Shield } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
+import { FieldError } from "../components/register/FieldError";
+import { getErrorMessage, getErrorCode, getErrorStatusCode } from "../utils/errors";
 
 export function Login() {
   const { login } = useAuth();
@@ -18,6 +20,28 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
   const [totpCode, setTotpCode] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [touchedFields, setTouchedFields] = useState<{ email?: boolean; password?: boolean }>({});
+
+  const validateEmail = useCallback((value: string): string | undefined => {
+    if (!value.trim()) return "E-mail é obrigatório";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) return "Formato de e-mail inválido";
+    return undefined;
+  }, []);
+
+  const validatePassword = useCallback((value: string): string | undefined => {
+    if (!value) return "Senha é obrigatória";
+    if (value.length < 6) return "Senha deve ter no mínimo 6 caracteres";
+    return undefined;
+  }, []);
+
+  const handleFieldBlur = useCallback((field: "email" | "password") => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
+    const value = field === "email" ? email : password;
+    const error = field === "email" ? validateEmail(value) : validatePassword(value);
+    setFieldErrors((prev) => ({ ...prev, [field]: error }));
+  }, [email, password, validateEmail, validatePassword]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,19 +55,19 @@ export function Login() {
       }
       toast.success("Login realizado com sucesso!");
       navigate('/app');
-    } catch (error: any) {
-      let errorMessage = "Erro ao fazer login";
+    } catch (error: unknown) {
+      const code = getErrorCode(error);
+      const statusCode = getErrorStatusCode(error);
+      let errorMessage = getErrorMessage(error);
 
-      if (error.details?.code === 'INVALID_TOTP_CODE') {
+      if (code === 'INVALID_TOTP_CODE') {
         errorMessage = "Código 2FA inválido. Tente novamente.";
         setTotpCode("");
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (error.details?.code === 'NETWORK_ERROR') {
+      } else if (code === 'NETWORK_ERROR') {
         errorMessage = "Erro de conexão. Verifique se o servidor está rodando.";
-      } else if (error.details?.code === 'INVALID_CREDENTIALS') {
+      } else if (code === 'INVALID_CREDENTIALS') {
         errorMessage = "Email ou senha incorretos.";
-      } else if (error.statusCode === 401) {
+      } else if (statusCode === 401) {
         errorMessage = "Credenciais inválidas.";
       }
 
@@ -100,9 +124,21 @@ export function Login() {
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (touchedFields.email) {
+                    setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
+                  }
+                }}
+                onBlur={() => handleFieldBlur("email")}
+                className={`w-full h-12 sm:h-14 px-4 py-3 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touchedFields.email && fieldErrors.email ? "border-red-500" : "border-gray-300"}`}
                 required
+                aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              />
+              <FieldError
+                id="email-error"
+                error={fieldErrors.email}
+                touched={touchedFields.email}
               />
             </div>
 
@@ -116,9 +152,16 @@ export function Login() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (touchedFields.password) {
+                      setFieldErrors((prev) => ({ ...prev, password: validatePassword(e.target.value) }));
+                    }
+                  }}
+                  onBlur={() => handleFieldBlur("password")}
+                  className={`w-full h-12 sm:h-14 px-4 py-3 pr-14 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touchedFields.password && fieldErrors.password ? "border-red-500" : "border-gray-300"}`}
                   required
+                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
                 />
                 <button
                   type="button"
@@ -138,6 +181,11 @@ export function Login() {
                   )}
                 </button>
               </div>
+              <FieldError
+                id="password-error"
+                error={fieldErrors.password}
+                touched={touchedFields.password}
+              />
             </div>
 
             {requires2FA ? (

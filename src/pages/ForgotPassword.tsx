@@ -8,6 +8,7 @@ import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { ArrowLeft, Mail } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+import { getErrorMessage, getErrorCode, getErrorStatusCode } from "../utils/errors";
 
 export function ForgotPassword() {
   const navigate = useNavigate();
@@ -31,30 +32,19 @@ export function ForgotPassword() {
       await apiClient.requestPasswordReset(normalizedEmail);
       setSent(true);
       toast.success("Email de recuperação enviado! Verifique sua caixa de entrada.");
-    } catch (error: any) {
-      // Mensagem de erro mais específica
-      let errorMessage = "Erro ao enviar email de recuperação";
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.details?.code === 'NETWORK_ERROR') {
+    } catch (error: unknown) {
+      const code = getErrorCode(error);
+      const statusCode = getErrorStatusCode(error);
+      let errorMessage = getErrorMessage(error);
+
+      if (code === 'NETWORK_ERROR') {
         errorMessage = "Erro de conexão. Verifique se o servidor está rodando.";
-      } else if (error.details?.code === 'VALIDATION_ERROR' || error.statusCode === 400) {
-        // Verificar se há detalhes de validação do Zod
-        if (error.details?.errors && Array.isArray(error.details.errors)) {
-          const validationError = error.details.errors[0];
-          if (validationError.path && validationError.path.includes('email')) {
-            errorMessage = "Email inválido. Verifique o formato e tente novamente.";
-          } else {
-            errorMessage = validationError.message || "Dados inválidos. Verifique os campos e tente novamente.";
-          }
-        } else {
-          errorMessage = "Email inválido. Verifique o formato e tente novamente.";
-        }
-      } else if (error.statusCode >= 500) {
+      } else if (code === 'VALIDATION_ERROR' || statusCode === 400) {
+        errorMessage = "Email inválido. Verifique o formato e tente novamente.";
+      } else if (statusCode >= 500) {
         errorMessage = "Erro no servidor. Tente novamente mais tarde.";
       }
-      
+
       toast.error(errorMessage);
       console.error("Erro ao solicitar recuperação de senha:", error);
     } finally {

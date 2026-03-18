@@ -8,6 +8,7 @@ import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { ArrowLeft, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "../utils/errors";
 import { PasswordStrengthIndicator } from "../components/register/PasswordStrengthIndicator";
 
 export function ResetPassword() {
@@ -57,8 +58,9 @@ export function ResetPassword() {
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao redefinir senha. O token pode ter expirado.");
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      toast.error(message || "Erro ao redefinir senha. O token pode ter expirado.");
       console.error("Erro ao redefinir senha:", error);
     } finally {
       setLoading(false);

@@ -4,7 +4,7 @@
 **Tipo:** Feature (Retroativa)
 **Prioridade:** P1
 **Origem:** Commit fb8742c — 2026-03-18
-**Status:** Done (pendente validação QA)
+**Status:** Done
 **Pontos:** 8
 **Agente:** @po (Pax) — documentação retroativa
 
@@ -41,11 +41,11 @@ Feature completa de gerenciamento de Deals (negócios/oportunidades) transforman
 - [x] Link "Deals" no Sidebar
 - [x] Integração Lead↔Deal: criar deal a partir de LeadDetail, auto-sync status WON para lead
 
-### QA Pendente
-- [ ] Testes: criar deal → mover por pipeline via drag-and-drop → marcar WON → verificar closedAt e probability
-- [ ] Testes: filtrar deals por stage → verificar resultados corretos
-- [ ] Testes: excluir deal → verificar que interações não são perdidas
-- [ ] Testes: criar deal a partir de lead → verificar relação bidirecional
+### QA Validado
+- [x] Testes: criar deal → mover por pipeline via drag-and-drop → marcar WON → verificar closedAt e probability
+- [x] Testes: filtrar deals por stage → verificar resultados corretos
+- [x] Testes: excluir deal → verificar que interações não são perdidas
+- [x] Testes: criar deal a partir de lead → verificar relação bidirecional
 
 ---
 
@@ -81,4 +81,22 @@ Feature completa de gerenciamento de Deals (negócios/oportunidades) transforman
 
 ---
 
+## QA Closing Notes
+
+**Reviewer:** Quinn (QA) — 2026-03-18
+**Verdict:** PASS
+
+All CONCERNS from initial QA review (qa-retro-deal.md, 3.3/5) have been addressed:
+
+1. **Cross-tenant isolation** — `update()` and `delete()` in dealService.ts now verify tenantId via `findFirst()` before mutating. FIXED.
+2. **getStats() DB aggregation** — Rewritten to use `count()`, `groupBy()`, `aggregate()` at DB level. No full table loads. FIXED.
+3. **formatCurrency shared utility** — `src/utils/format.ts` exports shared `formatCurrency()` using `Intl.NumberFormat("pt-BR")`. FIXED.
+4. **D&D error toast** — `DealPipelineBoard.tsx` handleDrop wraps onStageChange in try/catch with `toast.error()`. FIXED.
+5. **Leads search debounce** — `DealForm.tsx` uses 300ms debounce via `useRef` timer on lead search input. FIXED.
+
+All acceptance criteria met. Story closed.
+
+---
+
 *Documentado retroativamente por Pax (PO) — 2026-03-18*
+*QA validado por Quinn (QA) — 2026-03-18*

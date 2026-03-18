@@ -96,18 +96,22 @@ export function useTasks() {
   }, []);
 
   const deleteTask = useCallback(async (id: string) => {
+    const backup = [...tasks];
+    setTasks(prev => prev.filter(t => t.id !== id));
     try {
       await apiClient.deleteTask(id);
-      setTasks(prev => prev.filter(t => t.id !== id));
       toast.success('Tarefa deletada com sucesso!');
     } catch (err: unknown) {
+      setTasks(backup);
       const message = err instanceof Error ? err.message : 'Erro ao deletar tarefa';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [tasks]);
 
   const completeTask = useCallback(async (id: string) => {
+    const backup = [...tasks];
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'COMPLETED' as const, completedAt: new Date().toISOString() } : t));
     try {
       const result = await apiClient.updateTask(id, {
         status: 'COMPLETED',
@@ -115,13 +119,16 @@ export function useTasks() {
       setTasks(prev => prev.map(t => t.id === id ? result : t));
       return result;
     } catch (err: unknown) {
+      setTasks(backup);
       const message = err instanceof Error ? err.message : 'Erro ao completar tarefa';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [tasks]);
 
   const uncompleteTask = useCallback(async (id: string) => {
+    const backup = [...tasks];
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'PENDING' as const, completedAt: undefined } : t));
     try {
       const result = await apiClient.updateTask(id, {
         status: 'PENDING',
@@ -129,11 +136,12 @@ export function useTasks() {
       setTasks(prev => prev.map(t => t.id === id ? result : t));
       return result;
     } catch (err: unknown) {
+      setTasks(backup);
       const message = err instanceof Error ? err.message : 'Erro ao reabrir tarefa';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [tasks]);
 
   useEffect(() => {
     fetchTasks(undefined, { silent: true });

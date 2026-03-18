@@ -163,8 +163,7 @@ export function PaymentModal({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent 
-        className="max-w-2xl w-[90vw] sm:w-[600px] max-h-[85vh] min-h-[400px] overflow-hidden flex flex-col p-0"
-        style={{ maxWidth: '600px' }}
+        className="max-w-[600px] w-[90vw] sm:w-[600px] max-h-[85vh] min-h-[400px] overflow-hidden flex flex-col p-0"
       >
         <div className="px-6 pt-6 pb-4 border-b border-gray-300 flex-shrink-0">
           <DialogHeader>

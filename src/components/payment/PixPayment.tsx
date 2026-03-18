@@ -75,6 +75,9 @@ export function PixPayment({
             src={`data:image/png;base64,${pixData.qrCodeBase64}`}
             alt="QR Code PIX"
             className="w-64 h-64"
+            width={256}
+            height={256}
+            loading="lazy"
           />
         </div>
       )}

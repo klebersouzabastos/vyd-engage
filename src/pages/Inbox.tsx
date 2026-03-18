@@ -325,7 +325,7 @@ export function Inbox() {
     <div className="min-h-screen flex flex-col">
       <Header title="Inbox" subtitle="Todas as conversas em um só lugar" />
 
-      <div className="flex-1 flex overflow-hidden" style={{ height: "calc(100vh - 80px)" }}>
+      <div className="flex-1 flex overflow-hidden h-[calc(100vh-80px)]">
         {/* Left Panel - Conversation List */}
         <div className="w-full md:w-96 lg:w-[420px] border-r border-gray-200 flex flex-col bg-white flex-shrink-0">
           {/* Filters */}
@@ -516,8 +516,9 @@ export function Inbox() {
                             {msg.metadata?.mediaUrl && msg.metadata?.mediaType?.startsWith("image") && (
                               <img
                                 src={msg.metadata.mediaUrl}
-                                alt="Imagem"
+                                alt="Imagem anexada"
                                 className="rounded-lg max-w-full max-h-48 mb-2"
+                                loading="lazy"
                               />
                             )}
                             {msg.metadata?.mediaUrl && !msg.metadata?.mediaType?.startsWith("image") && (

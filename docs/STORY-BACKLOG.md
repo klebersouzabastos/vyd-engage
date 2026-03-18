@@ -11,41 +11,11 @@
 |---------|-------|
 | Total de itens | 42 |
 | 🔴 HIGH | 0 |
-| 🟡 MEDIUM | 2 |
+| 🟡 MEDIUM | 0 |
 | 🟢 LOW | 9 |
-| 📋 TODO | 11 |
+| 📋 TODO | 9 |
 | 🚧 IN PROGRESS | 0 |
-| ✅ DONE | 31 |
-
----
-
-## 🟡 MEDIUM Priority
-
-#### [RETRO-DEAL] Story Retroativa — Deal & Account Management
-- **Source**: Commit fb8742c (2026-03-18)
-- **Priority**: 🟡 MEDIUM
-- **Effort**: Já implementado
-- **Status**: 📋 TODO (documentação/validação pendente)
-- **Sprint**: N/A
-- **Description**: Full pipeline CRM com deals implementado sem story formal. Necessita: documentação de ACs, validação QA, testes
-- **Success Criteria**:
-  - [x] Implementação commitada
-  - [ ] Story formal criada com ACs retroativos
-  - [ ] QA gate executado
-
----
-
-#### [RETRO-CALENDAR] Story Retroativa — Calendar Views para Tasks
-- **Source**: Commit 517d874 (2026-03-18)
-- **Priority**: 🟡 MEDIUM
-- **Effort**: Já implementado
-- **Status**: 📋 TODO (documentação/validação pendente)
-- **Sprint**: N/A
-- **Description**: Views month/week/agenda com drag-and-drop para Tasks. Implementado sem story formal. Necessita: documentação de ACs, validação QA, testes
-- **Success Criteria**:
-  - [x] Implementação commitada
-  - [ ] Story formal criada com ACs retroativos
-  - [ ] QA gate executado
+| ✅ DONE | 33 |
 
 ---
 
@@ -164,6 +134,16 @@
 #### [RETRO-SIDEBAR] Collapsible Sidebar
 - **Completed**: 2026-03-18
 - **Commit**: 087ca00
+
+#### [RETRO-DEAL] Deal & Account Management — Full Pipeline CRM
+- **Completed**: 2026-03-18
+- **Commit**: fb8742c
+- **QA Verdict**: PASS (Quinn, 2026-03-18)
+
+#### [RETRO-CALENDAR] Advanced Calendar Views for Tasks
+- **Completed**: 2026-03-18
+- **Commit**: 517d874
+- **QA Verdict**: PASS (Quinn, 2026-03-18)
 
 #### [RETRO-BUGFIX] Critical Bug Fixes (Leads, Routes, Tags, UI)
 - **Completed**: 2026-03-18

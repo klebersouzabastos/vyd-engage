@@ -232,10 +232,10 @@ export function LandingPage() {
       <VYDEcosystemBanner />
       
       {/* Spacer to push content below fixed headers */}
-      <div style={{ height: '120px' }} aria-hidden="true" />
+      <div className="h-[120px]" aria-hidden="true" />
       
       {/* Header */}
-      <header className="fixed left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99]" style={{ top: '40px' }}>
+      <header className="fixed left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99] top-[40px]">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link 

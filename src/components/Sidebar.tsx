@@ -121,6 +121,8 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
                   src={logo}
                   alt={`${companyName} logo`}
                   className="w-full h-full object-contain"
+                  width={36}
+                  height={36}
                 />
               </div>
             ) : (

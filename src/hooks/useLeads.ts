@@ -198,16 +198,18 @@ export function useLeads() {
   }, []);
 
   const deleteLead = useCallback(async (id: string) => {
+    const backup = [...leads];
+    setLeads(prev => prev.filter(l => l.id !== id));
     try {
       await apiClient.deleteLead(id);
-      setLeads(prev => prev.filter(l => l.id !== id));
       toast.success('Lead deletado com sucesso!');
     } catch (err: unknown) {
+      setLeads(backup);
       const message = err instanceof Error ? err.message : 'Erro ao deletar lead';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [leads]);
 
   useEffect(() => {
     fetchLeads();
