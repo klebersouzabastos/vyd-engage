@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router";
 import { toast } from "sonner";
 import { Header } from "../components/Header";
@@ -111,6 +111,48 @@ export function Leads() {
 
   const { tags } = useTags();
 
+  // Debounced search value for server-side filtering
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Build server-side filter params from current state
+  const buildServerFilters = useCallback((page: number = 1) => {
+    const serverFilters: Record<string, string | number | undefined> = {
+      page,
+      limit: pagination.limit,
+    };
+    if (filterStatus.length === 1) {
+      serverFilters.status = mapStatusToBackend(filterStatus[0]);
+    }
+    if (filterSource.length === 1) {
+      serverFilters.source = mapSourceToBackend(filterSource[0]);
+    }
+    if (debouncedSearch) {
+      serverFilters.search = debouncedSearch;
+    }
+    if (filterTag.length === 1) {
+      serverFilters.tagId = filterTag[0];
+    }
+    return serverFilters;
+  }, [filterStatus, filterSource, debouncedSearch, filterTag, pagination.limit]);
+
+  // Debounce search input — 400ms delay before sending to server
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 400);
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery]);
+
+  // Send filters to server whenever they change — reset to page 1
+  useEffect(() => {
+    fetchLeads(buildServerFilters(1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, filterSource, debouncedSearch, filterTag]);
+
   const toggleLeadExpansion = (leadId: string) => {
     setExpandedLeads(prev => {
       const newSet = new Set(prev);
@@ -128,17 +170,27 @@ export function Leads() {
            Object.values(lead.customFields).some(v => v !== null && v !== undefined && v !== "");
   };
 
+  // Client-side filtering is only needed for filters the server doesn't support:
+  // - Multiple status/source values (server only accepts one)
+  // - Automation filter (not a server param)
+  // - Custom fields filter (not a server param)
+  // When a single value is selected for status/source/tag/search, the server already filters.
   const filteredLeads = leadsData.filter((lead: any) => {
-    const matchesStatus = filterStatus.length === 0 || filterStatus.includes(lead.status);
-    const matchesSource = filterSource.length === 0 || filterSource.includes(lead.source);
+    // Status: if multiple selected, filter client-side (server can't handle multi-status)
+    const matchesStatus = filterStatus.length <= 1 || filterStatus.includes(lead.status);
+    // Source: same logic
+    const matchesSource = filterSource.length <= 1 || filterSource.includes(lead.source);
+    // Tag: if multiple tags selected, filter client-side
+    const matchesTag = filterTag.length <= 1 ||
+      (lead.tags && lead.tags.some((tagId: string) => filterTag.includes(tagId)));
+    // Automation: always client-side (server doesn't support)
     const matchesAutomation = filterAutomation.length === 0 ||
       filterAutomation.some(filter => {
         if (filter === "with") return lead.automations && lead.automations.length > 0;
         if (filter === "without") return !lead.automations || lead.automations.length === 0;
         return lead.automations && lead.automations.includes(Number(filter));
       });
-    const matchesTag = filterTag.length === 0 ||
-      (lead.tags && lead.tags.some((tagId: string) => filterTag.includes(tagId)));
+    // Custom fields: always client-side (server doesn't support)
     const matchesCustomFields = Object.keys(filterCustomFields).length === 0 ||
       Object.entries(filterCustomFields).every(([fieldId, filterValue]) => {
         if (filterValue === null || filterValue === undefined || filterValue === "") return true;
@@ -162,11 +214,7 @@ export function Leads() {
             return String(leadValue) === String(filterValue);
         }
       });
-    const matchesSearch =
-      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.phone.includes(searchQuery) ||
-      lead.email.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSource && matchesAutomation && matchesTag && matchesCustomFields && matchesSearch;
+    return matchesStatus && matchesSource && matchesAutomation && matchesTag && matchesCustomFields;
   });
 
   const handleSelectAll = () => {
@@ -714,7 +762,7 @@ export function Leads() {
               totalPages={pagination.totalPages}
               total={pagination.total}
               limit={pagination.limit}
-              onPageChange={(newPage) => fetchLeads({ page: newPage, limit: pagination.limit })}
+              onPageChange={(newPage) => fetchLeads(buildServerFilters(newPage))}
             />
           </div>
         ) : (

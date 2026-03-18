@@ -55,7 +55,7 @@ export function Tasks() {
     "all" | "overdue" | "today" | "pending" | "completed"
   >("all");
   const [priorityFilter, setPriorityFilter] = useState<
-    "all" | "high" | "medium" | "low"
+    "all" | "HIGH" | "MEDIUM" | "LOW" | "URGENT"
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingTask, setDeletingTask] = useState<Task | undefined>();
@@ -344,9 +344,10 @@ export function Tasks() {
               className="px-3 py-2 border border-gray-300 rounded-md bg-white whitespace-nowrap"
             >
               <option value="all">Todas as prioridades</option>
-              <option value="high">Alta</option>
-              <option value="medium">Média</option>
-              <option value="low">Baixa</option>
+              <option value="URGENT">Urgente</option>
+              <option value="HIGH">Alta</option>
+              <option value="MEDIUM">Média</option>
+              <option value="LOW">Baixa</option>
             </select>
 
             <div className="flex gap-2">

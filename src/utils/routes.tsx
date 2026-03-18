@@ -13,7 +13,7 @@ function PageLoader() {
   );
 }
 
-// Lazy wrapper for named exports
+// Lazy wrapper for named exports — each route gets its own ErrorBoundary
 function lazyNamed<T extends Record<string, any>>(
   factory: () => Promise<T>,
   name: keyof T
@@ -22,9 +22,11 @@ function lazyNamed<T extends Record<string, any>>(
     factory().then((mod) => ({ default: mod[name] as any }))
   );
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Component />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Component />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

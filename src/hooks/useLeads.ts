@@ -4,6 +4,18 @@ import { toast } from 'sonner';
 import { Lead } from '../types';
 import { mapStatusToBackend, mapSourceToBackend, mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
 
+export interface LeadsFilters {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  status?: string;
+  source?: string;
+  search?: string;
+  tagId?: string;
+  assignedTo?: string;
+}
+
 export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,13 +26,25 @@ export function useLeads() {
     total: 0,
     totalPages: 0,
   });
-
-  const fetchLeads = useCallback(async (filters?: any) => {
+  const fetchLeads = useCallback(async (filters?: LeadsFilters) => {
     try {
       setLoading(true);
       setError(null);
-      const result = await apiClient.getLeads(filters);
-      
+
+      // Build server params — only include defined, non-empty values
+      const serverParams: Record<string, string | number> = {};
+      if (filters?.page) serverParams.page = filters.page;
+      if (filters?.limit) serverParams.limit = filters.limit;
+      if (filters?.sort) serverParams.sort = filters.sort;
+      if (filters?.order) serverParams.order = filters.order;
+      if (filters?.status) serverParams.status = filters.status;
+      if (filters?.source) serverParams.source = filters.source;
+      if (filters?.search) serverParams.search = filters.search;
+      if (filters?.tagId) serverParams.tagId = filters.tagId;
+      if (filters?.assignedTo) serverParams.assignedTo = filters.assignedTo;
+
+      const result = await apiClient.getLeads(serverParams);
+
       // Transform API response to match Lead type
       const transformedLeads = result.leads.map((lead: any) => ({
         id: lead.id,
@@ -43,11 +67,11 @@ export function useLeads() {
       setLeads(transformedLeads);
       setPagination(result.pagination || {
         page: 1,
-        limit: 50,
+        limit: 20,
         total: transformedLeads.length,
         totalPages: 1,
       });
-      
+
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar leads');
       toast.error('Erro ao carregar leads');

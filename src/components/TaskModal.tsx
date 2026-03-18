@@ -25,7 +25,7 @@ interface TaskModalProps {
   onClose: () => void;
   onSave: (task: Omit<Task, "id" | "createdAt" | "completedAt" | "updatedAt">) => void;
   task?: Task;
-  leadId?: number;
+  leadId?: string;
 }
 
 export function TaskModal({
@@ -36,7 +36,7 @@ export function TaskModal({
   leadId,
 }: TaskModalProps) {
   const [formData, setFormData] = useState({
-    leadId: task?.leadId || leadId || 0,
+    leadId: task?.leadId || leadId || "",
     title: task?.title || "",
     description: task?.description || "",
     dueDate: task && task.dueDate
@@ -45,14 +45,14 @@ export function TaskModal({
     dueTime: task && task.dueDate
       ? new Date(task.dueDate).toTimeString().slice(0, 5)
       : "09:00",
-    priority: task?.priority || "medium" as Task["priority"],
+    priority: task?.priority || "MEDIUM" as Task["priority"],
   });
 
   useEffect(() => {
     if (task) {
       const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
       setFormData({
-        leadId: task.leadId || 0,
+        leadId: task.leadId || "",
         title: task.title,
         description: task.description || "",
         dueDate: dueDate.toISOString().split("T")[0],
@@ -91,12 +91,12 @@ export function TaskModal({
 
   const handleClose = () => {
     setFormData({
-      leadId: leadId || 0,
+      leadId: leadId || "",
       title: "",
       description: "",
       dueDate: new Date().toISOString().split("T")[0],
       dueTime: "09:00",
-      priority: "medium",
+      priority: "MEDIUM",
     });
     onClose();
   };
@@ -169,9 +169,10 @@ export function TaskModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Baixa</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="LOW">Baixa</SelectItem>
+                <SelectItem value="MEDIUM">Média</SelectItem>
+                <SelectItem value="HIGH">Alta</SelectItem>
+                <SelectItem value="URGENT">Urgente</SelectItem>
               </SelectContent>
             </Select>
           </div>

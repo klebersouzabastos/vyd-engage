@@ -16,11 +16,13 @@ interface TaskCardProps {
 
 const getPriorityColor = (priority: Task["priority"]) => {
   switch (priority) {
-    case "high":
+    case "URGENT":
+      return "bg-red-200 text-red-800 border-red-300";
+    case "HIGH":
       return "bg-red-100 text-red-700 border-red-200";
-    case "medium":
+    case "MEDIUM":
       return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    case "low":
+    case "LOW":
       return "bg-blue-100 text-blue-700 border-blue-200";
     default:
       return "bg-gray-100 text-gray-700 border-gray-200";
@@ -29,11 +31,13 @@ const getPriorityColor = (priority: Task["priority"]) => {
 
 const getPriorityLabel = (priority: Task["priority"]) => {
   switch (priority) {
-    case "high":
+    case "URGENT":
+      return "Urgente";
+    case "HIGH":
       return "Alta";
-    case "medium":
+    case "MEDIUM":
       return "Média";
-    case "low":
+    case "LOW":
       return "Baixa";
     default:
       return priority;

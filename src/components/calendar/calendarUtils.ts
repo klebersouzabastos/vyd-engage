@@ -21,10 +21,6 @@ import type { Task } from "../../types";
 export type CalendarViewMode = "list" | "month" | "week" | "agenda";
 
 export const PRIORITY_COLORS: Record<string, string> = {
-  urgent: "bg-red-500 text-white",
-  high: "bg-orange-500 text-white",
-  medium: "bg-yellow-400 text-yellow-900",
-  low: "bg-blue-400 text-white",
   URGENT: "bg-red-500 text-white",
   HIGH: "bg-orange-500 text-white",
   MEDIUM: "bg-yellow-400 text-yellow-900",
@@ -32,10 +28,6 @@ export const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export const PRIORITY_DOT_COLORS: Record<string, string> = {
-  urgent: "bg-red-500",
-  high: "bg-orange-500",
-  medium: "bg-yellow-400",
-  low: "bg-blue-400",
   URGENT: "bg-red-500",
   HIGH: "bg-orange-500",
   MEDIUM: "bg-yellow-400",

@@ -11,10 +11,6 @@ import {
 import { Edit2, CheckCircle, RotateCcw, Trash2, Calendar } from "lucide-react";
 
 const PRIORITY_BADGE: Record<string, { label: string; className: string }> = {
-  urgent: { label: "Urgente", className: "bg-red-100 text-red-700" },
-  high: { label: "Alta", className: "bg-orange-100 text-orange-700" },
-  medium: { label: "Média", className: "bg-yellow-100 text-yellow-700" },
-  low: { label: "Baixa", className: "bg-blue-100 text-blue-700" },
   URGENT: { label: "Urgente", className: "bg-red-100 text-red-700" },
   HIGH: { label: "Alta", className: "bg-orange-100 text-orange-700" },
   MEDIUM: { label: "Média", className: "bg-yellow-100 text-yellow-700" },

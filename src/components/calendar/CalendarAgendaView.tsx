@@ -16,10 +16,6 @@ interface CalendarAgendaViewProps {
 }
 
 const PRIORITY_LABELS: Record<string, string> = {
-  urgent: "Urgente",
-  high: "Alta",
-  medium: "Média",
-  low: "Baixa",
   URGENT: "Urgente",
   HIGH: "Alta",
   MEDIUM: "Média",
@@ -27,10 +23,6 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 const PRIORITY_BADGE: Record<string, string> = {
-  urgent: "bg-red-100 text-red-700",
-  high: "bg-orange-100 text-orange-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  low: "bg-blue-100 text-blue-700",
   URGENT: "bg-red-100 text-red-700",
   HIGH: "bg-orange-100 text-orange-700",
   MEDIUM: "bg-yellow-100 text-yellow-700",
@@ -101,11 +93,11 @@ export function CalendarAgendaView({
                         className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           isCompleted
                             ? "bg-gray-400"
-                            : task.priority === "urgent" || task.priority === "URGENT"
+                            : task.priority === "URGENT"
                             ? "bg-red-500"
-                            : task.priority === "high" || task.priority === "HIGH"
+                            : task.priority === "HIGH"
                             ? "bg-orange-500"
-                            : task.priority === "medium" || task.priority === "MEDIUM"
+                            : task.priority === "MEDIUM"
                             ? "bg-yellow-400"
                             : "bg-blue-400"
                         }`}

@@ -49,9 +49,10 @@ const SOURCE_OPTIONS = [
 ];
 
 const PRIORITY_OPTIONS = [
-  { value: "low", label: "Baixa" },
-  { value: "medium", label: "Média" },
-  { value: "high", label: "Alta" },
+  { value: "LOW", label: "Baixa" },
+  { value: "MEDIUM", label: "Média" },
+  { value: "HIGH", label: "Alta" },
+  { value: "URGENT", label: "Urgente" },
 ];
 
 export function ReportFilters({ filters, onChange, dataSource = "leads" }: ReportFiltersProps) {

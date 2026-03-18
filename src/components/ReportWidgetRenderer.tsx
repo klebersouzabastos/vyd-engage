@@ -233,9 +233,9 @@ function renderChart(widget: ReportWidget, data: any) {
     }
   } else if (widget.dataSource === "tasks") {
     chartData = Object.entries(data.byPriority || {}).map(([name, value]) => ({
-      name: name === "low" ? "Baixa" : name === "medium" ? "Média" : "Alta",
+      name: name === "LOW" ? "Baixa" : name === "MEDIUM" ? "Média" : name === "HIGH" ? "Alta" : name === "URGENT" ? "Urgente" : name,
       value: value as number,
-      color: name === "low" ? "#16A34A" : name === "medium" ? "#F59E0B" : "#DC2626",
+      color: name === "LOW" ? "#16A34A" : name === "MEDIUM" ? "#F59E0B" : name === "URGENT" ? "#7C3AED" : "#DC2626",
     }));
   } else if (widget.dataSource === "interactions") {
     chartData = Object.entries(data.byType || {}).map(([name, value]) => ({

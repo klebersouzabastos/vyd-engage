@@ -1,10 +1,16 @@
 // Tipos compartilhados do sistema
 
+// Aligned with Prisma UserRole enum
+export type UserRole = "ADMIN" | "USER" | "VIEWER";
+
 // Aligned with Prisma LeadStatus enum
 export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST";
 
 // Aligned with Prisma LeadSource enum
 export type LeadSource = "WEBSITE" | "SOCIAL_MEDIA" | "REFERRAL" | "EMAIL" | "PHONE" | "OTHER";
+
+// Aligned with Prisma TaskPriority enum
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface Lead {
   id: string; // UUID from Prisma
@@ -45,7 +51,7 @@ export interface Task {
   description?: string;
   dueDate?: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  priority: "low" | "medium" | "high" | "urgent";
+  priority: TaskPriority;
   assignedTo?: string;
   userId?: string;
   createdAt: string;

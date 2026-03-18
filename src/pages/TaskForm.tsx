@@ -33,7 +33,7 @@ export function TaskForm() {
     description: "",
     dueDate: new Date().toISOString().split("T")[0],
     dueTime: "09:00",
-    priority: "medium" as Task["priority"],
+    priority: "MEDIUM" as Task["priority"],
   });
 
   useEffect(() => {
@@ -209,9 +209,10 @@ export function TaskForm() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="LOW">Baixa</SelectItem>
+                  <SelectItem value="MEDIUM">Média</SelectItem>
+                  <SelectItem value="HIGH">Alta</SelectItem>
+                  <SelectItem value="URGENT">Urgente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
