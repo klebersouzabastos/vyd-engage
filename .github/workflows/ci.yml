@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: flowcrm
+          POSTGRES_PASSWORD: flowcrm_test
+          POSTGRES_DB: flowcrm_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: cd server && npm ci
+
+      - name: Generate Prisma Client
+        run: cd server && npx prisma generate
+        env:
+          DATABASE_URL: postgresql://flowcrm:flowcrm_test@localhost:5432/flowcrm_test
+
+      - name: Run migrations
+        run: cd server && npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://flowcrm:flowcrm_test@localhost:5432/flowcrm_test
+
+      - name: Lint
+        run: cd server && npm run lint
+
+      - name: Build
+        run: cd server && npm run build
+
+      - name: Test
+        run: cd server && npm test -- --run
+        env:
+          DATABASE_URL: postgresql://flowcrm:flowcrm_test@localhost:5432/flowcrm_test
+          JWT_SECRET: test-jwt-secret-ci
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-ci
+          NODE_ENV: test
+
+  frontend:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

@@ -125,6 +125,10 @@ export const scoringService = {
    * Looks up active rules matching the event, sums points, updates lead score.
    */
   async processEvent(tenantId: string, leadId: string, eventType: ScoreEvent, conditions?: Record<string, any>) {
+    // Verify lead belongs to tenant before processing
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId } });
+    if (!lead) return 0;
+
     // Get all active rules matching this event type
     const rules = await prisma.scoreRule.findMany({
       where: {
@@ -169,6 +173,12 @@ export const scoringService = {
    * Used for manual recalculation or when rules change.
    */
   async recalculateLeadScore(tenantId: string, leadId: string) {
+    // Verify lead belongs to tenant before recalculating
+    const existingLead = await prisma.lead.findFirst({ where: { id: leadId, tenantId } });
+    if (!existingLead) {
+      throw createError('Lead not found', 404, 'LEAD_NOT_FOUND');
+    }
+
     // Get all active rules
     const rules = await prisma.scoreRule.findMany({
       where: { tenantId, active: true },

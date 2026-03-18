@@ -131,13 +131,14 @@ export function Deals() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
             <div className="relative flex-1 max-w-sm">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
               <Input
                 placeholder="Buscar deals..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-9"
+                aria-label="Buscar deals"
               />
             </div>
             <Select value={stageFilter} onValueChange={handleStageChange}>
@@ -159,15 +160,19 @@ export function Deals() {
                 onClick={() => setViewMode("list")}
                 className={`p-1.5 rounded ${viewMode === "list" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}
                 title="Lista"
+                aria-label="Visualização em lista"
+                aria-pressed={viewMode === "list"}
               >
-                <List size={16} />
+                <List size={16} aria-hidden="true" />
               </button>
               <button
                 onClick={() => setViewMode("pipeline")}
                 className={`p-1.5 rounded ${viewMode === "pipeline" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}
                 title="Pipeline"
+                aria-label="Visualização em pipeline"
+                aria-pressed={viewMode === "pipeline"}
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -191,17 +196,17 @@ export function Deals() {
             {/* Table */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full" aria-label="Lista de deals">
                   <thead>
                     <tr className="border-b border-gray-300 bg-gray-50">
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Nome</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Valor</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Stage</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Prob.</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Fechamento</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Lead</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Responsável</th>
-                      <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Ações</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Nome</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Valor</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Stage</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Probabilidade</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Fechamento</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Lead</th>
+                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Responsável</th>
+                      <th scope="col" className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -250,16 +255,16 @@ export function Deals() {
                               <button
                                 onClick={() => handleEdit(deal)}
                                 className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
-                                title="Editar"
+                                aria-label={`Editar deal ${deal.name}`}
                               >
-                                <Pencil size={14} />
+                                <Pencil size={14} aria-hidden="true" />
                               </button>
                               <button
                                 onClick={() => { setDealToDelete(deal); setDeleteDialogOpen(true); }}
                                 className="p-1.5 rounded hover:bg-red-100 text-gray-500 hover:text-red-600 transition-colors"
-                                title="Excluir"
+                                aria-label={`Excluir deal ${deal.name}`}
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={14} aria-hidden="true" />
                               </button>
                             </div>
                           </td>

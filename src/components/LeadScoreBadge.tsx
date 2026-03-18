@@ -43,7 +43,8 @@ export function LeadScoreBadge({ score, showDetails = false, factors }: LeadScor
   }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`} role="status">
+      <span className="sr-only">Score do lead: </span>
       <span>{label}</span>
       <span className="font-bold">({score})</span>
     </div>

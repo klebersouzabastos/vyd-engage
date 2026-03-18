@@ -243,6 +243,17 @@ export const funnelService = {
       throw createError('Funnel not found', 404);
     }
 
+    // Verify all columns belong to this funnel before reordering
+    const columns = await prisma.funnelColumn.findMany({
+      where: { funnelId },
+      select: { id: true },
+    });
+    const validColumnIds = new Set(columns.map(c => c.id));
+    const invalidIds = columnIds.filter(id => !validColumnIds.has(id));
+    if (invalidIds.length > 0) {
+      throw createError('One or more column IDs do not belong to this funnel', 400);
+    }
+
     await prisma.$transaction(
       columnIds.map((id, index) =>
         prisma.funnelColumn.update({

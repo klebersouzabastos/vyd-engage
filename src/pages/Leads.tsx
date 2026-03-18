@@ -474,6 +474,7 @@ export function Leads() {
                 placeholder="Buscar por nome, telefone ou e-mail..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Buscar leads por nome, telefone ou e-mail"
               />
             </div>
 

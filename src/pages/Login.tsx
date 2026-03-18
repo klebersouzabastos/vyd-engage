@@ -158,6 +158,7 @@ export function Login() {
                   onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   className="w-full h-12 sm:h-14 text-center text-xl tracking-widest border border-gray-300 rounded-lg"
                   autoFocus
+                  aria-label="Código de autenticação de dois fatores"
                 />
               </div>
             ) : (

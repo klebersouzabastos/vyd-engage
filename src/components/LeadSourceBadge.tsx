@@ -33,7 +33,8 @@ export function LeadSourceBadge({ source }: LeadSourceBadgeProps) {
   
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${config.className}`}>
-      <Icon size={12} />
+      <Icon size={12} aria-hidden="true" />
+      <span className="sr-only">Origem: </span>
       {config.label}
     </span>
   );

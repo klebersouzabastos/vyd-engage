@@ -81,12 +81,14 @@ export function TaskCard({
             onCheckedChange={onSelect}
             className="mt-1"
             onClick={(e) => e.stopPropagation()}
+            aria-label={`Selecionar tarefa ${task.title}`}
           />
         ) : null}
         <Checkbox
           checked={isCompleted}
           onCheckedChange={onToggle}
           className="mt-1"
+          aria-label={isCompleted ? `Marcar tarefa "${task.title}" como pendente` : `Marcar tarefa "${task.title}" como concluída`}
         />
         
         <div className="flex-1 min-w-0">
@@ -178,6 +180,7 @@ export function TaskCard({
                 ${getPriorityColor(task.priority)}
               `}
             >
+              <span className="sr-only">Prioridade: </span>
               {getPriorityLabel(task.priority)}
             </span>
           </div>

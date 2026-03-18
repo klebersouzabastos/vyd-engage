@@ -223,7 +223,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
                 <SelectContent>
                   <div className="px-2 pb-2">
                     <div className="relative">
-                      <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                       <input
                         type="text"
                         placeholder="Buscar lead..."
@@ -232,6 +232,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
                         className="w-full pl-7 pr-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
+                        aria-label="Buscar lead associado"
                       />
                     </div>
                   </div>

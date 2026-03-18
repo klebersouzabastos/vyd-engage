@@ -20,6 +20,7 @@ export function DealStageBadge({ stage, size = "sm" }: DealStageBadgeProps) {
 
   return (
     <span className={`inline-flex items-center rounded-full font-medium ${config.bg} ${config.text} ${sizeClasses}`}>
+      <span className="sr-only">Stage: </span>
       {config.label}
     </span>
   );

@@ -288,6 +288,7 @@ export function Tasks() {
                 placeholder="Buscar tarefas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Buscar tarefas"
               />
             </div>
 
@@ -342,6 +343,7 @@ export function Tasks() {
                 setPriorityFilter(e.target.value as typeof priorityFilter)
               }
               className="px-3 py-2 border border-gray-300 rounded-md bg-white whitespace-nowrap"
+              aria-label="Filtrar por prioridade"
             >
               <option value="all">Todas as prioridades</option>
               <option value="URGENT">Urgente</option>

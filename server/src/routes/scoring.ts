@@ -69,7 +69,7 @@ router.get('/breakdown/:leadId', async (req, res, next) => {
     // Count interactions by type for this lead
     const interactions = await prisma.interaction.groupBy({
       by: ['type'],
-      where: { leadId },
+      where: { leadId, tenantId },
       _count: { id: true },
     });
     const interactionMap = new Map(interactions.map(i => [i.type, i._count.id]));
