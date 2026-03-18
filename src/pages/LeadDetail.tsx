@@ -26,6 +26,7 @@ import {
   Building2,
   Clock,
   User,
+  UserCheck,
   ChevronDown,
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
@@ -50,6 +51,8 @@ interface LeadData {
   status: string;
   source: string;
   score: number;
+  isContact?: boolean;
+  convertedAt?: string | null;
   notes?: string;
   tags: Array<{ tag: { id: string; name: string; color: string } } | string>;
   customFields: Record<string, any>;
@@ -198,6 +201,9 @@ export function LeadDetail() {
   const [savingNote, setSavingNote] = useState(false);
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
 
+  // Contact conversion state
+  const [converting, setConverting] = useState(false);
+
   // Lead-Deal integration
   const [leadDeals, setLeadDeals] = useState<Deal[]>([]);
   const [dealFormOpen, setDealFormOpen] = useState(false);
@@ -272,6 +278,38 @@ export function LeadDetail() {
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + ITEMS_PER_PAGE);
+  };
+
+  const handleConvertToContact = async () => {
+    if (!id) return;
+    try {
+      setConverting(true);
+      await apiClient.convertToContact(id);
+      toast.success("Lead convertido para Contato com sucesso!");
+      fetchLead();
+      fetchInteractions();
+    } catch (error: any) {
+      console.error("Erro ao converter lead:", error);
+      toast.error("Erro ao converter lead para contato.");
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  const handleRevertToLead = async () => {
+    if (!id) return;
+    try {
+      setConverting(true);
+      await apiClient.revertToLead(id);
+      toast.success("Contato revertido para Lead com sucesso!");
+      fetchLead();
+      fetchInteractions();
+    } catch (error: any) {
+      console.error("Erro ao reverter contato:", error);
+      toast.error("Erro ao reverter contato para lead.");
+    } finally {
+      setConverting(false);
+    }
   };
 
   // Visible interactions (client-side pagination)
@@ -663,6 +701,40 @@ export function LeadDetail() {
                   </div>
                 )}
               </div>
+
+              {/* Contact conversion */}
+              {lead.isContact ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                    <UserCheck size={16} className="text-green-600" />
+                    <span className="text-sm font-medium text-green-700">Contato</span>
+                    {lead.convertedAt && (
+                      <span className="text-xs text-green-600 ml-auto">
+                        {formatDate(lead.convertedAt)}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={handleRevertToLead}
+                    disabled={converting}
+                  >
+                    <ArrowRightLeft size={14} />
+                    {converting ? "Revertendo..." : "Reverter para Lead"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={handleConvertToContact}
+                  disabled={converting}
+                >
+                  <UserCheck size={14} />
+                  {converting ? "Convertendo..." : "Converter para Contato"}
+                </Button>
+              )}
 
               {/* Edit button */}
               <Button

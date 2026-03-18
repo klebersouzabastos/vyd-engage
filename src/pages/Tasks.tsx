@@ -10,6 +10,8 @@ import { Task } from "../types";
 import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList, AlertTriangle, Edit2, Trash2, CheckSquare } from "lucide-react";
 import { useNotifications } from "../contexts/NotificationContext";
 import { EmptyState } from "../components/EmptyState";
+import { ExportButton } from "../components/ExportButton";
+import { apiClient } from "../services/api/client";
 import { useIsMobile } from "../components/ui/use-mobile";
 import { Checkbox } from "../components/ui/checkbox";
 import { toast } from "sonner";
@@ -576,6 +578,20 @@ export function Tasks() {
                 </Button>
               )}
             </div>
+
+            <ExportButton
+              onExport={async (format) => {
+                const filters: Record<string, string> = {};
+                if (filter === "overdue") filters.status = "PENDING";
+                else if (filter === "completed") filters.status = "COMPLETED";
+                else if (filter === "pending") filters.status = "PENDING";
+                if (priorityFilter !== "all") filters.priority = priorityFilter;
+                if (searchQuery) filters.search = searchQuery;
+                return apiClient.exportTasksDownload(format, filters);
+              }}
+              filename="tasks-export"
+              label="Exportar"
+            />
 
             <Button
               onClick={() => navigate("/app/tasks/new")}

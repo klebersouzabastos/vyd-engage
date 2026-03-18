@@ -1,15 +1,10 @@
 import { useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Plus, Download, Upload, Copy, ChevronDown } from "lucide-react";
+import { Plus, Upload, Copy } from "lucide-react";
 import { FilterPopover } from "./FilterPopover";
 import { CustomFieldsFilter } from "./CustomFieldsFilter";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+import { ExportButton } from "../ExportButton";
 import type { Tag, CustomField } from "../../types";
 
 interface Automation {
@@ -38,6 +33,7 @@ interface LeadFiltersProps {
   onImportClick: () => void;
   onExportCurrentPage: () => void;
   onExportAllFiltered: () => void;
+  onExportServer?: (format: 'json' | 'csv' | 'xlsx') => Promise<Blob>;
 }
 
 export function LeadFilters({
@@ -59,6 +55,7 @@ export function LeadFilters({
   onImportClick,
   onExportCurrentPage,
   onExportAllFiltered,
+  onExportServer,
 }: LeadFiltersProps) {
   const navigate = useNavigate();
 
@@ -145,23 +142,22 @@ export function LeadFilters({
           Importar
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Download size={16} />
-              Exportar
-              <ChevronDown size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onExportCurrentPage}>
-              Exportar Pagina Atual
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onExportAllFiltered}>
-              Exportar Todos (Filtrados)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {onExportServer ? (
+          <ExportButton
+            onExport={onExportServer}
+            filename="leads-export"
+            label="Exportar"
+          />
+        ) : (
+          <ExportButton
+            onExport={async () => {
+              onExportAllFiltered();
+              return new Blob(); // fallback — legacy handler manages download
+            }}
+            filename="leads-export"
+            label="Exportar"
+          />
+        )}
 
         <Button
           className="bg-primary hover:bg-primary-dark gap-2"

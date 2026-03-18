@@ -39,6 +39,7 @@ const querySchema = z.object({
   search: z.string().optional(),
   tagId: z.string().uuid().optional(),
   assignedTo: z.string().uuid().optional(),
+  isContact: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
   sort: z.enum(['createdAt', 'updatedAt', 'name', 'status', 'score']).optional(),
@@ -262,34 +263,25 @@ router.post('/merge', async (req, res, next) => {
   }
 });
 
-// GET /api/leads/export — Export leads as JSON with filters applied
+// GET /api/leads/export — Export leads (supports format=json|csv|xlsx)
 router.get('/export', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    const tenantId = req.user.tenantId;
 
-    const where: any = { tenantId };
-    if (req.query.status) where.status = req.query.status;
-    if (req.query.source) where.source = req.query.source;
-    if (req.query.search) {
-      where.OR = [
-        { name: { contains: req.query.search as string, mode: 'insensitive' } },
-        { email: { contains: req.query.search as string, mode: 'insensitive' } },
-        { company: { contains: req.query.search as string, mode: 'insensitive' } },
-      ];
-    }
-    if (req.query.tagId) {
-      where.tags = { some: { tagId: req.query.tagId as string } };
-    }
+    const { exportLeads } = await import('../services/exportService.js');
+    const format = (['csv', 'xlsx', 'json'].includes(String(req.query.format || '').toLowerCase())
+      ? String(req.query.format).toLowerCase()
+      : 'json') as 'json' | 'csv' | 'xlsx';
 
-    const leads = await prisma.lead.findMany({
-      where,
-      include: { tags: { include: { tag: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 10000, // Safety limit
-    });
+    const filters = {
+      status: req.query.status as string | undefined,
+      source: req.query.source as string | undefined,
+      search: req.query.search as string | undefined,
+      tagId: req.query.tagId as string | undefined,
+      assignedTo: req.query.assignedTo as string | undefined,
+    };
 
-    res.json({ status: 200, data: leads });
+    await exportLeads(req.user.tenantId, filters, format, res);
   } catch (error) {
     next(error);
   }
@@ -304,6 +296,34 @@ router.get('/stats/count', async (req, res, next) => {
 
     const count = await leadService.count(req.user.tenantId);
     res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/leads/:id/convert - Convert lead to contact
+router.post('/:id/convert', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const lead = await leadService.convertToContact(req.params.id, req.user.tenantId);
+    res.json({ status: 200, data: lead });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/leads/:id/revert - Revert contact to lead
+router.post('/:id/revert', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const lead = await leadService.revertToLead(req.params.id, req.user.tenantId);
+    res.json({ status: 200, data: lead });
   } catch (error) {
     next(error);
   }

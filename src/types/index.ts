@@ -22,6 +22,8 @@ export interface Lead {
   source: LeadSource;
   status: LeadStatus;
   score: number;
+  isContact?: boolean;
+  convertedAt?: string | null;
   notes?: string;
   assignedTo?: string;
   tags: string[];
@@ -197,6 +199,31 @@ export interface Comment {
   mentions?: string[]; // User IDs mentioned
   createdAt: string;
   updatedAt?: string;
+}
+
+// ========================
+// Companies
+// ========================
+
+export type CompanySize = "MICRO" | "SMALL" | "MEDIUM" | "LARGE" | "ENTERPRISE";
+
+export interface Company {
+  id: string;
+  tenantId: string;
+  name: string;
+  domain?: string | null;
+  industry?: string | null;
+  size?: CompanySize | null;
+  phone?: string | null;
+  address?: string | null;
+  website?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { leads: number; deals: number; interactions?: number };
+  leads?: Array<{ id: string; name: string; email?: string; phone?: string; status: string; source: string; score: number; createdAt: string }>;
+  deals?: Array<{ id: string; name: string; value: number; stage: string; probability: number; expectedCloseDate?: string | null; createdAt: string }>;
+  interactions?: Array<{ id: string; type: string; direction: string; subject?: string; content: string; createdAt: string }>;
 }
 
 // ========================

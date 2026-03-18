@@ -124,8 +124,10 @@ import funnelRoutes from './routes/funnels.js';
 import scoringRoutes from './routes/scoring.js';
 import reportRoutes from './routes/reports.js';
 import dealRoutes from './routes/deals.js';
+import companyRoutes from './routes/companies.js';
 import trackingRoutes from './routes/tracking.js';
 import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
+import exportRoutes from './routes/exports.js';
 
 import { Router as ExpressRouter } from 'express';
 import prisma from './config/database.js';
@@ -168,6 +170,7 @@ v1Router.use('/invitations', csrfProtection);
 v1Router.use('/funnels', csrfProtection);
 v1Router.use('/scoring-rules', csrfProtection);
 v1Router.use('/deals', csrfProtection);
+v1Router.use('/companies', csrfProtection);
 v1Router.use('/reports', csrfProtection);
 v1Router.use('/auth/profile', csrfProtection);
 v1Router.use('/auth/change-password', csrfProtection);
@@ -197,8 +200,10 @@ v1Router.use('/funnels', funnelRoutes);
 v1Router.use('/scoring-rules', scoringRoutes);
 v1Router.use('/reports', reportRoutes);
 v1Router.use('/deals', dealRoutes);
+v1Router.use('/companies', companyRoutes);
 v1Router.use('/webhooks', webhookRoutes);
 v1Router.use('/outgoing-webhooks', outgoingWebhookRoutes);
+v1Router.use('/exports', exportRoutes);
 
 // Mount v1 router at /api/v1 (canonical) and /api (backwards-compatible alias)
 app.use('/api/v1', v1Router);

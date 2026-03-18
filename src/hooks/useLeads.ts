@@ -14,6 +14,7 @@ export interface LeadsFilters {
   search?: string;
   tagId?: string;
   assignedTo?: string;
+  isContact?: string | boolean;
 }
 
 export function useLeads() {
@@ -42,6 +43,7 @@ export function useLeads() {
       if (filters?.search) serverParams.search = filters.search;
       if (filters?.tagId) serverParams.tagId = filters.tagId;
       if (filters?.assignedTo) serverParams.assignedTo = filters.assignedTo;
+      if (filters?.isContact !== undefined && filters?.isContact !== '') serverParams.isContact = String(filters.isContact);
 
       const result = await apiClient.getLeads(serverParams);
 
@@ -60,6 +62,8 @@ export function useLeads() {
         status: string;
         source: string;
         score?: number;
+        isContact?: boolean;
+        convertedAt?: string | null;
         customFields?: Record<string, string | number | boolean | null>;
         notes?: string;
         assignedTo?: string;
@@ -77,6 +81,8 @@ export function useLeads() {
         status: mapStatusFromBackend(lead.status),
         source: mapSourceFromBackend(lead.source),
         score: lead.score || 0,
+        isContact: lead.isContact || false,
+        convertedAt: lead.convertedAt || null,
         customFields: lead.customFields || {},
         notes: lead.notes || '',
         assignedTo: lead.assignedTo || '',

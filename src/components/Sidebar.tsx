@@ -2,7 +2,9 @@ import { Link, useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   Users,
+  UserCheck,
   UsersRound,
+  Building2,
   GitBranch,
   Zap,
   Settings,
@@ -23,6 +25,8 @@ import { useTasks } from "../hooks/useTasks";
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app", tourId: "sidebar-dashboard" },
   { icon: Users, label: "Leads", path: "/app/leads", tourId: "sidebar-leads" },
+  { icon: UserCheck, label: "Contatos", path: "/app/leads?view=contacts", tourId: "sidebar-contacts" },
+  { icon: Building2, label: "Empresas", path: "/app/companies", tourId: "sidebar-companies" },
   { icon: UsersRound, label: "Equipe", path: "/app/team", tourId: "sidebar-team", adminOnly: true },
   { icon: Handshake, label: "Deals", path: "/app/deals", tourId: "sidebar-deals" },
   { icon: GitBranch, label: "Funil", path: "/app/pipeline", tourId: "sidebar-pipeline" },
@@ -147,7 +151,9 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
       {/* Menu Items */}
       <nav aria-label="Navegação do aplicativo" className={`flex-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
         {menuItems.filter(item => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path.includes('?')
+            ? `${location.pathname}${location.search}` === item.path
+            : location.pathname === item.path;
           const Icon = item.icon;
 
           return (

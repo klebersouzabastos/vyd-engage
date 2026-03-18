@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { LeadModal } from "../components/LeadModal";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Users } from "lucide-react";
+import { Users, UserCheck, ArrowLeftRight } from "lucide-react";
 import { LeadImportModal } from "../components/leads/LeadImportModal";
 import { LeadBulkActions } from "../components/leads/LeadBulkActions";
 import { LeadFilters } from "../components/leads/LeadFilters";
@@ -72,11 +72,23 @@ const getSourceLabel = (source: string) => {
 
 // --- Component ---
 
+type ViewTab = "leads" | "contacts" | "all";
+
 export function Leads() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { getTagById, tags } = useTags();
   const { fields: customFields } = useCustomFields();
   const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
+
+  // View tab state from URL
+  const viewParam = searchParams.get("view");
+  const activeTab: ViewTab = viewParam === "contacts" ? "contacts" : viewParam === "all" ? "all" : "leads";
+
+  // Convert/revert dialog state
+  const [convertLeadId, setConvertLeadId] = useState<string | null>(null);
+  const [revertLeadId, setRevertLeadId] = useState<string | null>(null);
+
   // Selection state
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
 
@@ -122,8 +134,14 @@ export function Leads() {
     if (filterTag.length === 1) {
       serverFilters.tagId = filterTag[0];
     }
+    // Apply isContact filter based on active tab
+    if (activeTab === "leads") {
+      serverFilters.isContact = "false";
+    } else if (activeTab === "contacts") {
+      serverFilters.isContact = "true";
+    }
     return serverFilters;
-  }, [filterStatus, filterSource, debouncedSearch, filterTag, pagination.limit]);
+  }, [filterStatus, filterSource, debouncedSearch, filterTag, pagination.limit, activeTab]);
 
   // Debounce search input
   useEffect(() => {
@@ -136,11 +154,11 @@ export function Leads() {
     };
   }, [searchQuery]);
 
-  // Fetch on filter change
+  // Fetch on filter change (including tab change)
   useEffect(() => {
     fetchLeads(buildServerFilters(1));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus, filterSource, debouncedSearch, filterTag]);
+  }, [filterStatus, filterSource, debouncedSearch, filterTag, activeTab]);
 
   // --- Client-side filtering ---
 
@@ -355,12 +373,54 @@ export function Leads() {
     }
   };
 
+  // --- Tab switching ---
+  const handleTabChange = (tab: ViewTab) => {
+    if (tab === "leads") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ view: tab });
+    }
+    setSelectedLeads([]);
+  };
+
+  // --- Convert / Revert ---
+  const handleConvertToContact = async (leadId: string) => {
+    try {
+      await apiClient.convertToContact(leadId);
+      toast.success("Lead convertido para Contato com sucesso!");
+      setConvertLeadId(null);
+      refetch();
+    } catch (error) {
+      console.error("Erro ao converter lead:", error);
+      toast.error("Erro ao converter lead para contato.");
+    }
+  };
+
+  const handleRevertToLead = async (leadId: string) => {
+    try {
+      await apiClient.revertToLead(leadId);
+      toast.success("Contato revertido para Lead com sucesso!");
+      setRevertLeadId(null);
+      refetch();
+    } catch (error) {
+      console.error("Erro ao reverter contato:", error);
+      toast.error("Erro ao reverter contato para lead.");
+    }
+  };
+
   // --- Render ---
+
+  const headerTitle = activeTab === "contacts" ? "Contatos" : activeTab === "all" ? "Leads & Contatos" : "Leads";
+  const headerSubtitle = activeTab === "contacts"
+    ? "Contatos qualificados convertidos de leads"
+    : activeTab === "all"
+    ? "Todos os leads e contatos em um só lugar"
+    : "Gerencie todos os seus leads em um só lugar";
 
   if (loading) {
     return (
       <div className="min-h-screen">
-        <Header title="Leads" subtitle="Gerencie todos os seus leads em um só lugar" />
+        <Header title={headerTitle} subtitle={headerSubtitle} />
         <PageSkeleton type="table" />
       </div>
     );
@@ -368,9 +428,44 @@ export function Leads() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Leads" subtitle="Gerencie todos os seus leads em um só lugar" />
+      <Header title={headerTitle} subtitle={headerSubtitle} />
 
       <div className="p-4 md:p-8">
+        {/* View Tabs: Leads | Contatos | Todos */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mb-4 w-fit">
+          <button
+            onClick={() => handleTabChange("leads")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "leads"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <Users size={16} />
+            Leads
+          </button>
+          <button
+            onClick={() => handleTabChange("contacts")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "contacts"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <UserCheck size={16} />
+            Contatos
+          </button>
+          <button
+            onClick={() => handleTabChange("all")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "all"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Todos
+          </button>
+        </div>
         {/* Bulk Actions Bar */}
         {selectedLeads.length > 0 && (
           <LeadBulkActions
@@ -404,6 +499,14 @@ export function Leads() {
           onImportClick={() => setImportModalOpen(true)}
           onExportCurrentPage={handleExportLeads}
           onExportAllFiltered={handleExportAllFiltered}
+          onExportServer={async (format) => {
+            const filters: Record<string, string> = {};
+            if (filterStatus.length === 1) filters.status = mapStatusToBackend(filterStatus[0]);
+            if (filterSource.length === 1) filters.source = mapSourceToBackend(filterSource[0]);
+            if (searchQuery) filters.search = searchQuery;
+            if (filterTag.length === 1) filters.tagId = filterTag[0];
+            return apiClient.exportLeadsDownload(format, filters);
+          }}
         />
 
         {/* Mobile Card View */}
@@ -525,6 +628,49 @@ export function Leads() {
         open={!!scoreLeadId}
         onClose={() => setScoreLeadId(null)}
       />
+
+      {/* Convert to Contact Dialog */}
+      <AlertDialog open={convertLeadId !== null} onOpenChange={(open) => !open && setConvertLeadId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Converter para Contato</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja converter este lead para contato?
+              O status sera alterado para WON e ele aparecera na aba "Contatos".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConvertLeadId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (convertLeadId) handleConvertToContact(convertLeadId); }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Converter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Revert to Lead Dialog */}
+      <AlertDialog open={revertLeadId !== null} onOpenChange={(open) => !open && setRevertLeadId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reverter para Lead</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja reverter este contato para lead?
+              Ele deixara de aparecer na aba "Contatos".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRevertLeadId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (revertLeadId) handleRevertToLead(revertLeadId); }}
+            >
+              Reverter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

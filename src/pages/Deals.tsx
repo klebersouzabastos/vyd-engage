@@ -41,6 +41,8 @@ import {
   Handshake,
 } from "lucide-react";
 import { formatCurrency } from "../utils/format";
+import { ExportButton } from "../components/ExportButton";
+import { apiClient } from "../services/api/client";
 
 const STAGE_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Todos os Stages" },
@@ -177,6 +179,17 @@ export function Deals() {
                 <LayoutGrid size={16} aria-hidden="true" />
               </button>
             </div>
+
+            <ExportButton
+              onExport={async (format) => {
+                const filters: Record<string, string> = {};
+                if (search.trim()) filters.search = search.trim();
+                if (stageFilter !== "ALL") filters.stage = stageFilter;
+                return apiClient.exportDealsDownload(format, filters);
+              }}
+              filename="deals-export"
+              label="Exportar"
+            />
 
             <Button onClick={() => { setEditingDeal(null); setFormOpen(true); }} className="gap-2">
               <Plus size={16} />

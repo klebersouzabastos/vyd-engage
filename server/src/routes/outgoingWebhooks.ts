@@ -101,10 +101,12 @@ router.get('/:id/logs', async (req, res, next) => {
 });
 
 // POST /api/outgoing-webhooks/:id/test - Test webhook
+// Body (optional): { event?: string } — if provided, sends a realistic sample payload for that event type
 router.post('/:id/test', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    const result = await webhookService.testWebhook(req.user.tenantId, req.params.id);
+    const event = req.body?.event as string | undefined;
+    const result = await webhookService.testWebhook(req.user.tenantId, req.params.id, event);
     res.json(result);
   } catch (error) {
     next(error);

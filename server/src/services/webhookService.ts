@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import crypto from 'crypto';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { getSamplePayload, type WebhookPayload } from '../utils/webhookPayloads.js';
 
 export interface CreateWebhookData {
   url: string;
@@ -20,6 +21,11 @@ export const WEBHOOK_EVENTS = [
   'lead.updated',
   'lead.deleted',
   'lead.status_changed',
+  'deal.created',
+  'deal.updated',
+  'deal.stage_changed',
+  'deal.won',
+  'deal.lost',
   'task.created',
   'task.completed',
   'automation.triggered',
@@ -93,19 +99,28 @@ export const webhookService = {
     });
   },
 
-  async testWebhook(tenantId: string, id: string) {
+  async testWebhook(tenantId: string, id: string, event?: string) {
     const webhook = await this.findById(tenantId, id);
 
-    const payload = {
-      event: 'test',
-      timestamp: new Date().toISOString(),
-      data: { message: 'This is a test webhook from VYD Engage' },
-    };
+    // If a specific event type is provided, send a realistic sample payload;
+    // otherwise fall back to the generic test message for backward compat.
+    const eventType = event || 'test';
+    const payload: WebhookPayload | Record<string, unknown> = event
+      ? getSamplePayload(event)
+      : {
+          event: 'test',
+          timestamp: new Date().toISOString(),
+          data: { message: 'This is a test webhook from VYD Engage' },
+        };
+
+    const body = JSON.stringify(payload);
 
     const signature = crypto
       .createHmac('sha256', webhook.secret)
-      .update(JSON.stringify(payload))
+      .update(body)
       .digest('hex');
+
+    const startTime = Date.now();
 
     try {
       const response = await fetch(webhook.url, {
@@ -113,19 +128,21 @@ export const webhookService = {
         headers: {
           'Content-Type': 'application/json',
           'X-Webhook-Signature': signature,
-          'X-Webhook-Event': 'test',
+          'X-Webhook-Event': eventType,
+          'X-Webhook-Delivery-Id': `test_${crypto.randomUUID()}`,
         },
-        body: JSON.stringify(payload),
+        body,
         signal: AbortSignal.timeout(10000),
       });
 
       const statusCode = response.status;
       const responseText = await response.text().catch(() => '');
+      const responseTime = Date.now() - startTime;
 
       await prisma.webhookLog.create({
         data: {
           webhookId: id,
-          event: 'test',
+          event: eventType,
           status: statusCode >= 200 && statusCode < 300 ? 'SUCCESS' : 'FAILED',
           statusCode,
           response: responseText.slice(0, 1000),
@@ -144,12 +161,19 @@ export const webhookService = {
         });
       }
 
-      return { success: statusCode >= 200 && statusCode < 300, statusCode };
+      return {
+        success: statusCode >= 200 && statusCode < 300,
+        statusCode,
+        responseTime,
+        payload,
+      };
     } catch (error: any) {
+      const responseTime = Date.now() - startTime;
+
       await prisma.webhookLog.create({
         data: {
           webhookId: id,
-          event: 'test',
+          event: eventType,
           status: 'FAILED',
           error: error.message,
         },
@@ -160,7 +184,7 @@ export const webhookService = {
         data: { failureCount: { increment: 1 }, lastTriggeredAt: new Date() },
       });
 
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, responseTime, payload };
     }
   },
 };

@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
   Plus, Trash2, Play, Pause, Send, ChevronDown, ChevronUp, Loader2,
-  CheckCircle, XCircle, Clock,
+  CheckCircle, XCircle, Clock, Copy,
 } from "lucide-react";
 import { apiClient } from "../../services/api/client";
 
@@ -31,11 +31,24 @@ interface WebhookLog {
   createdAt: string;
 }
 
+interface TestResult {
+  success: boolean;
+  statusCode?: number;
+  responseTime?: number;
+  payload?: Record<string, unknown>;
+  error?: string;
+}
+
 const EVENT_LABELS: Record<string, string> = {
   "lead.created": "Lead criado",
   "lead.updated": "Lead atualizado",
   "lead.deleted": "Lead deletado",
   "lead.status_changed": "Status do lead alterado",
+  "deal.created": "Deal criado",
+  "deal.updated": "Deal atualizado",
+  "deal.stage_changed": "Estagio do deal alterado",
+  "deal.won": "Deal ganho",
+  "deal.lost": "Deal perdido",
   "task.created": "Tarefa criada",
   "task.completed": "Tarefa concluida",
   "automation.triggered": "Automacao disparada",
@@ -54,6 +67,8 @@ export function WebhooksTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, WebhookLog[]>>({});
   const [testing, setTesting] = useState<string | null>(null);
+  const [testEvent, setTestEvent] = useState<Record<string, string>>({});
+  const [testResultModal, setTestResultModal] = useState<TestResult | null>(null);
 
   const loadWebhooks = useCallback(async () => {
     try {
@@ -61,7 +76,7 @@ export function WebhooksTab() {
         apiClient.getOutgoingWebhooks(),
         apiClient.getWebhookEvents(),
       ]);
-      setWebhooks(Array.isArray(wh) ? wh : []);
+      setWebhooks(Array.isArray(wh) ? wh as unknown as Webhook[] : []);
       setAvailableEvents(Array.isArray(events) ? events : []);
     } catch {
       // silent
@@ -115,17 +130,19 @@ export function WebhooksTab() {
   const handleTest = async (id: string) => {
     setTesting(id);
     try {
-      const result = await apiClient.testOutgoingWebhook(id);
+      const selectedEvent = testEvent[id] || undefined;
+      const result = await apiClient.testOutgoingWebhook(id, selectedEvent) as unknown as TestResult;
       if (result.success) {
         toast.success(`Teste enviado com sucesso (status ${result.statusCode})`);
       } else {
         toast.error(`Teste falhou: ${result.error || `status ${result.statusCode}`}`);
       }
+      setTestResultModal(result);
       await loadWebhooks();
       // Reload logs if expanded
       if (expandedId === id) {
         const logData = await apiClient.getWebhookLogs(id);
-        setLogs(prev => ({ ...prev, [id]: logData }));
+        setLogs(prev => ({ ...prev, [id]: logData as unknown as WebhookLog[] }));
       }
     } catch (error: any) {
       toast.error(error.message || "Erro ao testar webhook");
@@ -143,7 +160,7 @@ export function WebhooksTab() {
     if (!logs[id]) {
       try {
         const logData = await apiClient.getWebhookLogs(id);
-        setLogs(prev => ({ ...prev, [id]: logData }));
+        setLogs(prev => ({ ...prev, [id]: logData as unknown as WebhookLog[] }));
       } catch {
         // silent
       }
@@ -154,6 +171,13 @@ export function WebhooksTab() {
     setFormEvents(prev =>
       prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]
     );
+  };
+
+  const copyPayload = () => {
+    if (testResultModal?.payload) {
+      navigator.clipboard.writeText(JSON.stringify(testResultModal.payload, null, 2));
+      toast.success("Payload copiado");
+    }
   };
 
   if (loading) {
@@ -260,6 +284,18 @@ export function WebhooksTab() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Event selector for test */}
+                  <select
+                    className="text-xs border border-gray-300 rounded px-1 py-1 bg-white max-w-[140px]"
+                    value={testEvent[webhook.id] || ""}
+                    onChange={(e) => setTestEvent(prev => ({ ...prev, [webhook.id]: e.target.value }))}
+                    title="Evento de teste"
+                  >
+                    <option value="">Teste generico</option>
+                    {availableEvents.map((ev) => (
+                      <option key={ev} value={ev}>{EVENT_LABELS[ev] || ev}</option>
+                    ))}
+                  </select>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -329,6 +365,51 @@ export function WebhooksTab() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Test Result Modal */}
+      {testResultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setTestResultModal(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h4 className="font-medium text-gray-900">Resultado do Teste</h4>
+              <Button variant="ghost" size="sm" onClick={() => setTestResultModal(null)}>
+                <XCircle size={16} />
+              </Button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  testResultModal.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}>
+                  {testResultModal.success ? "Sucesso" : "Falhou"}
+                </span>
+                {testResultModal.statusCode && (
+                  <span className="text-sm text-gray-600">Status: {testResultModal.statusCode}</span>
+                )}
+                {testResultModal.responseTime !== undefined && (
+                  <span className="text-sm text-gray-600">{testResultModal.responseTime}ms</span>
+                )}
+              </div>
+              {testResultModal.error && (
+                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{testResultModal.error}</div>
+              )}
+              {testResultModal.payload && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-gray-600">Payload enviado</span>
+                    <Button variant="ghost" size="sm" onClick={copyPayload} title="Copiar">
+                      <Copy size={12} className="mr-1" /> Copiar
+                    </Button>
+                  </div>
+                  <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto max-h-64 overflow-y-auto font-mono">
+                    {JSON.stringify(testResultModal.payload, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

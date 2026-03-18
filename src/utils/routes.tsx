@@ -62,6 +62,8 @@ const EmailCampaigns = lazyNamed(() => import("../pages/EmailCampaigns"), "Email
 const TeamManagement = lazyNamed(() => import("../pages/TeamManagement"), "TeamManagement");
 const LeadDetail = lazyNamed(() => import("../pages/LeadDetail"), "LeadDetail");
 const LeadDuplicates = lazyNamed(() => import("../pages/LeadDuplicates"), "LeadDuplicates");
+const Companies = lazyNamed(() => import("../pages/Companies"), "Companies");
+const CompanyDetail = lazyNamed(() => import("../pages/CompanyDetail"), "CompanyDetail");
 const Deals = lazyNamed(() => import("../pages/Deals"), "Deals");
 const DealDetail = lazyNamed(() => import("../pages/DealDetail"), "DealDetail");
 
@@ -127,6 +129,14 @@ export const router = createBrowserRouter([
       {
         path: "leads/:id",
         element: LeadDetail,
+      },
+      {
+        path: "companies",
+        element: Companies,
+      },
+      {
+        path: "companies/:id",
+        element: CompanyDetail,
       },
       {
         path: "deals",

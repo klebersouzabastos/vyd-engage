@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { DealStage } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { webhookDispatcher } from './webhookDispatcher.js';
 
 const STAGE_PROBABILITY: Record<DealStage, number> = {
   QUALIFICATION: 20,
@@ -53,6 +54,9 @@ export const dealService = {
         assignedUser: { select: { id: true, name: true, email: true } },
       },
     });
+
+    // Dispatch webhook event
+    webhookDispatcher.emitDealEvent(tenantId, 'deal.created', deal);
 
     return deal;
   },
@@ -212,6 +216,25 @@ export const dealService = {
         });
       });
     }
+
+    // Dispatch webhook events based on what changed
+    if (data.stage && data.stage !== existing.stage) {
+      webhookDispatcher.emitDealEvent(tenantId, 'deal.stage_changed', deal, {
+        previous_stage: existing.stage,
+        new_stage: data.stage,
+      });
+
+      if (data.stage === DealStage.WON) {
+        webhookDispatcher.emitDealEvent(tenantId, 'deal.won', deal);
+      } else if (data.stage === DealStage.LOST) {
+        webhookDispatcher.emitDealEvent(tenantId, 'deal.lost', deal, {
+          lost_reason: deal.lostReason || null,
+        });
+      }
+    }
+
+    // Always emit deal.updated for any update
+    webhookDispatcher.emitDealEvent(tenantId, 'deal.updated', deal);
 
     return deal;
   },

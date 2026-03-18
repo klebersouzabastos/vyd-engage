@@ -4,6 +4,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { scoringService } from './scoringService.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { planLimitsService } from './planLimitsService.js';
+import { webhookDispatcher } from './webhookDispatcher.js';
 
 export interface CreateLeadData {
   name: string;
@@ -79,7 +80,11 @@ export const leadService = {
 
     planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
-    return this.findById(tenantId, lead.id);
+    // Dispatch outgoing webhook
+    const createdLead = await this.findById(tenantId, lead.id);
+    webhookDispatcher.emitLeadEvent(tenantId, 'lead.created', createdLead);
+
+    return createdLead;
   },
 
   async findById(tenantId: string, id: string) {
@@ -104,12 +109,90 @@ export const leadService = {
     return lead;
   },
 
+  async convertToContact(id: string, tenantId: string) {
+    const lead = await this.findById(tenantId, id);
+
+    if (lead.isContact) {
+      throw createError('Lead is already a contact', 400, 'ALREADY_CONTACT');
+    }
+
+    const updated = await prisma.lead.update({
+      where: { id },
+      data: {
+        isContact: true,
+        convertedAt: new Date(),
+        status: LeadStatus.WON,
+      },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+    });
+
+    // Create interaction for conversion
+    await prisma.interaction.create({
+      data: {
+        tenantId,
+        leadId: id,
+        type: 'STATUS_CHANGE',
+        direction: 'OUTBOUND',
+        subject: 'Conversão para Contato',
+        content: `Lead convertido para Contato em ${new Date().toLocaleDateString('pt-BR')}`,
+        metadata: { action: 'convert_to_contact', previousStatus: lead.status },
+      },
+    });
+
+    return updated;
+  },
+
+  async revertToLead(id: string, tenantId: string) {
+    const lead = await this.findById(tenantId, id);
+
+    if (!lead.isContact) {
+      throw createError('Lead is not a contact', 400, 'NOT_A_CONTACT');
+    }
+
+    const updated = await prisma.lead.update({
+      where: { id },
+      data: {
+        isContact: false,
+        convertedAt: null,
+      },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+    });
+
+    // Create interaction for reversion
+    await prisma.interaction.create({
+      data: {
+        tenantId,
+        leadId: id,
+        type: 'STATUS_CHANGE',
+        direction: 'OUTBOUND',
+        subject: 'Reversão para Lead',
+        content: `Contato revertido para Lead em ${new Date().toLocaleDateString('pt-BR')}`,
+        metadata: { action: 'revert_to_lead' },
+      },
+    });
+
+    return updated;
+  },
+
   async findAll(tenantId: string, filters?: {
     status?: LeadStatus;
     source?: LeadSource;
     search?: string;
     tagId?: string;
     assignedTo?: string;
+    isContact?: boolean;
     page?: number;
     limit?: number;
     sort?: string;
@@ -135,6 +218,10 @@ export const leadService = {
 
     if (filters?.assignedTo) {
       where.assignedTo = filters.assignedTo;
+    }
+
+    if (filters?.isContact !== undefined) {
+      where.isContact = filters.isContact;
     }
 
     if (filters?.search) {
@@ -261,15 +348,29 @@ export const leadService = {
       }
     }
 
-    return this.findById(tenantId, data.id);
+    const updatedLead = await this.findById(tenantId, data.id);
+
+    // Dispatch outgoing webhook — status_changed has extra context
+    if (data.status && data.status !== existingLead.status) {
+      webhookDispatcher.emitLeadEvent(tenantId, 'lead.status_changed', {
+        ...updatedLead,
+        _extra: { previous_status: existingLead.status, new_status: data.status },
+      });
+    }
+    webhookDispatcher.emitLeadEvent(tenantId, 'lead.updated', updatedLead);
+
+    return updatedLead;
   },
 
   async delete(tenantId: string, id: string) {
-    await this.findById(tenantId, id);
+    const lead = await this.findById(tenantId, id);
     await prisma.lead.delete({
       where: { id },
     });
     planLimitsService.invalidateUsage(tenantId).catch(() => {});
+
+    // Dispatch outgoing webhook for deletion
+    webhookDispatcher.emitLeadEvent(tenantId, 'lead.deleted', lead);
   },
 
   async count(tenantId: string) {

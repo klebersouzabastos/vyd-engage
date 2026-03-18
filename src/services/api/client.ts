@@ -445,6 +445,18 @@ class ApiClient {
     });
   }
 
+  async convertToContact(id: string) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(`/api/leads/${id}/convert`, {
+      method: 'POST',
+    });
+  }
+
+  async revertToLead(id: string) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(`/api/leads/${id}/revert`, {
+      method: 'POST',
+    });
+  }
+
   async bulkUpdateLeads(ids: string[], action: string, payload?: Record<string, unknown>) {
     return this.request<{ status: number; data: { affected: number; action: string } }>('/api/leads/bulk', {
       method: 'PATCH',
@@ -776,8 +788,11 @@ class ApiClient {
     return this.request<Array<Record<string, unknown>>>(`/api/outgoing-webhooks/${webhookId}/logs`);
   }
 
-  async testOutgoingWebhook(id: string) {
-    return this.request<{ success: boolean; statusCode?: number }>(`/api/outgoing-webhooks/${id}/test`, { method: 'POST' });
+  async testOutgoingWebhook(id: string, event?: string) {
+    return this.request<{ success: boolean; statusCode?: number; responseTime?: number; payload?: Record<string, unknown> }>(`/api/outgoing-webhooks/${id}/test`, {
+      method: 'POST',
+      body: JSON.stringify(event ? { event } : {}),
+    });
   }
 
   // Custom Fields
@@ -1160,6 +1175,99 @@ class ApiClient {
 
   async getDealInteractions(dealId: string) {
     return this.request<Array<Record<string, unknown>>>(`/api/interactions?dealId=${dealId}`);
+  }
+
+  // ========================
+  // Companies
+  // ========================
+
+  async getCompanies(filters?: Record<string, string | number | undefined>) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request<{ companies: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/companies${query ? `?${query}` : ''}`);
+  }
+
+  async getCompany(id: string) {
+    return this.request<Record<string, unknown>>(`/api/companies/${id}`);
+  }
+
+  async createCompany(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/api/companies', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCompany(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/api/companies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCompany(id: string) {
+    return this.request(`/api/companies/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getCompanyCount() {
+    return this.request<{ data: { count: number } }>('/api/companies/stats/count');
+  }
+
+  // ========================
+  // Export (CSV/XLSX/JSON downloads)
+  // ========================
+
+  private async downloadExport(
+    entity: 'leads' | 'deals' | 'tasks',
+    format: 'json' | 'csv' | 'xlsx',
+    filters?: Record<string, string | number | undefined>,
+  ): Promise<Blob> {
+    const params = new URLSearchParams();
+    params.set('format', format);
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, String(value));
+        }
+      });
+    }
+    const url = `${this.baseURL}/api/exports/${entity}?${params.toString()}`;
+    const response = await fetch(url, { credentials: 'include' });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Export failed' }));
+      throw new ApiError(errorData.error || 'Export failed', response.status, errorData);
+    }
+    return response.blob();
+  }
+
+  async exportLeadsDownload(
+    format: 'json' | 'csv' | 'xlsx',
+    filters?: { status?: string; source?: string; search?: string; tagId?: string; assignedTo?: string },
+  ): Promise<Blob> {
+    return this.downloadExport('leads', format, filters);
+  }
+
+  async exportDealsDownload(
+    format: 'json' | 'csv' | 'xlsx',
+    filters?: { stage?: string; search?: string; assignedTo?: string; leadId?: string; minValue?: number; maxValue?: number },
+  ): Promise<Blob> {
+    return this.downloadExport('deals', format, filters);
+  }
+
+  async exportTasksDownload(
+    format: 'json' | 'csv' | 'xlsx',
+    filters?: { status?: string; priority?: string; search?: string; assignedTo?: string; leadId?: string; startDate?: string; endDate?: string },
+  ): Promise<Blob> {
+    return this.downloadExport('tasks', format, filters);
   }
 
   async downloadInvoice(paymentId: string): Promise<Blob> {

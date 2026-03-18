@@ -126,6 +126,7 @@ model Tenant {
   users               User[]
   invitations         Invitation[]
   leads               Lead[]
+  companies           Company[]
   tasks               Task[]
   automations         Automation[]
   tags                Tag[]
@@ -352,6 +353,46 @@ model ScoreRule {
 }
 
 // ============================================
+// COMPANIES
+// ============================================
+
+enum CompanySize {
+  MICRO
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+model Company {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name     String
+  domain   String?
+  industry String?
+  size     CompanySize?
+  phone    String?
+  address  String?
+  website  String?
+  notes    String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  leads        Lead[]
+  deals        Deal[]
+  interactions Interaction[]
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+  @@index([tenantId, domain])
+}
+
+// ============================================
 // DEALS
 // ============================================
 
@@ -375,6 +416,8 @@ model Deal {
   expectedCloseDate DateTime?
   leadId            String?
   lead              Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  companyId         String?
+  company           Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
   assignedTo        String?
   assignedUser      User?      @relation("DealAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
   notes             String?
@@ -390,6 +433,7 @@ model Deal {
   @@index([tenantId, stage])
   @@index([tenantId, assignedTo])
   @@index([tenantId, leadId])
+  @@index([tenantId, companyId])
   @@index([tenantId, expectedCloseDate])
 }
 
@@ -422,11 +466,17 @@ model Lead {
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Basic info
-  name     String
-  email    String?
-  phone    String?
-  company  String?
-  position String?
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  position  String?
+  companyId String?
+  companyRef Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  // Contact conversion
+  isContact   Boolean   @default(false)
+  convertedAt DateTime?
 
   // Status & Source
   status LeadStatus @default(NEW)
@@ -462,6 +512,8 @@ model Lead {
   @@index([tenantId, email])
   @@index([tenantId, createdAt])
   @@index([funnelColumnId])
+  @@index([tenantId, isContact])
+  @@index([tenantId, companyId])
 }
 
 model Tag {
@@ -774,6 +826,8 @@ model Interaction {
   user         User?       @relation("InteractionUser", fields: [userId], references: [id], onDelete: SetNull)
   dealId       String?
   deal         Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  companyId    String?
+  company      Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   /// Append-only: interactions are immutable communication records
   createdAt DateTime @default(now())
@@ -781,6 +835,7 @@ model Interaction {
   @@index([tenantId])
   @@index([tenantId, leadId])
   @@index([tenantId, dealId])
+  @@index([tenantId, companyId])
   @@index([tenantId, createdAt])
   @@index([tenantId, type])
 }
