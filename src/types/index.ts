@@ -310,6 +310,25 @@ export interface TrendData {
   months: WonLostMonth[];
 }
 
+// ========================
+// Next Action (AI Assistant)
+// ========================
+
+export interface NextAction {
+  action: string;
+  reason: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  icon: string;
+  category: string;
+}
+
+export interface ActionSummaryItem {
+  entityType: 'lead' | 'deal';
+  entityId: string;
+  entityName: string;
+  action: NextAction;
+}
+
 export interface FunnelConversionStage {
   stage: string;
   count: number;
@@ -320,5 +339,36 @@ export interface FunnelConversionStage {
 export interface FunnelConversionData {
   stages: FunnelConversionStage[];
   total: number;
+}
+
+// ========================
+// AI Email Draft
+// ========================
+
+export type DraftTemplateType = 'initial_outreach' | 'follow_up' | 'proposal' | 'thank_you';
+
+export interface DraftTemplate {
+  id: DraftTemplateType;
+  name: string;
+  description: string;
+}
+
+export interface EmailDraft {
+  subject: string;
+  body: string;
+  templateUsed: DraftTemplateType;
+  aiGenerated: boolean;
+}
+
+export interface AIConfig {
+  provider: string;
+  configured: boolean;
+  model?: string;
+}
+
+export interface AIConnectionTest {
+  success: boolean;
+  provider: string;
+  error?: string;
 }
 

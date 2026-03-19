@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { Settings, Download, Calendar, AlertTriangle, RefreshCw, Users, CheckSquare } from "lucide-react";
+import { Settings, Download, Calendar, AlertTriangle, RefreshCw, Users, CheckSquare, Zap } from "lucide-react";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashboard";
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
@@ -9,8 +9,12 @@ import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { DealAnalytics } from "../components/deals/DealAnalytics";
 import { ForecastWidget } from "../components/forecast/ForecastWidget";
+import { FunnelWidget } from "../components/forecast/FunnelWidget";
+import { ActionSummaryRow } from "../components/NextActionCard";
 import { useDashboard, DateRange } from "../hooks/useDashboard";
 import { CHART_COLORS } from "../utils/designTokens";
+import { apiClient } from "../services/api/client";
+import type { ActionSummaryItem } from "../types";
 // Helper function to format time ago
 function formatTimeAgo(date: string): string {
   const now = new Date();
@@ -49,9 +53,29 @@ export function Dashboard() {
   const [rangePreset, setRangePreset] = useState<RangePreset>("30d");
   const dateRange = useMemo(() => getDateRange(rangePreset), [rangePreset]);
   const { stats, loading: dashboardLoading, error: dashboardError, refetch } = useDashboard(dateRange);
+  const [actionSummary, setActionSummary] = useState<ActionSummaryItem[]>([]);
+  const [loadingActions, setLoadingActions] = useState(false);
 
   useEffect(() => {
     setLayout(getCurrentLayout());
+  }, []);
+
+  // Fetch action summary
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchActions() {
+      try {
+        setLoadingActions(true);
+        const result = await apiClient.getActionSummary(5);
+        if (!cancelled) setActionSummary(result.data);
+      } catch {
+        // Silent fail
+      } finally {
+        if (!cancelled) setLoadingActions(false);
+      }
+    }
+    fetchActions();
+    return () => { cancelled = true; };
   }, []);
 
   // Transform stats for charts
@@ -231,9 +255,43 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Forecast Widget */}
-        <div className="mb-8">
+        {/* Forecast & Funnel Widgets */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <ForecastWidget />
+          <FunnelWidget />
+        </div>
+
+        {/* Suggested Actions */}
+        <div className="mb-8">
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
+            <div className="p-6 border-b border-gray-300 flex items-center gap-2">
+              <Zap size={18} className="text-amber-500" />
+              <h3 className="text-gray-900 font-semibold">Ações Sugeridas</h3>
+            </div>
+            {loadingActions ? (
+              <div className="p-6 text-center text-gray-600">Analisando leads e deals...</div>
+            ) : actionSummary.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                  <CheckSquare size={24} className="text-green-500" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Tudo em dia!</p>
+                <p className="text-xs text-gray-500 mt-1">Nenhuma ação urgente pendente</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {actionSummary.map((item) => (
+                  <ActionSummaryRow
+                    key={`${item.entityType}-${item.entityId}`}
+                    entityType={item.entityType}
+                    entityId={item.entityId}
+                    entityName={item.entityName}
+                    action={item.action}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Bottom Row */}

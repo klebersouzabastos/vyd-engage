@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router";
 import { Header } from "../components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Bell, Building2, Plug, CreditCard, Tag, Target, Shield, Webhook, Key, Calendar } from "lucide-react";
+import { Bell, Building2, Plug, CreditCard, Tag, Target, Shield, Webhook, Key, Calendar, Sparkles } from "lucide-react";
 import { TagManager } from "../components/TagManager";
 import { CompanyTab } from "../components/settings/CompanyTab";
 import { NotificationsTab } from "../components/settings/NotificationsTab";
@@ -13,6 +13,7 @@ import { TwoFactorSetup } from "../components/settings/TwoFactorSetup";
 import { WebhooksTab } from "../components/settings/WebhooksTab";
 import { ApiKeysTab } from "../components/settings/ApiKeysTab";
 import { CalendarTab } from "../components/settings/CalendarTab";
+import { AISettingsTab } from "../components/settings/AISettingsTab";
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -60,6 +61,13 @@ export function Settings() {
                 >
                   <Calendar size={16} className="mr-2" />
                   Calendario
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ai"
+                  className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
+                >
+                  <Sparkles size={16} className="mr-2" />
+                  IA
                 </TabsTrigger>
                 <TabsTrigger
                   value="billing"
@@ -127,6 +135,10 @@ export function Settings() {
 
             <TabsContent value="calendar" className="p-6">
               <CalendarTab />
+            </TabsContent>
+
+            <TabsContent value="ai" className="p-6">
+              <AISettingsTab />
             </TabsContent>
 
             <TabsContent value="billing" className="p-6">

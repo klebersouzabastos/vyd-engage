@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { dealService } from '../services/dealService.js';
 import { forecastService } from '../services/forecastService.js';
+import { getDealNextAction, getActionSummary } from '../services/nextActionService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -100,6 +101,25 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
+// GET /api/deals/action-summary - Top urgent actions across leads and deals
+router.get('/action-summary', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const limit = req.query.limit ? Number(req.query.limit) : 5;
+    const actions = await getActionSummary(req.user.tenantId, limit);
+    res.json({ status: 200, data: actions });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/next-action - Get suggested next action for a deal
+// NOTE: This must be registered before /:id to avoid conflict, but Express
+// handles sub-paths like /:id/next-action correctly since they have more segments.
+
 // GET /api/deals - List deals with filters/pagination
 router.get('/', async (req, res, next) => {
   try {
@@ -127,6 +147,20 @@ router.get('/:id', async (req, res, next) => {
 
     const deal = await dealService.findById(req.user.tenantId, req.params.id);
     res.json(deal);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/next-action - Get suggested next action for a deal
+router.get('/:id/next-action', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const action = await getDealNextAction(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: action });
   } catch (error) {
     next(error);
   }

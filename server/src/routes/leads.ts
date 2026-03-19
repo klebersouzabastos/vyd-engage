@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { leadService } from '../services/leadService.js';
+import { getLeadNextAction } from '../services/nextActionService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -296,6 +297,20 @@ router.get('/stats/count', async (req, res, next) => {
 
     const count = await leadService.count(req.user.tenantId);
     res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/leads/:id/next-action - Get suggested next action for a lead
+router.get('/:id/next-action', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const action = await getLeadNextAction(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: action });
   } catch (error) {
     next(error);
   }

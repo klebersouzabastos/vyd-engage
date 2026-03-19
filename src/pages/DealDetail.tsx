@@ -24,9 +24,12 @@ import {
   ChevronDown,
   Link as LinkIcon,
   Pencil,
+  Sparkles,
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { DealForm } from "../components/deals/DealForm";
+import { NextActionCard } from "../components/NextActionCard";
+import { AIDraftDialog } from "../components/ai/AIDraftDialog";
 import { formatCurrency } from "../utils/format";
 
 const ITEMS_PER_PAGE = 10;
@@ -104,6 +107,7 @@ export function DealDetail() {
   const [noteContent, setNoteContent] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
+  const [aiDraftOpen, setAiDraftOpen] = useState(false);
 
   const fetchDeal = useCallback(async () => {
     if (!id) return;
@@ -263,6 +267,13 @@ export function DealDetail() {
 
           {/* Right: Info Sidebar (30%) */}
           <div className="lg:w-[30%]">
+            {/* Next Action Card */}
+            {id && (
+              <div className="mb-4">
+                <NextActionCard entityType="deal" entityId={id} />
+              </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
               {/* Value highlight */}
               <div className="text-center">
@@ -359,6 +370,14 @@ export function DealDetail() {
                 )}
               </div>
 
+              <Button
+                variant="outline"
+                className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                onClick={() => setAiDraftOpen(true)}
+              >
+                <Sparkles size={14} />Gerar Email
+              </Button>
+
               <Button variant="outline" className="w-full gap-2" onClick={() => setEditFormOpen(true)}>
                 <Pencil size={14} />Editar
               </Button>
@@ -368,6 +387,13 @@ export function DealDetail() {
       </div>
 
       <DealForm open={editFormOpen} onClose={() => setEditFormOpen(false)} onSave={handleEditSave} deal={deal} />
+
+      <AIDraftDialog
+        open={aiDraftOpen}
+        onClose={() => setAiDraftOpen(false)}
+        dealId={id}
+        leadId={deal?.leadId || undefined}
+      />
     </div>
   );
 }

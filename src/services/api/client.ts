@@ -1214,6 +1214,22 @@ class ApiClient {
   }
 
   // ========================
+  // Next Action (AI Assistant)
+  // ========================
+
+  async getLeadNextAction(leadId: string) {
+    return this.request<{ status: number; data: import('../../types').NextAction }>(`/api/leads/${leadId}/next-action`);
+  }
+
+  async getDealNextAction(dealId: string) {
+    return this.request<{ status: number; data: import('../../types').NextAction }>(`/api/deals/${dealId}/next-action`);
+  }
+
+  async getActionSummary(limit = 5) {
+    return this.request<{ status: number; data: import('../../types').ActionSummaryItem[] }>(`/api/deals/action-summary?limit=${limit}`);
+  }
+
+  // ========================
   // Companies
   // ========================
 
@@ -1345,6 +1361,36 @@ class ApiClient {
       throw new Error('Failed to download invoice');
     }
     return response.blob();
+  }
+
+  // ========================
+  // AI Email Draft
+  // ========================
+
+  async generateEmailDraft(data: {
+    leadId?: string;
+    dealId?: string;
+    templateType: import('../../types').DraftTemplateType;
+    customInstructions?: string;
+  }) {
+    return this.request<{ status: number; data: import('../../types').EmailDraft }>('/api/ai/email-draft', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAITemplates() {
+    return this.request<{ status: number; data: import('../../types').DraftTemplate[] }>('/api/ai/templates');
+  }
+
+  async getAIConfig() {
+    return this.request<{ status: number; data: import('../../types').AIConfig }>('/api/ai/config');
+  }
+
+  async testAIConnection() {
+    return this.request<{ status: number; data: import('../../types').AIConnectionTest }>('/api/ai/test-connection', {
+      method: 'POST',
+    });
   }
 }
 

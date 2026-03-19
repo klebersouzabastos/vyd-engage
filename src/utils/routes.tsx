@@ -67,6 +67,7 @@ const CompanyDetail = lazyNamed(() => import("../pages/CompanyDetail"), "Company
 const Deals = lazyNamed(() => import("../pages/Deals"), "Deals");
 const DealDetail = lazyNamed(() => import("../pages/DealDetail"), "DealDetail");
 const Forecast = lazyNamed(() => import("../pages/Forecast"), "Forecast");
+const FunnelConversion = lazyNamed(() => import("../pages/FunnelConversion"), "FunnelConversion");
 
 export const router = createBrowserRouter([
   {
@@ -150,6 +151,10 @@ export const router = createBrowserRouter([
       {
         path: "forecast",
         element: Forecast,
+      },
+      {
+        path: "funnel",
+        element: FunnelConversion,
       },
       {
         path: "team",

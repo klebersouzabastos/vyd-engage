@@ -28,6 +28,7 @@ import {
   User,
   UserCheck,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { useTags } from "../contexts/TagsContext";
@@ -35,6 +36,8 @@ import { useCustomFields } from "../contexts/CustomFieldsContext";
 import { mapStatusFromBackend, mapSourceFromBackend } from "../utils/leadEnums";
 import { DealStageBadge } from "../components/deals/DealStageBadge";
 import { DealForm } from "../components/deals/DealForm";
+import { NextActionCard } from "../components/NextActionCard";
+import { AIDraftDialog } from "../components/ai/AIDraftDialog";
 import { Deal, DealStage } from "../types";
 import { Handshake, DollarSign } from "lucide-react";
 
@@ -207,6 +210,9 @@ export function LeadDetail() {
   // Lead-Deal integration
   const [leadDeals, setLeadDeals] = useState<Deal[]>([]);
   const [dealFormOpen, setDealFormOpen] = useState(false);
+
+  // AI Draft dialog
+  const [aiDraftOpen, setAiDraftOpen] = useState(false);
 
   const fetchLead = useCallback(async () => {
     if (!id) return;
@@ -538,6 +544,13 @@ export function LeadDetail() {
 
           {/* Right: Lead Info Sidebar (30%) */}
           <div className="lg:w-[30%]">
+            {/* Next Action Card */}
+            {id && (
+              <div className="mb-4">
+                <NextActionCard entityType="lead" entityId={id} />
+              </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
               {/* Name and basic info */}
               <div>
@@ -736,6 +749,16 @@ export function LeadDetail() {
                 </Button>
               )}
 
+              {/* Generate Email button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                onClick={() => setAiDraftOpen(true)}
+              >
+                <Sparkles size={14} />
+                Gerar Email
+              </Button>
+
               {/* Edit button */}
               <Button
                 variant="outline"
@@ -769,6 +792,13 @@ export function LeadDetail() {
           fetchLeadDeals();
         }}
         defaultLeadId={id}
+      />
+
+      {/* AI Draft Dialog */}
+      <AIDraftDialog
+        open={aiDraftOpen}
+        onClose={() => setAiDraftOpen(false)}
+        leadId={id}
       />
     </div>
   );
