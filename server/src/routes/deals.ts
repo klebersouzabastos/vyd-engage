@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { dealService } from '../services/dealService.js';
+import { forecastService } from '../services/forecastService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -22,6 +23,8 @@ const createDealSchema = z.object({
   notes: z.string().optional(),
   customFields: z.record(z.any()).optional(),
   lostReason: z.string().optional(),
+  funnelId: z.string().uuid().optional().nullable(),
+  funnelColumnId: z.string().uuid().optional().nullable(),
 });
 
 const updateDealSchema = createDealSchema.partial().extend({
@@ -32,6 +35,7 @@ const querySchema = z.object({
   stage: z.nativeEnum(DealStage).optional(),
   assignedTo: z.string().uuid().optional(),
   leadId: z.string().uuid().optional(),
+  funnelId: z.string().uuid().optional(),
   search: z.string().optional(),
   minValue: z.coerce.number().optional(),
   maxValue: z.coerce.number().optional(),
@@ -39,6 +43,47 @@ const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   sort: z.enum(['createdAt', 'updatedAt', 'name', 'value', 'stage', 'expectedCloseDate']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
+});
+
+// GET /api/deals/forecast - Monthly revenue forecast (MUST be before /:id)
+router.get('/forecast', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const months = req.query.months ? Number(req.query.months) : 6;
+    const assignedTo = req.query.assignedTo as string | undefined;
+    const stage = req.query.stage as DealStage | undefined;
+
+    if (stage && !Object.values(DealStage).includes(stage)) {
+      return next(createError('Invalid stage', 400, 'VALIDATION_ERROR'));
+    }
+
+    const forecast = await forecastService.getForecast(req.user.tenantId, {
+      months,
+      assignedTo,
+      stage,
+    });
+    res.json({ status: 200, data: forecast });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/trend - Won vs Lost trend (MUST be before /:id)
+router.get('/trend', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const months = req.query.months ? Number(req.query.months) : 6;
+    const trend = await forecastService.getTrend(req.user.tenantId, months);
+    res.json({ status: 200, data: trend });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // GET /api/deals/stats - Aggregated metrics (MUST be before /:id)

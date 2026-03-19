@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Handshake,
+  TrendingUp,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -29,6 +30,7 @@ const menuItems = [
   { icon: Building2, label: "Empresas", path: "/app/companies", tourId: "sidebar-companies" },
   { icon: UsersRound, label: "Equipe", path: "/app/team", tourId: "sidebar-team", adminOnly: true },
   { icon: Handshake, label: "Deals", path: "/app/deals", tourId: "sidebar-deals" },
+  { icon: TrendingUp, label: "Previsão", path: "/app/forecast", tourId: "sidebar-forecast" },
   { icon: GitBranch, label: "Funil", path: "/app/pipeline", tourId: "sidebar-pipeline" },
   { icon: Inbox, label: "Inbox", path: "/app/inbox", tourId: "sidebar-inbox" },
   { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },

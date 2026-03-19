@@ -247,6 +247,9 @@ export interface Deal {
   notes?: string | null;
   customFields: Record<string, string | number | boolean | null>;
   lostReason?: string | null;
+  funnelId?: string | null;
+  funnelColumnId?: string | null;
+  positionInColumn?: number;
   closedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -270,5 +273,52 @@ export interface DealStats {
   activeDeals: number;
   wonDeals: number;
   lostDeals: number;
+}
+
+// ========================
+// Forecast
+// ========================
+
+export interface MonthlyForecast {
+  month: string; // 'YYYY-MM'
+  totalValue: number;
+  weightedValue: number;
+  dealCount: number;
+}
+
+export interface WonLostMonth {
+  month: string;
+  won: { count: number; value: number };
+  lost: { count: number; value: number };
+}
+
+export interface ForecastSummary {
+  totalPipelineValue: number;
+  totalWeightedForecast: number;
+  avgDealSize: number;
+  avgCloseTimeDays: number;
+  winRate: number;
+}
+
+export interface ForecastData {
+  monthly: MonthlyForecast[];
+  noDateBucket: { totalValue: number; weightedValue: number; dealCount: number };
+  summary: ForecastSummary;
+}
+
+export interface TrendData {
+  months: WonLostMonth[];
+}
+
+export interface FunnelConversionStage {
+  stage: string;
+  count: number;
+  conversionToNext: number | null;
+  dropOffRate: number | null;
+}
+
+export interface FunnelConversionData {
+  stages: FunnelConversionStage[];
+  total: number;
 }
 

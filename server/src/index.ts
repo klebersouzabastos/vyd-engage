@@ -128,6 +128,7 @@ import companyRoutes from './routes/companies.js';
 import trackingRoutes from './routes/tracking.js';
 import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
 import exportRoutes from './routes/exports.js';
+import calendarRoutes from './routes/calendar.js';
 
 import { Router as ExpressRouter } from 'express';
 import prisma from './config/database.js';
@@ -172,6 +173,7 @@ v1Router.use('/scoring-rules', csrfProtection);
 v1Router.use('/deals', csrfProtection);
 v1Router.use('/companies', csrfProtection);
 v1Router.use('/reports', csrfProtection);
+v1Router.use('/integrations', csrfProtection);
 v1Router.use('/auth/profile', csrfProtection);
 v1Router.use('/auth/change-password', csrfProtection);
 v1Router.use('/auth/tenant', csrfProtection);
@@ -204,6 +206,7 @@ v1Router.use('/companies', companyRoutes);
 v1Router.use('/webhooks', webhookRoutes);
 v1Router.use('/outgoing-webhooks', outgoingWebhookRoutes);
 v1Router.use('/exports', exportRoutes);
+v1Router.use('/integrations', calendarRoutes);
 
 // Mount v1 router at /api/v1 (canonical) and /api (backwards-compatible alias)
 app.use('/api/v1', v1Router);

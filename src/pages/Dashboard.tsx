@@ -8,6 +8,7 @@ import { LeadStatusBadge } from "../components/LeadStatusBadge";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { DealAnalytics } from "../components/deals/DealAnalytics";
+import { ForecastWidget } from "../components/forecast/ForecastWidget";
 import { useDashboard, DateRange } from "../hooks/useDashboard";
 import { CHART_COLORS } from "../utils/designTokens";
 // Helper function to format time ago
@@ -229,6 +230,11 @@ export function Dashboard() {
             <DealAnalytics stats={stats.dealStats} compact />
           </div>
         )}
+
+        {/* Forecast Widget */}
+        <div className="mb-8">
+          <ForecastWidget />
+        </div>
 
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

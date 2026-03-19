@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { LeadStatus } from '@prisma/client';
+import { LeadStatus, FunnelType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 const DEFAULT_COLUMNS = [
@@ -12,19 +12,33 @@ const DEFAULT_COLUMNS = [
   { title: 'Perdido', color: '#EF4444', order: 6, isDefault: false, mappedStatus: LeadStatus.LOST },
 ];
 
+const DEFAULT_DEAL_COLUMNS = [
+  { title: 'Qualificação', color: '#3B82F6', order: 0, isDefault: true },
+  { title: 'Proposta', color: '#F59E0B', order: 1, isDefault: false },
+  { title: 'Negociação', color: '#8B5CF6', order: 2, isDefault: false },
+  { title: 'Fechamento', color: '#EC4899', order: 3, isDefault: false },
+  { title: 'Ganho', color: '#10B981', order: 4, isDefault: false },
+  { title: 'Perdido', color: '#EF4444', order: 5, isDefault: false },
+];
+
 export const funnelService = {
   /**
-   * Get all funnels for a tenant, including columns and lead counts
+   * Get all funnels for a tenant, including columns and lead/deal counts
    */
-  async findAll(tenantId: string) {
+  async findAll(tenantId: string, type?: FunnelType) {
+    const where: { tenantId: string; type?: FunnelType } = { tenantId };
+    if (type) {
+      where.type = type;
+    }
+
     const funnels = await prisma.funnel.findMany({
-      where: { tenantId },
+      where,
       orderBy: [{ isDefault: 'desc' }, { order: 'asc' }],
       include: {
         columns: {
           orderBy: { order: 'asc' },
           include: {
-            _count: { select: { leads: true } },
+            _count: { select: { leads: true, deals: true } },
           },
         },
       },
@@ -34,7 +48,7 @@ export const funnelService = {
   },
 
   /**
-   * Get a single funnel with columns and leads
+   * Get a single funnel with columns and leads/deals
    */
   async findById(tenantId: string, funnelId: string) {
     const funnel = await prisma.funnel.findFirst({
@@ -47,6 +61,13 @@ export const funnelService = {
               orderBy: { positionInColumn: 'asc' },
               include: {
                 tags: { include: { tag: true } },
+              },
+            },
+            deals: {
+              orderBy: { positionInColumn: 'asc' },
+              include: {
+                lead: { select: { id: true, name: true, email: true } },
+                assignedUser: { select: { id: true, name: true, email: true } },
               },
             },
           },
@@ -64,22 +85,25 @@ export const funnelService = {
   /**
    * Create a new funnel with default columns
    */
-  async create(tenantId: string, data: { name: string; columns?: Array<{ title: string; color?: string; mappedStatus?: LeadStatus }> }) {
-    const existingCount = await prisma.funnel.count({ where: { tenantId } });
+  async create(tenantId: string, data: { name: string; type?: FunnelType; columns?: Array<{ title: string; color?: string; mappedStatus?: LeadStatus }> }) {
+    const funnelType = data.type || FunnelType.LEAD;
+    const existingCount = await prisma.funnel.count({ where: { tenantId, type: funnelType } });
+    const defaultColumns = funnelType === FunnelType.DEAL ? DEFAULT_DEAL_COLUMNS : DEFAULT_COLUMNS;
 
     const funnel = await prisma.funnel.create({
       data: {
         tenantId,
         name: data.name,
+        type: funnelType,
         isDefault: existingCount === 0,
         order: existingCount,
         columns: {
-          create: (data.columns || DEFAULT_COLUMNS).map((col, index) => ({
+          create: (data.columns || defaultColumns).map((col, index) => ({
             title: col.title,
             color: col.color || '#3B82F6',
             order: index,
             isDefault: index === 0,
-            mappedStatus: col.mappedStatus || null,
+            mappedStatus: ('mappedStatus' in col ? col.mappedStatus : null) || null,
           })),
         },
       },
@@ -87,7 +111,7 @@ export const funnelService = {
         columns: {
           orderBy: { order: 'asc' },
           include: {
-            _count: { select: { leads: true } },
+            _count: { select: { leads: true, deals: true } },
           },
         },
       },
@@ -131,7 +155,7 @@ export const funnelService = {
   async delete(tenantId: string, funnelId: string) {
     const funnel = await prisma.funnel.findFirst({
       where: { id: funnelId, tenantId },
-      include: { columns: { include: { _count: { select: { leads: true } } } } },
+      include: { columns: { include: { _count: { select: { leads: true, deals: true } } } } },
     });
 
     if (!funnel) {
@@ -147,6 +171,11 @@ export const funnelService = {
       throw createError('Cannot delete funnel with leads. Move leads first.', 400);
     }
 
+    const totalDeals = funnel.columns.reduce((sum, col) => sum + col._count.deals, 0);
+    if (totalDeals > 0) {
+      throw createError('Cannot delete funnel with deals. Move deals first.', 400);
+    }
+
     await prisma.funnel.delete({ where: { id: funnelId } });
     return { success: true };
   },
@@ -154,14 +183,15 @@ export const funnelService = {
   /**
    * Ensure default funnel exists for tenant, create if not
    */
-  async ensureDefaultFunnel(tenantId: string) {
+  async ensureDefaultFunnel(tenantId: string, type?: FunnelType) {
+    const funnelType = type || FunnelType.LEAD;
     const existing = await prisma.funnel.findFirst({
-      where: { tenantId, isDefault: true },
+      where: { tenantId, isDefault: true, type: funnelType },
       include: {
         columns: {
           orderBy: { order: 'asc' },
           include: {
-            _count: { select: { leads: true } },
+            _count: { select: { leads: true, deals: true } },
           },
         },
       },
@@ -169,7 +199,8 @@ export const funnelService = {
 
     if (existing) return existing;
 
-    return this.create(tenantId, { name: 'Funil de Venda' });
+    const defaultName = funnelType === FunnelType.DEAL ? 'Pipeline de Vendas' : 'Funil de Venda';
+    return this.create(tenantId, { name: defaultName, type: funnelType });
   },
 
   // ========================
@@ -267,12 +298,12 @@ export const funnelService = {
   },
 
   /**
-   * Delete column (cannot delete default, cannot delete if has leads)
+   * Delete column (cannot delete default, cannot delete if has leads or deals)
    */
   async deleteColumn(tenantId: string, columnId: string) {
     const column = await prisma.funnelColumn.findFirst({
       where: { id: columnId, funnel: { tenantId } },
-      include: { _count: { select: { leads: true } } },
+      include: { _count: { select: { leads: true, deals: true } } },
     });
 
     if (!column) {
@@ -285,6 +316,10 @@ export const funnelService = {
 
     if (column._count.leads > 0) {
       throw createError('Cannot delete column with leads. Move leads first.', 400);
+    }
+
+    if (column._count.deals > 0) {
+      throw createError('Cannot delete column with deals. Move deals first.', 400);
     }
 
     await prisma.funnelColumn.delete({ where: { id: columnId } });
@@ -347,5 +382,60 @@ export const funnelService = {
     );
 
     return updatedLead;
+  },
+
+  /**
+   * Move a deal to a different column (drag-and-drop)
+   */
+  async moveDeal(tenantId: string, dealId: string, targetColumnId: string, position: number) {
+    const deal = await prisma.deal.findFirst({
+      where: { id: dealId, tenantId },
+    });
+
+    if (!deal) {
+      throw createError('Deal not found', 404);
+    }
+
+    const targetColumn = await prisma.funnelColumn.findFirst({
+      where: { id: targetColumnId, funnel: { tenantId } },
+    });
+
+    if (!targetColumn) {
+      throw createError('Target column not found', 404);
+    }
+
+    // Update deal's column position and funnel
+    const updateData: Record<string, unknown> = {
+      funnelColumnId: targetColumnId,
+      funnelId: targetColumn.funnelId,
+      positionInColumn: position,
+    };
+
+    const updatedDeal = await prisma.deal.update({
+      where: { id: dealId },
+      data: updateData,
+      include: {
+        lead: { select: { id: true, name: true, email: true } },
+        assignedUser: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    // Reorder other deals in target column
+    const dealsInColumn = await prisma.deal.findMany({
+      where: { funnelColumnId: targetColumnId, id: { not: dealId } },
+      orderBy: { positionInColumn: 'asc' },
+    });
+
+    await prisma.$transaction(
+      dealsInColumn.map((d, index) => {
+        const newPosition = index >= position ? index + 1 : index;
+        return prisma.deal.update({
+          where: { id: d.id },
+          data: { positionInColumn: newPosition },
+        });
+      })
+    );
+
+    return updatedDeal;
   },
 };

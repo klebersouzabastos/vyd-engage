@@ -65,8 +65,9 @@ model User {
   assignedDeals Deal[]         @relation("DealAssignment")
   assignedTasks Task[]         @relation("TaskAssignment")
   interactions  Interaction[]  @relation("InteractionUser")
-  notifications Notification[] @relation("NotificationUser")
-  reports       Report[]       @relation("ReportCreator")
+  notifications         Notification[]       @relation("NotificationUser")
+  reports               Report[]             @relation("ReportCreator")
+  calendarConnections   CalendarConnection[] @relation("UserCalendarConnections")
 
   @@index([email])
   @@index([tenantId])
@@ -142,6 +143,7 @@ model Tenant {
   scoreRules          ScoreRule[]
   reports             Report[]
   deals               Deal[]
+  calendarConnections CalendarConnection[]
 
   @@index([slug])
 }
@@ -270,14 +272,20 @@ model Payment {
 // PIPELINE / FUNNELS
 // ============================================
 
+enum FunnelType {
+  LEAD
+  DEAL
+}
+
 model Funnel {
   id       String @id @default(uuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   name      String
-  isDefault Boolean @default(false)
-  order     Int     @default(0)
+  type      FunnelType @default(LEAD)
+  isDefault Boolean    @default(false)
+  order     Int        @default(0)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -285,10 +293,12 @@ model Funnel {
 
   // Relations
   columns FunnelColumn[]
+  deals   Deal[]
 
-  @@unique([tenantId, name])
+  @@unique([tenantId, name, type])
   @@index([tenantId])
   @@index([tenantId, isDefault])
+  @@index([tenantId, type])
 }
 
 model FunnelColumn {
@@ -310,6 +320,7 @@ model FunnelColumn {
 
   // Relations
   leads Lead[] @relation("LeadFunnelColumn")
+  deals Deal[] @relation("DealFunnelColumn")
 
   @@index([funnelId])
   @@index([funnelId, order])
@@ -423,6 +434,14 @@ model Deal {
   notes             String?
   customFields      Json       @default("{}")
   lostReason        String?
+
+  // Pipeline position
+  funnelId         String?
+  funnel           Funnel?       @relation(fields: [funnelId], references: [id], onDelete: SetNull)
+  funnelColumnId   String?
+  funnelColumn     FunnelColumn? @relation("DealFunnelColumn", fields: [funnelColumnId], references: [id], onDelete: SetNull)
+  positionInColumn Int           @default(0)
+
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   closedAt          DateTime?
@@ -435,6 +454,8 @@ model Deal {
   @@index([tenantId, leadId])
   @@index([tenantId, companyId])
   @@index([tenantId, expectedCloseDate])
+  @@index([tenantId, funnelId])
+  @@index([funnelColumnId])
 }
 
 // ============================================
@@ -601,6 +622,9 @@ model Task {
   dueDate     DateTime?
   completedAt DateTime?
 
+  // Google Calendar sync
+  googleEventId String?
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -609,6 +633,37 @@ model Task {
   @@index([tenantId, status])
   @@index([tenantId, assignedTo])
   @@index([tenantId, dueDate])
+}
+
+// ============================================
+// CALENDAR INTEGRATIONS
+// ============================================
+
+enum CalendarProvider {
+  GOOGLE
+}
+
+model CalendarConnection {
+  id       String           @id @default(uuid())
+  tenantId String
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User             @relation("UserCalendarConnections", fields: [userId], references: [id], onDelete: Cascade)
+
+  provider     CalendarProvider @default(GOOGLE)
+  accessToken  String
+  refreshToken String
+  email        String
+  calendarId   String           @default("primary")
+  syncEnabled  Boolean          @default(true)
+  lastSyncAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId, provider])
+  @@index([tenantId])
+  @@index([userId])
 }
 
 // ============================================

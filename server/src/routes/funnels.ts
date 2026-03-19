@@ -4,7 +4,7 @@ import { funnelService } from '../services/funnelService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { LeadStatus } from '@prisma/client';
+import { LeadStatus, FunnelType } from '@prisma/client';
 
 const router = Router();
 
@@ -15,6 +15,7 @@ router.use(tenantScope);
 // Validation schemas
 const createFunnelSchema = z.object({
   name: z.string().min(1).max(100),
+  type: z.nativeEnum(FunnelType).optional(),
   columns: z.array(z.object({
     title: z.string().min(1).max(100),
     color: z.string().optional(),
@@ -49,15 +50,25 @@ const moveLeadSchema = z.object({
   position: z.number().int().min(0).default(0),
 });
 
+const moveDealSchema = z.object({
+  dealId: z.string().uuid(),
+  targetColumnId: z.string().uuid(),
+  position: z.number().int().min(0).default(0),
+});
+
 // ========================
 // Funnel CRUD
 // ========================
 
-// GET /api/funnels - List all funnels
+// GET /api/funnels - List all funnels (optionally filtered by type)
 router.get('/', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    const funnels = await funnelService.findAll(req.user.tenantId);
+    const typeParam = req.query.type as string | undefined;
+    const type = typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
+      ? (typeParam as FunnelType)
+      : undefined;
+    const funnels = await funnelService.findAll(req.user.tenantId, type);
     res.json({ status: 200, data: funnels });
   } catch (error) {
     next(error);
@@ -68,7 +79,11 @@ router.get('/', async (req, res, next) => {
 router.get('/default', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    const funnel = await funnelService.ensureDefaultFunnel(req.user.tenantId);
+    const typeParam = req.query.type as string | undefined;
+    const type = typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
+      ? (typeParam as FunnelType)
+      : undefined;
+    const funnel = await funnelService.ensureDefaultFunnel(req.user.tenantId, type);
     res.json({ status: 200, data: funnel });
   } catch (error) {
     next(error);
@@ -203,6 +218,26 @@ router.post('/move-lead', async (req, res, next) => {
       data.position
     );
     res.json({ status: 200, data: lead });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// POST /api/funnels/move-deal - Move deal between columns
+router.post('/move-deal', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const data = moveDealSchema.parse(req.body);
+    const deal = await funnelService.moveDeal(
+      req.user.tenantId,
+      data.dealId,
+      data.targetColumnId,
+      data.position
+    );
+    res.json({ status: 200, data: deal });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));

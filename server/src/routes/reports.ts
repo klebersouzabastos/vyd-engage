@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { ReportType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { forecastService } from '../services/forecastService.js';
 
 const router = Router();
 
@@ -42,6 +43,25 @@ router.get('/', async (req, res, next) => {
     });
 
     res.json(reports);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/reports/funnel-conversion - Lead funnel conversion rates
+router.get('/funnel-conversion', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const { from, to, source, assignedTo } = req.query;
+    const data = await forecastService.getFunnelConversion(req.user.tenantId, {
+      from: from as string | undefined,
+      to: to as string | undefined,
+      source: source as string | undefined,
+      assignedTo: assignedTo as string | undefined,
+    });
+
+    res.json({ status: 200, data });
   } catch (error) {
     next(error);
   }

@@ -36,9 +36,10 @@ interface DealFormProps {
   onSave: (data: any) => Promise<void>;
   deal?: Deal | null;
   defaultLeadId?: string;
+  defaultFunnelId?: string;
 }
 
-export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFormProps) {
+export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFunnelId }: DealFormProps) {
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [stage, setStage] = useState<DealStage>("QUALIFICATION");
@@ -48,10 +49,12 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
   const [assignedTo, setAssignedTo] = useState("");
   const [notes, setNotes] = useState("");
   const [lostReason, setLostReason] = useState("");
+  const [funnelId, setFunnelId] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [leads, setLeads] = useState<Array<{ id: string; name: string }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const [dealFunnels, setDealFunnels] = useState<Array<{ id: string; name: string; isDefault: boolean }>>([]);
   const [leadSearch, setLeadSearch] = useState("");
   const [loadingLeads, setLoadingLeads] = useState(false);
   const leadSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,11 +75,15 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
 
   useEffect(() => {
     if (open) {
-      // Load leads (initial) and users for selects
+      // Load leads (initial), users, and deal funnels for selects
       fetchLeads();
       apiClient.getUsers().then(res => {
         const userList = Array.isArray(res) ? res : res.data || [];
         setUsers(userList.map((u: any) => ({ id: u.id, name: u.name })));
+      }).catch(() => {});
+      apiClient.getFunnels('DEAL').then(res => {
+        const funnelList: any[] = (res as any).data || res || [];
+        setDealFunnels(funnelList.map((f: any) => ({ id: f.id, name: f.name, isDefault: f.isDefault })));
       }).catch(() => {});
     } else {
       setLeadSearch("");
@@ -105,6 +112,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
       setAssignedTo(deal.assignedTo || "");
       setNotes(deal.notes || "");
       setLostReason(deal.lostReason || "");
+      setFunnelId(deal.funnelId || "");
     } else {
       setName("");
       setValue("");
@@ -115,8 +123,9 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
       setAssignedTo("");
       setNotes("");
       setLostReason("");
+      setFunnelId(defaultFunnelId || "");
     }
-  }, [deal, open, defaultLeadId]);
+  }, [deal, open, defaultLeadId, defaultFunnelId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +143,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
         assignedTo: assignedTo || null,
         notes: notes.trim() || undefined,
         lostReason: stage === "LOST" ? lostReason.trim() || undefined : undefined,
+        funnelId: funnelId || null,
       });
       onClose();
     } catch {
@@ -268,6 +278,25 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId }: DealFor
               </Select>
             </div>
           </div>
+
+          {dealFunnels.length > 0 && (
+            <div>
+              <Label htmlFor="deal-funnel">Pipeline</Label>
+              <Select value={funnelId || "none"} onValueChange={(v) => setFunnelId(v === "none" ? "" : v)}>
+                <SelectTrigger id="deal-funnel">
+                  <SelectValue placeholder="Selecionar pipeline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {dealFunnels.map(f => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}{f.isDefault ? " (Padrão)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="deal-notes">Notas</Label>

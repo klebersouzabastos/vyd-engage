@@ -6,6 +6,7 @@ import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { TaskStatus, TaskPriority, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
+import { googleCalendarService } from '../services/googleCalendarService.js';
 
 const router = Router();
 
@@ -91,6 +92,9 @@ router.post('/', async (req, res, next) => {
       }).catch(() => {});
     }
 
+    // Google Calendar sync (fire-and-forget)
+    googleCalendarService.syncTaskForUser(req.user.userId, req.user.tenantId, task).catch(() => {});
+
     res.status(201).json(task);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -124,6 +128,9 @@ router.put('/:id', async (req, res, next) => {
       }).catch(() => {});
     }
 
+    // Google Calendar sync (fire-and-forget)
+    googleCalendarService.syncTaskForUser(req.user.userId, req.user.tenantId, task).catch(() => {});
+
     res.json(task);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -139,7 +146,17 @@ router.delete('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Fetch task before deleting to get googleEventId for calendar cleanup
+    const taskToDelete = await taskService.findById(req.user.tenantId, req.params.id);
+    const googleEventId = (taskToDelete as any).googleEventId;
+
     await taskService.delete(req.user.tenantId, req.params.id);
+
+    // Google Calendar cleanup (fire-and-forget)
+    if (googleEventId) {
+      googleCalendarService.deleteEventForUser(req.user.userId, req.user.tenantId, googleEventId).catch(() => {});
+    }
+
     res.status(204).send();
   } catch (error) {
     next(error);

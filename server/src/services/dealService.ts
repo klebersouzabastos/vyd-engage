@@ -24,6 +24,8 @@ export interface CreateDealData {
   notes?: string;
   customFields?: Record<string, any>;
   lostReason?: string;
+  funnelId?: string | null;
+  funnelColumnId?: string | null;
 }
 
 export interface UpdateDealData extends Partial<CreateDealData> {
@@ -34,6 +36,18 @@ export const dealService = {
   async create(tenantId: string, data: CreateDealData) {
     const stage = data.stage || DealStage.QUALIFICATION;
     const probability = data.probability ?? STAGE_PROBABILITY[stage];
+
+    // If funnelId is provided but no funnelColumnId, use first column
+    let funnelColumnId = data.funnelColumnId || null;
+    if (data.funnelId && !funnelColumnId) {
+      const firstColumn = await prisma.funnelColumn.findFirst({
+        where: { funnelId: data.funnelId },
+        orderBy: { order: 'asc' },
+      });
+      if (firstColumn) {
+        funnelColumnId = firstColumn.id;
+      }
+    }
 
     const deal = await prisma.deal.create({
       data: {
@@ -48,6 +62,8 @@ export const dealService = {
         notes: data.notes || null,
         customFields: data.customFields || {},
         lostReason: data.lostReason || null,
+        funnelId: data.funnelId || null,
+        funnelColumnId,
       },
       include: {
         lead: { select: { id: true, name: true, email: true } },
@@ -81,6 +97,7 @@ export const dealService = {
     stage?: DealStage;
     assignedTo?: string;
     leadId?: string;
+    funnelId?: string;
     search?: string;
     minValue?: number;
     maxValue?: number;
@@ -107,6 +124,10 @@ export const dealService = {
 
     if (filters?.leadId) {
       where.leadId = filters.leadId;
+    }
+
+    if (filters?.funnelId) {
+      where.funnelId = filters.funnelId;
     }
 
     if (filters?.search) {
@@ -168,6 +189,8 @@ export const dealService = {
       notes: data.notes,
       customFields: data.customFields,
       lostReason: data.lostReason,
+      funnelId: data.funnelId,
+      funnelColumnId: data.funnelColumnId,
     };
 
     // Auto-set closedAt when moving to WON or LOST

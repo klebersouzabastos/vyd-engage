@@ -1,41 +1,47 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api/client';
+import { Deal } from '../types';
 
-export interface FunnelLead {
+export interface PipelineDeal {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  company?: string;
-  score: number;
-  source: string;
-  status: string;
+  value: number;
+  stage: string;
+  probability: number;
+  expectedCloseDate?: string | null;
+  leadId?: string | null;
+  lead?: { id: string; name: string; email?: string } | null;
+  assignedTo?: string | null;
+  assignedUser?: { id: string; name: string; email?: string } | null;
+  notes?: string | null;
+  lostReason?: string | null;
   positionInColumn: number;
   createdAt: string;
-  tags: Array<{ tag: { id: string; name: string; color: string } }>;
+  updatedAt: string;
 }
 
-export interface FunnelColumn {
+export interface DealFunnelColumn {
   id: string;
   title: string;
   color: string;
   order: number;
   isDefault: boolean;
   mappedStatus: string | null;
-  leads: FunnelLead[];
-  _count?: { leads: number };
+  deals: PipelineDeal[];
+  _count?: { deals: number; leads: number };
 }
 
-export interface Funnel {
+export interface DealFunnel {
   id: string;
   name: string;
+  type: string;
   isDefault: boolean;
   order: number;
-  columns: FunnelColumn[];
+  columns: DealFunnelColumn[];
 }
 
-export function useFunnels() {
-  const [funnels, setFunnels] = useState<Funnel[]>([]);
+export function useDealsPipeline() {
+  const [funnels, setFunnels] = useState<DealFunnel[]>([]);
   const [currentFunnelId, setCurrentFunnelId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,26 +49,23 @@ export function useFunnels() {
   const currentFunnel = funnels.find(f => f.id === currentFunnelId) || funnels[0] || null;
   const columns = currentFunnel?.columns || [];
 
-  // Load all funnels on mount
   const loadFunnels = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Ensure default LEAD funnel exists and get all LEAD funnels
-      const defaultRes = await apiClient.getDefaultFunnel('LEAD');
-      const allRes = await apiClient.getFunnels('LEAD');
-      const rawList: Funnel[] = allRes.data || allRes || [];
+      // Ensure default DEAL funnel exists
+      await apiClient.getDefaultFunnel('DEAL');
+      const allRes = await apiClient.getFunnels('DEAL');
+      const rawList: DealFunnel[] = (allRes as any).data || allRes || [];
 
-      // Normalize: findAll returns columns without leads, ensure leads defaults to []
       const funnelList = rawList.map(f => ({
         ...f,
-        columns: (f.columns || []).map(c => ({ ...c, leads: c.leads || [] })),
+        columns: (f.columns || []).map(c => ({ ...c, deals: c.deals || [] })),
       }));
 
       setFunnels(funnelList);
 
-      // Set current funnel to default or first
       if (!currentFunnelId || !funnelList.find(f => f.id === currentFunnelId)) {
         const defaultFunnel = funnelList.find(f => f.isDefault) || funnelList[0];
         if (defaultFunnel) {
@@ -70,61 +73,66 @@ export function useFunnels() {
         }
       }
     } catch (err: unknown) {
-      console.error('Failed to load funnels:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao carregar funis');
+      console.error('Failed to load deal funnels:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar pipelines de deals');
     } finally {
       setLoading(false);
     }
   }, [currentFunnelId]);
 
-  // Load funnel with leads (full data)
-  const loadFunnelWithLeads = useCallback(async (funnelId: string) => {
+  const loadFunnelWithDeals = useCallback(async (funnelId: string) => {
     try {
       const res = await apiClient.getFunnel(funnelId);
-      const funnel: Funnel = res.data || res;
+      const funnel: DealFunnel = (res as any).data || res;
 
-      setFunnels(prev => prev.map(f => f.id === funnelId ? funnel : f));
-      return funnel;
+      // Normalize: ensure deals array exists on each column
+      const normalized = {
+        ...funnel,
+        columns: (funnel.columns || []).map(c => ({ ...c, deals: c.deals || [] })),
+      };
+
+      setFunnels(prev => prev.map(f => f.id === funnelId ? normalized : f));
+      return normalized;
     } catch (err: unknown) {
-      console.error('Failed to load funnel:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao carregar funil');
+      console.error('Failed to load deal funnel:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar pipeline');
       return null;
     }
   }, []);
 
-  // Switch current funnel
   const switchFunnel = useCallback(async (funnelId: string) => {
     setCurrentFunnelId(funnelId);
-    await loadFunnelWithLeads(funnelId);
-  }, [loadFunnelWithLeads]);
+    await loadFunnelWithDeals(funnelId);
+  }, [loadFunnelWithDeals]);
 
-  // Create new funnel (always LEAD type for this hook)
   const createFunnel = useCallback(async (name: string) => {
     try {
-      const res = await apiClient.createFunnel({ name, type: 'LEAD' });
-      const newFunnel: Funnel = res.data || res;
-      setFunnels(prev => [...prev, newFunnel]);
-      return newFunnel;
+      const res = await apiClient.createFunnel({ name, type: 'DEAL' });
+      const newFunnel: DealFunnel = (res as any).data || res;
+      const normalized = {
+        ...newFunnel,
+        columns: (newFunnel.columns || []).map(c => ({ ...c, deals: [] })),
+      };
+      setFunnels(prev => [...prev, normalized]);
+      return normalized;
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar funil');
+      setError(err instanceof Error ? err.message : 'Erro ao criar pipeline');
       throw err;
     }
   }, []);
 
-  // Update funnel
   const updateFunnel = useCallback(async (funnelId: string, data: { name?: string; order?: number }) => {
     try {
       const res = await apiClient.updateFunnel(funnelId, data);
-      const updated: Funnel = res.data || res;
-      setFunnels(prev => prev.map(f => f.id === funnelId ? updated : f));
+      const updated: DealFunnel = (res as any).data || res;
+      setFunnels(prev => prev.map(f => f.id === funnelId ? { ...f, ...updated, columns: f.columns } : f));
       return updated;
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar funil');
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar pipeline');
       throw err;
     }
   }, []);
 
-  // Delete funnel
   const deleteFunnel = useCallback(async (funnelId: string) => {
     try {
       await apiClient.deleteFunnel(funnelId);
@@ -137,20 +145,19 @@ export function useFunnels() {
         }
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao deletar funil');
+      setError(err instanceof Error ? err.message : 'Erro ao deletar pipeline');
       throw err;
     }
   }, [currentFunnelId, funnels]);
 
-  // Add column
   const addColumn = useCallback(async (title: string, color?: string) => {
     if (!currentFunnelId) return;
     try {
       const res = await apiClient.addFunnelColumn(currentFunnelId, { title, color });
-      const newColumn: FunnelColumn = res.data || res;
+      const newColumn: DealFunnelColumn = (res as any).data || res;
       setFunnels(prev => prev.map(f => {
         if (f.id !== currentFunnelId) return f;
-        return { ...f, columns: [...f.columns, { ...newColumn, leads: [] }] };
+        return { ...f, columns: [...f.columns, { ...newColumn, deals: [] }] };
       }));
       return newColumn;
     } catch (err: unknown) {
@@ -159,7 +166,6 @@ export function useFunnels() {
     }
   }, [currentFunnelId]);
 
-  // Update column
   const updateColumn = useCallback(async (columnId: string, data: { title?: string; color?: string }) => {
     if (!currentFunnelId) return;
     try {
@@ -177,7 +183,6 @@ export function useFunnels() {
     }
   }, [currentFunnelId]);
 
-  // Delete column
   const deleteColumn = useCallback(async (columnId: string) => {
     if (!currentFunnelId) return;
     try {
@@ -192,7 +197,6 @@ export function useFunnels() {
     }
   }, [currentFunnelId]);
 
-  // Reorder columns
   const reorderColumns = useCallback(async (columnIds: string[]) => {
     if (!currentFunnelId) return;
     try {
@@ -202,7 +206,7 @@ export function useFunnels() {
         const reordered = columnIds.map((id, index) => {
           const col = f.columns.find(c => c.id === id);
           return col ? { ...col, order: index } : null;
-        }).filter(Boolean) as FunnelColumn[];
+        }).filter(Boolean) as DealFunnelColumn[];
         return { ...f, columns: reordered };
       }));
     } catch (err: unknown) {
@@ -211,56 +215,54 @@ export function useFunnels() {
     }
   }, [currentFunnelId]);
 
-  // Move lead between columns (drag-and-drop)
-  const moveLead = useCallback(async (leadId: string, targetColumnId: string, position: number) => {
+  const moveDeal = useCallback(async (dealId: string, targetColumnId: string, position: number) => {
     if (!currentFunnelId) return;
 
     // Optimistic update
     setFunnels(prev => prev.map(f => {
       if (f.id !== currentFunnelId) return f;
 
-      let movedLead: FunnelLead | null = null;
+      let movedDeal: PipelineDeal | null = null;
       const newColumns = f.columns.map(col => {
-        const leadIndex = col.leads.findIndex(l => l.id === leadId);
-        if (leadIndex !== -1) {
-          movedLead = col.leads[leadIndex];
-          return { ...col, leads: col.leads.filter(l => l.id !== leadId) };
+        const dealIndex = col.deals.findIndex(d => d.id === dealId);
+        if (dealIndex !== -1) {
+          movedDeal = col.deals[dealIndex];
+          return { ...col, deals: col.deals.filter(d => d.id !== dealId) };
         }
         return col;
       });
 
-      if (!movedLead) return f;
+      if (!movedDeal) return f;
 
       return {
         ...f,
         columns: newColumns.map(col => {
           if (col.id !== targetColumnId) return col;
-          const leads = [...col.leads];
-          leads.splice(position, 0, movedLead!);
-          return { ...col, leads };
+          const deals = [...col.deals];
+          deals.splice(position, 0, movedDeal!);
+          return { ...col, deals };
         }),
       };
     }));
 
     // Sync with backend
     try {
-      await apiClient.moveLead({ leadId, targetColumnId, position });
+      await apiClient.moveDeal({ dealId, targetColumnId, position });
     } catch (err: unknown) {
-      // Revert on error - reload funnel
-      console.error('Failed to move lead:', err);
-      await loadFunnelWithLeads(currentFunnelId);
+      console.error('Failed to move deal:', err);
+      await loadFunnelWithDeals(currentFunnelId);
     }
-  }, [currentFunnelId, loadFunnelWithLeads]);
+  }, [currentFunnelId, loadFunnelWithDeals]);
 
   // Initial load
   useEffect(() => {
     loadFunnels();
   }, []);
 
-  // Load leads when funnel changes
+  // Load deals when funnel changes
   useEffect(() => {
     if (currentFunnelId) {
-      loadFunnelWithLeads(currentFunnelId);
+      loadFunnelWithDeals(currentFunnelId);
     }
   }, [currentFunnelId]);
 
@@ -272,7 +274,7 @@ export function useFunnels() {
     loading,
     error,
     loadFunnels,
-    loadFunnelWithLeads,
+    loadFunnelWithDeals,
     switchFunnel,
     createFunnel,
     updateFunnel,
@@ -281,6 +283,6 @@ export function useFunnels() {
     updateColumn,
     deleteColumn,
     reorderColumns,
-    moveLead,
+    moveDeal,
   };
 }

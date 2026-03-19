@@ -870,19 +870,21 @@ class ApiClient {
   }
 
   // Funnels (Pipeline)
-  async getFunnels() {
-    return this.request<Record<string, unknown>>('/api/funnels');
+  async getFunnels(type?: 'LEAD' | 'DEAL') {
+    const query = type ? `?type=${type}` : '';
+    return this.request<Record<string, unknown>>(`/api/funnels${query}`);
   }
 
-  async getDefaultFunnel() {
-    return this.request<Record<string, unknown>>('/api/funnels/default');
+  async getDefaultFunnel(type?: 'LEAD' | 'DEAL') {
+    const query = type ? `?type=${type}` : '';
+    return this.request<Record<string, unknown>>(`/api/funnels/default${query}`);
   }
 
   async getFunnel(id: string) {
     return this.request<Record<string, unknown>>(`/api/funnels/${id}`);
   }
 
-  async createFunnel(data: { name: string; columns?: Array<{ title: string; color?: string; mappedStatus?: string }> }) {
+  async createFunnel(data: { name: string; type?: 'LEAD' | 'DEAL'; columns?: Array<{ title: string; color?: string; mappedStatus?: string }> }) {
     return this.request<Record<string, unknown>>('/api/funnels', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -931,6 +933,13 @@ class ApiClient {
 
   async moveLead(data: { leadId: string; targetColumnId: string; position: number }) {
     return this.request<Record<string, unknown>>('/api/funnels/move-lead', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async moveDeal(data: { dealId: string; targetColumnId: string; position: number }) {
+    return this.request<Record<string, unknown>>('/api/funnels/move-deal', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1173,6 +1182,33 @@ class ApiClient {
     return this.request<{ data: Record<string, unknown> }>('/api/deals/stats');
   }
 
+  async getDealForecast(filters?: { months?: number; assignedTo?: string; stage?: string }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) params.set(key, String(value));
+      });
+    }
+    const qs = params.toString();
+    return this.request<{ status: number; data: import('../../types').ForecastData }>(`/api/deals/forecast${qs ? `?${qs}` : ''}`);
+  }
+
+  async getDealTrend(months?: number) {
+    const qs = months ? `?months=${months}` : '';
+    return this.request<{ status: number; data: import('../../types').TrendData }>(`/api/deals/trend${qs}`);
+  }
+
+  async getFunnelConversion(filters?: { from?: string; to?: string; source?: string; assignedTo?: string }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) params.set(key, String(value));
+      });
+    }
+    const qs = params.toString();
+    return this.request<{ status: number; data: import('../../types').FunnelConversionData }>(`/api/reports/funnel-conversion${qs ? `?${qs}` : ''}`);
+  }
+
   async getDealInteractions(dealId: string) {
     return this.request<Array<Record<string, unknown>>>(`/api/interactions?dealId=${dealId}`);
   }
@@ -1220,6 +1256,37 @@ class ApiClient {
 
   async getCompanyCount() {
     return this.request<{ data: { count: number } }>('/api/companies/stats/count');
+  }
+
+  // ========================
+  // Google Calendar Integration
+  // ========================
+
+  async getGoogleCalendarAuthUrl() {
+    return this.request<{ url: string }>('/api/integrations/google/auth-url');
+  }
+
+  async getGoogleCalendarStatus() {
+    return this.request<{ connected: boolean; email?: string; syncEnabled?: boolean; lastSyncAt?: string | null; connectedAt?: string }>('/api/integrations/google/status');
+  }
+
+  async toggleGoogleCalendarSync(syncEnabled: boolean) {
+    return this.request<{ syncEnabled: boolean }>('/api/integrations/google/sync-toggle', {
+      method: 'PUT',
+      body: JSON.stringify({ syncEnabled }),
+    });
+  }
+
+  async syncGoogleCalendar() {
+    return this.request<{ synced: number; total: number }>('/api/integrations/google/sync', {
+      method: 'POST',
+    });
+  }
+
+  async disconnectGoogleCalendar() {
+    return this.request<{ disconnected: boolean }>('/api/integrations/google/disconnect', {
+      method: 'DELETE',
+    });
   }
 
   // ========================
