@@ -46,6 +46,7 @@ const LeadForm = lazyNamed(() => import("../pages/LeadForm"), "LeadForm");
 const Pipeline = lazyNamed(() => import("../pages/Pipeline"), "Pipeline");
 const Automations = lazyNamed(() => import("../pages/Automations"), "Automations");
 const AutomationDetail = lazyNamed(() => import("../pages/AutomationDetail"), "AutomationDetail");
+const AutomationBuilderPage = lazyNamed(() => import("../pages/AutomationBuilderPage"), "AutomationBuilderPage");
 const AutomationLogs = lazyNamed(() => import("../pages/AutomationLogs"), "AutomationLogs");
 const Settings = lazyNamed(() => import("../pages/Settings"), "Settings");
 const CustomFields = lazyNamed(() => import("../pages/CustomFields"), "CustomFields");
@@ -68,6 +69,8 @@ const Deals = lazyNamed(() => import("../pages/Deals"), "Deals");
 const DealDetail = lazyNamed(() => import("../pages/DealDetail"), "DealDetail");
 const Forecast = lazyNamed(() => import("../pages/Forecast"), "Forecast");
 const FunnelConversion = lazyNamed(() => import("../pages/FunnelConversion"), "FunnelConversion");
+const Webhooks = lazyNamed(() => import("../pages/Webhooks"), "Webhooks");
+const ApiKeys = lazyNamed(() => import("../pages/ApiKeys"), "ApiKeys");
 
 export const router = createBrowserRouter([
   {
@@ -173,12 +176,20 @@ export const router = createBrowserRouter([
         element: AutomationDetail,
       },
       {
+        path: "automations/new/builder",
+        element: AutomationBuilderPage,
+      },
+      {
         path: "automations/logs",
         element: AutomationLogs,
       },
       {
         path: "automations/:id",
         element: AutomationDetail,
+      },
+      {
+        path: "automations/:id/builder",
+        element: AutomationBuilderPage,
       },
       {
         path: "settings",
@@ -235,6 +246,14 @@ export const router = createBrowserRouter([
       {
         path: "reports/:id",
         element: ReportBuilder,
+      },
+      {
+        path: "webhooks",
+        element: Webhooks,
+      },
+      {
+        path: "api-keys",
+        element: ApiKeys,
       },
     ],
   },

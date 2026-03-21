@@ -659,6 +659,30 @@ class ApiClient {
     });
   }
 
+  async scheduleBulkEmail(data: {
+    configId: string;
+    recipients: Array<{ email: string; leadId?: string; variables?: Record<string, string> }>;
+    subject: string;
+    html: string;
+    text?: string;
+    scheduledAt: string;
+  }) {
+    return this.request<{ campaignId: string; scheduledAt: string; recipientCount: number; status: string }>('/api/v1/email/schedule', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async cancelScheduledCampaign(campaignId: string) {
+    return this.request<{ campaignId: string; status: string }>(`/api/v1/email/schedule/${campaignId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getScheduledCampaignStatus(campaignId: string) {
+    return this.request<{ campaignId: string; state: string }>(`/api/v1/email/schedule/${campaignId}`);
+  }
+
   async sendTestEmail(configId: string, toEmail: string) {
     return this.request<{ success: boolean; message?: string }>(`/api/v1/email/configs/${configId}/test`, {
       method: 'POST',
@@ -1317,6 +1341,69 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // ========================
+  // Saved Views
+  // ========================
+
+  async getSavedViews(page?: string) {
+    const query = page ? `?page=${encodeURIComponent(page)}` : '';
+    return this.request<{ status: number; data: SavedView[] }>(`/api/v1/saved-views${query}`);
+  }
+
+  async createSavedView(data: {
+    name: string;
+    page: string;
+    filters: Record<string, unknown>;
+    columns?: Record<string, unknown> | null;
+    isDefault?: boolean;
+    isShared?: boolean;
+    sortBy?: string | null;
+    sortOrder?: string | null;
+  }) {
+    return this.request<{ status: number; data: SavedView }>('/api/v1/saved-views', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSavedView(id: string, data: {
+    name?: string;
+    filters?: Record<string, unknown>;
+    columns?: Record<string, unknown> | null;
+    isDefault?: boolean;
+    isShared?: boolean;
+    sortBy?: string | null;
+    sortOrder?: string | null;
+  }) {
+    return this.request<{ status: number; data: SavedView }>(`/api/v1/saved-views/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSavedView(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(`/api/v1/saved-views/${id}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+export interface SavedView {
+  id: string;
+  tenantId: string;
+  userId: string;
+  name: string;
+  page: string;
+  filters: Record<string, unknown>;
+  columns?: Record<string, unknown> | null;
+  isDefault: boolean;
+  isShared: boolean;
+  sortBy?: string | null;
+  sortOrder?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: { id: string; name: string };
 }
 
 /**

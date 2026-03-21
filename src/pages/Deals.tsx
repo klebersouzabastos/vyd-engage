@@ -55,6 +55,9 @@ import {
 import { formatCurrency } from "../utils/format";
 import { ExportButton } from "../components/ExportButton";
 import { apiClient } from "../services/api/client";
+import { useSavedViews } from "../hooks/useSavedViews";
+import { SavedViewsBar } from "../components/filters/SavedViewsBar";
+import { AdvancedFilterPanel, type FilterCondition, type FieldDefinition } from "../components/filters/AdvancedFilterPanel";
 
 const STAGE_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Todos os Stages" },
@@ -87,6 +90,19 @@ export function Deals() {
     loadFunnelWithDeals,
     moveDeal: moveDealInPipeline,
   } = useDealsPipeline();
+
+  const {
+    views: savedViews,
+    activeViewId: dealsActiveViewId,
+    selectView: selectDealView,
+    saveView,
+    updateView: updateSavedView,
+    deleteView: deleteSavedView,
+  } = useSavedViews("deals");
+
+  // Advanced filter state for deals
+  const [advancedConditions, setAdvancedConditions] = useState<FilterCondition[]>([]);
+  const [advancedLogic, setAdvancedLogic] = useState<"AND" | "OR">("AND");
 
   const [viewMode, setViewMode] = useState<"list" | "pipeline">("list");
   const [search, setSearch] = useState("");
@@ -234,6 +250,56 @@ export function Deals() {
     setErrorMessage("");
   };
 
+  // Advanced filter field definitions for deals
+  const dealFilterFields: FieldDefinition[] = [
+    { key: "name", label: "Nome", type: "text" },
+    { key: "value", label: "Valor", type: "number" },
+    { key: "stage", label: "Stage", type: "select", options: STAGE_OPTIONS.filter(o => o.value !== "ALL") },
+    { key: "probability", label: "Probabilidade (%)", type: "number" },
+    { key: "expectedCloseDate", label: "Data de Fechamento", type: "date" },
+    { key: "notes", label: "Notas", type: "text" },
+  ];
+
+  // Saved Views helpers
+  const getCurrentDealFilters = useCallback(() => ({
+    search, stageFilter, advancedConditions, advancedLogic,
+  }), [search, stageFilter, advancedConditions, advancedLogic]);
+
+  const applyDealSavedViewFilters = useCallback((filters: Record<string, any>) => {
+    setSearch(filters.search || "");
+    setStageFilter(filters.stageFilter || "ALL");
+    setAdvancedConditions(filters.advancedConditions || []);
+    setAdvancedLogic(filters.advancedLogic || "AND");
+    const newFilters: any = { page: 1 };
+    if (filters.search?.trim()) newFilters.search = filters.search.trim();
+    if (filters.stageFilter && filters.stageFilter !== "ALL") newFilters.stage = filters.stageFilter;
+    fetchDeals(newFilters);
+  }, [fetchDeals]);
+
+  const handleDealViewSelect = useCallback((viewId: string | null) => {
+    selectDealView(viewId);
+    if (viewId === null) {
+      setSearch(""); setStageFilter("ALL");
+      setAdvancedConditions([]); setAdvancedLogic("AND");
+      fetchDeals({ page: 1 });
+    } else {
+      const view = savedViews.find((v) => v.id === viewId);
+      if (view) applyDealSavedViewFilters(view.filters);
+    }
+  }, [selectDealView, savedViews, applyDealSavedViewFilters, fetchDeals]);
+
+  const handleSaveDealView = useCallback(async (name: string, options?: { isDefault?: boolean; isShared?: boolean }) => {
+    await saveView(name, getCurrentDealFilters(), options);
+  }, [saveView, getCurrentDealFilters]);
+
+  const handleUpdateDealView = useCallback(async (id: string, data: { name?: string; isDefault?: boolean; isShared?: boolean }) => {
+    await updateSavedView(id, data);
+  }, [updateSavedView]);
+
+  const handleDeleteDealView = useCallback(async (id: string) => {
+    await deleteSavedView(id);
+  }, [deleteSavedView]);
+
   if (loading && deals.length === 0) {
     return (
       <div className="min-h-screen">
@@ -320,6 +386,31 @@ export function Deals() {
             </Button>
           </div>
         </div>
+
+        {/* Saved Views Bar */}
+        {viewMode === "list" && (
+          <SavedViewsBar
+            views={savedViews}
+            activeViewId={dealsActiveViewId}
+            onSelectView={handleDealViewSelect}
+            onSaveView={handleSaveDealView}
+            onUpdateView={handleUpdateDealView}
+            onDeleteView={handleDeleteDealView}
+          />
+        )}
+
+        {/* Advanced Filter Panel */}
+        {viewMode === "list" && (
+          <AdvancedFilterPanel
+            conditions={advancedConditions}
+            onConditionsChange={setAdvancedConditions}
+            logic={advancedLogic}
+            onLogicChange={setAdvancedLogic}
+            fields={dealFilterFields}
+            onApply={handleSearch}
+            onClear={() => { setAdvancedConditions([]); handleSearch(); }}
+          />
+        )}
 
         {/* Pipeline Funnel Selector (shown only in pipeline view) */}
         {viewMode === "pipeline" && (

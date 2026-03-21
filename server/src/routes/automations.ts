@@ -20,6 +20,7 @@ const createAutomationSchema = z.object({
   trigger: z.any(),
   steps: z.array(z.any()),
   conditions: z.any().optional(),
+  flowData: z.any().optional(),
 });
 
 const updateAutomationSchema = createAutomationSchema.partial().extend({

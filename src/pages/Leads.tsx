@@ -20,6 +20,9 @@ import { Lead } from "../types";
 import { apiClient } from "../services/api/client";
 import { useLeads } from "../hooks/useLeads";
 import { mapStatusToBackend, mapSourceToBackend } from "../utils/leadEnums";
+import { useSavedViews } from "../hooks/useSavedViews";
+import { SavedViewsBar } from "../components/filters/SavedViewsBar";
+import { AdvancedFilterPanel, type FilterCondition, type FieldDefinition } from "../components/filters/AdvancedFilterPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,6 +83,15 @@ export function Leads() {
   const { getTagById, tags } = useTags();
   const { fields: customFields } = useCustomFields();
   const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
+  const {
+    views: savedViews,
+    activeView,
+    activeViewId,
+    selectView: selectSavedView,
+    saveView,
+    updateView: updateSavedView,
+    deleteView: deleteSavedView,
+  } = useSavedViews("leads");
 
   // View tab state from URL
   const viewParam = searchParams.get("view");
@@ -99,6 +111,10 @@ export function Leads() {
   const [filterTag, setFilterTag] = useState<string[]>([]);
   const [filterCustomFields, setFilterCustomFields] = useState<Record<string, any>>({});
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Advanced filter state
+  const [advancedConditions, setAdvancedConditions] = useState<FilterCondition[]>([]);
+  const [advancedLogic, setAdvancedLogic] = useState<"AND" | "OR">("AND");
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -383,6 +399,75 @@ export function Leads() {
     setSelectedLeads([]);
   };
 
+  // --- Advanced Filter Fields ---
+  const advancedFilterFields: FieldDefinition[] = [
+    { key: "name", label: "Nome", type: "text" },
+    { key: "email", label: "E-mail", type: "text" },
+    { key: "phone", label: "Telefone", type: "text" },
+    { key: "company", label: "Empresa", type: "text" },
+    { key: "status", label: "Status", type: "select", options: [
+      { value: "NEW", label: "Novo" }, { value: "CONTACTED", label: "Em Contato" },
+      { value: "QUALIFIED", label: "Qualificado" }, { value: "PROPOSAL", label: "Proposta" },
+      { value: "NEGOTIATION", label: "Negociacao" }, { value: "WON", label: "Ganho" },
+      { value: "LOST", label: "Perdido" },
+    ]},
+    { key: "source", label: "Origem", type: "select", options: [
+      { value: "WEBSITE", label: "Website" }, { value: "SOCIAL_MEDIA", label: "Redes Sociais" },
+      { value: "REFERRAL", label: "Indicacao" }, { value: "EMAIL", label: "E-mail" },
+      { value: "PHONE", label: "Telefone" }, { value: "OTHER", label: "Outro" },
+    ]},
+    { key: "score", label: "Score", type: "number" },
+    { key: "createdAt", label: "Data de criacao", type: "date" },
+    { key: "isContact", label: "Contato", type: "boolean" },
+    ...customFields.map(cf => ({
+      key: `cf_${cf.id}`,
+      label: cf.name,
+      type: (cf.type === "textarea" ? "text" : cf.type === "checkbox" ? "boolean" : cf.type) as FieldDefinition["type"],
+      options: cf.type === "select" && cf.options ? (cf.options as { value: string; label: string }[]) : undefined,
+    })),
+  ];
+
+  // --- Saved Views ---
+  const getCurrentFilters = useCallback(() => ({
+    filterStatus, filterSource, filterAutomation, filterTag,
+    filterCustomFields, searchQuery, advancedConditions, advancedLogic,
+  }), [filterStatus, filterSource, filterAutomation, filterTag, filterCustomFields, searchQuery, advancedConditions, advancedLogic]);
+
+  const applySavedViewFilters = useCallback((filters: Record<string, any>) => {
+    setFilterStatus(filters.filterStatus || []);
+    setFilterSource(filters.filterSource || []);
+    setFilterAutomation(filters.filterAutomation || []);
+    setFilterTag(filters.filterTag || []);
+    setFilterCustomFields(filters.filterCustomFields || {});
+    setSearchQuery(filters.searchQuery || "");
+    setAdvancedConditions(filters.advancedConditions || []);
+    setAdvancedLogic(filters.advancedLogic || "AND");
+  }, []);
+
+  const handleSavedViewSelect = useCallback((viewId: string | null) => {
+    selectSavedView(viewId);
+    if (viewId === null) {
+      setFilterStatus([]); setFilterSource([]); setFilterAutomation([]);
+      setFilterTag([]); setFilterCustomFields({}); setSearchQuery("");
+      setAdvancedConditions([]); setAdvancedLogic("AND");
+    } else {
+      const view = savedViews.find((v) => v.id === viewId);
+      if (view) applySavedViewFilters(view.filters);
+    }
+  }, [selectSavedView, savedViews, applySavedViewFilters]);
+
+  const handleSaveCurrentView = useCallback(async (name: string, options?: { isDefault?: boolean; isShared?: boolean }) => {
+    await saveView(name, getCurrentFilters(), options);
+  }, [saveView, getCurrentFilters]);
+
+  const handleUpdateSavedView = useCallback(async (id: string, data: { name?: string; isDefault?: boolean; isShared?: boolean }) => {
+    await updateSavedView(id, data);
+  }, [updateSavedView]);
+
+  const handleDeleteSavedView = useCallback(async (id: string) => {
+    await deleteSavedView(id);
+  }, [deleteSavedView]);
+
   // --- Convert / Revert ---
   const handleConvertToContact = async (leadId: string) => {
     try {
@@ -478,6 +563,27 @@ export function Leads() {
             onDelete={() => setDeleteDialogOpen(true)}
           />
         )}
+
+        {/* Saved Views Bar */}
+        <SavedViewsBar
+          views={savedViews}
+          activeViewId={activeViewId}
+          onSelectView={handleSavedViewSelect}
+          onSaveView={handleSaveCurrentView}
+          onUpdateView={handleUpdateSavedView}
+          onDeleteView={handleDeleteSavedView}
+        />
+
+        {/* Advanced Filter Panel */}
+        <AdvancedFilterPanel
+          conditions={advancedConditions}
+          onConditionsChange={setAdvancedConditions}
+          logic={advancedLogic}
+          onLogicChange={setAdvancedLogic}
+          fields={advancedFilterFields}
+          onApply={() => fetchLeads(buildServerFilters(1))}
+          onClear={() => { setAdvancedConditions([]); fetchLeads(buildServerFilters(1)); }}
+        />
 
         {/* Filters Bar */}
         <LeadFilters

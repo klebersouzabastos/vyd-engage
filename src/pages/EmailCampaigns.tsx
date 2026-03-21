@@ -7,7 +7,8 @@ import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import {
   ArrowLeft, Mail, Send, Users, FileText, Save, Trash2,
-  Loader2, Search, CheckCircle, XCircle, Eye, AlertTriangle
+  Loader2, Search, CheckCircle, XCircle, Eye, AlertTriangle,
+  Clock, Calendar, X
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
@@ -52,6 +53,32 @@ function saveLocalTemplates(templates: EmailTemplate[]) {
   localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
 }
 
+// Scheduled campaigns localStorage
+const SCHEDULED_CAMPAIGNS_KEY = "vyd_scheduled_campaigns";
+
+interface ScheduledCampaign {
+  id: string;
+  campaignId: string;
+  subject: string;
+  recipientCount: number;
+  scheduledAt: string;
+  status: "scheduled" | "sent" | "cancelled";
+  createdAt: string;
+}
+
+function loadScheduledCampaigns(): ScheduledCampaign[] {
+  try {
+    const campaigns = JSON.parse(localStorage.getItem(SCHEDULED_CAMPAIGNS_KEY) || "[]");
+    // Filter out old campaigns (> 7 days)
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return campaigns.filter((c: ScheduledCampaign) => new Date(c.createdAt).getTime() > cutoff);
+  } catch { return []; }
+}
+
+function saveScheduledCampaigns(campaigns: ScheduledCampaign[]) {
+  localStorage.setItem(SCHEDULED_CAMPAIGNS_KEY, JSON.stringify(campaigns));
+}
+
 const VARIABLE_OPTIONS = [
   { label: "Nome do Lead", value: "{{name}}" },
   { label: "Email do Lead", value: "{{email}}" },
@@ -86,6 +113,12 @@ export function EmailCampaigns() {
   // Send state
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
+
+  // Scheduling
+  const [sendMode, setSendMode] = useState<"now" | "schedule">("now");
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduledCampaigns, setScheduledCampaigns] = useState<ScheduledCampaign[]>(loadScheduledCampaigns());
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -187,29 +220,39 @@ export function EmailCampaigns() {
     toast.success("Template removido");
   };
 
-  // Send campaign
-  const handleSend = useCallback(async () => {
-    if (!selectedConfigId) { toast.error("Selecione uma configuração de email"); return; }
-    if (selectedLeadIds.size === 0) { toast.error("Selecione pelo menos um destinatário"); return; }
-    if (!subject.trim()) { toast.error("Preencha o assunto"); return; }
-    if (!htmlBody.trim()) { toast.error("Preencha o corpo do email"); return; }
-
+  // Build recipients list
+  const buildRecipients = useCallback(() => {
     const selectedLeads = allLeads.filter(l => selectedLeadIds.has(l.id));
+    return selectedLeads.map(lead => ({
+      email: lead.email!,
+      leadId: lead.id,
+      variables: {
+        name: lead.name || "",
+        email: lead.email || "",
+        company: "",
+        phone: "",
+      },
+    }));
+  }, [allLeads, selectedLeadIds]);
+
+  // Validate before send/schedule
+  const validateCampaign = useCallback(() => {
+    if (!selectedConfigId) { toast.error("Selecione uma configuração de email"); return false; }
+    if (selectedLeadIds.size === 0) { toast.error("Selecione pelo menos um destinatário"); return false; }
+    if (!subject.trim()) { toast.error("Preencha o assunto"); return false; }
+    if (!htmlBody.trim()) { toast.error("Preencha o corpo do email"); return false; }
+    return true;
+  }, [selectedConfigId, selectedLeadIds, subject, htmlBody]);
+
+  // Send campaign now
+  const handleSend = useCallback(async () => {
+    if (!validateCampaign()) return;
 
     setSending(true);
     setSendResult(null);
 
     try {
-      const recipients = selectedLeads.map(lead => ({
-        email: lead.email!,
-        leadId: lead.id,
-        variables: {
-          name: lead.name || "",
-          email: lead.email || "",
-          company: "",
-          phone: "",
-        },
-      }));
+      const recipients = buildRecipients();
 
       const result = await apiClient.sendBulkEmail({
         configId: selectedConfigId,
@@ -219,14 +262,82 @@ export function EmailCampaigns() {
       });
 
       const data = result?.data || result;
-      setSendResult({ sent: data?.sent || selectedLeads.length, failed: data?.failed || 0 });
-      toast.success(`Campanha enviada: ${data?.sent || selectedLeads.length} emails`);
+      setSendResult({ sent: data?.sent || recipients.length, failed: data?.failed || 0 });
+      toast.success(`Campanha enviada: ${data?.sent || recipients.length} emails`);
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar campanha");
     } finally {
       setSending(false);
     }
-  }, [selectedConfigId, selectedLeadIds, subject, htmlBody, allLeads]);
+  }, [selectedConfigId, selectedLeadIds, subject, htmlBody, allLeads, validateCampaign, buildRecipients]);
+
+  // Schedule campaign for later
+  const handleSchedule = useCallback(async () => {
+    if (!validateCampaign()) return;
+    if (!scheduleDate || !scheduleTime) {
+      toast.error("Selecione data e hora para agendar");
+      return;
+    }
+
+    const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`);
+    if (scheduledAt.getTime() <= Date.now()) {
+      toast.error("A data de agendamento deve ser no futuro");
+      return;
+    }
+
+    setSending(true);
+    setSendResult(null);
+
+    try {
+      const recipients = buildRecipients();
+
+      const result = await apiClient.scheduleBulkEmail({
+        configId: selectedConfigId,
+        recipients,
+        subject,
+        html: htmlBody,
+        scheduledAt: scheduledAt.toISOString(),
+      });
+
+      const data = result?.data || result;
+      const newCampaign: ScheduledCampaign = {
+        id: Date.now().toString(),
+        campaignId: data?.campaignId || "",
+        subject,
+        recipientCount: recipients.length,
+        scheduledAt: scheduledAt.toISOString(),
+        status: "scheduled",
+        createdAt: new Date().toISOString(),
+      };
+      const updated = [newCampaign, ...scheduledCampaigns];
+      setScheduledCampaigns(updated);
+      saveScheduledCampaigns(updated);
+
+      toast.success(`Campanha agendada para ${scheduledAt.toLocaleString("pt-BR")}`);
+      setScheduleDate("");
+      setScheduleTime("");
+      setSendMode("now");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao agendar campanha");
+    } finally {
+      setSending(false);
+    }
+  }, [selectedConfigId, selectedLeadIds, subject, htmlBody, allLeads, scheduleDate, scheduleTime, scheduledCampaigns, validateCampaign, buildRecipients]);
+
+  // Cancel scheduled campaign
+  const handleCancelScheduled = useCallback(async (campaign: ScheduledCampaign) => {
+    try {
+      await apiClient.cancelScheduledCampaign(campaign.campaignId);
+      const updated = scheduledCampaigns.map(c =>
+        c.id === campaign.id ? { ...c, status: "cancelled" as const } : c
+      );
+      setScheduledCampaigns(updated);
+      saveScheduledCampaigns(updated);
+      toast.success("Campanha agendada cancelada");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao cancelar campanha");
+    }
+  }, [scheduledCampaigns]);
 
   // Preview with variable substitution
   const getPreviewHtml = () => {
@@ -449,25 +560,139 @@ export function EmailCampaigns() {
                 </div>
               )}
 
-              {/* Send button */}
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">
-                  {selectedLeadIds.size > 0
-                    ? `${selectedLeadIds.size} destinatário${selectedLeadIds.size !== 1 ? "s" : ""} selecionado${selectedLeadIds.size !== 1 ? "s" : ""}`
-                    : "Nenhum destinatário selecionado"}
-                </p>
-                <Button
-                  onClick={handleSend}
-                  disabled={sending || selectedLeadIds.size === 0 || !subject.trim() || !htmlBody.trim()}
-                  className="gap-2"
-                >
-                  {sending ? (
-                    <><Loader2 size={16} className="animate-spin" /> Enviando...</>
+              {/* Send mode toggle + actions */}
+              <div className="bg-white rounded-lg border border-gray-300 p-4 space-y-4">
+                {/* Mode toggle */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSendMode("now")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      sendMode === "now"
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Send size={14} /> Enviar Agora
+                  </button>
+                  <button
+                    onClick={() => setSendMode("schedule")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      sendMode === "schedule"
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Clock size={14} /> Agendar
+                  </button>
+                </div>
+
+                {/* Schedule date/time picker */}
+                {sendMode === "schedule" && (
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <Calendar size={16} className="text-blue-600 shrink-0" />
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        type="date"
+                        value={scheduleDate}
+                        onChange={e => setScheduleDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      />
+                      <input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={e => setScheduleTime(e.target.value)}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Action row */}
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    {selectedLeadIds.size > 0
+                      ? `${selectedLeadIds.size} destinatário${selectedLeadIds.size !== 1 ? "s" : ""} selecionado${selectedLeadIds.size !== 1 ? "s" : ""}`
+                      : "Nenhum destinatário selecionado"}
+                  </p>
+                  {sendMode === "now" ? (
+                    <Button
+                      onClick={handleSend}
+                      disabled={sending || selectedLeadIds.size === 0 || !subject.trim() || !htmlBody.trim()}
+                      className="gap-2"
+                    >
+                      {sending ? (
+                        <><Loader2 size={16} className="animate-spin" /> Enviando...</>
+                      ) : (
+                        <><Send size={16} /> Enviar Campanha</>
+                      )}
+                    </Button>
                   ) : (
-                    <><Send size={16} /> Enviar Campanha</>
+                    <Button
+                      onClick={handleSchedule}
+                      disabled={sending || selectedLeadIds.size === 0 || !subject.trim() || !htmlBody.trim() || !scheduleDate || !scheduleTime}
+                      className="gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      {sending ? (
+                        <><Loader2 size={16} className="animate-spin" /> Agendando...</>
+                      ) : (
+                        <><Clock size={16} /> Agendar Campanha</>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
+
+              {/* Scheduled campaigns list */}
+              {scheduledCampaigns.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-300 p-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                    <Clock size={14} /> Campanhas Agendadas
+                  </h4>
+                  <div className="space-y-2">
+                    {scheduledCampaigns.map(campaign => (
+                      <div
+                        key={campaign.id}
+                        className={`flex items-center justify-between p-3 rounded-md border ${
+                          campaign.status === "cancelled"
+                            ? "bg-gray-50 border-gray-200"
+                            : campaign.status === "sent"
+                            ? "bg-green-50 border-green-200"
+                            : "bg-blue-50 border-blue-200"
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">{campaign.subject}</p>
+                          <p className="text-xs text-gray-500">
+                            {campaign.recipientCount} destinatário{campaign.recipientCount !== 1 ? "s" : ""} &bull;{" "}
+                            {new Date(campaign.scheduledAt).toLocaleString("pt-BR")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-3">
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            campaign.status === "scheduled"
+                              ? "bg-blue-100 text-blue-700"
+                              : campaign.status === "sent"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-500"
+                          }`}>
+                            {campaign.status === "scheduled" ? "Agendada" : campaign.status === "sent" ? "Enviada" : "Cancelada"}
+                          </span>
+                          {campaign.status === "scheduled" && (
+                            <button
+                              onClick={() => handleCancelScheduled(campaign)}
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                              title="Cancelar agendamento"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

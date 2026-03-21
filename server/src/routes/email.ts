@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { emailConfigService } from '../services/emailConfigService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
+import { scheduleCampaign, cancelScheduledCampaign, getScheduledCampaignStatus } from '../jobs/emailCampaign.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -186,11 +187,115 @@ router.post('/configs/:id/test', async (req, res, next) => {
   }
 });
 
+// ========================
+// Campaign Scheduling
+// ========================
+
+const scheduleCampaignSchema = z.object({
+  configId: z.string().uuid(),
+  recipients: z.array(z.object({
+    email: z.string().email(),
+    leadId: z.string().uuid().optional(),
+    variables: z.record(z.string()).optional(),
+  })).min(1).max(500),
+  subject: z.string().min(1),
+  html: z.string().min(1),
+  text: z.string().optional(),
+  scheduledAt: z.string().datetime(),
+});
+
+// POST /api/email/schedule - Schedule a campaign for later
+router.post('/schedule', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const data = scheduleCampaignSchema.parse(req.body);
+    const scheduledAt = new Date(data.scheduledAt);
+
+    if (scheduledAt.getTime() <= Date.now()) {
+      return next(createError('Scheduled time must be in the future', 400, 'INVALID_SCHEDULE'));
+    }
+
+    const campaignId = `${req.user.tenantId}-${Date.now()}`;
+
+    await scheduleCampaign(
+      {
+        tenantId: req.user.tenantId,
+        configId: data.configId,
+        recipients: data.recipients,
+        subject: data.subject,
+        html: data.html,
+        text: data.text,
+        campaignId,
+      },
+      scheduledAt,
+    );
+
+    res.json({
+      status: 200,
+      data: {
+        campaignId,
+        scheduledAt: scheduledAt.toISOString(),
+        recipientCount: data.recipients.length,
+        status: 'scheduled',
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// DELETE /api/email/schedule/:campaignId - Cancel a scheduled campaign
+router.delete('/schedule/:campaignId', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const { campaignId } = req.params;
+
+    // Verify the campaign belongs to this tenant
+    if (!campaignId.startsWith(req.user.tenantId)) {
+      return next(createError('Campaign not found', 404));
+    }
+
+    const cancelled = await cancelScheduledCampaign(campaignId);
+
+    if (!cancelled) {
+      return next(createError('Campaign not found or already sent', 404, 'CAMPAIGN_NOT_FOUND'));
+    }
+
+    res.json({ status: 200, data: { campaignId, status: 'cancelled' } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/email/schedule/:campaignId - Get campaign status
+router.get('/schedule/:campaignId', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+
+    const { campaignId } = req.params;
+
+    if (!campaignId.startsWith(req.user.tenantId)) {
+      return next(createError('Campaign not found', 404));
+    }
+
+    const status = await getScheduledCampaignStatus(campaignId);
+
+    if (!status) {
+      return next(createError('Campaign not found', 404, 'CAMPAIGN_NOT_FOUND'));
+    }
+
+    res.json({ status: 200, data: status });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
-
-
-
-
 
 
 

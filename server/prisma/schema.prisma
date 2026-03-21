@@ -68,6 +68,7 @@ model User {
   notifications         Notification[]       @relation("NotificationUser")
   reports               Report[]             @relation("ReportCreator")
   calendarConnections   CalendarConnection[] @relation("UserCalendarConnections")
+  savedViews            SavedView[]
 
   @@index([email])
   @@index([tenantId])
@@ -144,6 +145,7 @@ model Tenant {
   reports             Report[]
   deals               Deal[]
   calendarConnections CalendarConnection[]
+  savedViews          SavedView[]
 
   @@index([slug])
 }
@@ -719,6 +721,7 @@ model Automation {
   trigger     Json // Store trigger configuration
   steps       Json // Store automation steps
   conditions  Json? // Store conditions
+  flowData    Json? // Store visual builder node/edge data
 
   // Statistics
   runsCount    Int @default(0)
@@ -1048,4 +1051,31 @@ model Report {
 
   @@index([tenantId])
   @@index([tenantId, createdById])
+}
+
+// ============================================
+// SAVED VIEWS (Advanced Filtering)
+// ============================================
+
+model SavedView {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  name      String
+  page      String   // 'leads', 'deals', 'tasks', 'companies'
+  filters   Json     // stored filter configuration
+  columns   Json?    // optional column visibility/order
+  isDefault Boolean  @default(false)
+  isShared  Boolean  @default(false)
+  sortBy    String?
+  sortOrder String?  // 'asc' | 'desc'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, page])
+  @@index([tenantId, deletedAt])
 }

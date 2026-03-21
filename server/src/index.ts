@@ -130,6 +130,7 @@ import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
 import exportRoutes from './routes/exports.js';
 import calendarRoutes from './routes/calendar.js';
 import aiRoutes from './routes/ai.js';
+import savedViewRoutes from './routes/savedViews.js';
 
 import { Router as ExpressRouter } from 'express';
 import prisma from './config/database.js';
@@ -186,6 +187,7 @@ v1Router.use('/auth/profile', csrfProtection);
 v1Router.use('/auth/change-password', csrfProtection);
 v1Router.use('/auth/tenant', csrfProtection);
 v1Router.use('/ai', csrfProtection);
+v1Router.use('/saved-views', csrfProtection);
 
 // Tracking routes (public, no auth, no CSRF)
 v1Router.use('/track', trackingRoutes);
@@ -217,6 +219,7 @@ v1Router.use('/outgoing-webhooks', outgoingWebhookRoutes);
 v1Router.use('/exports', exportRoutes);
 v1Router.use('/integrations', calendarRoutes);
 v1Router.use('/ai', aiRoutes);
+v1Router.use('/saved-views', savedViewRoutes);
 
 // Mount v1 router at /api/v1 (canonical) and /api (backwards-compatible alias)
 app.use('/api/v1', v1Router);

@@ -10,6 +10,7 @@ export interface CreateAutomationData {
   trigger: any; // JSON
   steps: any[]; // JSON array
   conditions?: any; // JSON
+  flowData?: any; // JSON — visual builder node/edge data
 }
 
 export interface UpdateAutomationData extends Partial<CreateAutomationData> {
@@ -28,6 +29,7 @@ export const automationService = {
         trigger: data.trigger,
         steps: data.steps,
         conditions: data.conditions || null,
+        flowData: data.flowData || null,
       },
     });
 
@@ -113,6 +115,7 @@ export const automationService = {
     if (data.trigger !== undefined) updateData.trigger = data.trigger;
     if (data.steps !== undefined) updateData.steps = data.steps;
     if (data.conditions !== undefined) updateData.conditions = data.conditions;
+    if (data.flowData !== undefined) updateData.flowData = data.flowData;
 
     const automation = await prisma.automation.update({
       where: { id: data.id },

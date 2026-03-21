@@ -18,6 +18,8 @@ import {
   PanelLeftOpen,
   Handshake,
   TrendingUp,
+  Webhook,
+  KeyRound,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,6 +41,8 @@ const menuItems = [
   { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
   { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
   { icon: CreditCard, label: "Billing", path: "/app/billing", tourId: "sidebar-billing" },
+  { icon: Webhook, label: "Webhooks", path: "/app/webhooks", tourId: "sidebar-webhooks" },
+  { icon: KeyRound, label: "API Keys", path: "/app/api-keys", tourId: "sidebar-api-keys" },
   { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
 ];
 

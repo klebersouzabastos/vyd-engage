@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { Plus, Mail, MessageSquare, Play, Pause, Eye, Trash2, Loader2, Zap } from "lucide-react";
+import { Plus, Mail, MessageSquare, Play, Pause, Eye, Trash2, Loader2, Zap, Workflow, Pencil } from "lucide-react";
 import { Switch } from "../components/ui/switch";
 import {
   AlertDialog,
@@ -121,13 +121,23 @@ export function Automations() {
           <Button variant="outline" className="gap-2" onClick={() => navigate("/app/automations/logs")}>
             <Eye size={16} /> Ver Logs
           </Button>
-          <Button
-            className="bg-primary hover:bg-primary-dark gap-2"
-            onClick={() => navigate("/app/automations/new")}
-          >
-            <Plus size={16} />
-            Nova Automação
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate("/app/automations/new")}
+            >
+              <Plus size={16} />
+              Formulário
+            </Button>
+            <Button
+              className="bg-primary hover:bg-primary-dark gap-2"
+              onClick={() => navigate("/app/automations/new/builder")}
+            >
+              <Workflow size={16} />
+              Visual Builder
+            </Button>
+          </div>
         </div>
 
         {/* Empty State */}
@@ -136,10 +146,16 @@ export function Automations() {
             <Zap className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma automação criada</h3>
             <p className="text-gray-500 mb-4">Crie sua primeira automação para automatizar tarefas</p>
-            <Button onClick={() => navigate("/app/automations/new")}>
-              <Plus size={16} className="mr-1" />
-              Nova Automação
-            </Button>
+            <div className="flex items-center gap-3 justify-center">
+              <Button variant="outline" onClick={() => navigate("/app/automations/new")}>
+                <Plus size={16} className="mr-1" />
+                Formulário
+              </Button>
+              <Button onClick={() => navigate("/app/automations/new/builder")}>
+                <Workflow size={16} className="mr-1" />
+                Visual Builder
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -240,7 +256,17 @@ export function Automations() {
                           className="flex-1"
                           onClick={() => navigate(`/app/automations/${automation.id}`)}
                         >
-                          Ver Detalhes
+                          <Pencil size={14} className="mr-1" />
+                          Detalhes
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 gap-1"
+                          onClick={() => navigate(`/app/automations/${automation.id}/builder`)}
+                        >
+                          <Workflow size={14} />
+                          Builder
                         </Button>
                         <Button
                           variant="outline"
