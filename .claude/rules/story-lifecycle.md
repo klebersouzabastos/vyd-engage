@@ -1,3 +1,9 @@
+---
+paths:
+  - "docs/stories/**"
+  - ".aiox-core/development/**"
+---
+
 # Story Lifecycle — Detailed Rules
 
 ## Status Progression
