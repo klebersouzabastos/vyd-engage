@@ -100,6 +100,8 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
                 className="w-64 h-64 border-2 border-white rounded-lg shadow-lg"
                 width={256}
                 height={256}
+                loading="lazy"
+                decoding="async"
               />
               <p className="text-sm text-gray-600 mt-4 text-center max-w-sm">
                 1. Abra o WhatsApp no seu celular<br />

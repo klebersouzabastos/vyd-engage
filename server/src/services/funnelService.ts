@@ -331,7 +331,7 @@ export const funnelService = {
    */
   async moveLead(tenantId: string, leadId: string, targetColumnId: string, position: number) {
     const lead = await prisma.lead.findFirst({
-      where: { id: leadId, tenantId },
+      where: { id: leadId, tenantId, deletedAt: null },
     });
 
     if (!lead) {
@@ -367,7 +367,7 @@ export const funnelService = {
 
     // Reorder other leads in target column
     const leadsInColumn = await prisma.lead.findMany({
-      where: { funnelColumnId: targetColumnId, id: { not: leadId } },
+      where: { funnelColumnId: targetColumnId, id: { not: leadId }, deletedAt: null },
       orderBy: { positionInColumn: 'asc' },
     });
 
@@ -389,7 +389,7 @@ export const funnelService = {
    */
   async moveDeal(tenantId: string, dealId: string, targetColumnId: string, position: number) {
     const deal = await prisma.deal.findFirst({
-      where: { id: dealId, tenantId },
+      where: { id: dealId, tenantId, deletedAt: null },
     });
 
     if (!deal) {
@@ -422,7 +422,7 @@ export const funnelService = {
 
     // Reorder other deals in target column
     const dealsInColumn = await prisma.deal.findMany({
-      where: { funnelColumnId: targetColumnId, id: { not: dealId } },
+      where: { funnelColumnId: targetColumnId, id: { not: dealId }, deletedAt: null },
       orderBy: { positionInColumn: 'asc' },
     });
 

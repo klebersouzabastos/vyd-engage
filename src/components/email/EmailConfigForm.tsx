@@ -9,6 +9,7 @@ import { EmailProviderSelector } from "./EmailProviderSelector";
 import { validateEmailConfig } from "../../utils/email/emailValidators";
 import { Alert, AlertDescription } from "../ui/alert";
 import { AlertCircle, Info } from "lucide-react";
+import { useAutoFocus } from "../../hooks/useFocusManagement";
 
 interface EmailConfigFormProps {
   config?: EmailConfig;
@@ -33,6 +34,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
   );
   const [validation, setValidation] = useState<{ isValid: boolean; errors: string[]; warnings: string[] } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   useEffect(() => {
     if (emailConfig) {
@@ -317,7 +319,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" ref={autoFocusRef}>
       <div>
         <Label htmlFor="name">Nome da Configuração *</Label>
         <Input

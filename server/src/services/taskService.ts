@@ -39,6 +39,7 @@ export const taskService = {
       where: {
         id,
         tenantId,
+        deletedAt: null,
       },
       include: {
         lead: {
@@ -76,6 +77,7 @@ export const taskService = {
 
     const where: any = {
       tenantId,
+      deletedAt: null,
     };
 
     if (filters?.status) {
@@ -198,14 +200,15 @@ export const taskService = {
 
   async delete(tenantId: string, id: string) {
     await this.findById(tenantId, id);
-    await prisma.task.delete({
+    await prisma.task.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
   },
 
   async count(tenantId: string) {
     return prisma.task.count({
-      where: { tenantId },
+      where: { tenantId, deletedAt: null },
     });
   },
 };

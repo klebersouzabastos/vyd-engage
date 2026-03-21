@@ -82,7 +82,7 @@ router.patch('/bulk', async (req, res, next) => {
     const tenantId = req.user.tenantId;
 
     // Verify all leads belong to tenant
-    const count = await prisma.lead.count({ where: { id: { in: ids }, tenantId } });
+    const count = await prisma.lead.count({ where: { id: { in: ids }, tenantId, deletedAt: null } });
     if (count !== ids.length) {
       return next(createError('Some leads not found', 404));
     }
@@ -184,7 +184,7 @@ router.get('/duplicates', async (req, res, next) => {
 
     // Fetch full lead data
     const leads = allIds.size > 0 ? await prisma.lead.findMany({
-      where: { id: { in: Array.from(allIds) } },
+      where: { id: { in: Array.from(allIds) }, deletedAt: null },
       include: { tags: { include: { tag: true } } },
     }) : [];
 
@@ -223,7 +223,7 @@ router.post('/merge', async (req, res, next) => {
 
     // Verify all leads belong to tenant
     const allIds = [primaryId, ...duplicateIds];
-    const count = await prisma.lead.count({ where: { id: { in: allIds }, tenantId } });
+    const count = await prisma.lead.count({ where: { id: { in: allIds }, tenantId, deletedAt: null } });
     if (count !== allIds.length) return next(createError('Some leads not found', 404));
 
     // Use transaction for atomicity
@@ -465,7 +465,7 @@ router.post('/import', async (req, res, next) => {
       const prismaModule = await import('../config/database.js');
       const prisma = prismaModule.default;
       const existing = await prisma.lead.findMany({
-        where: { tenantId, email: { not: null } },
+        where: { tenantId, email: { not: null }, deletedAt: null },
         select: { email: true },
       });
       existingEmails = new Set(existing.map((l: { email: string | null }) => l.email!.toLowerCase()));

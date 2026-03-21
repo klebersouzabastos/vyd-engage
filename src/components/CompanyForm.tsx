@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import {
   Select,
@@ -11,6 +12,10 @@ import {
 } from "./ui/select";
 import { Company, CompanySize } from "../types";
 import { Loader2 } from "lucide-react";
+import { FieldError } from "./register/FieldError";
+import { companyFormSchema } from "../utils/validation/formSchemas";
+import { useFormValidation } from "../hooks/useFormValidation";
+import { useAutoFocus } from "../hooks/useFocusManagement";
 
 const SIZE_OPTIONS: { value: CompanySize; label: string }[] = [
   { value: "MICRO", label: "Micro" },
@@ -36,10 +41,16 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
   const [website, setWebsite] = useState(company?.website || "");
   const [notes, setNotes] = useState(company?.notes || "");
   const [saving, setSaving] = useState(false);
+  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, formRef } = useFormValidation({ schema: companyFormSchema });
+  const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+
+    const isValid = validateAll({
+      name, domain, industry, size, phone, address, website, notes,
+    });
+    if (!isValid) return;
 
     try {
       setSaving(true);
@@ -59,41 +70,60 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+      ref={(el) => {
+        (formRef as React.MutableRefObject<HTMLFormElement | null>).current = el;
+        (autoFocusRef as React.MutableRefObject<HTMLFormElement | null>).current = el;
+      }}
+      noValidate
+    >
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+        <Label htmlFor="company-name">Nome *</Label>
         <Input
+          id="company-name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); handleChange('name', e.target.value); }}
+          onBlur={() => handleBlur('name', name)}
           placeholder="Nome da empresa"
-          required
+          className="mt-1"
+          error={touchedFields.name ? fieldErrors.name : undefined}
+          aria-describedby={fieldErrors.name && touchedFields.name ? "company-name-error" : undefined}
         />
+        <FieldError id="company-name-error" error={fieldErrors.name as string} touched={touchedFields.name} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Dominio</label>
+          <Label htmlFor="company-domain">Dominio</Label>
           <Input
+            id="company-domain"
             value={domain}
-            onChange={(e) => setDomain(e.target.value)}
+            onChange={(e) => { setDomain(e.target.value); handleChange('domain', e.target.value); }}
+            onBlur={() => handleBlur('domain', domain)}
             placeholder="exemplo.com.br"
+            className="mt-1"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Industria</label>
+          <Label htmlFor="company-industry">Industria</Label>
           <Input
+            id="company-industry"
             value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
+            onChange={(e) => { setIndustry(e.target.value); handleChange('industry', e.target.value); }}
+            onBlur={() => handleBlur('industry', industry)}
             placeholder="Tecnologia, Saude..."
+            className="mt-1"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Porte</label>
+          <Label htmlFor="company-size">Porte</Label>
           <Select value={size} onValueChange={(v) => setSize(v as CompanySize)}>
-            <SelectTrigger>
+            <SelectTrigger id="company-size" className="mt-1">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
             <SelectContent>
@@ -104,40 +134,54 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
           </Select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+          <Label htmlFor="company-phone">Telefone</Label>
           <Input
+            id="company-phone"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => { setPhone(e.target.value); handleChange('phone', e.target.value); }}
+            onBlur={() => handleBlur('phone', phone)}
             placeholder="(11) 99999-9999"
+            className="mt-1"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+        <Label htmlFor="company-website">Website</Label>
         <Input
+          id="company-website"
           value={website}
-          onChange={(e) => setWebsite(e.target.value)}
+          onChange={(e) => { setWebsite(e.target.value); handleChange('website', e.target.value); }}
+          onBlur={() => handleBlur('website', website)}
           placeholder="https://exemplo.com.br"
+          className="mt-1"
+          error={touchedFields.website ? fieldErrors.website : undefined}
+          aria-describedby={fieldErrors.website && touchedFields.website ? "company-website-error" : undefined}
         />
+        <FieldError id="company-website-error" error={fieldErrors.website as string} touched={touchedFields.website} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Endereco</label>
+        <Label htmlFor="company-address">Endereco</Label>
         <Input
+          id="company-address"
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          onChange={(e) => { setAddress(e.target.value); handleChange('address', e.target.value); }}
+          onBlur={() => handleBlur('address', address)}
           placeholder="Rua, Cidade, Estado"
+          className="mt-1"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+        <Label htmlFor="company-notes">Notas</Label>
         <Textarea
+          id="company-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Observacoes sobre a empresa..."
           rows={3}
+          className="mt-1"
         />
       </div>
 
@@ -145,7 +189,7 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={!name.trim() || saving}>
+        <Button type="submit" disabled={saving}>
           {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
           {company ? "Salvar" : "Criar"}
         </Button>

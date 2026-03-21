@@ -28,6 +28,7 @@ async function checkTaskNotifications() {
         dueDate: { lt: now },
         status: { notIn: [TaskStatus.COMPLETED, TaskStatus.CANCELLED] },
         assignedTo: { not: null },
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -44,6 +45,7 @@ async function checkTaskNotifications() {
         dueDate: { gte: todayStart, lt: todayEnd },
         status: { notIn: [TaskStatus.COMPLETED, TaskStatus.CANCELLED] },
         assignedTo: { not: null },
+        deletedAt: null,
       },
       select: {
         id: true,

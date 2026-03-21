@@ -41,7 +41,7 @@ export const companyService = {
 
   async findById(tenantId: string, id: string) {
     const company = await prisma.company.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId, deletedAt: null },
       include: {
         leads: {
           select: {
@@ -106,7 +106,7 @@ export const companyService = {
     const sortField = filters?.sort || 'createdAt';
     const sortOrder = filters?.order || 'desc';
 
-    const where: any = { tenantId };
+    const where: any = { tenantId, deletedAt: null };
 
     if (filters?.search) {
       where.OR = [
@@ -150,7 +150,7 @@ export const companyService = {
 
   async update(tenantId: string, data: UpdateCompanyData) {
     // Verify ownership
-    const existing = await prisma.company.findFirst({ where: { id: data.id, tenantId } });
+    const existing = await prisma.company.findFirst({ where: { id: data.id, tenantId, deletedAt: null } });
     if (!existing) {
       throw createError('Company not found', 404, 'COMPANY_NOT_FOUND');
     }
@@ -185,7 +185,7 @@ export const companyService = {
   },
 
   async delete(tenantId: string, id: string) {
-    const company = await prisma.company.findFirst({ where: { id, tenantId } });
+    const company = await prisma.company.findFirst({ where: { id, tenantId, deletedAt: null } });
     if (!company) {
       throw createError('Company not found', 404, 'COMPANY_NOT_FOUND');
     }
@@ -206,10 +206,10 @@ export const companyService = {
       );
     }
 
-    await prisma.company.delete({ where: { id } });
+    await prisma.company.update({ where: { id }, data: { deletedAt: new Date() } });
   },
 
   async count(tenantId: string) {
-    return prisma.company.count({ where: { tenantId } });
+    return prisma.company.count({ where: { tenantId, deletedAt: null } });
   },
 };

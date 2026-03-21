@@ -62,7 +62,7 @@ export const planLimitsService = {
 
     const [leadsCount, usersCount, automationsCount, whatsappCount, emailCount] =
       await Promise.all([
-        prisma.lead.count({ where: { tenantId } }),
+        prisma.lead.count({ where: { tenantId, deletedAt: null } }),
         prisma.user.count({ where: { tenantId, status: 'ACTIVE' } }),
         prisma.automation.count({ where: { tenantId } }),
         prisma.whatsAppConnection.count({ where: { tenantId } }),

@@ -131,6 +131,8 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
                   className="w-full h-full object-contain"
                   width={36}
                   height={36}
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             ) : (

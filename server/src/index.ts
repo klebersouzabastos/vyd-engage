@@ -140,7 +140,14 @@ import { notificationService } from './services/notificationService.js';
 // ============================================
 // Versioned API Router (v1)
 // ============================================
+const API_VERSION = '1';
 const v1Router = ExpressRouter();
+
+// Set API version header on all v1 responses
+v1Router.use((_req, res, next) => {
+  res.setHeader('X-API-Version', API_VERSION);
+  next();
+});
 
 // Rate limiting — applied unconditionally; limiters self-disable in dev (max: 0)
 v1Router.use('/auth/password', passwordResetLimiter);

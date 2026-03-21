@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Deal, DealStage } from "../../types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -20,6 +20,10 @@ import {
 } from "../ui/dialog";
 import { Loader2, Search } from "lucide-react";
 import { apiClient } from "../../services/api/client";
+import { FieldError } from "../register/FieldError";
+import { dealFormSchema } from "../../utils/validation/formSchemas";
+import { useFormValidation } from "../../hooks/useFormValidation";
+import { useAutoFocus, useFocusReturn } from "../../hooks/useFocusManagement";
 
 const STAGES: { value: DealStage; label: string }[] = [
   { value: "QUALIFICATION", label: "Qualificação" },
@@ -51,6 +55,9 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
   const [lostReason, setLostReason] = useState("");
   const [funnelId, setFunnelId] = useState("");
   const [saving, setSaving] = useState(false);
+  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, resetValidation, formRef } = useFormValidation({ schema: dealFormSchema });
+  const autoFocusRef = useAutoFocus<HTMLFormElement>(open, 200);
+  const { saveTrigger, returnFocus } = useFocusReturn();
 
   const [leads, setLeads] = useState<Array<{ id: string; name: string }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
@@ -72,6 +79,16 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
       setLoadingLeads(false);
     }
   }, []);
+
+  // Save trigger element when dialog opens, return focus when it closes
+  useEffect(() => {
+    if (open) {
+      saveTrigger();
+      resetValidation();
+    } else {
+      returnFocus();
+    }
+  }, [open, saveTrigger, returnFocus, resetValidation]);
 
   useEffect(() => {
     if (open) {
@@ -129,7 +146,11 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !value) return;
+
+    const isValid = validateAll({
+      name, value, stage, probability, expectedCloseDate, leadId, assignedTo, notes, lostReason, funnelId,
+    });
+    if (!isValid) return;
 
     setSaving(true);
     try {
@@ -159,16 +180,27 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
         <DialogHeader>
           <DialogTitle>{deal ? "Editar Deal" : "Novo Deal"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          ref={(el) => {
+            (formRef as React.MutableRefObject<HTMLFormElement | null>).current = el;
+            (autoFocusRef as React.MutableRefObject<HTMLFormElement | null>).current = el;
+          }}
+          noValidate
+        >
           <div>
             <Label htmlFor="deal-name">Nome *</Label>
             <Input
               id="deal-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); handleChange('name', e.target.value); }}
+              onBlur={() => handleBlur('name', name)}
               placeholder="Nome do negócio"
-              required
+              error={touchedFields.name ? fieldErrors.name : undefined}
+              aria-describedby={fieldErrors.name && touchedFields.name ? "deal-name-error" : undefined}
             />
+            <FieldError id="deal-name-error" error={fieldErrors.name as string} touched={touchedFields.name} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -180,10 +212,13 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
                 min="0"
                 step="0.01"
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => { setValue(e.target.value); handleChange('value', e.target.value); }}
+                onBlur={() => handleBlur('value', value)}
                 placeholder="0.00"
-                required
+                error={touchedFields.value ? fieldErrors.value : undefined}
+                aria-describedby={fieldErrors.value && touchedFields.value ? "deal-value-error" : undefined}
               />
+              <FieldError id="deal-value-error" error={fieldErrors.value as string} touched={touchedFields.value} />
             </div>
             <div>
               <Label htmlFor="deal-stage">Stage</Label>
@@ -325,7 +360,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving || !name.trim() || !value}>
+            <Button type="submit" disabled={saving}>
               {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
               {deal ? "Salvar" : "Criar"}
             </Button>

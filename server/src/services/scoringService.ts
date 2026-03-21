@@ -230,7 +230,7 @@ export const scoringService = {
    */
   async recalculateAllScores(tenantId: string) {
     const leads = await prisma.lead.findMany({
-      where: { tenantId },
+      where: { tenantId, deletedAt: null },
       select: { id: true },
     });
 

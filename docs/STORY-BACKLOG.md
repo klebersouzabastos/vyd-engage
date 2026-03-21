@@ -1,6 +1,6 @@
 # Story Backlog — VYD Engage
 
-**Atualizado:** 2026-03-18
+**Atualizado:** 2026-03-21
 **Revisado por:** Pax (PO)
 
 ---
@@ -9,71 +9,17 @@
 
 | Métrica | Valor |
 |---------|-------|
-| Total de itens | 42 |
+| Total de itens | 52 |
 | 🔴 HIGH | 0 |
 | 🟡 MEDIUM | 0 |
-| 🟢 LOW | 9 |
-| 📋 TODO | 9 |
+| 🟢 LOW | 0 |
+| 📋 TODO | 0 |
 | 🚧 IN PROGRESS | 0 |
-| ✅ DONE | 33 |
+| ✅ DONE | 52 |
 
 ---
 
-## 🟢 LOW Priority
-
-#### [TD-BACKLOG-01] FE-10 — Inline form validation
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 2 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-02] FE-14 — CSS-in-JS consistency
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 2 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-03] FE-18 — Form component standardization
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 2 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-04] FE-24 — Focus management
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 2 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-05] FE-38 — API error type unification
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 2 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-06] FE-42 — Image optimization
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 1 pt
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-07] FE-45 — Optimistic updates
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 3 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-08] DB-09 — Soft delete pattern
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 3 pts
-- **Status**: 📋 TODO
-
-#### [TD-BACKLOG-09] TD-10 — API versioning
-- **Source**: EPIC-TD Backlog contínuo
-- **Priority**: 🟢 LOW
-- **Effort**: 3 pts
-- **Status**: 📋 TODO
+## 🟢 Backlog Cleared — All Items Done
 
 ---
 
@@ -149,6 +95,35 @@
 - **Completed**: 2026-03-18
 - **Commit**: 2a40d1b
 
+#### [EPIC-INTELLIGENCE] AI Intelligence — Revenue Forecast, Funnel Analytics, AI Assistant & Email Generation
+- **Completed**: 2026-03-20 (closed by Pax)
+- **Stories**: 4/4 done (~23 pts)
+- **Commit**: a7e12bc
+
+#### [EPIC-ENTITY] Company Entity + Contact Separation + Multi-Pipeline
+- **Completed**: 2026-03-20 (closed by Pax)
+- **Stories**: 3/3 done (~21 pts)
+- **Commits**: 77374e5, d37c2c8
+
+#### [EPIC-CONNECT] Integration Hub — Google Calendar, Zapier Webhooks, CSV/XLSX Export
+- **Completed**: 2026-03-20 (closed by Pax)
+- **Stories**: 3/3 done (~11 pts)
+- **Commits**: 77374e5, d37c2c8
+
+#### [TD-BACKLOG] Tech Debt Backlog Cleanup — 9 Items (20 pts)
+- **Completed**: 2026-03-21 (closed by Pax)
+- **Items**: 9/9 done (20 pts)
+- **Details**:
+  - FE-10: Inline form validation (Zod schemas + useFormValidation hook) — ✅
+  - FE-14: CSS-in-JS consistency (VYDEcosystemBanner cleanup, Tailwind-only) — ✅
+  - FE-18: Form component standardization (formSchemas.ts + FieldError pattern) — ✅
+  - FE-24: Focus management (useAutoFocus + useFocusReturn hooks) — ✅
+  - FE-38: API error type unification (ApiError.code + normalizeError + helpers) — ✅
+  - FE-42: Image optimization (loading=lazy + decoding=async on all imgs) — ✅
+  - FE-45: Optimistic updates (useLeads + useTasks with rollback) — ✅
+  - DB-09: Soft delete pattern (deletedAt on Lead/Deal/Task/Company + services) — ✅
+  - TD-10: API versioning (/api/v1/ prefix + X-API-Version header) — ✅
+
 ---
 
-*Gerado por Pax (PO) — 2026-03-18*
+*Atualizado por Pax (PO) — 2026-03-21*

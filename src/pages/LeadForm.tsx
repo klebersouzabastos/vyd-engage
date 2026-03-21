@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
@@ -24,6 +24,10 @@ import { EmailSendPanel } from "../components/lead/EmailSendPanel";
 import { useLeads } from "../hooks/useLeads";
 import { useFunnels } from "../hooks/useFunnels";
 import { toast } from "sonner";
+import { FieldError } from "../components/register/FieldError";
+import { leadFormSchema } from "../utils/validation/formSchemas";
+import { useFormValidation } from "../hooks/useFormValidation";
+import { useAutoFocus } from "../hooks/useFocusManagement";
 
 const DEFAULT_PIPELINE_COLUMNS = [
   { id: "novo", title: "Novo" },
@@ -81,6 +85,8 @@ export function LeadForm() {
     customFields: {} as Record<string, any>,
   });
   const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
+  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, resetValidation, formRef } = useFormValidation({ schema: leadFormSchema });
+  const autoFocusRef = useAutoFocus<HTMLFormElement>(!id);
 
   useEffect(() => {
     const loadLead = async () => {
@@ -176,7 +182,16 @@ export function LeadForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Validate standard fields
+    const isValid = validateAll({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      source: formData.source,
+      status: formData.status,
+    });
+
     // Validar campos customizados
     const errors: Record<string, string> = {};
     fields.forEach((field) => {
@@ -187,7 +202,7 @@ export function LeadForm() {
       }
     });
 
-    if (Object.keys(errors).length > 0) {
+    if (!isValid || Object.keys(errors).length > 0) {
       setCustomFieldErrors(errors);
       return;
     }
@@ -342,17 +357,32 @@ export function LeadForm() {
               </TabsList>
 
               <TabsContent value="info" className="space-y-4 mt-0 outline-none relative">
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-4"
+                  ref={(el) => {
+                    (formRef as React.MutableRefObject<HTMLFormElement | null>).current = el;
+                    (autoFocusRef as React.MutableRefObject<HTMLFormElement | null>).current = el;
+                  }}
+                  noValidate
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="name">Nome completo</Label>
+                      <Label htmlFor="name">Nome completo *</Label>
                       <Input
                         id="name"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, name: e.target.value });
+                          handleChange('name', e.target.value);
+                        }}
+                        onBlur={() => handleBlur('name', formData.name)}
                         placeholder="João Silva"
                         className="mt-1.5"
+                        error={touchedFields.name ? fieldErrors.name : undefined}
+                        aria-describedby={fieldErrors.name && touchedFields.name ? "lead-name-error" : undefined}
                       />
+                      <FieldError id="lead-name-error" error={fieldErrors.name as string} touched={touchedFields.name} />
                     </div>
 
                     <div>
@@ -360,7 +390,11 @@ export function LeadForm() {
                       <Input
                         id="phone"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, phone: e.target.value });
+                          handleChange('phone', e.target.value);
+                        }}
+                        onBlur={() => handleBlur('phone', formData.phone)}
                         placeholder="(11) 99999-9999"
                         className="mt-1.5"
                       />
@@ -372,10 +406,17 @@ export function LeadForm() {
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, email: e.target.value });
+                          handleChange('email', e.target.value);
+                        }}
+                        onBlur={() => handleBlur('email', formData.email)}
                         placeholder="joao@email.com"
                         className="mt-1.5"
+                        error={touchedFields.email ? fieldErrors.email : undefined}
+                        aria-describedby={fieldErrors.email && touchedFields.email ? "lead-email-error" : undefined}
                       />
+                      <FieldError id="lead-email-error" error={fieldErrors.email as string} touched={touchedFields.email} />
                     </div>
 
                     <div>

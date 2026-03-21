@@ -158,6 +158,9 @@ export function useLeads() {
   }, []);
 
   const updateLead = useCallback(async (id: string, data: Partial<Lead>) => {
+    // Optimistic update
+    const backup = [...leads];
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
     try {
       const result = await apiClient.updateLead(id, {
         name: data.name,
@@ -174,7 +177,7 @@ export function useLeads() {
         tagIds: data.tags || [],
       });
 
-      // Transform and update in list
+      // Transform and update in list with server response
       const updatedLead: Lead = {
         id: result.id,
         name: result.name,
@@ -197,11 +200,13 @@ export function useLeads() {
       toast.success('Lead atualizado com sucesso!');
       return updatedLead;
     } catch (err: unknown) {
+      // Rollback on failure
+      setLeads(backup);
       const message = err instanceof Error ? err.message : 'Erro ao atualizar lead';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [leads]);
 
   const deleteLead = useCallback(async (id: string) => {
     const backup = [...leads];

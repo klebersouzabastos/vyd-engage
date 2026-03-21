@@ -79,7 +79,7 @@ export const dealService = {
 
   async findById(tenantId: string, id: string) {
     const deal = await prisma.deal.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId, deletedAt: null },
       include: {
         lead: { select: { id: true, name: true, email: true, phone: true, company: true } },
         assignedUser: { select: { id: true, name: true, email: true } },
@@ -112,7 +112,7 @@ export const dealService = {
     const sortField = filters?.sort || 'createdAt';
     const sortOrder = filters?.order || 'desc';
 
-    const where: any = { tenantId };
+    const where: any = { tenantId, deletedAt: null };
 
     if (filters?.stage) {
       where.stage = filters.stage;
@@ -212,7 +212,7 @@ export const dealService = {
     });
 
     // Tenant-safe update: verify ownership before updating
-    const verified = await prisma.deal.findFirst({ where: { id: data.id, tenantId } });
+    const verified = await prisma.deal.findFirst({ where: { id: data.id, tenantId, deletedAt: null } });
     if (!verified) {
       throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
     }
@@ -264,11 +264,11 @@ export const dealService = {
 
   async delete(tenantId: string, id: string) {
     // Tenant-safe delete: verify ownership before deleting
-    const deal = await prisma.deal.findFirst({ where: { id, tenantId } });
+    const deal = await prisma.deal.findFirst({ where: { id, tenantId, deletedAt: null } });
     if (!deal) {
       throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
     }
-    await prisma.deal.delete({ where: { id } });
+    await prisma.deal.update({ where: { id }, data: { deletedAt: new Date() } });
   },
 
   async getStats(tenantId: string) {
@@ -289,26 +289,26 @@ export const dealService = {
       wonCycleTimeDeals,
     ] = await Promise.all([
       // Total deal count
-      prisma.deal.count({ where: { tenantId } }),
+      prisma.deal.count({ where: { tenantId, deletedAt: null } }),
 
       // Group by stage: count + sum value
       prisma.deal.groupBy({
         by: ['stage'],
-        where: { tenantId },
+        where: { tenantId, deletedAt: null },
         _count: { id: true },
         _sum: { value: true },
       }),
 
       // Active pipeline aggregation (sum value for active stages)
       prisma.deal.aggregate({
-        where: { tenantId, stage: { in: activeStages } },
+        where: { tenantId, deletedAt: null, stage: { in: activeStages } },
         _sum: { value: true },
         _count: { id: true },
       }),
 
       // Won deals aggregation
       prisma.deal.aggregate({
-        where: { tenantId, stage: DealStage.WON },
+        where: { tenantId, deletedAt: null, stage: DealStage.WON },
         _sum: { value: true },
         _count: { id: true },
         _avg: { value: true },
@@ -316,14 +316,14 @@ export const dealService = {
 
       // Lost deals aggregation
       prisma.deal.aggregate({
-        where: { tenantId, stage: DealStage.LOST },
+        where: { tenantId, deletedAt: null, stage: DealStage.LOST },
         _sum: { value: true },
         _count: { id: true },
       }),
 
       // Won deals with closedAt for cycle time calculation (lightweight select)
       prisma.deal.findMany({
-        where: { tenantId, stage: DealStage.WON, closedAt: { not: null } },
+        where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null } },
         select: { createdAt: true, closedAt: true },
       }),
     ]);

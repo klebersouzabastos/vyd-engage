@@ -74,6 +74,9 @@ export function useTasks() {
   }, []);
 
   const updateTask = useCallback(async (id: string, data: Partial<Task>) => {
+    // Optimistic update
+    const backup = [...tasks];
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t));
     try {
       const result = await apiClient.updateTask(id, {
         title: data.title,
@@ -89,11 +92,13 @@ export function useTasks() {
       toast.success('Tarefa atualizada com sucesso!');
       return result;
     } catch (err: unknown) {
+      // Rollback on failure
+      setTasks(backup);
       const message = err instanceof Error ? err.message : 'Erro ao atualizar tarefa';
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [tasks]);
 
   const deleteTask = useCallback(async (id: string) => {
     const backup = [...tasks];

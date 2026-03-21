@@ -17,6 +17,10 @@ import { useTasks } from "../hooks/useTasks";
 import { useLeads } from "../hooks/useLeads";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { FieldError } from "../components/register/FieldError";
+import { taskFormSchema } from "../utils/validation/formSchemas";
+import { useFormValidation } from "../hooks/useFormValidation";
+import { useAutoFocus } from "../hooks/useFocusManagement";
 
 export function TaskForm() {
   const navigate = useNavigate();
@@ -35,6 +39,8 @@ export function TaskForm() {
     dueTime: "09:00",
     priority: "MEDIUM" as Task["priority"],
   });
+  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, formRef } = useFormValidation({ schema: taskFormSchema });
+  const autoFocusRef = useAutoFocus<HTMLDivElement>(!id);
 
   useEffect(() => {
     if (id) {
@@ -57,15 +63,15 @@ export function TaskForm() {
   }, [id, leadIdParam, tasks]);
 
   const handleSave = async () => {
-    if (!formData.title.trim()) {
-      toast.error("O título da tarefa é obrigatório");
-      return;
-    }
-
-    if (!formData.leadId) {
-      toast.error("É necessário vincular a tarefa a um lead");
-      return;
-    }
+    const isValid = validateAll({
+      leadId: formData.leadId,
+      title: formData.title,
+      description: formData.description,
+      dueDate: formData.dueDate,
+      dueTime: formData.dueTime,
+      priority: formData.priority,
+    });
+    if (!isValid) return;
 
     const dueDateTime = new Date(`${formData.dueDate}T${formData.dueTime}`);
     
@@ -121,16 +127,24 @@ export function TaskForm() {
             </h2>
           </div>
 
-          <div className="p-6 space-y-6 overflow-visible">
+          <div
+            className="p-6 space-y-6 overflow-visible"
+            ref={autoFocusRef}
+          >
             <div className="relative overflow-visible">
               <Label htmlFor="task-lead">Lead *</Label>
               <Select
                 value={formData.leadId || undefined}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, leadId: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, leadId: value });
+                  handleChange('leadId', value);
+                  handleBlur('leadId', value);
+                }}
               >
-                <SelectTrigger className="mt-1.5 w-full">
+                <SelectTrigger
+                  className="mt-1.5 w-full"
+                  aria-invalid={!!(touchedFields.leadId && fieldErrors.leadId)}
+                >
                   <SelectValue placeholder="Selecione um lead" />
                 </SelectTrigger>
                 <SelectContent className="z-[9999] bg-white border-2 border-primary shadow-lg max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
@@ -147,6 +161,7 @@ export function TaskForm() {
                   )}
                 </SelectContent>
               </Select>
+              <FieldError id="task-lead-error" error={fieldErrors.leadId as string} touched={touchedFields.leadId} />
             </div>
 
             <div>
@@ -154,10 +169,17 @@ export function TaskForm() {
               <Input
                 id="task-title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  handleChange('title', e.target.value);
+                }}
+                onBlur={() => handleBlur('title', formData.title)}
                 placeholder="Ex: Ligar para o cliente amanhã"
                 className="mt-1.5"
+                error={touchedFields.title ? fieldErrors.title : undefined}
+                aria-describedby={fieldErrors.title && touchedFields.title ? "task-title-error" : undefined}
               />
+              <FieldError id="task-title-error" error={fieldErrors.title as string} touched={touchedFields.title} />
             </div>
 
             <div>

@@ -455,6 +455,7 @@ export const googleCalendarService = {
     const tasks = await prisma.task.findMany({
       where: {
         tenantId,
+        deletedAt: null,
         dueDate: { not: null },
       },
       select: {

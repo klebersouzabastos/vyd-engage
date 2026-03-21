@@ -62,7 +62,7 @@ export async function exportLeads(
   res: Response,
 ) {
   // Build where clause
-  const where: any = { tenantId };
+  const where: any = { tenantId, deletedAt: null };
   if (filters.status) where.status = filters.status;
   if (filters.source) where.source = filters.source;
   if (filters.assignedTo) where.assignedTo = filters.assignedTo;
@@ -166,7 +166,7 @@ export async function exportDeals(
   format: ExportFormat,
   res: Response,
 ) {
-  const where: any = { tenantId };
+  const where: any = { tenantId, deletedAt: null };
   if (filters.stage) where.stage = filters.stage;
   if (filters.assignedTo) where.assignedTo = filters.assignedTo;
   if (filters.leadId) where.leadId = filters.leadId;
@@ -248,7 +248,7 @@ export async function exportTasks(
   format: ExportFormat,
   res: Response,
 ) {
-  const where: any = { tenantId };
+  const where: any = { tenantId, deletedAt: null };
   if (filters.status) where.status = filters.status;
   if (filters.priority) where.priority = filters.priority;
   if (filters.assignedTo) where.assignedTo = filters.assignedTo;

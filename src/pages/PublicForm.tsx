@@ -6,6 +6,10 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
 import { CheckCircle } from "lucide-react";
+import { FieldError } from "../components/register/FieldError";
+import { publicFormSchema } from "../utils/validation/formSchemas";
+import { useFormValidation } from "../hooks/useFormValidation";
+import { useAutoFocus } from "../hooks/useFocusManagement";
 
 export function PublicForm() {
   const { formId } = useParams();
@@ -20,7 +24,8 @@ export function PublicForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const validation = useFormValidation({ schema: publicFormSchema });
+  const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   // Detect source from UTM params
   const utmSource = useMemo(() => {
@@ -31,22 +36,9 @@ export function PublicForm() {
     return null;
   }, [searchParams]);
 
-  const validate = (): boolean => {
-    const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = "Nome e obrigatorio";
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "Email invalido";
-    }
-    if (formData.phone && formData.phone.replace(/\D/g, "").length < 10) {
-      errors.phone = "Telefone deve ter pelo menos 10 digitos";
-    }
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validation.validateAll(formData)) return;
     setIsSubmitting(true);
     setError("");
 
@@ -113,18 +105,28 @@ export function PublicForm() {
           <p className="text-gray-600">Preencha o formulário abaixo e retornaremos em breve</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          ref={autoFocusRef}
+          noValidate
+        >
           <div>
             <Label htmlFor="name">Nome completo *</Label>
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                validation.handleChange('name', e.target.value);
+              }}
+              onBlur={() => validation.handleBlur('name', formData.name)}
               placeholder="João Silva"
-              required
-              className={`mt-1.5 ${fieldErrors.name ? "border-red-400" : ""}`}
+              className="mt-1.5"
+              error={validation.touchedFields.name ? validation.fieldErrors.name : undefined}
+              aria-describedby={validation.fieldErrors.name && validation.touchedFields.name ? "public-name-error" : undefined}
             />
-            {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
+            <FieldError id="public-name-error" error={validation.fieldErrors.name as string} touched={validation.touchedFields.name} />
           </div>
 
           <div>
@@ -133,11 +135,17 @@ export function PublicForm() {
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                validation.handleChange('email', e.target.value);
+              }}
+              onBlur={() => validation.handleBlur('email', formData.email)}
               placeholder="seu@email.com"
-              className={`mt-1.5 ${fieldErrors.email ? "border-red-400" : ""}`}
+              className="mt-1.5"
+              error={validation.touchedFields.email ? validation.fieldErrors.email : undefined}
+              aria-describedby={validation.fieldErrors.email && validation.touchedFields.email ? "public-email-error" : undefined}
             />
-            {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
+            <FieldError id="public-email-error" error={validation.fieldErrors.email as string} touched={validation.touchedFields.email} />
           </div>
 
           <div>
@@ -146,11 +154,17 @@ export function PublicForm() {
               id="phone"
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, phone: e.target.value });
+                validation.handleChange('phone', e.target.value);
+              }}
+              onBlur={() => validation.handleBlur('phone', formData.phone)}
               placeholder="(11) 99999-9999"
-              className={`mt-1.5 ${fieldErrors.phone ? "border-red-400" : ""}`}
+              className="mt-1.5"
+              error={validation.touchedFields.phone ? validation.fieldErrors.phone : undefined}
+              aria-describedby={validation.fieldErrors.phone && validation.touchedFields.phone ? "public-phone-error" : undefined}
             />
-            {fieldErrors.phone && <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>}
+            <FieldError id="public-phone-error" error={validation.fieldErrors.phone as string} touched={validation.touchedFields.phone} />
           </div>
 
           <div>

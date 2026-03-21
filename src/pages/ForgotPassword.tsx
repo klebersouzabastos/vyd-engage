@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -9,25 +9,37 @@ import { ArrowLeft, Mail } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { toast } from "sonner";
 import { getErrorMessage, getErrorCode, getErrorStatusCode } from "../utils/errors";
+import { FieldError } from "../components/register/FieldError";
+import { useAutoFocus } from "../hooks/useFocusManagement";
 
 export function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [fieldError, setFieldError] = useState<string | undefined>();
+  const [touched, setTouched] = useState(false);
+  const autoFocusRef = useAutoFocus<HTMLFormElement>(!sent);
+
+  const validateEmail = useCallback((value: string): string | undefined => {
+    if (!value.trim()) return "E-mail é obrigatório";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) return "Formato de e-mail inválido";
+    return undefined;
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched(true);
+
+    const error = validateEmail(email);
+    setFieldError(error);
+    if (error) return;
+
     setLoading(true);
     try {
       // Normalize email before sending
       const normalizedEmail = email.trim().toLowerCase();
-      
-      if (!normalizedEmail || !normalizedEmail.includes('@')) {
-        toast.error("Por favor, insira um email válido.");
-        setLoading(false);
-        return;
-      }
       
       await apiClient.requestPasswordReset(normalizedEmail);
       setSent(true);
@@ -91,7 +103,7 @@ export function ForgotPassword() {
           </div>
 
           {!sent ? (
-            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6" ref={autoFocusRef} noValidate>
               <div className="space-y-2.5">
                 <Label htmlFor="email" className="text-gray-900 text-base sm:text-lg font-medium block">
                   E-mail
@@ -101,9 +113,23 @@ export function ForgotPassword() {
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  required
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (touched) {
+                      setFieldError(validateEmail(e.target.value));
+                    }
+                  }}
+                  onBlur={() => {
+                    setTouched(true);
+                    setFieldError(validateEmail(email));
+                  }}
+                  className={`w-full h-12 sm:h-14 px-4 py-3 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touched && fieldError ? "border-red-500" : "border-gray-300"}`}
+                  aria-describedby={fieldError && touched ? "forgot-email-error" : undefined}
+                />
+                <FieldError
+                  id="forgot-email-error"
+                  error={fieldError}
+                  touched={touched}
                 />
               </div>
 

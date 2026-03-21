@@ -92,6 +92,7 @@ router.get('/metrics', async (req, res, next) => {
       prisma.lead.findMany({
         where: {
           tenantId,
+          deletedAt: null,
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
         },
         select: { id: true, status: true, source: true, createdAt: true },
@@ -99,6 +100,7 @@ router.get('/metrics', async (req, res, next) => {
       prisma.task.findMany({
         where: {
           tenantId,
+          deletedAt: null,
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
         },
         select: { id: true, status: true, priority: true, dueDate: true, completedAt: true, createdAt: true },

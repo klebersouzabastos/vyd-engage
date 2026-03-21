@@ -92,6 +92,7 @@ export const leadService = {
       where: {
         id,
         tenantId,
+        deletedAt: null,
       },
       include: {
         tags: {
@@ -206,6 +207,7 @@ export const leadService = {
 
     const where: any = {
       tenantId,
+      deletedAt: null,
     };
 
     if (filters?.status) {
@@ -364,8 +366,9 @@ export const leadService = {
 
   async delete(tenantId: string, id: string) {
     const lead = await this.findById(tenantId, id);
-    await prisma.lead.delete({
+    await prisma.lead.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
     planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
@@ -375,7 +378,7 @@ export const leadService = {
 
   async count(tenantId: string) {
     return prisma.lead.count({
-      where: { tenantId },
+      where: { tenantId, deletedAt: null },
     });
   },
 };

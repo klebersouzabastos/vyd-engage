@@ -78,6 +78,7 @@ export function PixPayment({
             width={256}
             height={256}
             loading="lazy"
+            decoding="async"
           />
         </div>
       )}

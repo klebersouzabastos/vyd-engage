@@ -519,6 +519,7 @@ export function Inbox() {
                                 alt="Imagem anexada"
                                 className="rounded-lg max-w-full max-h-48 mb-2"
                                 loading="lazy"
+                                decoding="async"
                               />
                             )}
                             {msg.metadata?.mediaUrl && !msg.metadata?.mediaType?.startsWith("image") && (

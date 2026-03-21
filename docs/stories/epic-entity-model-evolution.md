@@ -6,7 +6,10 @@
 **Origem:** Análise de gaps competitivos — Morgan (PM) — 2026-03-18
 **Data:** 2026-03-18
 **Agente:** @pm (Morgan)
-**Status:** Draft
+**Status:** Done
+**Closed:** 2026-03-20
+**Closed By:** Pax (PO)
+**Commits:** 77374e5, d37c2c8
 
 ---
 

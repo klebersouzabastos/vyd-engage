@@ -57,7 +57,7 @@ export async function getLeadNextAction(tenantId: string, leadId: string): Promi
 
   // Check if lead has deals
   const dealCount = await prisma.deal.count({
-    where: { leadId, tenantId },
+    where: { leadId, tenantId, deletedAt: null },
   });
 
   const daysSinceLastInteraction = daysSince(lastInteraction?.createdAt);
@@ -185,6 +185,7 @@ export async function getDealNextAction(tenantId: string, dealId: string): Promi
   const avgResult = await prisma.deal.aggregate({
     where: {
       tenantId,
+      deletedAt: null,
       stage: { notIn: [DealStage.WON, DealStage.LOST] },
     },
     _avg: { value: true },
@@ -282,6 +283,7 @@ export async function getActionSummary(tenantId: string, limit = 5): Promise<Act
   const leads = await prisma.lead.findMany({
     where: {
       tenantId,
+      deletedAt: null,
       status: { notIn: [LeadStatus.WON, LeadStatus.LOST] },
     },
     select: { id: true, name: true },
@@ -293,6 +295,7 @@ export async function getActionSummary(tenantId: string, limit = 5): Promise<Act
   const deals = await prisma.deal.findMany({
     where: {
       tenantId,
+      deletedAt: null,
       stage: { notIn: [DealStage.WON, DealStage.LOST] },
     },
     select: { id: true, name: true },

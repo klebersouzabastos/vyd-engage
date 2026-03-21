@@ -231,11 +231,8 @@ export function LandingPage() {
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
       
-      {/* Spacer to push content below fixed headers */}
-      <div className="h-[120px]" aria-hidden="true" />
-      
       {/* Header */}
-      <header className="fixed left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99] top-[40px]">
+      <header className="sticky top-10 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99]">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link 

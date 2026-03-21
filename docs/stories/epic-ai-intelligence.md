@@ -6,7 +6,10 @@
 **Origem:** Análise competitiva — Morgan (PM) — 2026-03-18
 **Data:** 2026-03-18
 **Agente:** @pm (Morgan)
-**Status:** Draft
+**Status:** Done
+**Closed:** 2026-03-20
+**Closed By:** Pax (PO)
+**Commit:** a7e12bc
 **Estimativa Total:** ~23 pontos (4 stories)
 
 ---

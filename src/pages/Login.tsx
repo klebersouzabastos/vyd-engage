@@ -10,6 +10,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { FieldError } from "../components/register/FieldError";
 import { getErrorMessage, getErrorCode, getErrorStatusCode } from "../utils/errors";
+import { useAutoFocus } from "../hooks/useFocusManagement";
 
 export function Login() {
   const { login } = useAuth();
@@ -22,6 +23,7 @@ export function Login() {
   const [totpCode, setTotpCode] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [touchedFields, setTouchedFields] = useState<{ email?: boolean; password?: boolean }>({});
+  const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   const validateEmail = useCallback((value: string): string | undefined => {
     if (!value.trim()) return "E-mail é obrigatório";
@@ -114,7 +116,7 @@ export function Login() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6" ref={autoFocusRef}>
             <div className="space-y-2.5">
               <Label htmlFor="email" className="text-gray-900 text-base sm:text-lg font-medium block">
                 E-mail

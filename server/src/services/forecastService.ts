@@ -67,6 +67,7 @@ export const forecastService = {
     // Build where clause for active deals
     const where: any = {
       tenantId,
+      deletedAt: null,
       stage: { in: filters?.stage ? [filters.stage] : ACTIVE_STAGES },
     };
     if (filters?.assignedTo) {
@@ -127,7 +128,7 @@ export const forecastService = {
 
     // Summary KPIs (reuse all deals for pipeline value)
     const allActiveDeals = await prisma.deal.findMany({
-      where: { tenantId, stage: { in: ACTIVE_STAGES } },
+      where: { tenantId, deletedAt: null, stage: { in: ACTIVE_STAGES } },
       select: { value: true, probability: true },
     });
 
@@ -142,12 +143,12 @@ export const forecastService = {
     // Win rate and avg cycle time from closed deals
     const [wonAgg, lostCount, wonCycleDeals] = await Promise.all([
       prisma.deal.aggregate({
-        where: { tenantId, stage: DealStage.WON },
+        where: { tenantId, deletedAt: null, stage: DealStage.WON },
         _count: { id: true },
       }),
-      prisma.deal.count({ where: { tenantId, stage: DealStage.LOST } }),
+      prisma.deal.count({ where: { tenantId, deletedAt: null, stage: DealStage.LOST } }),
       prisma.deal.findMany({
-        where: { tenantId, stage: DealStage.WON, closedAt: { not: null } },
+        where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null } },
         select: { createdAt: true, closedAt: true },
       }),
     ]);
@@ -189,6 +190,7 @@ export const forecastService = {
     const closedDeals = await prisma.deal.findMany({
       where: {
         tenantId,
+        deletedAt: null,
         stage: { in: [DealStage.WON, DealStage.LOST] },
         closedAt: { not: null, gte: startDate },
       },
@@ -245,7 +247,7 @@ export const forecastService = {
     tenantId: string,
     filters?: { from?: string; to?: string; source?: string; assignedTo?: string }
   ): Promise<FunnelConversionResponse> {
-    const where: any = { tenantId };
+    const where: any = { tenantId, deletedAt: null };
 
     if (filters?.from || filters?.to) {
       where.createdAt = {};

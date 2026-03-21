@@ -14,6 +14,7 @@ import {
 import { validateConnectionConfig } from "../../utils/whatsapp/connectionValidator";
 import { Alert, AlertDescription } from "../ui/alert";
 import { AlertCircle, Info } from "lucide-react";
+import { useAutoFocus } from "../../hooks/useFocusManagement";
 
 interface ConnectionFormProps {
   connection?: WhatsAppConnection;
@@ -42,6 +43,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
   );
   const [validation, setValidation] = useState<{ isValid: boolean; errors: string[]; warnings: string[] } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   useEffect(() => {
     if (config) {
@@ -289,7 +291,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" ref={autoFocusRef}>
       <div>
         <Label htmlFor="name">Nome da Conexão *</Label>
         <Input
