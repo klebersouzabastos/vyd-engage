@@ -1387,6 +1387,67 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // ========================
+  // Suggestions
+  // ========================
+
+  async getSuggestions(filters?: { status?: SuggestionStatus; type?: SuggestionType; scope?: 'mine' | 'all' }) {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.type) params.set('type', filters.type);
+    if (filters?.scope) params.set('scope', filters.scope);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<{ status: number; data: Suggestion[] }>(`/api/v1/suggestions${query}`);
+  }
+
+  async getSuggestion(id: string) {
+    return this.request<{ status: number; data: Suggestion }>(`/api/v1/suggestions/${id}`);
+  }
+
+  async createSuggestion(data: {
+    title: string;
+    description: string;
+    route?: string | null;
+    type: SuggestionType;
+  }) {
+    return this.request<{ status: number; data: Suggestion }>('/api/v1/suggestions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSuggestion(id: string, data: { status?: SuggestionStatus; adminNotes?: string | null }) {
+    return this.request<{ status: number; data: Suggestion }>(`/api/v1/suggestions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSuggestion(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(`/api/v1/suggestions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+export type SuggestionType = 'IMPROVEMENT' | 'BUG';
+export type SuggestionStatus = 'PENDING' | 'IN_REVIEW' | 'IN_PROGRESS' | 'DONE' | 'REJECTED';
+
+export interface Suggestion {
+  id: string;
+  tenantId: string;
+  userId: string;
+  title: string;
+  description: string;
+  route: string | null;
+  type: SuggestionType;
+  status: SuggestionStatus;
+  adminNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  user?: { id: string; name: string; email: string };
 }
 
 export interface SavedView {

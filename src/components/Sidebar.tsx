@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Webhook,
   KeyRound,
+  MessageSquarePlus,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -43,6 +44,7 @@ const menuItems = [
   { icon: CreditCard, label: "Billing", path: "/app/billing", tourId: "sidebar-billing" },
   { icon: Webhook, label: "Webhooks", path: "/app/webhooks", tourId: "sidebar-webhooks" },
   { icon: KeyRound, label: "API Keys", path: "/app/api-keys", tourId: "sidebar-api-keys" },
+  { icon: MessageSquarePlus, label: "Sugestões", path: "/app/suggestions", tourId: "sidebar-suggestions" },
   { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
 ];
 

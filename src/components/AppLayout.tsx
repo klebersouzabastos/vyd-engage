@@ -2,6 +2,7 @@ import { Outlet } from "react-router";
 import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { OnboardingTour } from "./OnboardingTour";
+import { SuggestionFab } from "./SuggestionFab";
 import { Menu } from "lucide-react";
 
 const SIDEBAR_COLLAPSED_KEY = "vyd-sidebar-collapsed";
@@ -77,6 +78,9 @@ export function AppLayout() {
 
       {/* Onboarding Tour */}
       <OnboardingTour />
+
+      {/* Botão flutuante de sugestões — disponível em qualquer página */}
+      <SuggestionFab />
     </div>
   );
 }
