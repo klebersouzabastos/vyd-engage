@@ -1,9 +1,15 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd server && npm ci && npx prisma generate && npm run build"
+# --include=dev é obrigatório: NODE_ENV=production no Railway faz npm pular devDeps
+# (prisma CLI, typescript, tsx) que são necessárias no build/start.
+buildCommand = "cd server && npm ci --include=dev && ./node_modules/.bin/prisma generate && npm run build"
 
 [deploy]
-startCommand = "cd server && npx prisma migrate deploy && node dist/index.js"
+# Migrations são aplicadas manualmente (uma vez) via `prisma db push` apontando
+# para DATABASE_PUBLIC_URL — a migration 20260320_soft_delete_pattern referencia
+# tabelas que migrations anteriores não criam, então `migrate deploy` quebra.
+# Schema canônico = prisma/schema.prisma.
+startCommand = "cd server && node dist/index.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
