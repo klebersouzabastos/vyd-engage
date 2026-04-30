@@ -60,10 +60,10 @@ Aprovação de direção = execute até completar. Não pergunte "Quer que eu co
 
 ```bash
 npm run dev              # Dev server (port 3001, tsx watch)
-npm run build            # Compile TypeScript → dist/
+npm run build            # Compile TypeScript → dist/ (also serves as typecheck)
 npm start                # Run dist/index.js (production)
-npm test                 # Run Vitest (single run)
-npm run test:watch       # Vitest watch mode
+npm test                 # Vitest (WATCH mode — script é "vitest" sem "run")
+npx vitest run           # Vitest single run (use isto em pre-commit / CI)
 npm run test:ui          # Vitest UI dashboard
 npm run test:coverage    # Coverage report
 npm run lint             # ESLint
@@ -93,9 +93,11 @@ npm run format:check     # Prettier check
 ### Pre-commit Verification
 
 ```bash
-cd server && npm test && npm run build   # Backend tests + typecheck
-cd .. && npm run build                    # Frontend build check
+cd server && npx vitest run && npm run build   # Backend tests (single run) + typecheck via tsc
+cd .. && npm run build                          # Frontend build (typecheck + bundle)
 ```
+
+> **Atenção**: o script `npm test` no backend roda Vitest em modo **watch** (não `vitest run`). Use `npx vitest run` ou ajuste o script ao executar em CI/pre-commit, senão trava.
 
 ---
 
@@ -107,10 +109,19 @@ cd .. && npm run build                    # Frontend build check
 server/                        # Backend API
   src/
     config/                    # DB & app config
-    middleware/                 # auth, tenant, rateLimit, errorHandler, planLimits, csrf
-    routes/                    # 23 route modules (auth, leads, deals, tasks, etc.)
-    services/                  # Business logic (authService, automationService, etc.)
-    jobs/                      # BullMQ background jobs (billing, automation)
+    middleware/                 # auth, tenant, rateLimit, errorHandler, planLimits, csrf, requestLogger
+    routes/                    # 28 route modules (auth, ai, apiKeys, automationLogs, automations,
+                               #   calendar, companies, customFields, deals, email, exports, funnels,
+                               #   interactions, invitations, leads, notifications, outgoingWebhooks,
+                               #   payments, reports, savedViews, scoring, subscriptions, tags, tasks,
+                               #   tracking, users, webhooks, whatsapp)
+    services/                  # Business logic (~35 services: authService, automationService,
+                               #   aiDraftService, dealService, forecastService, googleCalendarService,
+                               #   nextActionService, scoringService, socketService, etc.)
+    jobs/                      # 3 background jobs:
+                               #   - billing.ts (BullMQ; gated por ENABLE_BILLING_JOBS)
+                               #   - automationEngine.ts (BullMQ; gated por ENABLE_AUTOMATION_ENGINE)
+                               #   - taskNotificationChecker.ts (sempre ativo, lightweight, sem Redis)
     utils/                     # logger, sentry, validators
     __tests__/                 # Vitest tests
   prisma/
@@ -177,6 +188,30 @@ Path alias: `@` → `./src`
 
 `server/src/index.ts` configura: Express + Socket.IO + CORS + Helmet + Compression + Morgan + Rate Limiting + CSRF + Sentry (opcional) + BullMQ jobs (opcional).
 
+### API Versioning
+
+Todas as rotas são montadas em **dois prefixos** (`server/src/index.ts:225-226`):
+- `/api/v1` → canônico
+- `/api` → alias backward-compat (mesma router instance)
+
+Header `X-API-Version: 1` é setado em todas as respostas v1. Cliente frontend usa exclusivamente `/api/v1/*`.
+
+### Public Routes (no auth, no CSRF)
+
+Montadas em `/api/public` e `/api/v1/public` (`server/src/index.ts:230-327`):
+- `POST /capture/:tenantSlug` — formulário público de captação de lead (Zod schema embedded)
+- `GET /plans` — pricing público para landing page
+
+Tracking pixel/links também são públicos: `/api/v1/track/*` (sem auth, sem CSRF).
+
+### CSRF (whitelist)
+
+CSRF é aplicado por **whitelist explícita** em `server/src/index.ts:163-190`, NÃO por blacklist. Rotas como `/auth/login`, `/auth/register`, `/auth/refresh`, `/track`, `/webhooks` (HMAC) e public routes **não têm CSRF**. Se adicionar uma nova rota autenticada, registre `v1Router.use('/<rota>', csrfProtection)`.
+
+### Health Check
+
+`GET /health` consome `getHealthStatus()` em `server/src/utils/healthCheck.ts`. Retorna 200 se healthy, 503 caso contrário. Use para liveness/readiness probes.
+
 ### Middleware Stack (route pattern)
 
 ```typescript
@@ -192,12 +227,14 @@ router.get('/:id', authMiddleware, tenantMiddleware, apiLimiter, async (req, res
 | Auth | User, RefreshToken, Invitation |
 | Tenant | Tenant |
 | Billing | Plan, Subscription, Payment |
-| CRM Core | Lead, Deal, Task, LeadTag, Tag, CustomField, Interaction |
+| CRM Core | Lead, Deal, Task, Company, LeadTag, Tag, CustomField, Interaction |
 | Sales | Funnel, FunnelColumn, ScoreRule |
-| Integrations | WhatsAppConnection, EmailConfig, Automation, AutomationLog |
+| Integrations | WhatsAppConnection, EmailConfig, Automation, AutomationLog, CalendarConnection |
 | Developer | ApiKey, Webhook, WebhookLog |
 | Notifications | Notification |
-| Reports | Report |
+| Reports / Views | Report, SavedView |
+
+> Schema canônico: `server/prisma/schema.prisma`. Quando em dúvida, consulte direto.
 
 ### API Response Format
 
@@ -232,9 +269,47 @@ const schema = z.object({ name: z.string().min(1), email: z.string().email() });
 
 ## Environment Variables
 
-**Backend** (`server/.env`): DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, REDIS_URL, MERCADO_PAGO_ACCESS_TOKEN, RESEND_API_KEY, SMTP_*, PORT, NODE_ENV, SENTRY_DSN, ENABLE_BILLING_JOBS
+**Backend** (`server/.env` — template em `server/.env.example`):
 
-**Frontend** (`.env` na raiz): VITE_API_URL=http://localhost:3001
+| Variável | Obrigatória? | Notas |
+|----------|--------------|-------|
+| `DATABASE_URL` | **sim** | Postgres connection string. Server crasha sem isso. |
+| `JWT_SECRET` | **sim** | Token de acesso. |
+| `JWT_REFRESH_SECRET` | **sim** | Refresh token. |
+| `JWT_EXPIRES_IN` / `JWT_REFRESH_EXPIRES_IN` | não | Defaults: `15m` / `7d`. |
+| `ENCRYPTION_KEY` | **sim p/ 2FA + email/WhatsApp configs** | Gere com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. |
+| `PORT` | não | Default `3001`. |
+| `NODE_ENV` | não | `development` ou `production`. |
+| `FRONTEND_URL` | prod | Fallback de CORS quando `CORS_ORIGINS` vazio. |
+| `CORS_ORIGINS` | não | CSV de origens. Sobrescreve default. |
+| `REDIS_URL` | só p/ jobs | Necessário se `ENABLE_BILLING_JOBS` ou `ENABLE_AUTOMATION_ENGINE` = `true`. |
+| `ENABLE_BILLING_JOBS` | não | Default `false`. |
+| `ENABLE_AUTOMATION_ENGINE` | não | Default `false`. |
+| `MERCADOPAGO_ACCESS_TOKEN` / `MERCADOPAGO_PUBLIC_KEY` | só p/ pagamentos | — |
+| `RESEND_API_KEY` | só p/ email transacional | Alternativa ao SMTP. |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | só p/ email transacional | — |
+| `EMAIL_WEBHOOK_SECRET` | não | Se setado, webhooks de email exigem `x-webhook-secret`. |
+| `SENTRY_DSN` | não | Habilita Sentry. |
+| `OPENAI_API_KEY` | só p/ AI drafts/next-action | `aiDraftService.ts`, `nextActionService.ts`. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | só p/ Calendar | `googleCalendarService.ts`. |
+| `EXTERNAL_BASE_URL` | só p/ tracking | Base pública usada em pixels/links. |
+
+**Frontend** (`.env` na raiz):
+
+| Variável | Notas |
+|----------|-------|
+| `VITE_API_URL` | URL completa do backend (ex.: `http://localhost:3001` em dev, `https://api.vydengage.com` em prod). Se ausente, `client.ts` cai em `window.location.origin` em produção — o que **só funciona se frontend e backend estão no mesmo domínio**. |
+
+> **Setup local primeiro acesso:** se `server/.env` não existe, copie de `.env.example`: `cp server/.env.example server/.env`. Sem isso o backend não sobe e o login não responde.
+
+## Deploy
+
+| Componente | Plataforma | Config |
+|------------|------------|--------|
+| Backend | Railway | `railway.toml` na raiz aponta para `server/` (`cd server && npm ci && npm run build` → `npm start`). |
+| Frontend | Vercel (provável) | `.vercelignore` presente; build via `npm run build` → `build/`. Lembre de setar `VITE_API_URL` no Vercel. |
+| Postgres | Externo (Supabase/Railway/Neon) | Connection string em `DATABASE_URL`. |
+| Redis | Externo (Upstash/Railway) | Apenas se jobs habilitados. |
 
 ---
 

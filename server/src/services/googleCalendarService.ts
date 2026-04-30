@@ -15,6 +15,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.
  */
 async function loadGoogle() {
   try {
+    // @ts-ignore — googleapis é dependência opcional (lazy-load); ausente em dev/build sem Calendar feature
     const { google } = await import('googleapis');
     return google;
   } catch {
