@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+// @ts-ignore — `cookie` é dep transitiva (via cookie-parser); CI sem @types/cookie
 import cookie from 'cookie';
 import { logger } from '../utils/logger.js';
 
