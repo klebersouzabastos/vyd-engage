@@ -12,7 +12,7 @@
  */
 import { execSync } from 'node:child_process';
 
-const BASELINE = 332;
+const BASELINE = 284;
 
 let output = '';
 try {
