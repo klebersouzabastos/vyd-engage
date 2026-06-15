@@ -24,10 +24,13 @@
     "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.84",
+    "@ai-sdk/openai": "^3.0.71",
     "@bull-board/api": "^6.14.2",
     "@bull-board/express": "^6.14.2",
     "@prisma/client": "^5.7.1",
     "@sentry/node": "^7.91.0",
+    "ai": "^6.0.206",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.15.0",
     "compression": "^1.7.4",
