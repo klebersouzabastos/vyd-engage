@@ -1,97 +1,77 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Company } from '../types';
 
+const DEFAULT_PAGINATION = { page: 1, limit: 20, total: 0, totalPages: 0 };
+
+/**
+ * Companies data hook backed by TanStack Query. Public API unchanged.
+ */
 export function useCompanies() {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<Record<string, string | number | undefined> | undefined>(undefined);
+
+  const query = useQuery({
+    queryKey: ['companies', filters],
+    queryFn: async () => {
+      const result = await apiClient.getCompanies(filters);
+      return {
+        companies: (result.companies as Record<string, unknown>[]).map((c) => c as unknown as Company),
+        pagination: result.pagination || { ...DEFAULT_PAGINATION },
+      };
+    },
   });
 
-  const fetchCompanies = useCallback(async (filters?: Record<string, string | number | undefined>) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await apiClient.getCompanies(filters);
+  useEffect(() => {
+    if (query.isError) toast.error('Erro ao carregar empresas');
+  }, [query.isError]);
 
-      const transformedCompanies: Company[] = result.companies.map((c: Record<string, unknown>) => c as Company);
-
-      setCompanies(transformedCompanies);
-      setPagination(result.pagination || {
-        page: 1,
-        limit: 20,
-        total: transformedCompanies.length,
-        totalPages: 1,
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar empresas';
-      setError(message);
-      toast.error('Erro ao carregar empresas');
-    } finally {
-      setLoading(false);
-    }
+  const fetchCompanies = useCallback((next?: Record<string, string | number | undefined>) => {
+    setFilters(next);
   }, []);
 
   const createCompany = useCallback(async (data: Partial<Company>) => {
     try {
       const result = await apiClient.createCompany(data);
-      const newCompany = result as Company;
-      setCompanies(prev => [newCompany, ...prev]);
       toast.success('Empresa criada com sucesso!');
-      return newCompany;
+      await queryClient.invalidateQueries({ queryKey: ['companies'] });
+      return result as unknown as Company;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao criar empresa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar empresa');
       throw err;
     }
-  }, []);
+  }, [queryClient]);
 
   const updateCompany = useCallback(async (id: string, data: Partial<Company>) => {
-    const backup = [...companies];
-    setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
     try {
       const result = await apiClient.updateCompany(id, data);
-      const updated = result as Company;
-      setCompanies(prev => prev.map(c => c.id === id ? updated : c));
       toast.success('Empresa atualizada com sucesso!');
-      return updated;
+      await queryClient.invalidateQueries({ queryKey: ['companies'] });
+      return result as unknown as Company;
     } catch (err: unknown) {
-      setCompanies(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar empresa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar empresa');
       throw err;
     }
-  }, [companies]);
+  }, [queryClient]);
 
   const deleteCompany = useCallback(async (id: string) => {
-    const backup = [...companies];
-    setCompanies(prev => prev.filter(c => c.id !== id));
     try {
       await apiClient.deleteCompany(id);
       toast.success('Empresa removida com sucesso!');
+      await queryClient.invalidateQueries({ queryKey: ['companies'] });
     } catch (err: unknown) {
-      setCompanies(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao remover empresa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover empresa');
       throw err;
     }
-  }, [companies]);
-
-  useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
+  }, [queryClient]);
 
   return {
-    companies,
-    loading,
-    error,
-    pagination,
+    companies: query.data?.companies ?? [],
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    pagination: query.data?.pagination ?? { ...DEFAULT_PAGINATION },
     fetchCompanies,
     createCompany,
     updateCompany,

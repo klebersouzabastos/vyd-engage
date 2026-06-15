@@ -1,5 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  closestCorners,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { Header } from "../components/Header";
 import { Button, buttonVariants } from "../components/ui/button";
 import { LeadSourceBadge } from "../components/LeadSourceBadge";
@@ -78,13 +92,17 @@ export function Pipeline() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsColumnOrder, setSettingsColumnOrder] = useState<string[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
   const [scoreLeadId, setScoreLeadId] = useState<string | null>(null);
-  const dragStartTime = useRef<number>(0);
-  const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
-  const draggedLead = useRef<FunnelLead | null>(null);
-  const draggedFromColumn = useRef<string | null>(null);
+  const [activeLead, setActiveLead] = useState<FunnelLead | null>(null);
+  // Suppresses the click that may trail a drag (so a drop doesn't also open the modal).
+  const justDraggedRef = useRef(false);
   const filterPopoverRef = useRef<HTMLDivElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   // Close popover on outside click
   useEffect(() => {
@@ -140,35 +158,35 @@ export function Pipeline() {
     }
   };
 
-  // Drag-and-drop handlers
-  const handleDragStart = (e: React.DragEvent, lead: FunnelLead, columnId: string) => {
-    draggedLead.current = lead;
-    draggedFromColumn.current = columnId;
-    setIsDragging(true);
-    dragStartTime.current = Date.now();
-    dragStartPosition.current = { x: e.clientX, y: e.clientY };
+  // Drag-and-drop handlers (dnd-kit: keyboard + touch accessible)
+  const handleDndDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current as { lead: FunnelLead } | undefined;
+    setActiveLead(data?.lead ?? null);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
+  const handleDndDragEnd = async (event: DragEndEvent) => {
+    setActiveLead(null);
+    const { active, over } = event;
+    if (!over) return;
 
-  const handleDrop = async (targetColumnId: string) => {
-    if (!draggedLead.current || !draggedFromColumn.current) return;
-    if (draggedFromColumn.current === targetColumnId) {
-      setIsDragging(false);
-      draggedLead.current = null;
-      draggedFromColumn.current = null;
-      return;
-    }
+    const data = active.data.current as { lead: FunnelLead; columnId: string } | undefined;
+    if (!data) return;
 
-    const leadId = draggedLead.current.id;
+    const fromColumnId = data.columnId;
+    const targetColumnId = String(over.id);
+    if (fromColumnId === targetColumnId) return;
+
+    // Suppress the trailing click so the drop doesn't also open the lead modal.
+    justDraggedRef.current = true;
+    setTimeout(() => { justDraggedRef.current = false; }, 50);
+
+    const leadId = data.lead.id;
     const targetColumn = columns.find(c => c.id === targetColumnId);
     const position = targetColumn ? targetColumn.leads.length : 0;
 
     // Create interaction for status change
     try {
-      const fromTitle = columns.find(c => c.id === draggedFromColumn.current)?.title || "";
+      const fromTitle = columns.find(c => c.id === fromColumnId)?.title || "";
       const toTitle = targetColumn?.title || "";
       await apiClient.createInteraction({
         leadId,
@@ -176,7 +194,7 @@ export function Pipeline() {
         direction: "OUTBOUND",
         content: `Status alterado de "${fromTitle}" para "${toTitle}"`,
         metadata: {
-          oldColumn: draggedFromColumn.current,
+          oldColumn: fromColumnId,
           newColumn: targetColumnId,
         },
       });
@@ -185,27 +203,10 @@ export function Pipeline() {
     }
 
     await moveLead(leadId, targetColumnId, position);
-
-    setIsDragging(false);
-    draggedLead.current = null;
-    draggedFromColumn.current = null;
-    dragStartTime.current = 0;
-    dragStartPosition.current = null;
   };
 
   const handleCardClick = async (e: React.MouseEvent, lead: FunnelLead) => {
-    if (isDragging) return;
-
-    if (dragStartTime.current > 0 && dragStartPosition.current) {
-      const timeSinceDragStart = Date.now() - dragStartTime.current;
-      if (timeSinceDragStart < 300) {
-        const distance = Math.sqrt(
-          Math.pow(e.clientX - dragStartPosition.current.x, 2) +
-          Math.pow(e.clientY - dragStartPosition.current.y, 2)
-        );
-        if (distance > 5) return;
-      }
-    }
+    if (justDraggedRef.current) return;
 
     try {
       const fullLead = await apiClient.getLead(lead.id);
@@ -606,15 +607,16 @@ export function Pipeline() {
         </div>
 
         {/* Kanban Board */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDndDragStart}
+          onDragEnd={handleDndDragEnd}
+        >
         <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <div className="flex gap-6 min-w-max">
             {filteredColumns.map((column) => (
-              <div
-                key={column.id}
-                className="bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0"
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(column.id)}
-              >
+              <DroppableColumn key={column.id} columnId={column.id}>
               {/* Column Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 flex-1">
@@ -689,18 +691,7 @@ export function Pipeline() {
               {/* Cards */}
               <div className="space-y-3">
                 {column.leads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, lead, column.id)}
-                    onDragEnd={() => {
-                      setIsDragging(false);
-                      dragStartTime.current = 0;
-                      dragStartPosition.current = null;
-                    }}
-                    onClick={(e) => handleCardClick(e, lead)}
-                    className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-pointer hover:shadow-md transition-shadow"
-                  >
+                  <DraggableLeadCard key={lead.id} lead={lead} columnId={column.id} onCardClick={handleCardClick}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h4 className="font-medium text-gray-900 mb-1">{lead.name}</h4>
@@ -749,7 +740,7 @@ export function Pipeline() {
                       <Clock size={12} />
                       <span>{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
                     </div>
-                  </div>
+                  </DraggableLeadCard>
                 ))}
 
                 {column.leads.length === 0 && (
@@ -758,10 +749,18 @@ export function Pipeline() {
                   </div>
                 )}
               </div>
-            </div>
+            </DroppableColumn>
             ))}
           </div>
         </div>
+        <DragOverlay>
+          {activeLead ? (
+            <div className="bg-white rounded-lg p-4 shadow-lg border-2 border-primary w-[288px]">
+              <h4 className="font-medium text-gray-900">{activeLead.name}</h4>
+            </div>
+          ) : null}
+        </DragOverlay>
+        </DndContext>
 
         {/* Stats Summary */}
         <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-300">
@@ -1075,6 +1074,56 @@ export function Pipeline() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** A lead card that can be picked up with pointer, touch or keyboard (dnd-kit). */
+function DraggableLeadCard({
+  lead,
+  columnId,
+  onCardClick,
+  children,
+}: {
+  lead: FunnelLead;
+  columnId: string;
+  onCardClick: (e: React.MouseEvent, lead: FunnelLead) => void;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: lead.id,
+    data: { lead, columnId },
+  });
+  const style = {
+    transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
+    opacity: isDragging ? 0.4 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={(e) => onCardClick(e, lead)}
+      className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+    >
+      {children}
+    </div>
+  );
+}
+
+/** A funnel column that accepts dropped lead cards. */
+function DroppableColumn({ columnId, children }: { columnId: string; children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: columnId });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0 transition-colors",
+        isOver && "ring-2 ring-primary ring-inset bg-gray-200",
+      )}
+    >
+      {children}
     </div>
   );
 }

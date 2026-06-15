@@ -5,16 +5,19 @@ import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppProviders } from './contexts/AppProviders';
 import { MigrationChecker } from './components/MigrationChecker';
+import { QueryProvider } from './lib/queryClient';
 
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <AppProviders>
-          <MigrationChecker />
-          <RouterProvider router={router} />
-          <Toaster />
-        </AppProviders>
+        <QueryProvider>
+          <AppProviders>
+            <MigrationChecker />
+            <RouterProvider router={router} />
+            <Toaster />
+          </AppProviders>
+        </QueryProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Lead } from '../types';
@@ -17,98 +18,96 @@ export interface LeadsFilters {
   isContact?: string | boolean;
 }
 
+interface ApiLeadTag {
+  tag?: { id: string; name: string; color: string };
+  tagId?: string;
+}
+interface ApiLead {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  position?: string;
+  status: string;
+  source: string;
+  score?: number;
+  isContact?: boolean;
+  convertedAt?: string | null;
+  customFields?: Record<string, string | number | boolean | null>;
+  notes?: string;
+  assignedTo?: string;
+  tags?: Array<ApiLeadTag | string>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const DEFAULT_PAGINATION = { page: 1, limit: 20, total: 0, totalPages: 0 };
+
+function buildServerParams(filters?: LeadsFilters): Record<string, string | number> {
+  const serverParams: Record<string, string | number> = {};
+  if (!filters) return serverParams;
+  if (filters.page) serverParams.page = filters.page;
+  if (filters.limit) serverParams.limit = filters.limit;
+  if (filters.sort) serverParams.sort = filters.sort;
+  if (filters.order) serverParams.order = filters.order;
+  if (filters.status) serverParams.status = filters.status;
+  if (filters.source) serverParams.source = filters.source;
+  if (filters.search) serverParams.search = filters.search;
+  if (filters.tagId) serverParams.tagId = filters.tagId;
+  if (filters.assignedTo) serverParams.assignedTo = filters.assignedTo;
+  if (filters.isContact !== undefined && filters.isContact !== '') serverParams.isContact = String(filters.isContact);
+  return serverParams;
+}
+
+function transformLead(lead: ApiLead): Lead {
+  return {
+    id: lead.id,
+    name: lead.name,
+    email: lead.email || '',
+    phone: lead.phone || '',
+    company: lead.company || '',
+    position: lead.position || '',
+    status: mapStatusFromBackend(lead.status) as Lead['status'],
+    source: mapSourceFromBackend(lead.source) as Lead['source'],
+    score: lead.score || 0,
+    isContact: lead.isContact || false,
+    convertedAt: lead.convertedAt || null,
+    customFields: lead.customFields || {},
+    notes: lead.notes || '',
+    assignedTo: lead.assignedTo || '',
+    tags: lead.tags?.map((lt) => (typeof lt === 'string' ? lt : lt.tag?.id || lt.tagId || '')) || [],
+    createdAt: lead.createdAt,
+    updatedAt: lead.updatedAt,
+  } as Lead;
+}
+
+/**
+ * Leads data hook backed by TanStack Query. Public API is unchanged from the
+ * previous hand-rolled version (leads/loading/error/pagination/fetchLeads/CRUD/refetch);
+ * `fetchLeads(filters)` now drives the query key instead of an imperative fetch.
+ */
 export function useLeads() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<LeadsFilters | undefined>(undefined);
+
+  const query = useQuery({
+    queryKey: ['leads', filters],
+    queryFn: async () => {
+      const result = await apiClient.getLeads(buildServerParams(filters));
+      return {
+        leads: (result.leads as unknown as ApiLead[]).map(transformLead),
+        pagination: result.pagination || { ...DEFAULT_PAGINATION },
+      };
+    },
   });
-  const fetchLeads = useCallback(async (filters?: LeadsFilters) => {
-    try {
-      setLoading(true);
-      setError(null);
 
-      // Build server params — only include defined, non-empty values
-      const serverParams: Record<string, string | number> = {};
-      if (filters?.page) serverParams.page = filters.page;
-      if (filters?.limit) serverParams.limit = filters.limit;
-      if (filters?.sort) serverParams.sort = filters.sort;
-      if (filters?.order) serverParams.order = filters.order;
-      if (filters?.status) serverParams.status = filters.status;
-      if (filters?.source) serverParams.source = filters.source;
-      if (filters?.search) serverParams.search = filters.search;
-      if (filters?.tagId) serverParams.tagId = filters.tagId;
-      if (filters?.assignedTo) serverParams.assignedTo = filters.assignedTo;
-      if (filters?.isContact !== undefined && filters?.isContact !== '') serverParams.isContact = String(filters.isContact);
+  useEffect(() => {
+    if (query.isError) toast.error('Erro ao carregar leads');
+  }, [query.isError]);
 
-      const result = await apiClient.getLeads(serverParams);
-
-      // Transform API response to match Lead type
-      interface ApiLeadTag {
-        tag?: { id: string; name: string; color: string };
-        tagId?: string;
-      }
-      interface ApiLead {
-        id: string;
-        name: string;
-        email?: string;
-        phone?: string;
-        company?: string;
-        position?: string;
-        status: string;
-        source: string;
-        score?: number;
-        isContact?: boolean;
-        convertedAt?: string | null;
-        customFields?: Record<string, string | number | boolean | null>;
-        notes?: string;
-        assignedTo?: string;
-        tags?: Array<ApiLeadTag | string>;
-        createdAt?: string;
-        updatedAt?: string;
-      }
-      const transformedLeads = result.leads.map((lead: ApiLead) => ({
-        id: lead.id,
-        name: lead.name,
-        email: lead.email || '',
-        phone: lead.phone || '',
-        company: lead.company || '',
-        position: lead.position || '',
-        status: mapStatusFromBackend(lead.status),
-        source: mapSourceFromBackend(lead.source),
-        score: lead.score || 0,
-        isContact: lead.isContact || false,
-        convertedAt: lead.convertedAt || null,
-        customFields: lead.customFields || {},
-        notes: lead.notes || '',
-        assignedTo: lead.assignedTo || '',
-        tags: lead.tags?.map((lt: ApiLeadTag | string) => {
-          if (typeof lt === 'string') return lt;
-          return lt.tag?.id || lt.tagId || '';
-        }) || [],
-        createdAt: lead.createdAt,
-        updatedAt: lead.updatedAt,
-      }));
-
-      setLeads(transformedLeads);
-      setPagination(result.pagination || {
-        page: 1,
-        limit: 20,
-        total: transformedLeads.length,
-        totalPages: 1,
-      });
-
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar leads';
-      setError(message);
-      toast.error('Erro ao carregar leads');
-    } finally {
-      setLoading(false);
-    }
+  const fetchLeads = useCallback((next?: LeadsFilters) => {
+    setFilters(next);
   }, []);
 
   const createLead = useCallback(async (data: Partial<Lead>) => {
@@ -127,40 +126,17 @@ export function useLeads() {
         assignedTo: data.assignedTo,
         tagIds: data.tags || [],
       });
-
-      // Transform and add to list
-      const newLead: Lead = {
-        id: result.id,
-        name: result.name,
-        email: result.email || '',
-        phone: result.phone || '',
-        company: result.company || '',
-        position: result.position || '',
-        status: mapStatusFromBackend(result.status) as Lead['status'],
-        source: mapSourceFromBackend(result.source) as Lead['source'],
-        score: result.score || 0,
-        customFields: result.customFields || {},
-        notes: result.notes || '',
-        assignedTo: result.assignedTo || '',
-        tags: result.tags?.map((lt: { tag?: { id: string } }) => lt.tag) || [],
-        createdAt: result.createdAt,
-        updatedAt: result.updatedAt,
-      };
-
-      setLeads(prev => [newLead, ...prev]);
+      const newLead = transformLead(result as unknown as ApiLead);
       toast.success('Lead criado com sucesso!');
+      await queryClient.invalidateQueries({ queryKey: ['leads'] });
       return newLead;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao criar lead';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar lead');
       throw err;
     }
-  }, []);
+  }, [queryClient]);
 
   const updateLead = useCallback(async (id: string, data: Partial<Lead>) => {
-    // Optimistic update
-    const backup = [...leads];
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
     try {
       const result = await apiClient.updateLead(id, {
         name: data.name,
@@ -176,61 +152,32 @@ export function useLeads() {
         assignedTo: data.assignedTo,
         tagIds: data.tags || [],
       });
-
-      // Transform and update in list with server response
-      const updatedLead: Lead = {
-        id: result.id,
-        name: result.name,
-        email: result.email || '',
-        phone: result.phone || '',
-        company: result.company || '',
-        position: result.position || '',
-        status: mapStatusFromBackend(result.status) as Lead['status'],
-        source: mapSourceFromBackend(result.source) as Lead['source'],
-        score: result.score || 0,
-        customFields: result.customFields || {},
-        notes: result.notes || '',
-        assignedTo: result.assignedTo || '',
-        tags: result.tags?.map((lt: { tag?: { id: string } }) => lt.tag) || [],
-        createdAt: result.createdAt,
-        updatedAt: result.updatedAt,
-      };
-
-      setLeads(prev => prev.map(l => l.id === id ? updatedLead : l));
+      const updatedLead = transformLead(result as unknown as ApiLead);
       toast.success('Lead atualizado com sucesso!');
+      await queryClient.invalidateQueries({ queryKey: ['leads'] });
       return updatedLead;
     } catch (err: unknown) {
-      // Rollback on failure
-      setLeads(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar lead';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar lead');
       throw err;
     }
-  }, [leads]);
+  }, [queryClient]);
 
   const deleteLead = useCallback(async (id: string) => {
-    const backup = [...leads];
-    setLeads(prev => prev.filter(l => l.id !== id));
     try {
       await apiClient.deleteLead(id);
       toast.success('Lead deletado com sucesso!');
+      await queryClient.invalidateQueries({ queryKey: ['leads'] });
     } catch (err: unknown) {
-      setLeads(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao deletar lead';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao deletar lead');
       throw err;
     }
-  }, [leads]);
-
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+  }, [queryClient]);
 
   return {
-    leads,
-    loading,
-    error,
-    pagination,
+    leads: query.data?.leads ?? [],
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    pagination: query.data?.pagination ?? { ...DEFAULT_PAGINATION },
     fetchLeads,
     createLead,
     updateLead,
@@ -238,6 +185,3 @@ export function useLeads() {
     refetch: fetchLeads,
   };
 }
-
-
-
