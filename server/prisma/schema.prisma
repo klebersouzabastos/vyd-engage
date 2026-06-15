@@ -6,11 +6,11 @@ generator client {
   binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
-// ERD as Mermaid markdown (.md output needs no Puppeteer/Chromium — safe in CI).
-generator erd {
-  provider = "prisma-erd-generator"
-  output   = "../../docs/database/ERD.md"
-}
+// NOTE: o ERD generator (prisma-erd-generator) foi REMOVIDO do caminho de deploy.
+// O Railway roda `./node_modules/.bin/prisma generate` direto (sem node_modules/.bin
+// no PATH), e o Prisma não conseguia spawnar o binário do generator → ENOENT → build
+// falhava. docs/database/ERD.md é um snapshot; para regenerar, re-adicione este bloco
+// temporariamente e rode `npx prisma generate` (npx põe .bin no PATH). Nunca no deploy.
 
 datasource db {
   provider = "postgresql"
