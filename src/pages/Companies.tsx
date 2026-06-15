@@ -1,5 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
+import { DataTable } from "../components/ui/data-table";
+import { getCompanyColumns } from "../components/companies/companyColumns";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -121,6 +123,16 @@ export function Companies() {
     setCompanyToDelete(null);
   };
 
+  // Column defs for the companies list table (handlers use stable setters)
+  const companyTableColumns = useMemo(
+    () => getCompanyColumns({
+      onEdit: handleEdit,
+      onDelete: (company: Company) => { setCompanyToDelete(company); setDeleteDialogOpen(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   if (loading && companies.length === 0) {
     return (
       <div className="min-h-screen">
@@ -170,101 +182,24 @@ export function Companies() {
         {/* Table */}
         <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full" aria-label="Lista de empresas">
-              <thead>
-                <tr className="border-b border-gray-300 bg-gray-50">
-                  <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Nome</th>
-                  <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Dominio</th>
-                  <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Industria</th>
-                  <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Porte</th>
-                  <th scope="col" className="text-center py-3 px-4 text-xs font-medium text-gray-500 uppercase">Leads</th>
-                  <th scope="col" className="text-center py-3 px-4 text-xs font-medium text-gray-500 uppercase">Deals</th>
-                  <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Criado em</th>
-                  <th scope="col" className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Acoes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companies.length === 0 ? (
-                  <tr>
-                    <td colSpan={8}>
-                      <EmptyState
-                        icon={Building2}
-                        title={search.trim() || sizeFilter !== "ALL" ? "Nenhuma empresa encontrada" : "Nenhuma empresa criada"}
-                        description={
-                          search.trim() || sizeFilter !== "ALL"
-                            ? "Tente ajustar os filtros ou termos de busca"
-                            : "Comece adicionando sua primeira empresa para organizar seus leads e deals"
-                        }
-                        actionLabel="Nova Empresa"
-                        onAction={() => { setEditingCompany(null); setFormOpen(true); }}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  companies.map((company) => (
-                    <tr
-                      key={company.id}
-                      className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/app/companies/${company.id}`)}
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Building2 size={16} className="text-gray-400 flex-shrink-0" />
-                          <span className="font-medium text-gray-900">{company.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {company.domain ? (
-                          <span className="flex items-center gap-1">
-                            <Globe size={12} className="text-gray-400" />
-                            {company.domain}
-                          </span>
-                        ) : "\u2014"}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {company.industry || "\u2014"}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {company.size ? SIZE_LABELS[company.size] : "\u2014"}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-                          <Users size={12} className="text-gray-400" />
-                          {company._count?.leads ?? 0}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-                          <Handshake size={12} className="text-gray-400" />
-                          {company._count?.deals ?? 0}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {formatDate(company.createdAt)}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => handleEdit(company)}
-                            className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
-                            aria-label={`Editar empresa ${company.name}`}
-                          >
-                            <Pencil size={14} aria-hidden="true" />
-                          </button>
-                          <button
-                            onClick={() => { setCompanyToDelete(company); setDeleteDialogOpen(true); }}
-                            className="p-1.5 rounded hover:bg-red-100 text-gray-500 hover:text-red-600 transition-colors"
-                            aria-label={`Excluir empresa ${company.name}`}
-                          >
-                            <Trash2 size={14} aria-hidden="true" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <DataTable
+              columns={companyTableColumns}
+              data={companies}
+              onRowClick={(company) => navigate(`/app/companies/${company.id}`)}
+              emptyState={
+                <EmptyState
+                  icon={Building2}
+                  title={search.trim() || sizeFilter !== "ALL" ? "Nenhuma empresa encontrada" : "Nenhuma empresa criada"}
+                  description={
+                    search.trim() || sizeFilter !== "ALL"
+                      ? "Tente ajustar os filtros ou termos de busca"
+                      : "Comece adicionando sua primeira empresa para organizar seus leads e deals"
+                  }
+                  actionLabel="Nova Empresa"
+                  onAction={() => { setEditingCompany(null); setFormOpen(true); }}
+                />
+              }
+            />
           </div>
 
           {/* Pagination */}
