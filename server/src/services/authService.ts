@@ -293,7 +293,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     
     await sendEmail({
       to: user.email,
-      ...emailTemplates.passwordReset(user.name, resetLink),
+      ...(await emailTemplates.passwordReset(user.name, resetLink)),
     });
     
     logger.info('Password reset email sent successfully', { 
@@ -380,7 +380,7 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
   try {
     await sendEmail({
       to: user.email,
-      ...emailTemplates.emailVerification(user.name, verificationLink),
+      ...(await emailTemplates.emailVerification(user.name, verificationLink)),
     });
   } catch (error) {
     logger.error('Failed to send verification email', error);

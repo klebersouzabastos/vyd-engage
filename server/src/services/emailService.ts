@@ -1,5 +1,10 @@
 import { Resend } from 'resend';
+import { createElement } from 'react';
+import { render } from '@react-email/render';
 import { logger } from '../utils/logger.js';
+import { PasswordResetEmail } from '../emails/PasswordResetEmail.js';
+import { EmailVerificationEmail } from '../emails/EmailVerificationEmail.js';
+import { InvitationEmail } from '../emails/InvitationEmail.js';
 
 // Resend client initialization
 let resendClient: Resend | null = null;
@@ -72,110 +77,29 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   }
 }
 
-// Email templates
+// Email templates — rendered from typed react-email components (server-side).
+// Each returns a Promise<{ subject, html }> (render is async), so call sites await.
 export const emailTemplates = {
-  passwordReset: (name: string, resetLink: string) => ({
-    subject: 'Recuperação de Senha - VYD Engage',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .button { display: inline-block; padding: 12px 24px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { margin-top: 30px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>Recuperação de Senha</h1>
-          <p>Olá ${name},</p>
-          <p>Recebemos uma solicitação para redefinir a senha da sua conta VYD Engage.</p>
-          <p style="text-align: center; margin: 30px 0;">
-            <a href="${resetLink}" class="button" style="text-decoration: none;">Redefinir Senha</a>
-          </p>
-          <p style="text-align: center; color: #6b7280; font-size: 14px; margin: 15px 0;">Ou copie e cole este link no seu navegador:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; word-break: break-all; font-family: 'Courier New', monospace; font-size: 14px; margin: 20px 0; text-align: center; border: 1px solid #d1d5db;">
-            <p style="margin: 0; color: #1e3a8a; user-select: all; -webkit-user-select: all;">${resetLink}</p>
-          </div>
-          <p>Este link expira em 1 hora.</p>
-          <p>Se você não solicitou esta recuperação, ignore este email.</p>
-          <div class="footer">
-            <p>Este é um email automático, por favor não responda.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  }),
+  async passwordReset(name: string, resetLink: string) {
+    return {
+      subject: 'Recuperação de Senha - VYD Engage',
+      html: await render(createElement(PasswordResetEmail, { name, resetLink })),
+    };
+  },
 
-  emailVerification: (name: string, verificationLink: string) => ({
-    subject: 'Verifique seu Email - VYD Engage',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .button { display: inline-block; padding: 12px 24px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { margin-top: 30px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>Verificação de Email</h1>
-          <p>Olá ${name},</p>
-          <p>Obrigado por se cadastrar no VYD Engage!</p>
-          <p>Por favor, verifique seu endereço de email clicando no botão abaixo:</p>
-          <a href="${verificationLink}" class="button">Verificar Email</a>
-          <p>Ou copie e cole este link no seu navegador:</p>
-          <p>${verificationLink}</p>
-          <p>Este link expira em 24 horas.</p>
-          <div class="footer">
-            <p>Este é um email automático, por favor não responda.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  }),
+  async emailVerification(name: string, verificationLink: string) {
+    return {
+      subject: 'Verifique seu Email - VYD Engage',
+      html: await render(createElement(EmailVerificationEmail, { name, verificationLink })),
+    };
+  },
 
-  invitation: (inviterName: string, companyName: string, invitationLink: string, role: string) => ({
-    subject: `Convite para ${companyName} - VYD Engage`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .button { display: inline-block; padding: 12px 24px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { margin-top: 30px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>Você foi convidado!</h1>
-          <p>Olá,</p>
-          <p><strong>${inviterName}</strong> convidou você para se juntar a <strong>${companyName}</strong> no VYD Engage como <strong>${role}</strong>.</p>
-          <p>Clique no botão abaixo para aceitar o convite e criar sua conta:</p>
-          <a href="${invitationLink}" class="button">Aceitar Convite</a>
-          <p>Ou copie e cole este link no seu navegador:</p>
-          <p>${invitationLink}</p>
-          <p>Este convite expira em 7 dias.</p>
-          <div class="footer">
-            <p>Este é um email automático, por favor não responda.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  }),
+  async invitation(inviterName: string, companyName: string, invitationLink: string, role: string) {
+    return {
+      subject: `Convite para ${companyName} - VYD Engage`,
+      html: await render(createElement(InvitationEmail, { inviterName, companyName, invitationLink, role })),
+    };
+  },
 };
 
 
