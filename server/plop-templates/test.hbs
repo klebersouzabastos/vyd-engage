@@ -1,0 +1,23 @@
+import { describe, it, expect } from 'vitest';
+import { prismaMock } from '../helpers/prismaMock.js';
+import { {{camelCase name}}Service } from '../../services/{{camelCase name}}Service.js';
+
+describe('{{camelCase name}}Service (unit, mocked Prisma)', () => {
+  const tenantId = 'tenant-1';
+
+  it('returns a record when found', async () => {
+    const record = { id: 'rec-1', tenantId, name: 'X' } as never;
+    prismaMock.{{camelCase name}}.findFirst.mockResolvedValue(record);
+
+    await expect({{camelCase name}}Service.findById(tenantId, 'rec-1')).resolves.toEqual(record);
+  });
+
+  it('throws 404 when not found', async () => {
+    prismaMock.{{camelCase name}}.findFirst.mockResolvedValue(null);
+
+    await expect({{camelCase name}}Service.findById(tenantId, 'missing')).rejects.toMatchObject({
+      statusCode: 404,
+      code: '{{constantCase name}}_NOT_FOUND',
+    });
+  });
+});
