@@ -79,6 +79,8 @@
       "scripts": {
             "dev": "vite",
             "build": "vite build",
+            "typecheck": "tsc --noEmit",
+            "typecheck:ci": "node scripts/typecheck-ratchet.mjs",
             "lint": "eslint src/",
             "lint:fix": "eslint src/ --fix",
             "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",

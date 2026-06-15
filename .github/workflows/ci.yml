@@ -97,6 +97,9 @@ jobs:
         run: npm run format:check
         continue-on-error: true
 
+      - name: Typecheck (ratchet — fails only on NEW type errors above baseline)
+        run: npm run typecheck:ci
+
       - name: Build
         run: npm run build
 
