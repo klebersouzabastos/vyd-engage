@@ -1,13 +1,14 @@
 import express from 'express';
 import { createServer } from 'http';
+import { pathToFileURL } from 'url';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import morgan from 'morgan';
+import { pinoHttp } from 'pino-http';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler.js';
-import { logger } from './utils/logger.js';
+import { logger, baseLogger } from './utils/logger.js';
 import { apiLimiter, authLimiter, passwordResetLimiter } from './middleware/rateLimit.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { initSentry } from './utils/sentry.js';
@@ -50,15 +51,17 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging
-app.use(requestLogger);
+// HTTP access logging (pino-http) — structured JSON in prod, with secret redaction.
+// Single source of access logs; requestLogger only feeds Sentry breadcrumbs now.
+app.use(pinoHttp({
+  logger: baseLogger,
+  autoLogging: {
+    ignore: (req) => req.url === '/health',
+  },
+}));
 
-// HTTP logging (morgan)
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
+// Sentry breadcrumbs for each request
+app.use(requestLogger);
 
 // Initialize billing jobs (only in production or when explicitly enabled)
 if (process.env.ENABLE_BILLING_JOBS === 'true') {
@@ -326,6 +329,10 @@ publicRouter.get('/plans', async (_req, res, next) => {
 app.use('/api/v1/public', publicRouter);
 app.use('/api/public', publicRouter); // backwards-compatible alias
 
+// Bull Board queue dashboard (Basic-Auth gated; mounted before the 404 handler)
+import { mountQueueDashboard } from './admin/queueDashboard.js';
+await mountQueueDashboard(app);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -334,11 +341,16 @@ app.use((req, res) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server (use httpServer for Socket.IO support)
-httpServer.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Start server (use httpServer for Socket.IO support) — skipped when imported
+// (e.g. by supertest), so tests can mount the app without binding a port.
+const isMainModule = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  httpServer.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
 
 export default app;
+export { app, httpServer };
 
