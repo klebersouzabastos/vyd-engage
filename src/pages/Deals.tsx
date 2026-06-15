@@ -1,5 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
+import { DataTable } from "../components/ui/data-table";
+import { getDealColumns } from "../components/deals/dealColumns";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -300,6 +302,16 @@ export function Deals() {
     await deleteSavedView(id);
   }, [deleteSavedView]);
 
+  // Column defs for the deals list table (handlers use stable setters)
+  const dealTableColumns = useMemo(
+    () => getDealColumns({
+      onEdit: handleEdit,
+      onDelete: (deal: Deal) => { setDealToDelete(deal); setDeleteDialogOpen(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   if (loading && deals.length === 0) {
     return (
       <div className="min-h-screen">
@@ -514,93 +526,24 @@ export function Deals() {
             {/* Table */}
             <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full" aria-label="Lista de deals">
-                  <thead>
-                    <tr className="border-b border-gray-300 bg-gray-50">
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Nome</th>
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Valor</th>
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Stage</th>
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Probabilidade</th>
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Fechamento</th>
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Lead</th>
-                      <th scope="col" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Responsável</th>
-                      <th scope="col" className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deals.length === 0 ? (
-                      <tr>
-                        <td colSpan={8}>
-                          <EmptyState
-                            icon={Handshake}
-                            title={search.trim() || stageFilter !== "ALL" ? "Nenhum deal encontrado" : "Nenhum deal criado"}
-                            description={
-                              search.trim() || stageFilter !== "ALL"
-                                ? "Tente ajustar os filtros ou termos de busca"
-                                : "Comece adicionando seu primeiro deal para gerenciar seu pipeline de vendas"
-                            }
-                            actionLabel="Novo Deal"
-                            onAction={() => { setEditingDeal(null); setFormOpen(true); }}
-                          />
-                        </td>
-                      </tr>
-                    ) : (
-                      deals.map((deal) => (
-                        <tr
-                          key={deal.id}
-                          className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => navigate(`/app/deals/${deal.id}`)}
-                        >
-                          <td className="py-3 px-4">
-                            <span className="font-medium text-gray-900">{deal.name}</span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-700 font-medium">
-                            {formatCurrency(deal.value)}
-                          </td>
-                          <td className="py-3 px-4">
-                            <DealStageBadge stage={deal.stage} />
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            {deal.probability}%
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <Calendar size={12} className="text-gray-400" />
-                              {formatDate(deal.expectedCloseDate)}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            {deal.lead?.name || "\u2014"}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <User size={12} className="text-gray-400" />
-                              {deal.assignedUser?.name || "\u2014"}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => handleEdit(deal)}
-                                className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
-                                aria-label={`Editar deal ${deal.name}`}
-                              >
-                                <Pencil size={14} aria-hidden="true" />
-                              </button>
-                              <button
-                                onClick={() => { setDealToDelete(deal); setDeleteDialogOpen(true); }}
-                                className="p-1.5 rounded hover:bg-red-100 text-gray-500 hover:text-red-600 transition-colors"
-                                aria-label={`Excluir deal ${deal.name}`}
-                              >
-                                <Trash2 size={14} aria-hidden="true" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <DataTable
+                  columns={dealTableColumns}
+                  data={deals}
+                  onRowClick={(deal) => navigate(`/app/deals/${deal.id}`)}
+                  emptyState={
+                    <EmptyState
+                      icon={Handshake}
+                      title={search.trim() || stageFilter !== "ALL" ? "Nenhum deal encontrado" : "Nenhum deal criado"}
+                      description={
+                        search.trim() || stageFilter !== "ALL"
+                          ? "Tente ajustar os filtros ou termos de busca"
+                          : "Comece adicionando seu primeiro deal para gerenciar seu pipeline de vendas"
+                      }
+                      actionLabel="Novo Deal"
+                      onAction={() => { setEditingDeal(null); setFormOpen(true); }}
+                    />
+                  }
+                />
               </div>
 
               {/* Pagination */}
