@@ -134,6 +134,8 @@ import exportRoutes from './routes/exports.js';
 import calendarRoutes from './routes/calendar.js';
 import aiRoutes from './routes/ai.js';
 import savedViewRoutes from './routes/savedViews.js';
+// scaffolding anchor — do not remove (plop injects route imports below)
+// plop:import-route
 
 import { Router as ExpressRouter } from 'express';
 import prisma from './config/database.js';
@@ -191,6 +193,8 @@ v1Router.use('/auth/change-password', csrfProtection);
 v1Router.use('/auth/tenant', csrfProtection);
 v1Router.use('/ai', csrfProtection);
 v1Router.use('/saved-views', csrfProtection);
+// scaffolding anchor — do not remove
+// plop:csrf
 
 // Tracking routes (public, no auth, no CSRF)
 v1Router.use('/track', trackingRoutes);
@@ -223,6 +227,8 @@ v1Router.use('/exports', exportRoutes);
 v1Router.use('/integrations', calendarRoutes);
 v1Router.use('/ai', aiRoutes);
 v1Router.use('/saved-views', savedViewRoutes);
+// scaffolding anchor — do not remove
+// plop:mount
 
 // Mount v1 router at /api/v1 (canonical) and /api (backwards-compatible alias)
 app.use('/api/v1', v1Router);

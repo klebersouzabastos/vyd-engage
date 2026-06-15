@@ -1,0 +1,45 @@
+import prisma from '../config/database.js';
+import { createError } from '../middleware/errorHandler.js';
+
+// NOTE: assumes the Prisma model `{{camelCase name}}` has `tenantId` and `createdAt`.
+// Adjust the fields and the Zod schema (in the route) to match your real model.
+
+export interface Create{{pascalCase name}}Data {
+  name: string;
+}
+
+export interface Update{{pascalCase name}}Data extends Partial<Create{{pascalCase name}}Data> {
+  id: string;
+}
+
+export const {{camelCase name}}Service = {
+  async findAll(tenantId: string) {
+    return prisma.{{camelCase name}}.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  },
+
+  async findById(tenantId: string, id: string) {
+    const record = await prisma.{{camelCase name}}.findFirst({ where: { id, tenantId } });
+    if (!record) {
+      throw createError('{{pascalCase name}} not found', 404, '{{constantCase name}}_NOT_FOUND');
+    }
+    return record;
+  },
+
+  async create(tenantId: string, data: Create{{pascalCase name}}Data) {
+    return prisma.{{camelCase name}}.create({ data: { ...data, tenantId } });
+  },
+
+  async update(tenantId: string, data: Update{{pascalCase name}}Data) {
+    await this.findById(tenantId, data.id);
+    const { id, ...rest } = data;
+    return prisma.{{camelCase name}}.update({ where: { id }, data: rest });
+  },
+
+  async delete(tenantId: string, id: string) {
+    await this.findById(tenantId, id);
+    await prisma.{{camelCase name}}.delete({ where: { id } });
+  },
+};

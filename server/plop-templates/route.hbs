@@ -1,0 +1,79 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { {{camelCase name}}Service } from '../services/{{camelCase name}}Service.js';
+import { authenticate } from '../middleware/auth.js';
+import { tenantScope } from '../middleware/tenant.js';
+import { createError } from '../middleware/errorHandler.js';
+
+const router = Router();
+
+router.use(authenticate);
+router.use(tenantScope);
+
+const create{{pascalCase name}}Schema = z.object({
+  name: z.string().min(1),
+});
+
+const update{{pascalCase name}}Schema = create{{pascalCase name}}Schema.partial().extend({
+  id: z.string().uuid(),
+});
+
+router.get('/', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const items = await {{camelCase name}}Service.findAll(req.user.tenantId);
+    res.json(items);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const item = await {{camelCase name}}Service.findById(req.user.tenantId, req.params.id);
+    res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const data = create{{pascalCase name}}Schema.parse(req.body);
+    const item = await {{camelCase name}}Service.create(req.user.tenantId, data);
+    res.status(201).json(item);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+router.put('/:id', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const data = update{{pascalCase name}}Schema.parse({ ...req.body, id: req.params.id });
+    const item = await {{camelCase name}}Service.update(req.user.tenantId, data);
+    res.json(item);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    await {{camelCase name}}Service.delete(req.user.tenantId, req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default router;
