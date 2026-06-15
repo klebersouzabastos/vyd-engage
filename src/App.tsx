@@ -6,18 +6,21 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppProviders } from './contexts/AppProviders';
 import { MigrationChecker } from './components/MigrationChecker';
 import { QueryProvider } from './lib/queryClient';
+import { PostHogProvider } from './lib/posthog';
 
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <QueryProvider>
-          <AppProviders>
-            <MigrationChecker />
-            <RouterProvider router={router} />
-            <Toaster />
-          </AppProviders>
-        </QueryProvider>
+        <PostHogProvider>
+          <QueryProvider>
+            <AppProviders>
+              <MigrationChecker />
+              <RouterProvider router={router} />
+              <Toaster />
+            </AppProviders>
+          </QueryProvider>
+        </PostHogProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
