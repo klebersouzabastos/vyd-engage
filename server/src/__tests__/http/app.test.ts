@@ -43,6 +43,14 @@ describe('app wiring (supertest, mocked infra)', () => {
     expect(res.body).toEqual({ error: 'Route not found' });
   });
 
+  it('serves the OpenAPI spec at /api/v1/openapi.json', async () => {
+    const res = await request(app).get('/api/v1/openapi.json');
+    expect(res.status).toBe(200);
+    expect(res.body.openapi).toBe('3.0.0');
+    expect(res.body.paths).toHaveProperty('/public/capture/{tenantSlug}');
+    expect(res.body.paths).toHaveProperty('/public/plans');
+  });
+
   describe('POST /api/public/capture/:tenantSlug', () => {
     it('returns 404 when the tenant slug does not exist', async () => {
       prismaMock.tenant.findUnique.mockResolvedValue(null);

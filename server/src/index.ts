@@ -335,6 +335,13 @@ publicRouter.get('/plans', async (_req, res, next) => {
 app.use('/api/v1/public', publicRouter);
 app.use('/api/public', publicRouter); // backwards-compatible alias
 
+// OpenAPI spec for the public/developer API (public, no auth/CSRF)
+import { buildOpenApiDocument } from './openapi/registry.js';
+const openApiDocument = buildOpenApiDocument();
+app.get(['/api/v1/openapi.json', '/api/openapi.json'], (_req, res) => {
+  res.json(openApiDocument);
+});
+
 // Bull Board queue dashboard (Basic-Auth gated; mounted before the 404 handler)
 import { mountQueueDashboard } from './admin/queueDashboard.js';
 await mountQueueDashboard(app);
