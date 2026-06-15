@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 
@@ -16,40 +17,36 @@ export interface Task {
   updatedAt: string;
 }
 
+const DEFAULT_PAGINATION = { page: 1, limit: 50, total: 0, totalPages: 0 };
+
+/**
+ * Tasks data hook backed by TanStack Query. Public API unchanged.
+ */
 export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 50,
-    total: 0,
-    totalPages: 0,
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<Record<string, string | number | undefined> | undefined>(undefined);
+
+  const query = useQuery({
+    queryKey: ['tasks', filters],
+    queryFn: async () => {
+      const result = await apiClient.getTasks(filters);
+      return {
+        tasks: (result.tasks ?? []) as unknown as Task[],
+        pagination: result.pagination || { ...DEFAULT_PAGINATION },
+      };
+    },
   });
 
-  const fetchTasks = useCallback(async (filters?: Record<string, string | number | undefined>, options?: { silent?: boolean }) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await apiClient.getTasks(filters);
+  // Preserves the previous signature `fetchTasks(filters, { silent })`; the
+  // silent option is a no-op now (read errors surface via the `error` field).
+  const fetchTasks = useCallback(
+    (next?: Record<string, string | number | undefined>, _options?: { silent?: boolean }) => {
+      setFilters(next);
+    },
+    [],
+  );
 
-      setTasks(result.tasks || []);
-      setPagination(result.pagination || {
-        page: 1,
-        limit: 50,
-        total: result.tasks?.length || 0,
-        totalPages: 1,
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar tarefas';
-      setError(message);
-      if (!options?.silent) {
-        toast.error('Erro ao carregar tarefas');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const invalidate = useCallback(() => queryClient.invalidateQueries({ queryKey: ['tasks'] }), [queryClient]);
 
   const createTask = useCallback(async (data: Partial<Task>) => {
     try {
@@ -62,21 +59,16 @@ export function useTasks() {
         leadId: data.leadId,
         dueDate: data.dueDate,
       });
-
-      setTasks(prev => [result, ...prev]);
       toast.success('Tarefa criada com sucesso!');
+      await invalidate();
       return result;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao criar tarefa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar tarefa');
       throw err;
     }
-  }, []);
+  }, [invalidate]);
 
   const updateTask = useCallback(async (id: string, data: Partial<Task>) => {
-    // Optimistic update
-    const backup = [...tasks];
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t));
     try {
       const result = await apiClient.updateTask(id, {
         title: data.title,
@@ -87,76 +79,53 @@ export function useTasks() {
         leadId: data.leadId,
         dueDate: data.dueDate,
       });
-
-      setTasks(prev => prev.map(t => t.id === id ? result : t));
       toast.success('Tarefa atualizada com sucesso!');
+      await invalidate();
       return result;
     } catch (err: unknown) {
-      // Rollback on failure
-      setTasks(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar tarefa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar tarefa');
       throw err;
     }
-  }, [tasks]);
+  }, [invalidate]);
 
   const deleteTask = useCallback(async (id: string) => {
-    const backup = [...tasks];
-    setTasks(prev => prev.filter(t => t.id !== id));
     try {
       await apiClient.deleteTask(id);
       toast.success('Tarefa deletada com sucesso!');
+      await invalidate();
     } catch (err: unknown) {
-      setTasks(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao deletar tarefa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao deletar tarefa');
       throw err;
     }
-  }, [tasks]);
+  }, [invalidate]);
 
   const completeTask = useCallback(async (id: string) => {
-    const backup = [...tasks];
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'COMPLETED' as const, completedAt: new Date().toISOString() } : t));
     try {
-      const result = await apiClient.updateTask(id, {
-        status: 'COMPLETED',
-      });
-      setTasks(prev => prev.map(t => t.id === id ? result : t));
+      const result = await apiClient.updateTask(id, { status: 'COMPLETED' });
+      await invalidate();
       return result;
     } catch (err: unknown) {
-      setTasks(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao completar tarefa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao completar tarefa');
       throw err;
     }
-  }, [tasks]);
+  }, [invalidate]);
 
   const uncompleteTask = useCallback(async (id: string) => {
-    const backup = [...tasks];
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'PENDING' as const, completedAt: undefined } : t));
     try {
-      const result = await apiClient.updateTask(id, {
-        status: 'PENDING',
-      });
-      setTasks(prev => prev.map(t => t.id === id ? result : t));
+      const result = await apiClient.updateTask(id, { status: 'PENDING' });
+      await invalidate();
       return result;
     } catch (err: unknown) {
-      setTasks(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao reabrir tarefa';
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : 'Erro ao reabrir tarefa');
       throw err;
     }
-  }, [tasks]);
-
-  useEffect(() => {
-    fetchTasks(undefined, { silent: true });
-  }, [fetchTasks]);
+  }, [invalidate]);
 
   return {
-    tasks,
-    loading,
-    error,
-    pagination,
+    tasks: query.data?.tasks ?? [],
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    pagination: query.data?.pagination ?? { ...DEFAULT_PAGINATION },
     fetchTasks,
     createTask,
     updateTask,
