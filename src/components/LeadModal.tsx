@@ -300,7 +300,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
       if (currentAutomations.includes(automationId)) {
         return {
           ...prev,
-          automations: currentAutomations.filter((id) => id !== automationId),
+          automations: currentAutomations.filter((id: string) => id !== automationId),
         };
       } else {
         return {

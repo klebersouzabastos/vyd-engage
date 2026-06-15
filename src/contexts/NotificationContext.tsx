@@ -77,7 +77,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const raw = notifResult?.notifications || notifResult || [];
       const notifs = raw.map(mapBackendNotification);
       setNotifications(notifs);
-      setUnreadCount(countResult?.count ?? notifs.filter((n) => !n.read).length);
+      setUnreadCount(countResult?.count ?? notifs.filter((n: { read: boolean }) => !n.read).length);
     } catch (error) {
       // API pode não estar disponível, manter estado atual
       console.error("Erro ao carregar notificações:", error);
