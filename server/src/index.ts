@@ -142,6 +142,7 @@ import prisma from './config/database.js';
 import { z as zodLib } from 'zod';
 import { NotificationType } from '@prisma/client';
 import { notificationService } from './services/notificationService.js';
+import { dispatchTrigger } from './jobs/automationEngine.js';
 
 // ============================================
 // Versioned API Router (v1)
@@ -299,6 +300,17 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
       message: `${data.name}${data.email ? ` (${data.email})` : ''} preencheu o formulário público.`,
       link: `/app/leads/${lead.id}`,
       metadata: { leadId: lead.id, leadName: data.name, source: 'public_form' },
+    }).catch(() => {});
+
+    // Dispatch automation triggers (form_submitted + lead_created) — this route
+    // bypasses leadService.create, so we fire both here.
+    dispatchTrigger(tenant.id, 'form_submitted', lead.id, {
+      source: leadSource,
+      formSlug: req.params.tenantSlug,
+    }).catch(() => {});
+    dispatchTrigger(tenant.id, 'lead_created', lead.id, {
+      source: leadSource,
+      status: 'NEW',
     }).catch(() => {});
 
     res.status(201).json({ status: 201, message: 'Lead captured successfully', leadId: lead.id });

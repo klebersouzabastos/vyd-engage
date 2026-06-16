@@ -1,4 +1,4 @@
-import { Queue, Worker, Job, FlowProducer } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
 import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
 import { AutomationLogStatus, AutomationStepType, NotificationType } from '@prisma/client';
@@ -7,6 +7,8 @@ import { whatsappMessagingService } from '../services/whatsappMessagingService.j
 import { emailMessagingService } from '../services/emailMessagingService.js';
 import { notificationService } from '../services/notificationService.js';
 import { interpolateMergeTags, type MergeContext } from '../utils/mergeTags.js';
+import { computeDelayMs, evaluateCondition } from '../utils/automationEval.js';
+import { assertPublicHttpUrl } from '../utils/safeFetch.js';
 
 // Redis connection configuration
 const redisConnection = {
@@ -25,13 +27,85 @@ export interface AutomationJobData {
   leadId: string;
   triggerEvent: string;
   triggerData?: Record<string, any>;
-  currentStepIndex: number;
+  /** Modelo de grafo: id do nó atual a executar. */
+  currentNodeId?: string;
+  /** Legado (modelo linear por índice). Mantido para jobs/automes antigos. */
+  currentStepIndex?: number;
   executionId: string;
 }
 
+export type AutomationStepType2 =
+  | 'send_whatsapp'
+  | 'send_email'
+  | 'delay'
+  | 'update_lead'
+  | 'condition'
+  | 'add_tag'
+  | 'remove_tag'
+  | 'create_task'
+  | 'send_webhook';
+
 export interface AutomationStep {
-  type: 'send_whatsapp' | 'send_email' | 'delay' | 'update_lead' | 'condition' | 'add_tag' | 'remove_tag';
+  type: AutomationStepType2;
   config: Record<string, any>;
+}
+
+/**
+ * Passo normalizado do grafo: id + arestas de saída. Tolera automações antigas
+ * (sem id/next) tratando-as como cadeia linear.
+ */
+export interface NormalizedStep {
+  id: string;
+  type: AutomationStepType2;
+  delay?: string;
+  config: Record<string, any>;
+  next: string[];
+  trueNext?: string[];
+  falseNext?: string[];
+}
+
+/**
+ * Normaliza os steps persistidos para o modelo de grafo, tolerando automações
+ * ANTIGAS (formato linear, sem id/next, e com vocabulário da UI):
+ *  - sem `next`: encadeia ao step seguinte por ordem;
+ *  - condition sem `trueNext`/`falseNext`: deriva de config.trueBranch/falseBranch
+ *    (converter antigo gravava node-ids) e, na falta, segue linearmente (`next`),
+ *    preservando o comportamento histórico "condição sempre continua";
+ *  - remapeia tipos legados: `wait_delay` → `delay`, `update_field` (config
+ *    {field,value}) → `update_lead` (config { [field]: value }, score numérico).
+ */
+export function normalizeSteps(rawSteps: unknown): NormalizedStep[] {
+  const steps = Array.isArray(rawSteps) ? rawSteps : [];
+  const idOf = (s: any, i: number) => (s && s.id) || `step_${i}`;
+
+  return steps.map((s: any, i: number) => {
+    const next: string[] = Array.isArray(s?.next)
+      ? s.next
+      : i + 1 < steps.length
+        ? [idOf(steps[i + 1], i + 1)]
+        : [];
+
+    // Remapeia vocabulário legado da UI para o vocabulário do engine.
+    let type = s?.type;
+    let config = s?.config || {};
+    if (type === 'wait_delay') {
+      type = 'delay';
+    } else if (type === 'update_field') {
+      const field = config.field || 'status';
+      const raw = config.value;
+      config = { [field]: field === 'score' ? Number(raw) : raw };
+      type = 'update_lead';
+    }
+
+    let trueNext = Array.isArray(s?.trueNext) ? s.trueNext : undefined;
+    let falseNext = Array.isArray(s?.falseNext) ? s.falseNext : undefined;
+    if (type === 'condition') {
+      if (!trueNext) trueNext = s?.config?.trueBranch ? [s.config.trueBranch] : next;
+      if (!falseNext) falseNext = s?.config?.falseBranch ? [s.config.falseBranch] : next;
+    }
+
+    return { id: idOf(s, i), type, delay: s?.delay, config, next, trueNext, falseNext };
+  });
 }
 
 export interface AutomationTrigger {
@@ -87,31 +161,22 @@ export const automationDLQ = new Queue('automations-dlq', {
 async function executeStep(step: AutomationStep, jobData: AutomationJobData): Promise<{ success: boolean; message: string; data?: any }> {
   switch (step.type) {
     case 'delay': {
-      // Delay is handled by scheduling the next step with a delay
-      const delayMinutes = step.config.minutes || 0;
-      const delayHours = step.config.hours || 0;
-      const totalDelayMs = (delayMinutes * 60 + delayHours * 3600) * 1000;
-
-      if (totalDelayMs > 0) {
-        // Schedule next step with delay
-        await automationQueue.add(
-          'process-step',
-          {
-            ...jobData,
-            currentStepIndex: jobData.currentStepIndex + 1,
-          },
-          { delay: totalDelayMs }
-        );
-        return { success: true, message: `Aguardando ${delayHours}h ${delayMinutes}min` };
-      }
-      return { success: true, message: 'Delay de 0, continuando' };
+      // O agendamento do próximo passo é feito pelo worker (após este retorno),
+      // usando computeDelayMs(step.config). Aqui só sinalizamos sucesso.
+      return { success: true, message: 'Atraso aplicado' };
     }
 
     case 'update_lead': {
       const updateData: any = {};
-      if (step.config.status) updateData.status = step.config.status;
-      if (step.config.assignedTo) updateData.assignedTo = step.config.assignedTo;
-      if (step.config.customFields) updateData.customFields = step.config.customFields;
+      if (step.config.status !== undefined) updateData.status = step.config.status;
+      if (step.config.assignedTo !== undefined) updateData.assignedTo = step.config.assignedTo;
+      if (step.config.source !== undefined) updateData.source = step.config.source;
+      if (step.config.score !== undefined) updateData.score = Number(step.config.score);
+      if (step.config.customFields !== undefined) updateData.customFields = step.config.customFields;
+
+      if (Object.keys(updateData).length === 0) {
+        return { success: true, message: 'Nada para atualizar' };
+      }
 
       await prisma.lead.update({
         where: { id: jobData.leadId },
@@ -122,10 +187,19 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
     }
 
     case 'add_tag': {
-      const { tagId } = step.config;
-      if (!tagId) return { success: false, message: 'Tag ID não fornecido' };
+      // UI grava tagName; resolvemos para tagId (criando a tag se necessário).
+      let tagId: string | undefined = step.config.tagId;
+      const tagName: string | undefined = step.config.tagName;
+      if (!tagId && tagName) {
+        const tag = await prisma.tag.upsert({
+          where: { tenantId_name: { tenantId: jobData.tenantId, name: tagName } },
+          update: {},
+          create: { tenantId: jobData.tenantId, name: tagName },
+        });
+        tagId = tag.id;
+      }
+      if (!tagId) return { success: false, message: 'Tag não fornecida (tagName/tagId ausente)' };
 
-      // Check if tag already exists on lead
       const existing = await prisma.leadTag.findFirst({
         where: { leadId: jobData.leadId, tagId },
       });
@@ -134,42 +208,117 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
           data: { leadId: jobData.leadId, tagId },
         });
       }
-      return { success: true, message: `Tag ${tagId} adicionada` };
+      return { success: true, message: `Tag ${tagName || tagId} adicionada` };
     }
 
     case 'remove_tag': {
-      const { tagId: removeTagId } = step.config;
-      if (!removeTagId) return { success: false, message: 'Tag ID não fornecido' };
+      // UI grava tagName; resolvemos para tagId. Tag inexistente = sucesso (no-op).
+      let removeTagId: string | undefined = step.config.tagId;
+      const tagName: string | undefined = step.config.tagName;
+      if (!removeTagId && tagName) {
+        const tag = await prisma.tag.findFirst({
+          where: { tenantId: jobData.tenantId, name: tagName },
+          select: { id: true },
+        });
+        if (!tag) return { success: true, message: `Tag "${tagName}" não existe (nada a remover)` };
+        removeTagId = tag.id;
+      }
+      if (!removeTagId) return { success: false, message: 'Tag não fornecida (tagName/tagId ausente)' };
 
       await prisma.leadTag.deleteMany({
         where: { leadId: jobData.leadId, tagId: removeTagId },
       });
-      return { success: true, message: `Tag ${removeTagId} removida` };
+      return { success: true, message: `Tag ${tagName || removeTagId} removida` };
+    }
+
+    case 'create_task': {
+      if (!step.config.title) return { success: false, message: 'Título da tarefa não fornecido' };
+
+      const lead = await prisma.lead.findFirst({
+        where: { id: jobData.leadId, tenantId: jobData.tenantId },
+      });
+      const ctx: MergeContext = {
+        name: lead?.name,
+        email: lead?.email,
+        company: lead?.company,
+        phone: lead?.phone,
+      };
+      const offset = step.config.dueDateOffset ? Number(step.config.dueDateOffset) : null;
+
+      const task = await prisma.task.create({
+        data: {
+          tenantId: jobData.tenantId,
+          leadId: jobData.leadId,
+          title: interpolateMergeTags(step.config.title, ctx),
+          assignedTo: step.config.assigneeId || null,
+          dueDate: offset && offset > 0 ? new Date(Date.now() + offset * 86400000) : null,
+        },
+      });
+
+      return { success: true, message: `Tarefa criada: ${task.title}`, data: { taskId: task.id } };
+    }
+
+    case 'send_webhook': {
+      const url: string | undefined = step.config.url;
+      if (!url) return { success: false, message: 'URL do webhook não fornecida' };
+
+      // Anti-SSRF: bloqueia destinos internos (loopback, privados, metadados).
+      try {
+        await assertPublicHttpUrl(url);
+      } catch (err: any) {
+        return { success: false, message: `URL de webhook bloqueada: ${err?.message || 'destino inválido'}` };
+      }
+
+      const lead = await prisma.lead.findFirst({
+        where: { id: jobData.leadId, tenantId: jobData.tenantId },
+      });
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch(url, {
+          method: step.config.method || 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: jobData.triggerEvent,
+            automationId: jobData.automationId,
+            leadId: jobData.leadId,
+            lead,
+            triggerData: jobData.triggerData,
+          }),
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          return { success: false, message: `Webhook respondeu ${response.status}` };
+        }
+        return { success: true, message: `Webhook enviado (${response.status})` };
+      } catch (err: any) {
+        return { success: false, message: `Falha no webhook: ${err?.message || 'erro de rede'}` };
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     case 'condition': {
-      // Evaluate condition and decide which branch to follow
+      // Avalia a condição; o roteamento (true/false) é feito pelo worker.
       const lead = await prisma.lead.findUnique({
         where: { id: jobData.leadId },
-        include: { tags: true },
+        include: { tags: { include: { tag: true } } },
       });
 
       if (!lead) return { success: false, message: 'Lead não encontrado' };
 
-      let conditionMet = false;
       const { field, operator, value } = step.config;
+      const tagNames = lead.tags.map((t: any) => t.tag?.name).filter(Boolean) as string[];
+      const tagIds = lead.tags.map((t: any) => t.tagId);
+      const leadValue = field === 'tags' ? tagNames : (lead as any)[field];
 
-      const leadValue = (lead as any)[field];
-
-      switch (operator) {
-        case 'equals': conditionMet = leadValue === value; break;
-        case 'not_equals': conditionMet = leadValue !== value; break;
-        case 'contains': conditionMet = String(leadValue || '').includes(value); break;
-        case 'greater_than': conditionMet = Number(leadValue) > Number(value); break;
-        case 'less_than': conditionMet = Number(leadValue) < Number(value); break;
-        case 'has_tag': conditionMet = lead.tags.some(t => t.tagId === value); break;
-        default: conditionMet = false;
-      }
+      const conditionMet = evaluateCondition({
+        operator,
+        leadValue,
+        value,
+        tags: [...tagIds, ...tagNames],
+      });
 
       return {
         success: true,
@@ -256,12 +405,15 @@ function isWithinSchedule(schedule?: AutomationSchedule): boolean {
 export const automationWorker = new Worker(
   'automations',
   async (job: Job<AutomationJobData>) => {
-    const { automationId, tenantId, leadId, currentStepIndex, executionId } = job.data;
+    const { automationId, tenantId, leadId, executionId } = job.data;
+    // Declarado fora do try para o catch enxergar o nó que estava executando.
+    let currentNodeId = job.data.currentNodeId;
 
-    logger.info('Processing automation step', {
+    logger.info('Processing automation node', {
       automationId,
       leadId,
-      stepIndex: currentStepIndex,
+      nodeId: currentNodeId,
+      legacyStepIndex: job.data.currentStepIndex,
       executionId,
       jobId: job.id,
     });
@@ -302,28 +454,36 @@ export const automationWorker = new Worker(
         return;
       }
 
-      // Get steps
-      const steps = automation.steps as unknown as AutomationStep[];
-      if (!steps || currentStepIndex >= steps.length) {
-        // All steps completed
-        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa (${steps?.length || 0} steps)`, null, undefined, { leadId, executionId });
+      // Normaliza os steps para o modelo de grafo (tolera automações antigas).
+      const steps = normalizeSteps(automation.steps);
+      const stepMap = new Map(steps.map((s) => [s.id, s]));
+
+      // Compat: jobs antigos carregam currentStepIndex em vez de currentNodeId.
+      if (!currentNodeId && typeof job.data.currentStepIndex === 'number') {
+        currentNodeId = steps[job.data.currentStepIndex]?.id;
+      }
+
+      const step = currentNodeId ? stepMap.get(currentNodeId) : undefined;
+      if (!step) {
+        // Fim do caminho (sem nó atual válido) = execução concluída.
+        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa (${steps.length} steps)`, null, undefined, { leadId, executionId });
         await automationService.updateStats(automationId, true);
         return;
       }
 
-      const step = steps[currentStepIndex];
+      const stepIdx = steps.findIndex((s) => s.id === currentNodeId);
 
       // Execute step
-      const result = await executeStep(step, job.data);
+      const result = await executeStep(step as AutomationStep, job.data);
 
       // Log step result
       await automationService.addLog(
         automationId,
         result.success ? AutomationLogStatus.SUCCESS : AutomationLogStatus.ERROR,
-        `Step ${currentStepIndex + 1}/${steps.length} (${step.type}): ${result.message}`,
-        { stepIndex: currentStepIndex, stepType: step.type, executionId, leadId, ...result.data },
+        `Step ${stepIdx + 1}/${steps.length} (${step.type}): ${result.message}`,
+        { stepId: currentNodeId, stepIndex: stepIdx, stepType: step.type, executionId, leadId, ...result.data },
         result.success ? undefined : result.message,
-        { leadId, stepOrder: currentStepIndex, stepType: stepTypeToEnum[step.type] || null, executionId }
+        { leadId, stepOrder: stepIdx >= 0 ? stepIdx : undefined, stepType: stepTypeToEnum[step.type] || null, executionId }
       );
 
       if (!result.success) {
@@ -335,57 +495,46 @@ export const automationWorker = new Worker(
           notificationService.notifyTenantAdmins(tenantId, {
             type: NotificationType.AUTOMATION_ERROR,
             title: 'Erro em automação',
-            message: `"${automationInfo?.name || 'Automação'}" - Step ${currentStepIndex + 1} (${step.type}) falhou: ${result.message}`,
+            message: `"${automationInfo?.name || 'Automação'}" - Step ${stepIdx + 1} (${step.type}) falhou: ${result.message}`,
             link: `/app/automation-logs?automationId=${automationId}`,
-            metadata: { automationId, leadId, executionId, stepIndex: currentStepIndex },
+            metadata: { automationId, leadId, executionId, stepId: currentNodeId },
           }).catch(() => {});
         }
 
         throw new Error(result.message);
       }
 
-      // Handle condition branching
-      if (step.type === 'condition') {
-        const conditionMet = result.data?.conditionMet;
-        // If condition has trueBranch/falseBranch step indices
-        const nextIndex = conditionMet
-          ? (step.config.trueStepIndex ?? currentStepIndex + 1)
-          : (step.config.falseStepIndex ?? currentStepIndex + 1);
+      // Determina o(s) próximo(s) nó(s): condição roteia por true/false; demais
+      // seguem `next` (fan-out = N arestas → N jobs filhos).
+      const nextIds =
+        step.type === 'condition'
+          ? (result.data?.conditionMet ? step.trueNext : step.falseNext) || []
+          : step.next || [];
 
-        if (nextIndex < steps.length) {
-          await automationQueue.add('process-step', {
-            ...job.data,
-            currentStepIndex: nextIndex,
-          });
-        } else {
-          // Execution complete
-          await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`, null, undefined, { leadId, executionId });
-          await automationService.updateStats(automationId, true);
-        }
-        return;
-      }
-
-      // For delay steps, the next step is already scheduled inside executeStep
-      if (step.type === 'delay') {
-        return;
-      }
-
-      // Continue to next step
-      if (currentStepIndex + 1 < steps.length) {
-        await automationQueue.add('process-step', {
-          ...job.data,
-          currentStepIndex: currentStepIndex + 1,
-        });
-      } else {
-        // All steps completed
+      if (nextIds.length === 0) {
+        // Fim deste ramo.
         await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`, null, undefined, { leadId, executionId });
         await automationService.updateStats(automationId, true);
+        return;
+      }
+
+      // Nó de atraso agenda seus sucessores com delay (fan-out preservado).
+      const delayMs = step.type === 'delay' ? computeDelayMs(step.config) : 0;
+      for (const nextId of nextIds) {
+        // jobId determinístico por (execução, nó): o BullMQ ignora um add com id
+        // já existente, evitando dupla execução em reconvergência (diamante) e
+        // loop infinito em ciclos do grafo.
+        await automationQueue.add(
+          'process-step',
+          { ...job.data, currentNodeId: nextId, currentStepIndex: undefined },
+          { jobId: `${executionId}:${nextId}`, ...(delayMs > 0 ? { delay: delayMs } : {}) },
+        );
       }
     } catch (error: any) {
-      logger.error('Error processing automation step', error, {
+      logger.error('Error processing automation node', error, {
         automationId,
         leadId,
-        stepIndex: currentStepIndex,
+        nodeId: currentNodeId,
         executionId,
       });
 
@@ -399,10 +548,10 @@ export const automationWorker = new Worker(
         await automationService.addLog(
           automationId,
           AutomationLogStatus.ERROR,
-          `Step ${currentStepIndex} falhou após ${job.attemptsMade + 1} tentativas: ${error.message}`,
-          { executionId, leadId, attempts: job.attemptsMade + 1 },
+          `Nó ${currentNodeId || '(desconhecido)'} falhou após ${job.attemptsMade + 1} tentativas: ${error.message}`,
+          { executionId, leadId, stepId: currentNodeId, attempts: job.attemptsMade + 1 },
           error.message,
-          { leadId, stepOrder: currentStepIndex, executionId }
+          { leadId, executionId }
         );
         await automationService.updateStats(automationId, false);
 
@@ -412,9 +561,9 @@ export const automationWorker = new Worker(
         notificationService.notifyTenantAdmins(tenantId, {
           type: NotificationType.AUTOMATION_ERROR,
           title: 'Automação falhou',
-          message: `"${automation?.name || 'Automação'}" falhou no step ${currentStepIndex + 1}${lead?.name ? ` para o lead "${lead.name}"` : ''}: ${error.message}`,
+          message: `"${automation?.name || 'Automação'}" falhou${lead?.name ? ` para o lead "${lead.name}"` : ''}: ${error.message}`,
           link: `/app/automation-logs?automationId=${automationId}`,
-          metadata: { automationId, leadId, executionId, stepIndex: currentStepIndex, error: error.message },
+          metadata: { automationId, leadId, executionId, stepId: currentNodeId, error: error.message },
         }).catch(() => {});
       }
 
@@ -466,39 +615,58 @@ export async function dispatchTrigger(
     let dispatched = 0;
 
     for (const automation of automations) {
-      const trigger = automation.trigger as unknown as AutomationTrigger;
+      const trigger = automation.trigger as any;
       if (!trigger || trigger.type !== triggerType) continue;
 
-      // Check trigger conditions
-      if (trigger.conditions) {
-        let conditionsMet = true;
+      // Filtros do gatilho: builder gráfico grava no nível raiz; legado em
+      // trigger.conditions. Só aplicamos um filtro quando ele está definido.
+      const filters = trigger.conditions || trigger;
+      let conditionsMet = true;
+      if (filters.status && triggerData?.newStatus !== filters.status) conditionsMet = false;
+      if (filters.tagId && triggerData?.tagId !== filters.tagId) conditionsMet = false;
+      if (filters.source && triggerData?.source !== filters.source) conditionsMet = false;
+      if (!conditionsMet) continue;
 
-        // Check specific conditions
-        if (trigger.conditions.status && triggerData?.newStatus !== trigger.conditions.status) {
-          conditionsMet = false;
-        }
-        if (trigger.conditions.tagId && triggerData?.tagId !== trigger.conditions.tagId) {
-          conditionsMet = false;
-        }
-        if (trigger.conditions.source && triggerData?.source !== trigger.conditions.source) {
-          conditionsMet = false;
-        }
-
-        if (!conditionsMet) continue;
-      }
+      // Nós de entrada (conectados ao gatilho). Fallback: primeiro step (legado linear).
+      const steps = normalizeSteps(automation.steps);
+      const entry: string[] =
+        Array.isArray(trigger.entry) && trigger.entry.length
+          ? trigger.entry
+          : steps[0]
+            ? [steps[0].id]
+            : [];
 
       const executionId = `exec_${automation.id}_${Date.now()}`;
 
-      // Queue the first step
-      await automationQueue.add('process-step', {
-        automationId: automation.id,
-        tenantId,
-        leadId,
-        triggerEvent: triggerType,
-        triggerData,
-        currentStepIndex: 0,
-        executionId,
-      });
+      if (entry.length === 0) {
+        await automationService.addLog(
+          automation.id,
+          AutomationLogStatus.SKIPPED,
+          `Trigger ${triggerType}: automação sem passos`,
+          { executionId, leadId },
+          undefined,
+          { leadId, executionId },
+        );
+        continue;
+      }
+
+      // Enfileira cada nó de entrada (fan-out a partir do gatilho), com jobId
+      // determinístico por (execução, nó) para evitar duplicidade.
+      for (const nodeId of entry) {
+        await automationQueue.add(
+          'process-step',
+          {
+            automationId: automation.id,
+            tenantId,
+            leadId,
+            triggerEvent: triggerType,
+            triggerData,
+            currentNodeId: nodeId,
+            executionId,
+          },
+          { jobId: `${executionId}:${nodeId}` },
+        );
+      }
 
       await automationService.addLog(
         automation.id,
