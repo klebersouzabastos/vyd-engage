@@ -7,6 +7,10 @@ import {
   generateStaticDraft,
   getAllTemplates,
 } from './emailTemplates.js';
+import { generateObject, generateText, type LanguageModel } from 'ai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
+import { z } from 'zod';
 
 // ========================
 // Types
@@ -34,84 +38,24 @@ export interface EmailDraft {
 }
 
 // ========================
-// AI Provider Abstraction
+// AI Model Factory (Vercel AI SDK)
 // ========================
 
-interface AIProvider {
-  generateDraft(systemPrompt: string, userPrompt: string): Promise<string>;
-}
+/** Structured email draft — generateObject enforces this shape (no regex parsing). */
+const emailDraftSchema = z.object({
+  subject: z.string().describe('Assunto do email'),
+  body: z.string().describe('Corpo completo do email, em texto simples, pronto para envio'),
+});
 
-class OpenAIProvider implements AIProvider {
-  private apiKey: string;
-  private model: string;
-
-  constructor(apiKey: string, model?: string) {
-    this.apiKey = apiKey;
-    this.model = model || 'gpt-4o-mini';
-  }
-
-  async generateDraft(systemPrompt: string, userPrompt: string): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API error: ${response.status} — ${(error as any)?.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json() as any;
-    return data.choices?.[0]?.message?.content || '';
-  }
-}
-
-class AnthropicProvider implements AIProvider {
-  private apiKey: string;
-  private model: string;
-
-  constructor(apiKey: string, model?: string) {
-    this.apiKey = apiKey;
-    this.model = model || 'claude-sonnet-4-20250514';
-  }
-
-  async generateDraft(systemPrompt: string, userPrompt: string): Promise<string> {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(`Anthropic API error: ${response.status} — ${(error as any)?.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json() as any;
-    return data.content?.[0]?.text || '';
+/** Resolves a Vercel AI SDK language model for the configured provider (Claude-first). */
+function getModel(provider: string, apiKey: string, model?: string): LanguageModel | null {
+  switch (provider) {
+    case 'anthropic':
+      return createAnthropic({ apiKey })(model || 'claude-sonnet-4-20250514');
+    case 'openai':
+      return createOpenAI({ apiKey })(model || 'gpt-4o-mini');
+    default:
+      return null;
   }
 }
 
@@ -141,21 +85,6 @@ function checkRateLimit(tenantId: string): void {
   }
 
   entry.count++;
-}
-
-// ========================
-// Provider Factory
-// ========================
-
-function getProvider(provider: string, apiKey: string, model?: string): AIProvider | null {
-  switch (provider) {
-    case 'openai':
-      return new OpenAIProvider(apiKey, model);
-    case 'anthropic':
-      return new AnthropicProvider(apiKey, model);
-    default:
-      return null;
-  }
 }
 
 function resolveProviderConfig(): { provider: string; apiKey: string; model?: string } | null {
@@ -193,9 +122,7 @@ Regras:
 - Responda APENAS com o conteúdo do email (sem explicações adicionais)
 - O email deve estar pronto para envio
 - Use formatação de texto simples (sem HTML)
-
-Formato de resposta (JSON):
-{"subject": "assunto do email", "body": "corpo completo do email"}`;
+- Gere o assunto e o corpo do email separadamente`;
 
 function buildUserPrompt(context: DraftContext): string {
   const parts: string[] = [];
@@ -351,41 +278,34 @@ export const aiDraftService = {
       daysSinceLastContact: dbContext.daysSinceLastContact,
     };
 
-    // Try AI generation
+    // Try AI generation (Vercel AI SDK — structured output, no manual JSON parsing)
     const providerConfig = resolveProviderConfig();
     if (providerConfig) {
       try {
-        const provider = getProvider(
+        const model = getModel(
           providerConfig.provider,
           providerConfig.apiKey,
           providerConfig.model,
         );
 
-        if (provider) {
+        if (model) {
           const userPrompt = buildUserPrompt(context);
-          const rawResponse = await provider.generateDraft(SYSTEM_PROMPT, userPrompt);
+          // generateObject's generic inference (model + zod schema) triggers TS2589
+          // (deep instantiation) under moduleResolution:node — call it untyped and
+          // type the result manually (schema still validates at runtime).
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const result = await (generateObject as any)({
+            model,
+            schema: emailDraftSchema,
+            system: SYSTEM_PROMPT,
+            prompt: userPrompt,
+            temperature: 0.7,
+          });
+          const object = result.object as { subject: string; body: string };
 
-          // Try to parse JSON response
-          try {
-            // Extract JSON from response (may be wrapped in markdown code blocks)
-            const jsonMatch = rawResponse.match(/\{[\s\S]*"subject"[\s\S]*"body"[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              return {
-                subject: parsed.subject,
-                body: parsed.body,
-                templateUsed: templateType,
-                aiGenerated: true,
-              };
-            }
-          } catch {
-            // If JSON parsing fails, use raw response as body
-          }
-
-          // Fallback: use raw text as body with a generated subject
           return {
-            subject: `${getTemplateLabel(templateType)} — ${context.leadName}`,
-            body: rawResponse,
+            subject: object.subject,
+            body: object.body,
             templateUsed: templateType,
             aiGenerated: true,
           };
@@ -431,15 +351,16 @@ export const aiDraftService = {
     }
 
     try {
-      const provider = getProvider(config.provider, config.apiKey, config.model);
-      if (!provider) {
+      const model = getModel(config.provider, config.apiKey, config.model);
+      if (!model) {
         return { success: false, provider: config.provider, error: 'Provider inválido' };
       }
 
-      await provider.generateDraft(
-        'Responda apenas com: {"status":"ok"}',
-        'Teste de conexão'
-      );
+      await generateText({
+        model,
+        prompt: 'Teste de conexão. Responda apenas: OK',
+        maxOutputTokens: 8,
+      });
 
       return { success: true, provider: config.provider };
     } catch (error: any) {

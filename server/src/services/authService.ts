@@ -6,6 +6,7 @@ import { UserRole, UserStatus } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
 import { hashToken } from '../utils/tokenHash.js';
+import { captureEvent } from '../utils/analytics.js';
 
 export interface RegisterData {
   email: string;
@@ -108,6 +109,8 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
     }
   }
 
+  captureEvent({ distinctId: user.id, event: 'user_registered', tenantId: tenant.id, properties: { source: 'self_signup' } });
+
   // Generate tokens
   const tokenPayload: TokenPayload = {
     userId: user.id,
@@ -167,6 +170,8 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
   });
+
+  captureEvent({ distinctId: user.id, event: 'user_logged_in', tenantId: user.tenantId });
 
   // Generate tokens
   const tokenPayload: TokenPayload = {
@@ -293,7 +298,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     
     await sendEmail({
       to: user.email,
-      ...emailTemplates.passwordReset(user.name, resetLink),
+      ...(await emailTemplates.passwordReset(user.name, resetLink)),
     });
     
     logger.info('Password reset email sent successfully', { 
@@ -380,7 +385,7 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
   try {
     await sendEmail({
       to: user.email,
-      ...emailTemplates.emailVerification(user.name, verificationLink),
+      ...(await emailTemplates.emailVerification(user.name, verificationLink)),
     });
   } catch (error) {
     logger.error('Failed to send verification email', error);

@@ -70,12 +70,12 @@ export const invitationService = {
       
       await sendEmail({
         to: invitation.email,
-        ...emailTemplates.invitation(
+        ...(await emailTemplates.invitation(
           inviter?.name || 'Um administrador',
           tenant?.name || 'a empresa',
           invitationLink,
           roleLabel
-        ),
+        )),
       });
     } catch (error) {
       logger.error('Failed to send invitation email', error);
