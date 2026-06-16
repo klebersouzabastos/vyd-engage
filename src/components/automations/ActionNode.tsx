@@ -8,13 +8,20 @@ import {
   RefreshCw,
   Zap,
   X,
+  Maximize2,
 } from "lucide-react";
 import { ACTION_TYPES } from "../../utils/automationFlowConverter";
 import type { FlowNode } from "../../utils/automationFlowConverter";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { useRef, type ReactNode } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import { useRef, useState, type ReactNode } from "react";
 
 // Variáveis de merge disponíveis (substituídas pelo engine com os dados do lead).
 const MERGE_TAGS: { tag: string; label: string }[] = [
@@ -128,6 +135,229 @@ const ICONS: Record<string, ReactNode> = {
   send_whatsapp: <MessageSquare size={18} />,
 };
 
+/**
+ * Campos de configuração da ação. Reutilizado tanto no painel flutuante
+ * (compacto, ao lado do nó) quanto no Dialog em tela maior. O modo `large`
+ * aumenta as áreas de texto multilinha para edição mais confortável.
+ */
+function ActionConfigFields({
+  node,
+  onUpdate,
+  large = false,
+}: {
+  node: FlowNode;
+  onUpdate: (config: Record<string, any>) => void;
+  large?: boolean;
+}) {
+  const nodeType = node.data.nodeType;
+  const config = node.data.config;
+
+  return (
+    <div className={large ? "space-y-4" : "space-y-3"}>
+      {/* Action type selector */}
+      <div>
+        <Label className="text-xs">Tipo da Ação</Label>
+        <select
+          value={nodeType}
+          onChange={(e) => {
+            const newType = e.target.value;
+            const label = ACTION_TYPES.find((a) => a.value === newType)?.label || newType;
+            onUpdate({ ...config, _nodeType: newType, _label: label });
+          }}
+          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+        >
+          {ACTION_TYPES.map((a) => (
+            <option key={a.value} value={a.value}>
+              {a.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Send Email */}
+      {nodeType === "send_email" && (
+        <>
+          <MergeTagField
+            label="Assunto"
+            value={config.subject || ""}
+            onChange={(v) => onUpdate({ ...config, subject: v })}
+            placeholder="Assunto do e-mail"
+          />
+          <MergeTagField
+            label="Corpo do E-mail"
+            value={config.message || ""}
+            onChange={(v) => onUpdate({ ...config, message: v })}
+            placeholder="Conteúdo do e-mail..."
+            multiline
+            rows={large ? 14 : 5}
+            showCount
+          />
+        </>
+      )}
+
+      {/* Send WhatsApp */}
+      {nodeType === "send_whatsapp" && (
+        <MergeTagField
+          label="Mensagem"
+          value={config.message || ""}
+          onChange={(v) => onUpdate({ ...config, message: v })}
+          placeholder="Mensagem do WhatsApp..."
+          multiline
+          rows={large ? 10 : 4}
+          showCount
+        />
+      )}
+
+      {/* Create Task */}
+      {nodeType === "create_task" && (
+        <>
+          <MergeTagField
+            label="Título da Tarefa"
+            value={config.title || ""}
+            onChange={(v) => onUpdate({ ...config, title: v })}
+            placeholder="Ex: Follow-up com cliente"
+          />
+          <div>
+            <Label className="text-xs">ID do Responsável (opcional)</Label>
+            <Input
+              value={config.assigneeId || ""}
+              onChange={(e) => onUpdate({ ...config, assigneeId: e.target.value })}
+              placeholder="ID do usuário"
+              className="mt-1 text-sm"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Prazo (dias a partir de agora)</Label>
+            <Input
+              type="number"
+              min="1"
+              value={config.dueDateOffset || ""}
+              onChange={(e) =>
+                onUpdate({ ...config, dueDateOffset: parseInt(e.target.value) || undefined })
+              }
+              placeholder="Ex: 3"
+              className="mt-1 text-sm"
+            />
+          </div>
+        </>
+      )}
+
+      {/* Update Field */}
+      {nodeType === "update_field" && (
+        <>
+          <div>
+            <Label className="text-xs">Campo</Label>
+            <select
+              value={config.field || "status"}
+              onChange={(e) => onUpdate({ ...config, field: e.target.value })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            >
+              <option value="status">Status</option>
+              <option value="assignedTo">Responsável</option>
+              <option value="score">Score</option>
+              <option value="source">Fonte</option>
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs">Novo Valor</Label>
+            {config.field === "status" ? (
+              <select
+                value={config.value || ""}
+                onChange={(e) => onUpdate({ ...config, value: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+              >
+                <option value="">Selecione...</option>
+                <option value="NEW">Novo</option>
+                <option value="CONTACTED">Contatado</option>
+                <option value="QUALIFIED">Qualificado</option>
+                <option value="PROPOSAL">Proposta</option>
+                <option value="NEGOTIATION">Negociação</option>
+                <option value="WON">Ganho</option>
+                <option value="LOST">Perdido</option>
+              </select>
+            ) : (
+              <Input
+                value={config.value || ""}
+                onChange={(e) => onUpdate({ ...config, value: e.target.value })}
+                placeholder="Novo valor"
+                className="mt-1 text-sm"
+              />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Add/Remove Tag */}
+      {(nodeType === "add_tag" || nodeType === "remove_tag") && (
+        <div>
+          <Label className="text-xs">Nome da Tag</Label>
+          <Input
+            value={config.tagName || ""}
+            onChange={(e) => onUpdate({ ...config, tagName: e.target.value })}
+            placeholder="Ex: lead-quente"
+            className="mt-1 text-sm"
+          />
+        </div>
+      )}
+
+      {/* Send Webhook */}
+      {nodeType === "send_webhook" && (
+        <>
+          <div>
+            <Label className="text-xs">URL do Webhook</Label>
+            <Input
+              value={config.url || ""}
+              onChange={(e) => onUpdate({ ...config, url: e.target.value })}
+              placeholder="https://..."
+              className="mt-1 text-sm"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Método HTTP</Label>
+            <select
+              value={config.method || "POST"}
+              onChange={(e) => onUpdate({ ...config, method: e.target.value })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            >
+              <option value="POST">POST</option>
+              <option value="GET">GET</option>
+              <option value="PUT">PUT</option>
+            </select>
+          </div>
+        </>
+      )}
+
+      {/* Wait Delay */}
+      {nodeType === "wait_delay" && (
+        <div>
+          <Label className="text-xs">Tempo de Espera</Label>
+          <div className="flex gap-2 mt-1">
+            <Input
+              type="number"
+              min="1"
+              value={config.duration || 1}
+              onChange={(e) =>
+                onUpdate({ ...config, duration: parseInt(e.target.value) || 1 })
+              }
+              className="flex-1 text-sm"
+            />
+            <select
+              value={config.unit || "d"}
+              onChange={(e) => onUpdate({ ...config, unit: e.target.value })}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            >
+              <option value="n">Minutos</option>
+              <option value="h">Horas</option>
+              <option value="d">Dias</option>
+              <option value="w">Semanas</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ActionConfigPanel({
   node,
   onUpdate,
@@ -137,220 +367,43 @@ function ActionConfigPanel({
   onUpdate: (config: Record<string, any>) => void;
   onClose: () => void;
 }) {
-  const nodeType = node.data.nodeType;
-  const config = node.data.config;
+  const [expanded, setExpanded] = useState(false);
+  const actionLabel = ACTION_TYPES.find((a) => a.value === node.data.nodeType)?.label;
 
   return (
-    <div className="absolute left-full top-0 ml-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-30 max-h-[500px] overflow-y-auto">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white">
-        <h4 className="font-medium text-sm text-gray-900">Configurar Ação</h4>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-          <X size={14} className="text-gray-500" />
-        </button>
-      </div>
-      <div className="p-4 space-y-3">
-        {/* Action type selector */}
-        <div>
-          <Label className="text-xs">Tipo da Ação</Label>
-          <select
-            value={nodeType}
-            onChange={(e) => {
-              const newType = e.target.value;
-              const label = ACTION_TYPES.find((a) => a.value === newType)?.label || newType;
-              onUpdate({ ...config, _nodeType: newType, _label: label });
-            }}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-          >
-            {ACTION_TYPES.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label}
-              </option>
-            ))}
-          </select>
+    <>
+      <div className="absolute left-full top-0 ml-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-30 max-h-[500px] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white">
+          <h4 className="font-medium text-sm text-gray-900">Configurar Ação</h4>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => setExpanded(true)}
+              title="Abrir em tela maior"
+              className="p-1 hover:bg-gray-100 rounded"
+            >
+              <Maximize2 size={14} className="text-gray-500" />
+            </button>
+            <button onClick={onClose} title="Fechar" className="p-1 hover:bg-gray-100 rounded">
+              <X size={14} className="text-gray-500" />
+            </button>
+          </div>
         </div>
-
-        {/* Send Email */}
-        {nodeType === "send_email" && (
-          <>
-            <MergeTagField
-              label="Assunto"
-              value={config.subject || ""}
-              onChange={(v) => onUpdate({ ...config, subject: v })}
-              placeholder="Assunto do e-mail"
-            />
-            <MergeTagField
-              label="Corpo do E-mail"
-              value={config.message || ""}
-              onChange={(v) => onUpdate({ ...config, message: v })}
-              placeholder="Conteúdo do e-mail..."
-              multiline
-              rows={5}
-              showCount
-            />
-          </>
-        )}
-
-        {/* Send WhatsApp */}
-        {nodeType === "send_whatsapp" && (
-          <MergeTagField
-            label="Mensagem"
-            value={config.message || ""}
-            onChange={(v) => onUpdate({ ...config, message: v })}
-            placeholder="Mensagem do WhatsApp..."
-            multiline
-            rows={4}
-            showCount
-          />
-        )}
-
-        {/* Create Task */}
-        {nodeType === "create_task" && (
-          <>
-            <MergeTagField
-              label="Título da Tarefa"
-              value={config.title || ""}
-              onChange={(v) => onUpdate({ ...config, title: v })}
-              placeholder="Ex: Follow-up com cliente"
-            />
-            <div>
-              <Label className="text-xs">ID do Responsável (opcional)</Label>
-              <Input
-                value={config.assigneeId || ""}
-                onChange={(e) => onUpdate({ ...config, assigneeId: e.target.value })}
-                placeholder="ID do usuário"
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Prazo (dias a partir de agora)</Label>
-              <Input
-                type="number"
-                min="1"
-                value={config.dueDateOffset || ""}
-                onChange={(e) =>
-                  onUpdate({ ...config, dueDateOffset: parseInt(e.target.value) || undefined })
-                }
-                placeholder="Ex: 3"
-                className="mt-1 text-sm"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Update Field */}
-        {nodeType === "update_field" && (
-          <>
-            <div>
-              <Label className="text-xs">Campo</Label>
-              <select
-                value={config.field || "status"}
-                onChange={(e) => onUpdate({ ...config, field: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-              >
-                <option value="status">Status</option>
-                <option value="assignedTo">Responsável</option>
-                <option value="score">Score</option>
-                <option value="source">Fonte</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Novo Valor</Label>
-              {config.field === "status" ? (
-                <select
-                  value={config.value || ""}
-                  onChange={(e) => onUpdate({ ...config, value: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                >
-                  <option value="">Selecione...</option>
-                  <option value="NEW">Novo</option>
-                  <option value="CONTACTED">Contatado</option>
-                  <option value="QUALIFIED">Qualificado</option>
-                  <option value="PROPOSAL">Proposta</option>
-                  <option value="NEGOTIATION">Negociação</option>
-                  <option value="WON">Ganho</option>
-                  <option value="LOST">Perdido</option>
-                </select>
-              ) : (
-                <Input
-                  value={config.value || ""}
-                  onChange={(e) => onUpdate({ ...config, value: e.target.value })}
-                  placeholder="Novo valor"
-                  className="mt-1 text-sm"
-                />
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Add/Remove Tag */}
-        {(nodeType === "add_tag" || nodeType === "remove_tag") && (
-          <div>
-            <Label className="text-xs">Nome da Tag</Label>
-            <Input
-              value={config.tagName || ""}
-              onChange={(e) => onUpdate({ ...config, tagName: e.target.value })}
-              placeholder="Ex: lead-quente"
-              className="mt-1 text-sm"
-            />
-          </div>
-        )}
-
-        {/* Send Webhook */}
-        {nodeType === "send_webhook" && (
-          <>
-            <div>
-              <Label className="text-xs">URL do Webhook</Label>
-              <Input
-                value={config.url || ""}
-                onChange={(e) => onUpdate({ ...config, url: e.target.value })}
-                placeholder="https://..."
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Método HTTP</Label>
-              <select
-                value={config.method || "POST"}
-                onChange={(e) => onUpdate({ ...config, method: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-              >
-                <option value="POST">POST</option>
-                <option value="GET">GET</option>
-                <option value="PUT">PUT</option>
-              </select>
-            </div>
-          </>
-        )}
-
-        {/* Wait Delay */}
-        {nodeType === "wait_delay" && (
-          <div>
-            <Label className="text-xs">Tempo de Espera</Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                type="number"
-                min="1"
-                value={config.duration || 1}
-                onChange={(e) =>
-                  onUpdate({ ...config, duration: parseInt(e.target.value) || 1 })
-                }
-                className="flex-1 text-sm"
-              />
-              <select
-                value={config.unit || "d"}
-                onChange={(e) => onUpdate({ ...config, unit: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-              >
-                <option value="n">Minutos</option>
-                <option value="h">Horas</option>
-                <option value="d">Dias</option>
-                <option value="w">Semanas</option>
-              </select>
-            </div>
-          </div>
-        )}
+        <div className="p-4">
+          <ActionConfigFields node={node} onUpdate={onUpdate} />
+        </div>
       </div>
-    </div>
+
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="sm:max-w-2xl bg-white max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Configurar Ação{actionLabel ? ` — ${actionLabel}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <ActionConfigFields node={node} onUpdate={onUpdate} large />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
