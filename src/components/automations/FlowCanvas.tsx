@@ -1,6 +1,8 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   Background,
   Controls,
   MiniMap,
@@ -13,6 +15,7 @@ import {
   type Connection,
   type OnNodesChange,
   type OnEdgesChange,
+  type OnConnectEnd,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { LayoutGrid } from "lucide-react";
@@ -116,46 +119,107 @@ interface FlowCanvasProps {
   onUpdateNodeConfig: (nodeId: string, config: Record<string, unknown>) => void;
   onDeleteNode: (nodeId: string) => void;
   onAutoLayout: () => void;
+  /**
+   * Connect-to-create: chamado quando o usuário solta uma conexão em área vazia.
+   * Recebe a posição (coords do grafo), a posição na tela (para posicionar o
+   * menu) e o nó/handle de origem.
+   */
+  onConnectToCreate: (params: {
+    flowPosition: { x: number; y: number };
+    screen: { x: number; y: number };
+    sourceNodeId: string;
+    sourceHandleId: string | null;
+  }) => void;
 }
 
-export function FlowCanvas({
+/** Renderiza o <ReactFlow>; precisa estar DENTRO de <ReactFlowProvider> para usar useReactFlow. */
+function FlowCanvasInner({
   nodes,
   edges,
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onAutoLayout,
+  onConnectToCreate,
+}: Omit<FlowCanvasProps, "onUpdateNodeConfig" | "onDeleteNode">) {
+  const { screenToFlowPosition } = useReactFlow();
+
+  // Cap: handles de condição (true/false) aceitam só 1 aresta de saída; demais
+  // fontes permitem fan-out ilimitado. Bloqueia self-loop.
+  const isValidConnection = useCallback(
+    (c: Connection | Edge) => {
+      if (c.source === c.target) return false;
+      if (c.sourceHandle === "true" || c.sourceHandle === "false") {
+        return !edges.some((e) => e.source === c.source && e.sourceHandle === c.sourceHandle);
+      }
+      return true;
+    },
+    [edges],
+  );
+
+  const onConnectEnd: OnConnectEnd = useCallback(
+    (event, connectionState) => {
+      // Conexão válida concluída sobre um handle → onConnect já tratou.
+      if (connectionState.isValid) return;
+      // Soltou sobre um nó/handle (inválido) → não cria nó.
+      if (connectionState.toNode || connectionState.toHandle) return;
+
+      const sourceNodeId = connectionState.fromNode?.id;
+      if (!sourceNodeId) return;
+      const sourceHandleId = connectionState.fromHandle?.id ?? null;
+
+      const point =
+        "changedTouches" in event ? event.changedTouches[0] : (event as MouseEvent);
+      const screen = { x: point.clientX, y: point.clientY };
+      const flowPosition = screenToFlowPosition(screen);
+
+      onConnectToCreate({ flowPosition, screen, sourceNodeId, sourceHandleId });
+    },
+    [screenToFlowPosition, onConnectToCreate],
+  );
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={onConnect}
+      onConnectEnd={onConnectEnd}
+      isValidConnection={isValidConnection}
+      nodeTypes={nodeTypes}
+      fitView
+      deleteKeyCode={["Backspace", "Delete"]}
+      proOptions={{ hideAttribution: true }}
+    >
+      <Background gap={20} color="#e5e7eb" />
+      <Controls />
+      <MiniMap pannable zoomable />
+      <Panel position="top-right">
+        <button
+          onClick={onAutoLayout}
+          className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          <LayoutGrid size={14} />
+          Auto-organizar
+        </button>
+      </Panel>
+    </ReactFlow>
+  );
+}
+
+export function FlowCanvas({
   onUpdateNodeConfig,
   onDeleteNode,
-  onAutoLayout,
+  ...inner
 }: FlowCanvasProps) {
   return (
     <div className="flex-1 h-full">
-      <BuilderCallbacksContext.Provider value={{ onUpdateNodeConfig, onDeleteNode }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          nodeTypes={nodeTypes}
-          fitView
-          deleteKeyCode={["Backspace", "Delete"]}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background gap={20} color="#e5e7eb" />
-          <Controls />
-          <MiniMap pannable zoomable />
-          <Panel position="top-right">
-            <button
-              onClick={onAutoLayout}
-              className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
-            >
-              <LayoutGrid size={14} />
-              Auto-organizar
-            </button>
-          </Panel>
-        </ReactFlow>
-      </BuilderCallbacksContext.Provider>
+      <ReactFlowProvider>
+        <BuilderCallbacksContext.Provider value={{ onUpdateNodeConfig, onDeleteNode }}>
+          <FlowCanvasInner {...inner} />
+        </BuilderCallbacksContext.Provider>
+      </ReactFlowProvider>
     </div>
   );
 }
