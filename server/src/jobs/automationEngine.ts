@@ -6,6 +6,7 @@ import { automationService } from '../services/automationService.js';
 import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
 import { notificationService } from '../services/notificationService.js';
+import { interpolateMergeTags, type MergeContext } from '../utils/mergeTags.js';
 
 // Redis connection configuration
 const redisConnection = {
@@ -185,11 +186,15 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
         return { success: false, message: 'Lead não possui telefone' };
       }
 
+      const waCtx: MergeContext = { name: lead.name, email: lead.email, company: lead.company, phone: lead.phone };
+      // builder salva em `message`; aceitamos `content` (legado) também
+      const waContent = interpolateMergeTags(step.config.content || step.config.message || '', waCtx);
+
       const result = await whatsappMessagingService.sendMessage(jobData.tenantId, {
         connectionId: step.config.connectionId,
         to: lead.phone,
         type: step.config.templateName ? 'template' : 'text',
-        content: step.config.content || '',
+        content: waContent,
         templateName: step.config.templateName,
         templateParams: step.config.templateParams,
         leadId: jobData.leadId,
@@ -206,11 +211,16 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
         return { success: false, message: 'Lead não possui email' };
       }
 
+      const emailCtx: MergeContext = { name: lead.name, email: lead.email, company: lead.company, phone: lead.phone };
+      // builder salva o corpo em `message`; aceitamos `html`/`content` (legado) também
+      const emailBody = interpolateMergeTags(step.config.html || step.config.content || step.config.message || '', emailCtx);
+      const emailSubject = interpolateMergeTags(step.config.subject || 'Sem assunto', emailCtx);
+
       const result = await emailMessagingService.sendEmail(jobData.tenantId, {
         configId: step.config.configId,
         to: lead.email,
-        subject: step.config.subject || 'Sem assunto',
-        html: step.config.html || step.config.content || '',
+        subject: emailSubject,
+        html: emailBody,
         leadId: jobData.leadId,
       });
 
