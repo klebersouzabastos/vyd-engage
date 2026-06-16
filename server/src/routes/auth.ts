@@ -142,6 +142,7 @@ router.get('/me', authenticate, async (req, res, next) => {
         name: true,
         avatar: true,
         role: true,
+        isPlatformAdmin: true,
         tenantId: true,
         emailVerified: true,
         twoFactorEnabled: true,

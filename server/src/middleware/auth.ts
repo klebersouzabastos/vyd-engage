@@ -3,11 +3,11 @@ import { verifyAccessToken, TokenPayload } from '../utils/jwt.js';
 import { createError } from './errorHandler.js';
 import prisma from '../config/database.js';
 
-// Extend Express Request to include user
+// Extend Express Request to include user (+ flag de super-admin da plataforma)
 declare global {
   namespace Express {
     interface Request {
-      user?: TokenPayload;
+      user?: TokenPayload & { isPlatformAdmin?: boolean };
     }
   }
 }
@@ -38,6 +38,7 @@ export async function authenticate(
         status: true,
         tenantId: true,
         role: true,
+        isPlatformAdmin: true,
       },
     });
 
@@ -55,6 +56,7 @@ export async function authenticate(
       tenantId: user.tenantId,
       email: user.email,
       role: user.role,
+      isPlatformAdmin: user.isPlatformAdmin,
     };
 
     next();
@@ -75,6 +77,20 @@ export function requireRole(...roles: string[]) {
 
     next();
   };
+}
+
+/**
+ * Exige que o usuário autenticado seja super-admin da plataforma (cross-tenant).
+ * Usa a flag já carregada por `authenticate` (sem query extra).
+ */
+export function requirePlatformAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    return next(createError('Authentication required', 401, 'NOT_AUTHENTICATED'));
+  }
+  if (!req.user.isPlatformAdmin) {
+    return next(createError('Platform admin access required', 403, 'NOT_PLATFORM_ADMIN'));
+  }
+  next();
 }
 
 

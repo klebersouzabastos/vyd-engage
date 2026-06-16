@@ -36,6 +36,7 @@ export const userFactory = Factory.define<User>(() => ({
   avatar: null,
   role: UserRole.USER,
   status: UserStatus.ACTIVE,
+  isPlatformAdmin: false,
   tenantId: faker.string.uuid(),
   emailVerified: true,
   emailVerifiedAt: new Date(),
