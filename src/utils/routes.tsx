@@ -45,7 +45,6 @@ const Leads = lazyNamed(() => import("../pages/Leads"), "Leads");
 const LeadForm = lazyNamed(() => import("../pages/LeadForm"), "LeadForm");
 const Pipeline = lazyNamed(() => import("../pages/Pipeline"), "Pipeline");
 const Automations = lazyNamed(() => import("../pages/Automations"), "Automations");
-const AutomationDetail = lazyNamed(() => import("../pages/AutomationDetail"), "AutomationDetail");
 const AutomationBuilderPage = lazyNamed(() => import("../pages/AutomationBuilderPage"), "AutomationBuilderPage");
 const AutomationLogs = lazyNamed(() => import("../pages/AutomationLogs"), "AutomationLogs");
 const Settings = lazyNamed(() => import("../pages/Settings"), "Settings");
@@ -172,8 +171,10 @@ export const router = createBrowserRouter([
         element: Automations,
       },
       {
+        // Editor único: o builder visual. As rotas /builder ficam como alias
+        // retrocompatível dos links existentes.
         path: "automations/new",
-        element: AutomationDetail,
+        element: AutomationBuilderPage,
       },
       {
         path: "automations/new/builder",
@@ -185,7 +186,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "automations/:id",
-        element: AutomationDetail,
+        element: AutomationBuilderPage,
       },
       {
         path: "automations/:id/builder",
