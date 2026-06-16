@@ -23,6 +23,24 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 
+/** Aplica rótulo Sim/Não e cor às arestas que saem dos ramos da condição. */
+function decorateEdge<T extends Edge | Connection>(edge: T): T {
+  if (edge.sourceHandle === "true") {
+    return { ...edge, label: "Sim", style: { stroke: "#22c55e" } } as T;
+  }
+  if (edge.sourceHandle === "false") {
+    return { ...edge, label: "Não", style: { stroke: "#ef4444" } } as T;
+  }
+  return edge;
+}
+
+interface CreateMenuState {
+  flowPosition: { x: number; y: number };
+  screen: { x: number; y: number };
+  sourceNodeId: string;
+  sourceHandleId: string | null;
+}
+
 interface AutomationBuilderProps {
   initialName: string;
   initialDescription: string;
@@ -58,9 +76,66 @@ export function AutomationBuilder({
 
   const hasTrigger = nodes.some((n) => n.type === "trigger");
 
+  // Menu do connect-to-create (aberto ao soltar uma conexão em área vazia).
+  const [createMenu, setCreateMenu] = useState<CreateMenuState | null>(null);
+
   const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+    (connection: Connection) => setEdges((eds) => addEdge(decorateEdge(connection), eds)),
     [setEdges],
+  );
+
+  const handleConnectToCreate = useCallback(
+    (params: CreateMenuState) => {
+      const sh = params.sourceHandleId;
+      // Ramo de condição (true/false) já conectado: não abre menu (cap 1:1).
+      if (
+        (sh === "true" || sh === "false") &&
+        edges.some((e) => e.source === params.sourceNodeId && e.sourceHandle === sh)
+      ) {
+        return;
+      }
+      setCreateMenu(params);
+    },
+    [edges],
+  );
+
+  const createConnectedNode = useCallback(
+    (type: "action" | "condition", nodeType: string) => {
+      if (!createMenu) return;
+      const id = generateNodeId();
+      const label =
+        type === "condition"
+          ? "Condição"
+          : ACTION_TYPES.find((a) => a.value === nodeType)?.label || nodeType;
+
+      const newNode: Node = {
+        id,
+        type,
+        // Centraliza horizontalmente o card (w-72 ≈ 288px) sob o cursor.
+        position: { x: createMenu.flowPosition.x - 144, y: createMenu.flowPosition.y },
+        data: {
+          nodeType,
+          label,
+          config:
+            type === "condition"
+              ? { field: "status", operator: "equals", value: "", logic: "AND" }
+              : {},
+        },
+      };
+
+      const sh = createMenu.sourceHandleId;
+      const edge = decorateEdge({
+        id: `${generateEdgeId(createMenu.sourceNodeId, id)}${sh ? `_${sh}` : ""}`,
+        source: createMenu.sourceNodeId,
+        target: id,
+        sourceHandle: sh ?? undefined,
+      } as Edge);
+
+      setNodes((nds) => [...nds, newNode]);
+      setEdges((eds) => addEdge(edge, eds));
+      setCreateMenu(null);
+    },
+    [createMenu, setNodes, setEdges],
   );
 
   const handleAddNode = useCallback(
@@ -201,11 +276,45 @@ export function AutomationBuilder({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectToCreate={handleConnectToCreate}
           onUpdateNodeConfig={handleUpdateNodeConfig}
           onDeleteNode={handleDeleteNode}
           onAutoLayout={handleAutoLayout}
         />
       </div>
+
+      {/* Connect-to-create: menu de tipos ao soltar uma conexão no vazio */}
+      {createMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setCreateMenu(null)} />
+          <div
+            className="fixed z-50 w-56 max-h-80 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-1"
+            style={{ left: createMenu.screen.x, top: createMenu.screen.y }}
+          >
+            <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Adicionar ação
+            </div>
+            {ACTION_TYPES.map((a) => (
+              <button
+                key={a.value}
+                onClick={() => createConnectedNode("action", a.value)}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+              >
+                {a.label}
+              </button>
+            ))}
+            <div className="px-3 py-1.5 mt-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">
+              Lógica
+            </div>
+            <button
+              onClick={() => createConnectedNode("condition", "condition")}
+              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700"
+            >
+              Condição (Se/Senão)
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
