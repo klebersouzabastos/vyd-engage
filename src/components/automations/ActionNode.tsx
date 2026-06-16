@@ -14,7 +14,98 @@ import type { FlowNode } from "../../utils/automationFlowConverter";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+
+// Variáveis de merge disponíveis (substituídas pelo engine com os dados do lead).
+const MERGE_TAGS: { tag: string; label: string }[] = [
+  { tag: "nome", label: "Nome" },
+  { tag: "email", label: "E-mail" },
+  { tag: "empresa", label: "Empresa" },
+  { tag: "telefone", label: "Telefone" },
+];
+
+/**
+ * Campo de texto com chips de variáveis: clicar insere `{{tag}}` na posição do
+ * cursor (sem precisar digitar). Usado nos passos de e-mail/WhatsApp/tarefa.
+ */
+function MergeTagField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  multiline = false,
+  rows = 4,
+  showCount = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  rows?: number;
+  showCount?: boolean;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const insertTag = (tag: string) => {
+    const token = `{{${tag}}}`;
+    const el = wrapRef.current?.querySelector("input, textarea") as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | null;
+    if (!el) {
+      onChange(`${value}${token}`);
+      return;
+    }
+    const start = el.selectionStart ?? value.length;
+    const end = el.selectionEnd ?? value.length;
+    onChange(value.slice(0, start) + token + value.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
+  return (
+    <div ref={wrapRef}>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs">{label}</Label>
+        {showCount && <span className="text-[10px] text-gray-400">{value.length} caracteres</span>}
+      </div>
+      {multiline ? (
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="mt-1 text-sm"
+          rows={rows}
+        />
+      ) : (
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="mt-1 text-sm"
+        />
+      )}
+      <div className="flex flex-wrap items-center gap-1 mt-1.5">
+        <span className="text-[10px] text-gray-400 mr-0.5">Inserir variável:</span>
+        {MERGE_TAGS.map((t) => (
+          <button
+            key={t.tag}
+            type="button"
+            onClick={() => insertTag(t.tag)}
+            title={`Inserir {{${t.tag}}}`}
+            className="text-[11px] leading-none px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 active:bg-blue-200 transition-colors"
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface ActionNodeProps {
   node: FlowNode;
@@ -81,54 +172,46 @@ function ActionConfigPanel({
         {/* Send Email */}
         {nodeType === "send_email" && (
           <>
-            <div>
-              <Label className="text-xs">Assunto</Label>
-              <Input
-                value={config.subject || ""}
-                onChange={(e) => onUpdate({ ...config, subject: e.target.value })}
-                placeholder="Assunto do e-mail"
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Corpo do E-mail</Label>
-              <Textarea
-                value={config.message || ""}
-                onChange={(e) => onUpdate({ ...config, message: e.target.value })}
-                placeholder="Conteúdo do e-mail. Use {{nome}}, {{email}}..."
-                className="mt-1 text-sm"
-                rows={4}
-              />
-            </div>
+            <MergeTagField
+              label="Assunto"
+              value={config.subject || ""}
+              onChange={(v) => onUpdate({ ...config, subject: v })}
+              placeholder="Assunto do e-mail"
+            />
+            <MergeTagField
+              label="Corpo do E-mail"
+              value={config.message || ""}
+              onChange={(v) => onUpdate({ ...config, message: v })}
+              placeholder="Conteúdo do e-mail..."
+              multiline
+              rows={5}
+              showCount
+            />
           </>
         )}
 
         {/* Send WhatsApp */}
         {nodeType === "send_whatsapp" && (
-          <div>
-            <Label className="text-xs">Mensagem</Label>
-            <Textarea
-              value={config.message || ""}
-              onChange={(e) => onUpdate({ ...config, message: e.target.value })}
-              placeholder="Mensagem WhatsApp. Use {{nome}}, {{email}}..."
-              className="mt-1 text-sm"
-              rows={4}
-            />
-          </div>
+          <MergeTagField
+            label="Mensagem"
+            value={config.message || ""}
+            onChange={(v) => onUpdate({ ...config, message: v })}
+            placeholder="Mensagem do WhatsApp..."
+            multiline
+            rows={4}
+            showCount
+          />
         )}
 
         {/* Create Task */}
         {nodeType === "create_task" && (
           <>
-            <div>
-              <Label className="text-xs">Título da Tarefa</Label>
-              <Input
-                value={config.title || ""}
-                onChange={(e) => onUpdate({ ...config, title: e.target.value })}
-                placeholder="Ex: Follow-up com {{nome}}"
-                className="mt-1 text-sm"
-              />
-            </div>
+            <MergeTagField
+              label="Título da Tarefa"
+              value={config.title || ""}
+              onChange={(v) => onUpdate({ ...config, title: v })}
+              placeholder="Ex: Follow-up com cliente"
+            />
             <div>
               <Label className="text-xs">ID do Responsável (opcional)</Label>
               <Input
