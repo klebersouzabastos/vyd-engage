@@ -44,13 +44,17 @@ export interface WhatsAppTemplate {
 // Meta Business API Client
 // ========================
 
+// Graph API version is configurable (versions get deprecated) — bump via env
+// WHATSAPP_GRAPH_VERSION (ex.: "v21.0") sem mexer no código.
+const GRAPH_VERSION = process.env.WHATSAPP_GRAPH_VERSION || 'v21.0';
+
 async function callMetaAPI(
   endpoint: string,
   method: 'GET' | 'POST' | 'DELETE',
   accessToken: string,
   body?: any
 ): Promise<any> {
-  const baseUrl = 'https://graph.facebook.com/v18.0';
+  const baseUrl = `https://graph.facebook.com/${GRAPH_VERSION}`;
   const url = `${baseUrl}${endpoint}`;
 
   try {
