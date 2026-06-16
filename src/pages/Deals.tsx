@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useQueryState } from "nuqs";
 import { useNavigate } from "react-router";
 import { DataTable } from "../components/ui/data-table";
 import { getDealColumns } from "../components/deals/dealColumns";
@@ -107,8 +108,9 @@ export function Deals() {
   const [advancedLogic, setAdvancedLogic] = useState<"AND" | "OR">("AND");
 
   const [viewMode, setViewMode] = useState<"list" | "pipeline">("list");
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState("ALL");
+  // Filtros refletidos na URL (view filtrada compartilhável/bookmarkável)
+  const [search, setSearch] = useQueryState("q", { defaultValue: "" });
+  const [stageFilter, setStageFilter] = useQueryState("stage", { defaultValue: "ALL" });
   const [formOpen, setFormOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

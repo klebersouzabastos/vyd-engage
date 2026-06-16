@@ -1,4 +1,5 @@
 import { Outlet } from "react-router";
+import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { OnboardingTour } from "./OnboardingTour";
@@ -27,6 +28,7 @@ export function AppLayout() {
   const toggleCollapse = () => setCollapsed((prev) => !prev);
 
   return (
+    <NuqsAdapter>
     <div className="flex min-h-screen bg-gray-100">
       {/* Skip to main content — a11y */}
       <a
@@ -78,5 +80,6 @@ export function AppLayout() {
       {/* Onboarding Tour */}
       <OnboardingTour />
     </div>
+    </NuqsAdapter>
   );
 }
