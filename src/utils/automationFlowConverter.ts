@@ -71,6 +71,15 @@ export function generateEdgeId(source: string, target: string): string {
 /**
  * Convert visual flow (nodes/edges) to the backend Automation format
  * (trigger, steps, conditions).
+ *
+ * Modelo de GRAFO (não-linear): cada step carrega `id` (= node id) e `next`
+ * (ids dos próximos nós), preservando fan-out (1→N) e ramos de condição
+ * (`trueNext`/`falseNext`). O engine caminha o grafo por id em vez de índice.
+ * O gatilho carrega `entry` = ids dos nós conectados diretamente a ele.
+ *
+ * Normalização de vocabulário UI→engine feita aqui (fonte única da verdade):
+ *  - `update_field` (field/value) → `update_lead` ({ [field]: value })
+ *  - `wait_delay` (duration/unit) → `delay`
  */
 export function flowToAutomation(flowData: FlowData): {
   trigger: any;
@@ -79,90 +88,101 @@ export function flowToAutomation(flowData: FlowData): {
 } {
   const { nodes, edges } = flowData;
 
-  // Find the trigger node
   const triggerNode = nodes.find((n) => n.type === "trigger");
   if (!triggerNode) {
-    return { trigger: { type: "lead_created" }, steps: [], conditions: null };
+    return { trigger: { type: "lead_created", entry: [] }, steps: [], conditions: null };
   }
+
+  // Ids dos alvos das arestas que saem de `nodeId` (opcionalmente filtrando por handle).
+  const outIds = (nodeId: string, handle?: string): string[] =>
+    edges
+      .filter(
+        (e) =>
+          e.source === nodeId &&
+          (handle === undefined || (e.sourceHandle || undefined) === handle),
+      )
+      .map((e) => e.target);
 
   const trigger: any = {
     type: triggerNode.data.nodeType,
     ...triggerNode.data.config,
+    entry: outIds(triggerNode.id),
   };
 
-  // Walk the graph from the trigger node to build ordered steps
   const steps: any[] = [];
   const visited = new Set<string>();
 
-  function walkNode(nodeId: string) {
+  function emit(nodeId: string) {
     if (visited.has(nodeId)) return;
     visited.add(nodeId);
 
     const node = nodes.find((n) => n.id === nodeId);
-    if (!node || node.type === "trigger") {
-      // continue to children
-      const outEdges = edges.filter((e) => e.source === nodeId);
-      for (const edge of outEdges) {
-        walkNode(edge.target);
-      }
-      return;
-    }
+    if (!node || node.type === "trigger") return;
 
     if (node.type === "condition") {
-      const trueEdge = edges.find(
-        (e) => e.source === nodeId && e.sourceHandle === "true"
-      );
-      const falseEdge = edges.find(
-        (e) => e.source === nodeId && e.sourceHandle === "false"
-      );
+      const trueNext = outIds(nodeId, "true");
+      const falseNext = outIds(nodeId, "false");
 
       steps.push({
+        id: nodeId,
         order: steps.length,
         type: "condition",
         config: {
           field: node.data.config.field || "status",
           operator: node.data.config.operator || "equals",
-          value: node.data.config.value || "",
+          value: node.data.config.value ?? "",
           logic: node.data.config.logic || "AND",
           conditions: node.data.config.conditions || [],
-          trueBranch: trueEdge?.target || null,
-          falseBranch: falseEdge?.target || null,
         },
+        trueNext,
+        falseNext,
       });
 
-      if (trueEdge) walkNode(trueEdge.target);
-      if (falseEdge) walkNode(falseEdge.target);
-    } else {
-      // Action node
-      const actionType = node.data.nodeType;
-      let delay = "0";
+      [...trueNext, ...falseNext].forEach(emit);
+      return;
+    }
 
-      if (actionType === "wait_delay") {
-        delay =
-          node.data.config.delay ||
-          `${node.data.config.duration || 1}${node.data.config.unit || "d"}`;
-      }
+    // Action node
+    const actionType = node.data.nodeType;
+    const next = outIds(nodeId);
 
+    if (actionType === "wait_delay") {
       steps.push({
+        id: nodeId,
+        order: steps.length,
+        type: "delay",
+        delay:
+          node.data.config.delay ||
+          `${node.data.config.duration || 1}${node.data.config.unit || "d"}`,
+        config: { ...node.data.config },
+        next,
+      });
+    } else if (actionType === "update_field") {
+      // Remapeia o par genérico {field,value} para a chave tipada do engine.
+      const field = node.data.config.field || "status";
+      const raw = node.data.config.value;
+      const value = field === "score" ? Number(raw) : raw;
+      steps.push({
+        id: nodeId,
+        order: steps.length,
+        type: "update_lead",
+        config: { [field]: value },
+        next,
+      });
+    } else {
+      steps.push({
+        id: nodeId,
         order: steps.length,
         type: actionType,
-        delay,
         config: { ...node.data.config },
+        next,
       });
-
-      // Continue to next
-      const outEdges = edges.filter((e) => e.source === nodeId);
-      for (const edge of outEdges) {
-        walkNode(edge.target);
-      }
     }
+
+    next.forEach(emit);
   }
 
-  // Start walk from trigger's outgoing edges
-  const triggerEdges = edges.filter((e) => e.source === triggerNode.id);
-  for (const edge of triggerEdges) {
-    walkNode(edge.target);
-  }
+  trigger.entry.forEach(emit);
 
   return { trigger, steps, conditions: null };
 }
@@ -211,38 +231,92 @@ export function automationToFlow(automation: {
 
   currentY += ySpacing;
 
-  // Create step nodes
   const apiSteps = Array.isArray(automation.steps) ? automation.steps : [];
-  let prevNodeId = triggerNodeId;
+  const stepNodeId = (s: any, i: number) => s?.id || `step_${i}`;
 
-  for (const step of apiSteps) {
-    const nodeId = generateNodeId();
+  // Converte um step (vocabulário do engine) num nó da UI, revertendo os
+  // renomes feitos por flowToAutomation para que o card renderize corretamente.
+  const toNode = (step: any, i: number): FlowNode => {
+    let nodeType = step.type;
+    let config: Record<string, any> = { ...step.config, delay: step.delay };
+
+    if (nodeType === "update_lead") {
+      const key = Object.keys(step.config || {})[0] || "status";
+      nodeType = "update_field";
+      config = { field: key, value: step.config?.[key] };
+    } else if (nodeType === "delay") {
+      nodeType = "wait_delay";
+      if (config.duration === undefined && step.delay) {
+        const m = String(step.delay).match(/^(\d+)\s*([nhdw])$/);
+        if (m) {
+          config.duration = Number(m[1]);
+          config.unit = m[2];
+        }
+      }
+    }
+
     const isCondition = step.type === "condition";
-
-    const actionLabel = isCondition
+    const label = isCondition
       ? "Condição"
-      : ACTION_TYPES.find((a) => a.value === step.type)?.label || step.type;
+      : ACTION_TYPES.find((a) => a.value === nodeType)?.label || nodeType;
 
-    nodes.push({
-      id: nodeId,
+    return {
+      id: stepNodeId(step, i),
       type: isCondition ? "condition" : "action",
-      position: { x: centerX, y: currentY },
-      data: {
-        nodeType: step.type,
-        label: actionLabel,
-        config: { ...step.config, delay: step.delay },
-      },
+      position: { x: centerX, y: currentY + i * ySpacing },
+      data: { nodeType, label, config },
+    };
+  };
+
+  // Grafo: steps carregam id/next/trueNext/falseNext → preserva fan-out e ramos.
+  const isGraph = apiSteps.some(
+    (s: any) =>
+      s &&
+      (s.id || Array.isArray(s.next) || Array.isArray(s.trueNext) || Array.isArray(s.falseNext)),
+  );
+
+  if (isGraph) {
+    apiSteps.forEach((step: any, i: number) => nodes.push(toNode(step, i)));
+
+    // Arestas do gatilho para os nós de entrada.
+    const entry: string[] =
+      Array.isArray(triggerData.entry) && triggerData.entry.length
+        ? triggerData.entry
+        : apiSteps[0]
+          ? [stepNodeId(apiSteps[0], 0)]
+          : [];
+    entry.forEach((target) =>
+      edges.push({ id: generateEdgeId(triggerNodeId, target), source: triggerNodeId, target }),
+    );
+
+    // Arestas de cada step (condição usa handles true/false).
+    apiSteps.forEach((step: any, i: number) => {
+      const source = stepNodeId(step, i);
+      if (step.type === "condition") {
+        (step.trueNext || []).forEach((target: string) =>
+          edges.push({ id: `${generateEdgeId(source, target)}_true`, source, target, sourceHandle: "true" }),
+        );
+        (step.falseNext || []).forEach((target: string) =>
+          edges.push({ id: `${generateEdgeId(source, target)}_false`, source, target, sourceHandle: "false" }),
+        );
+      } else {
+        (step.next || []).forEach((target: string) =>
+          edges.push({ id: generateEdgeId(source, target), source, target }),
+        );
+      }
     });
 
-    edges.push({
-      id: generateEdgeId(prevNodeId, nodeId),
-      source: prevNodeId,
-      target: nodeId,
-    });
-
-    prevNodeId = nodeId;
-    currentY += ySpacing;
+    return { nodes, edges };
   }
+
+  // Fallback legado: steps lineares sem id/next → encadeia por ordem.
+  let prevNodeId = triggerNodeId;
+  apiSteps.forEach((step: any, i: number) => {
+    const node = toNode(step, i);
+    nodes.push(node);
+    edges.push({ id: generateEdgeId(prevNodeId, node.id), source: prevNodeId, target: node.id });
+    prevNodeId = node.id;
+  });
 
   return { nodes, edges };
 }

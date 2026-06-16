@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { dispatchTrigger } from '../jobs/automationEngine.js';
 
 export interface CreateTaskData {
   title: string;
@@ -155,7 +156,7 @@ export const taskService = {
   },
 
   async update(tenantId: string, data: UpdateTaskData) {
-    await this.findById(tenantId, data.id);
+    const existing = await this.findById(tenantId, data.id);
 
     const updateData: any = {
       title: data.title,
@@ -194,6 +195,18 @@ export const taskService = {
         },
       },
     });
+
+    // Dispatch automation trigger on transition to COMPLETED (lead-linked tasks).
+    if (
+      existing.status !== 'COMPLETED' &&
+      task.status === 'COMPLETED' &&
+      task.leadId
+    ) {
+      dispatchTrigger(tenantId, 'task_completed', task.leadId, {
+        taskId: task.id,
+        title: task.title,
+      }).catch(() => {});
+    }
 
     return task;
   },

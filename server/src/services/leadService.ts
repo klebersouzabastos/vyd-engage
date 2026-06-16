@@ -361,6 +361,11 @@ export const leadService = {
     }
     webhookDispatcher.emitLeadEvent(tenantId, 'lead.updated', updatedLead);
 
+    // Dispatch automation trigger
+    dispatchTrigger(tenantId, 'lead_updated', data.id, {
+      changedFields: Object.keys(updateData),
+    }).catch(() => {});
+
     return updatedLead;
   },
 
