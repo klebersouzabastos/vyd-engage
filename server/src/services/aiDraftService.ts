@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { createError } from '../middleware/errorHandler.js';
+import { getRedis } from '../config/redis.js';
 import {
   TemplateType,
   TemplateContext,
@@ -60,30 +61,46 @@ function getModel(provider: string, apiKey: string, model?: string): LanguageMod
 }
 
 // ========================
-// Rate Limiting (in-memory)
+// Rate Limiting (Redis-backed, in-memory fallback for dev)
 // ========================
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 20; // max generations per hour
-const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT = 20; // max generations per hour per tenant
+const RATE_WINDOW_SECONDS = 3600;
 
-function checkRateLimit(tenantId: string): void {
+// In-memory fallback used only when Redis is unavailable (dev without REDIS_URL)
+const _fallbackMap = new Map<string, { count: number; resetAt: number }>();
+
+async function checkRateLimit(tenantId: string): Promise<void> {
+  const key = `ai:rate:${tenantId}`;
+  const limitError = createError(
+    `Limite de ${RATE_LIMIT} gerações por hora atingido. Tente novamente mais tarde.`,
+    429,
+    'RATE_LIMIT_EXCEEDED'
+  );
+
+  try {
+    const redis = getRedis();
+    if (redis.status === 'ready') {
+      const count = await redis.incr(key);
+      if (count === 1) {
+        await redis.expire(key, RATE_WINDOW_SECONDS);
+      }
+      if (count > RATE_LIMIT) throw limitError;
+      return;
+    }
+  } catch (err: any) {
+    if (err.statusCode === 429) throw err;
+    logger.warn('Redis unavailable for AI rate limit, using in-memory fallback', { error: err.message });
+  }
+
+  // Fallback: in-memory (resets on server restart — acceptable for single-server dev)
   const now = Date.now();
-  const entry = rateLimitMap.get(tenantId);
-
+  const entry = _fallbackMap.get(tenantId);
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(tenantId, { count: 1, resetAt: now + RATE_WINDOW });
+    _fallbackMap.set(tenantId, { count: 1, resetAt: now + RATE_WINDOW_SECONDS * 1000 });
     return;
   }
-
-  if (entry.count >= RATE_LIMIT) {
-    throw createError(
-      `Limite de ${RATE_LIMIT} gerações por hora atingido. Tente novamente mais tarde.`,
-      429,
-      'RATE_LIMIT_EXCEEDED'
-    );
-  }
-
+  if (entry.count >= RATE_LIMIT) throw limitError;
   entry.count++;
 }
 
@@ -259,7 +276,7 @@ export const aiDraftService = {
     customInstructions?: string,
   ): Promise<EmailDraft> {
     // Rate limit check
-    checkRateLimit(tenantId);
+    await checkRateLimit(tenantId);
 
     // Build context from database
     const dbContext = await this.buildContext(tenantId, userId, leadId, dealId);

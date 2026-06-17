@@ -128,9 +128,9 @@ export const emailTrackingService = {
     const pixelUrl = `${base}/api/track/open/${trackingToken}`;
     const pixel = `<img src="${pixelUrl}" width="1" height="1" style="display:none;border:0;" alt="" />`;
 
-    // Insert before closing body tag, or append if no body tag
-    if (html.includes('</body>')) {
-      return html.replace('</body>', `${pixel}</body>`);
+    // Case-insensitive match handles </BODY>, </Body>, </body > variants
+    if (/<\/body>/i.test(html)) {
+      return html.replace(/<\/body>/i, `${pixel}</body>`);
     }
     return html + pixel;
   },

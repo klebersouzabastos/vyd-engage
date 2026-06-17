@@ -7,6 +7,26 @@ const prisma = new PrismaClient({
     : ['error'],
 });
 
+const SOFT_DELETE_MODELS = new Set(['Lead', 'Deal', 'Company', 'Task', 'SavedView']);
+
+// Automatically exclude soft-deleted records from read queries.
+// Queries that explicitly need deleted records must pass `deletedAt: { not: null }`.
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+prisma.$use(async (params, next) => {
+  if (params.model && SOFT_DELETE_MODELS.has(params.model)) {
+    if (params.action === 'findMany' || params.action === 'findFirst') {
+      params.args ??= {};
+      params.args.where = { deletedAt: null, ...params.args.where };
+    }
+    if (params.action === 'findUnique') {
+      params.action = 'findFirst';
+      params.args ??= {};
+      params.args.where = { deletedAt: null, ...params.args.where };
+    }
+  }
+  return next(params);
+});
+
 // Connect to database with retry for cloud deployments
 async function connectWithRetry(maxRetries = 5, delayMs = 3000) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
