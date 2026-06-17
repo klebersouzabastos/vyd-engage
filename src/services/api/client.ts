@@ -1070,9 +1070,15 @@ class ApiClient {
   }
 
   async createInvitation(data: { email: string; role: string }) {
-    return this.request<{ id: string; email: string; role: string; status: string }>('/api/v1/invitations', {
+    return this.request<{ id: string; email: string; role: string; status: string; emailSent: boolean; invitationLink?: string }>('/api/v1/invitations', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async resendInvitation(id: string) {
+    return this.request<{ emailSent: boolean; invitationLink?: string }>(`/api/v1/invitations/${id}/resend`, {
+      method: 'POST',
     });
   }
 
@@ -1411,6 +1417,33 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // ── Email Templates ────────────────────────────────
+  async getEmailTemplates() {
+    return this.request<EmailTemplateListItem[]>('/api/v1/email-templates');
+  }
+
+  async getEmailTemplate(id: string) {
+    return this.request<EmailTemplateDetail>(`/api/v1/email-templates/${id}`);
+  }
+
+  async createEmailTemplate(data: { name: string; subject: string; html: string }) {
+    return this.request<EmailTemplateDetail>('/api/v1/email-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEmailTemplate(id: string, data: Partial<{ name: string; subject: string; html: string }>) {
+    return this.request<EmailTemplateDetail>(`/api/v1/email-templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEmailTemplate(id: string) {
+    return this.request<void>(`/api/v1/email-templates/${id}`, { method: 'DELETE' });
+  }
 }
 
 export interface SavedView {
@@ -1490,4 +1523,16 @@ export interface ApiErrorResponse {
 }
 
 export const apiClient = new ApiClient();
+
+export interface EmailTemplateListItem {
+  id: string;
+  name: string;
+  subject: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmailTemplateDetail extends EmailTemplateListItem {
+  html: string;
+}
 

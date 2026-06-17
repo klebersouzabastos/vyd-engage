@@ -10,7 +10,7 @@ import {
   Loader2, Search, CheckCircle, XCircle, Eye, AlertTriangle,
   Clock, Calendar, X
 } from "lucide-react";
-import { apiClient } from "../services/api/client";
+import { apiClient, type EmailTemplateDetail } from "../services/api/client";
 import { toast } from "sonner";
 
 interface EmailConfig {
@@ -30,28 +30,7 @@ interface Lead {
   source?: string;
 }
 
-interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  html: string;
-  createdAt: string;
-}
-
-// TECH DEBT (FE-30): Email templates are stored in localStorage because there is
-// no backend API for email templates yet. When an API endpoint is created
-// (e.g. POST/GET /api/email-templates), migrate these functions to use it.
-const TEMPLATES_KEY = "vyd_email_templates";
-
-function loadLocalTemplates(): EmailTemplate[] {
-  try {
-    return JSON.parse(localStorage.getItem(TEMPLATES_KEY) || "[]");
-  } catch { return []; }
-}
-
-function saveLocalTemplates(templates: EmailTemplate[]) {
-  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
-}
+type EmailTemplate = EmailTemplateDetail;
 
 // Scheduled campaigns localStorage
 const SCHEDULED_CAMPAIGNS_KEY = "vyd_scheduled_campaigns";
@@ -106,7 +85,8 @@ export function EmailCampaigns() {
   const [htmlBody, setHtmlBody] = useState("");
 
   // Templates
-  const [templates, setTemplates] = useState<EmailTemplate[]>(loadLocalTemplates());
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -130,7 +110,20 @@ export function EmailCampaigns() {
   useEffect(() => {
     loadConfigs();
     loadLeads();
+    loadTemplates();
   }, []);
+
+  const loadTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const data = await apiClient.getEmailTemplates();
+      setTemplates(Array.isArray(data) ? data : (data as any)?.data ?? []);
+    } catch {
+      console.error("Erro ao carregar templates");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
 
   const loadConfigs = async () => {
     try {
@@ -186,38 +179,56 @@ export function EmailCampaigns() {
     setHtmlBody(prev => prev + variable);
   };
 
-  // Templates
-  const saveTemplate = () => {
+  // Templates (backed by API)
+  const saveTemplate = async () => {
     if (!templateName.trim() || !subject.trim()) {
       toast.error("Preencha o nome do template e o assunto");
       return;
     }
-    const newTemplate: EmailTemplate = {
-      id: Date.now().toString(),
-      name: templateName.trim(),
-      subject,
-      html: htmlBody,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [...templates, newTemplate];
-    setTemplates(updated);
-    saveLocalTemplates(updated);
-    setTemplateName("");
-    toast.success("Template salvo");
+    try {
+      const created = await apiClient.createEmailTemplate({
+        name: templateName.trim(),
+        subject,
+        html: htmlBody,
+      });
+      const tmpl = (created as any)?.data ?? created;
+      setTemplates(prev => [tmpl, ...prev]);
+      setTemplateName("");
+      toast.success("Template salvo");
+    } catch {
+      toast.error("Erro ao salvar template");
+    }
   };
 
-  const loadTemplate = (t: EmailTemplate) => {
-    setSubject(t.subject);
-    setHtmlBody(t.html);
-    setShowTemplates(false);
-    toast.success(`Template "${t.name}" carregado`);
+  const loadTemplate = async (t: EmailTemplate) => {
+    if (t.html) {
+      setSubject(t.subject);
+      setHtmlBody(t.html);
+      setShowTemplates(false);
+      toast.success(`Template "${t.name}" carregado`);
+      return;
+    }
+    // Fetch full template with html if only list item was loaded
+    try {
+      const full = await apiClient.getEmailTemplate(t.id);
+      const tmpl = (full as any)?.data ?? full;
+      setSubject(tmpl.subject);
+      setHtmlBody(tmpl.html);
+      setShowTemplates(false);
+      toast.success(`Template "${tmpl.name}" carregado`);
+    } catch {
+      toast.error("Erro ao carregar template");
+    }
   };
 
-  const deleteTemplate = (id: string) => {
-    const updated = templates.filter(t => t.id !== id);
-    setTemplates(updated);
-    saveLocalTemplates(updated);
-    toast.success("Template removido");
+  const deleteTemplate = async (id: string) => {
+    try {
+      await apiClient.deleteEmailTemplate(id);
+      setTemplates(prev => prev.filter(t => t.id !== id));
+      toast.success("Template removido");
+    } catch {
+      toast.error("Erro ao remover template");
+    }
   };
 
   // Build recipients list

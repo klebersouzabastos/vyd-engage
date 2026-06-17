@@ -135,6 +135,7 @@ import exportRoutes from './routes/exports.js';
 import calendarRoutes from './routes/calendar.js';
 import aiRoutes from './routes/ai.js';
 import savedViewRoutes from './routes/savedViews.js';
+import emailTemplateRoutes from './routes/emailTemplates.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -195,6 +196,7 @@ v1Router.use('/auth/change-password', csrfProtection);
 v1Router.use('/auth/tenant', csrfProtection);
 v1Router.use('/ai', csrfProtection);
 v1Router.use('/saved-views', csrfProtection);
+v1Router.use('/email-templates', csrfProtection);
 v1Router.use('/admin', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
@@ -230,6 +232,7 @@ v1Router.use('/exports', exportRoutes);
 v1Router.use('/integrations', calendarRoutes);
 v1Router.use('/ai', aiRoutes);
 v1Router.use('/saved-views', savedViewRoutes);
+v1Router.use('/email-templates', emailTemplateRoutes);
 v1Router.use('/admin', adminRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
