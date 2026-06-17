@@ -76,8 +76,9 @@ model User {
   interactions  Interaction[]  @relation("InteractionUser")
   notifications         Notification[]       @relation("NotificationUser")
   reports               Report[]             @relation("ReportCreator")
-  calendarConnections   CalendarConnection[] @relation("UserCalendarConnections")
+  calendarConnections   CalendarConnection[]   @relation("UserCalendarConnections")
   savedViews            SavedView[]
+  meetingAvailabilities MeetingAvailability[]
 
   @@index([email])
   @@index([tenantId])
@@ -155,7 +156,8 @@ model Tenant {
   deals               Deal[]
   calendarConnections CalendarConnection[]
   savedViews          SavedView[]
-  emailTemplates      EmailTemplate[]
+  emailTemplates        EmailTemplate[]
+  meetingAvailabilities MeetingAvailability[]
 
   @@index([slug])
 }
@@ -1106,4 +1108,27 @@ model EmailTemplate {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+}
+
+// ============================================
+// MEETING SCHEDULING
+// ============================================
+
+model MeetingAvailability {
+  id           String   @id @default(uuid())
+  tenantId     String
+  userId       String
+  slug         String   @unique
+  title        String
+  duration     Int
+  bufferMinutes Int     @default(15)
+  availableHours Json   @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
 }

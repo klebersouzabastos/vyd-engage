@@ -38,6 +38,7 @@ const ForgotPassword = lazyNamed(() => import("../pages/ForgotPassword"), "Forgo
 const ResetPassword = lazyNamed(() => import("../pages/ResetPassword"), "ResetPassword");
 const Onboarding = lazyNamed(() => import("../pages/Onboarding"), "Onboarding");
 const PublicForm = lazyNamed(() => import("../pages/PublicForm"), "PublicForm");
+const PublicSchedule = lazyNamed(() => import("../pages/PublicSchedule"), "PublicSchedule");
 
 // App pages (behind auth)
 const Dashboard = lazyNamed(() => import("../pages/Dashboard"), "Dashboard");
@@ -100,6 +101,10 @@ export const router = createBrowserRouter([
   {
     path: "/capture/:formId",
     element: PublicForm,
+  },
+  {
+    path: "/s/:slug",
+    element: PublicSchedule,
   },
   {
     path: "/app",

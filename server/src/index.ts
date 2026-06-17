@@ -154,6 +154,7 @@ import calendarRoutes from './routes/calendar.js';
 import aiRoutes from './routes/ai.js';
 import savedViewRoutes from './routes/savedViews.js';
 import emailTemplateRoutes from './routes/emailTemplates.js';
+import scheduleRoutes from './routes/schedule.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -216,6 +217,7 @@ v1Router.use('/auth/tenant', csrfProtection);
 v1Router.use('/ai', csrfProtection);
 v1Router.use('/saved-views', csrfProtection);
 v1Router.use('/email-templates', csrfProtection);
+v1Router.use('/schedule', csrfProtection);
 v1Router.use('/admin', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
@@ -252,6 +254,7 @@ v1Router.use('/integrations', calendarRoutes);
 v1Router.use('/ai', aiRoutes);
 v1Router.use('/saved-views', savedViewRoutes);
 v1Router.use('/email-templates', emailTemplateRoutes);
+v1Router.use('/schedule', scheduleRoutes);
 v1Router.use('/admin', adminRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
@@ -367,6 +370,74 @@ publicRouter.get('/plans', async (_req, res, next) => {
     });
     res.json(plans);
   } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/public/schedule/:slug — public booking page data
+publicRouter.get('/schedule/:slug', async (req, res, next) => {
+  try {
+    const avail = await prisma.meetingAvailability.findUnique({
+      where: { slug: req.params.slug },
+      select: { id: true, slug: true, title: true, duration: true, bufferMinutes: true, availableHours: true },
+    });
+    if (!avail) return res.status(404).json({ error: 'Link not found' });
+    res.json({ status: 200, data: avail });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/public/schedule/:slug/book — book a meeting slot (creates a lead interaction)
+publicRouter.post('/schedule/:slug/book', async (req, res, next) => {
+  try {
+    const avail = await prisma.meetingAvailability.findUnique({
+      where: { slug: req.params.slug },
+      include: { user: { select: { id: true, tenantId: true, name: true } } },
+    });
+    if (!avail) return res.status(404).json({ error: 'Link not found' });
+
+    const schema = zodLib.object({
+      name: zodLib.string().min(1),
+      email: zodLib.string().email(),
+      dateTime: zodLib.string(), // ISO 8601
+      message: zodLib.string().optional(),
+    });
+    const data = schema.parse(req.body);
+
+    // Create a lead for this booking if it doesn't exist
+    let lead = await prisma.lead.findFirst({
+      where: { email: data.email, tenantId: avail.user.tenantId },
+    });
+    if (!lead) {
+      lead = await prisma.lead.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          source: 'OTHER',
+          status: 'NEW',
+          tenantId: avail.user.tenantId,
+        },
+      });
+    }
+
+    // Create an interaction recording the meeting
+    await prisma.interaction.create({
+      data: {
+        leadId: lead.id,
+        tenantId: avail.user.tenantId,
+        userId: avail.userId,
+        type: 'MEETING',
+        direction: 'OUTBOUND',
+        content: `Reunião agendada via link público: ${data.dateTime}${data.message ? `\nMensagem: ${data.message}` : ''}`,
+      },
+    });
+
+    res.status(201).json({ status: 201, message: 'Meeting booked successfully' });
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
     next(error);
   }
 });

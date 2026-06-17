@@ -51,6 +51,7 @@
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "mercadopago": "^2.1.7",
+    "nanoid": "^5.1.11",
     "nodemailer": "^6.9.7",
     "otplib": "^13.3.0",
     "pdfkit": "^0.17.2",
