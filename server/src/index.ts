@@ -88,6 +88,24 @@ import('./jobs/taskNotificationChecker.js').then(({ initializeTaskNotificationCh
   logger.error('Failed to initialize task notification checker', error);
 });
 
+// Initialize backup job (opt-in — requires ENABLE_BACKUP_JOB=true)
+if (process.env.ENABLE_BACKUP_JOB === 'true') {
+  import('./jobs/backup.js').then(({ initializeBackupJob }) => {
+    initializeBackupJob().catch((error) => {
+      logger.error('Failed to initialize backup job', error);
+    });
+  });
+}
+
+// Initialize scheduled reports (opt-in — requires ENABLE_SCHEDULED_REPORTS=true)
+if (process.env.ENABLE_SCHEDULED_REPORTS === 'true') {
+  import('./jobs/scheduledReports.js').then(({ initializeScheduledReports }) => {
+    initializeScheduledReports();
+  }).catch((error) => {
+    logger.error('Failed to initialize scheduled reports job', error);
+  });
+}
+
 // Health check
 import { getHealthStatus } from './utils/healthCheck.js';
 
