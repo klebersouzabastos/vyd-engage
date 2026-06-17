@@ -31,6 +31,8 @@
     "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@bull-board/api": "^6.14.2",
     "@bull-board/express": "^6.14.2",
+    "@pdfme/common": "^6.1.6",
+    "@pdfme/generator": "^6.1.6",
     "@prisma/client": "^5.7.1",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",

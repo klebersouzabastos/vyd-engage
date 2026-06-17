@@ -108,6 +108,7 @@ export function DealDetail() {
   const [savingNote, setSavingNote] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchDeal = useCallback(async () => {
     if (!id) return;
@@ -140,6 +141,26 @@ export function DealDetail() {
     fetchDeal();
     fetchInteractions();
   }, [fetchDeal, fetchInteractions]);
+
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+    setDownloadingPdf(true);
+    try {
+      const url = `${apiClient.getApiUrl()}/api/v1/deals/${id}/proposal.pdf`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Erro ao gerar PDF');
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `proposta-${id}.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      toast.error('Erro ao exportar proposta');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleSaveNote = async () => {
     if (!noteContent.trim() || !id) return;
@@ -369,6 +390,18 @@ export function DealDetail() {
                   </div>
                 )}
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+              >
+                {downloadingPdf
+                  ? <Loader2 size={14} className="animate-spin" />
+                  : <FileText size={14} />}
+                Exportar Proposta
+              </Button>
 
               <Button
                 variant="outline"

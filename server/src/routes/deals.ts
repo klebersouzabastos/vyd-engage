@@ -152,6 +152,22 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+// GET /api/deals/:id/proposal.pdf - Export deal as PDF proposal
+router.get('/:id/proposal.pdf', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { generateProposalPDF } = await import('../services/pdfService.js');
+    const pdf = await generateProposalPDF(req.params.id, req.user.tenantId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="proposta-${req.params.id}.pdf"`);
+    res.send(pdf);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/deals/:id/next-action - Get suggested next action for a deal
 router.get('/:id/next-action', async (req, res, next) => {
   try {
