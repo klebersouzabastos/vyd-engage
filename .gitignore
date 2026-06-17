@@ -2,6 +2,9 @@
 node_modules/
 server/node_modules/
 
+# Temp/scratch files
+Temp*.json
+
 # Build outputs
 build/
 dist/

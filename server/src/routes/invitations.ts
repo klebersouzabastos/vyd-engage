@@ -92,6 +92,20 @@ router.post('/accept', async (req, res, next) => {
   }
 });
 
+// POST /api/invitations/:id/resend - Resend invitation email (Admin only)
+router.post('/:id/resend', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const result = await invitationService.resend(req.user.tenantId, req.params.id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/invitations/:id - Cancel invitation (Admin only)
 router.delete('/:id', requireRole('ADMIN'), async (req, res, next) => {
   try {

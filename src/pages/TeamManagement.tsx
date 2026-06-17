@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
-import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert } from "lucide-react";
+import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert, RefreshCw } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { apiClient } from "../services/api/client";
 
@@ -130,6 +130,9 @@ export function TeamManagement() {
   // Cancel invitation confirmation
   const [cancellingInvitation, setCancellingInvitation] = useState<Invitation | null>(null);
 
+  // Resend invitation
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
   const isAdmin = user?.role === "ADMIN";
 
   const fetchUsers = useCallback(async () => {
@@ -195,16 +198,48 @@ export function TeamManagement() {
     }
     setSendingInvite(true);
     try {
-      await apiClient.createInvitation({ email: inviteEmail.trim(), role: inviteRole });
-      toast.success("Convite enviado com sucesso");
+      const result = await apiClient.createInvitation({ email: inviteEmail.trim(), role: inviteRole });
       setShowInviteModal(false);
       setInviteEmail("");
       setInviteRole("USER");
       fetchInvitations();
+      if (result.emailSent === false) {
+        toast.warning("Convite criado, mas o email não foi enviado", {
+          description: "O serviço de email não está configurado. Copie o link e envie manualmente.",
+          action: result.invitationLink
+            ? { label: "Copiar link", onClick: () => navigator.clipboard.writeText(result.invitationLink!) }
+            : undefined,
+          duration: 15000,
+        });
+      } else {
+        toast.success("Convite enviado com sucesso");
+      }
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar convite");
     } finally {
       setSendingInvite(false);
+    }
+  };
+
+  const handleResendInvitation = async (id: string) => {
+    setResendingId(id);
+    try {
+      const result = await apiClient.resendInvitation(id);
+      if (result.emailSent) {
+        toast.success("Convite reenviado com sucesso");
+      } else {
+        toast.warning("Email não pôde ser enviado", {
+          description: "O serviço de email não está configurado. Copie o link e envie manualmente.",
+          action: result.invitationLink
+            ? { label: "Copiar link", onClick: () => navigator.clipboard.writeText(result.invitationLink!) }
+            : undefined,
+          duration: 15000,
+        });
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao reenviar convite");
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -382,14 +417,28 @@ export function TeamManagement() {
                             {formatDate(invitation.createdAt)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <button
-                              onClick={() => setCancellingInvitation(invitation)}
-                              className="p-2 hover:bg-red-50 rounded transition-colors"
-                              aria-label={`Cancelar convite para ${invitation.email}`}
-                              title="Cancelar convite"
-                            >
-                              <XCircle size={16} className="text-red-600" />
-                            </button>
+                            <div className="inline-flex gap-1">
+                              <button
+                                onClick={() => handleResendInvitation(invitation.id)}
+                                disabled={resendingId === invitation.id}
+                                className="p-2 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                                aria-label={`Reenviar convite para ${invitation.email}`}
+                                title="Reenviar convite"
+                              >
+                                <RefreshCw
+                                  size={16}
+                                  className={`text-blue-600 ${resendingId === invitation.id ? "animate-spin" : ""}`}
+                                />
+                              </button>
+                              <button
+                                onClick={() => setCancellingInvitation(invitation)}
+                                className="p-2 hover:bg-red-50 rounded transition-colors"
+                                aria-label={`Cancelar convite para ${invitation.email}`}
+                                title="Cancelar convite"
+                              >
+                                <XCircle size={16} className="text-red-600" />
+                              </button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

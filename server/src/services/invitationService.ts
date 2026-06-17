@@ -53,7 +53,11 @@ export const invitationService = {
       },
     });
 
-    // Send invitation email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const invitationLink = `${frontendUrl}/accept-invitation?token=${token}`;
+    const roleLabel = data.role === 'ADMIN' ? 'Administrador' : data.role === 'USER' ? 'Usuário' : 'Visualizador';
+
+    let emailSent = false;
     try {
       const { sendEmail, emailTemplates } = await import('./emailService.js');
       const inviter = await prisma.user.findUnique({
@@ -64,10 +68,7 @@ export const invitationService = {
         where: { id: tenantId },
         select: { name: true },
       });
-      
-      const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/accept-invitation?token=${token}`;
-      const roleLabel = data.role === 'ADMIN' ? 'Administrador' : data.role === 'USER' ? 'Usuário' : 'Visualizador';
-      
+
       await sendEmail({
         to: invitation.email,
         ...(await emailTemplates.invitation(
@@ -77,12 +78,16 @@ export const invitationService = {
           roleLabel
         )),
       });
+      emailSent = true;
     } catch (error) {
       logger.error('Failed to send invitation email', error);
-      // Don't throw - invitation is still created
     }
 
-    return invitation;
+    return {
+      ...invitation,
+      emailSent,
+      ...(!emailSent && { invitationLink }),
+    };
   },
 
   async findAll(tenantId: string) {
@@ -160,6 +165,58 @@ export const invitationService = {
     });
 
     return user;
+  },
+
+  async resend(tenantId: string, invitationId: string) {
+    const invitation = await prisma.invitation.findFirst({
+      where: { id: invitationId, tenantId, accepted: false },
+    });
+
+    if (!invitation) {
+      throw createError('Invitation not found', 404, 'INVITATION_NOT_FOUND');
+    }
+
+    const token = uuidv4();
+    const tokenHash = hashToken(token);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await prisma.invitation.update({
+      where: { id: invitationId },
+      data: { token: tokenHash, expiresAt },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const invitationLink = `${frontendUrl}/accept-invitation?token=${token}`;
+    const roleLabel = invitation.role === 'ADMIN' ? 'Administrador' : invitation.role === 'USER' ? 'Usuário' : 'Visualizador';
+
+    let emailSent = false;
+    try {
+      const { sendEmail, emailTemplates } = await import('./emailService.js');
+      const inviter = await prisma.user.findUnique({
+        where: { id: invitation.invitedBy },
+        select: { name: true },
+      });
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true },
+      });
+
+      await sendEmail({
+        to: invitation.email,
+        ...(await emailTemplates.invitation(
+          inviter?.name || 'Um administrador',
+          tenant?.name || 'a empresa',
+          invitationLink,
+          roleLabel
+        )),
+      });
+      emailSent = true;
+    } catch (error) {
+      logger.error('Failed to resend invitation email', error);
+    }
+
+    return { emailSent, ...(!emailSent && { invitationLink }) };
   },
 
   async cancel(tenantId: string, invitationId: string) {
