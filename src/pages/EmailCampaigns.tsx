@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { EmailFormatToolbar, useEmailFormatter } from "../components/email/EmailFormatToolbar";
+import { GrapesEmailBuilder } from "../components/email/GrapesEmailBuilder";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import {
@@ -102,6 +103,9 @@ export function EmailCampaigns() {
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
+
+  // Editor mode toggle
+  const [editorMode, setEditorMode] = useState<"basic" | "visual">("basic");
 
   // Format toolbar
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -499,27 +503,52 @@ export function EmailCampaigns() {
               <div className="bg-white rounded-lg border border-gray-300 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">Corpo do Email (HTML)</label>
-                  <div className="flex items-center gap-1">
-                    {VARIABLE_OPTIONS.map(v => (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {VARIABLE_OPTIONS.map(v => (
+                        <button
+                          key={v.value}
+                          onClick={() => insertVariable(v.value)}
+                          className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                          title={`Inserir ${v.label}`}
+                        >
+                          {v.value}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs">
                       <button
-                        key={v.value}
-                        onClick={() => insertVariable(v.value)}
-                        className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
-                        title={`Inserir ${v.label}`}
+                        className={`px-3 py-1 transition-colors ${editorMode === "basic" ? "bg-gray-800 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                        onClick={() => setEditorMode("basic")}
                       >
-                        {v.value}
+                        Básico
                       </button>
-                    ))}
+                      <button
+                        className={`px-3 py-1 transition-colors ${editorMode === "visual" ? "bg-gray-800 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                        onClick={() => setEditorMode("visual")}
+                      >
+                        Visual
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <EmailFormatToolbar onFormat={handleEmailFormat} />
-                <textarea
-                  ref={bodyTextareaRef}
-                  className="w-full h-48 border border-gray-300 rounded-b-md border-t-0 p-3 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder={`<h1>Olá {{name}},</h1>\n<p>Temos uma novidade especial para você...</p>`}
-                  value={htmlBody}
-                  onChange={e => setHtmlBody(e.target.value)}
-                />
+                {editorMode === "basic" ? (
+                  <>
+                    <EmailFormatToolbar onFormat={handleEmailFormat} />
+                    <textarea
+                      ref={bodyTextareaRef}
+                      className="w-full h-48 border border-gray-300 rounded-b-md border-t-0 p-3 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder={`<h1>Olá {{name}},</h1>\n<p>Temos uma novidade especial para você...</p>`}
+                      value={htmlBody}
+                      onChange={e => setHtmlBody(e.target.value)}
+                    />
+                  </>
+                ) : (
+                  <GrapesEmailBuilder
+                    initialHtml={htmlBody || undefined}
+                    onChange={setHtmlBody}
+                  />
+                )}
               </div>
 
               {/* Template save */}
