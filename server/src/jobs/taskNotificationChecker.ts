@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { TaskStatus, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
+import { notifyTaskOverdue } from '../services/slackService.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -102,6 +103,7 @@ async function checkTaskNotifications() {
       }).catch((err) => {
         logger.error(`Failed to create TASK_OVERDUE notification for task ${task.id}`, err);
       });
+      notifyTaskOverdue(task.tenantId, task).catch(() => {});
       created++;
     }
 

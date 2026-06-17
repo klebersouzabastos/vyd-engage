@@ -329,6 +329,23 @@ router.put('/change-password', authenticate, async (req, res, next) => {
 const updateTenantSchema = z.object({
   name: z.string().min(2).optional(),
   logo: z.string().nullable().optional(),
+  settings: z.object({
+    slackWebhookUrl: z.string().url().optional().nullable(),
+    teamsWebhookUrl: z.string().url().optional().nullable(),
+  }).optional(),
+});
+
+router.get('/tenant', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: req.user.tenantId },
+      select: { id: true, name: true, slug: true, logo: true, settings: true },
+    });
+    res.json({ tenant });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.put('/tenant', authenticate, async (req, res, next) => {
@@ -339,10 +356,22 @@ router.put('/tenant', authenticate, async (req, res, next) => {
 
     const data = updateTenantSchema.parse(req.body);
 
+    // Merge settings JSON so existing keys are preserved
+    let updateData: Record<string, unknown> = { name: data.name, logo: data.logo };
+    if (data.settings) {
+      const current = await prisma.tenant.findUnique({
+        where: { id: req.user.tenantId },
+        select: { settings: true },
+      });
+      updateData.settings = { ...(current?.settings as object ?? {}), ...data.settings };
+    }
+    // Remove undefined keys
+    updateData = Object.fromEntries(Object.entries(updateData).filter(([, v]) => v !== undefined));
+
     const tenant = await prisma.tenant.update({
       where: { id: req.user.tenantId },
-      data,
-      select: { id: true, name: true, slug: true, logo: true },
+      data: updateData,
+      select: { id: true, name: true, slug: true, logo: true, settings: true },
     });
 
     res.json({ tenant });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { SlackTeamsSection } from "./SlackTeamsSection";
 import { Button } from "../ui/button";
 import { Plus, HelpCircle, X, FileText, Copy, Key, Loader2 } from "lucide-react";
 import { apiClient } from "../../services/api/client";
@@ -715,6 +716,9 @@ export function IntegrationsTab() {
 
       {/* Webhook */}
       <WebhookCaptureSection />
+
+      {/* Slack / MS Teams */}
+      <SlackTeamsSection />
     </div>
   );
 }

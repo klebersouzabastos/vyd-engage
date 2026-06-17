@@ -162,6 +162,7 @@ import prisma from './config/database.js';
 import { z as zodLib } from 'zod';
 import { NotificationType } from '@prisma/client';
 import { notificationService } from './services/notificationService.js';
+import { notifyLeadCaptured } from './services/slackService.js';
 import { dispatchTrigger } from './jobs/automationEngine.js';
 
 // ============================================
@@ -336,6 +337,8 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
       source: leadSource,
       status: 'NEW',
     }).catch(() => {});
+
+    notifyLeadCaptured(tenant.id, { name: data.name, email: data.email, company: data.company }).catch(() => {});
 
     res.status(201).json({ status: 201, message: 'Lead captured successfully', leadId: lead.id });
   } catch (error: any) {

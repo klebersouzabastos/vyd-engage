@@ -261,11 +261,15 @@ class ApiClient {
     return this.request<{ enabled: boolean }>('/api/v1/auth/2fa/status');
   }
 
-  async updateTenant(data: { name?: string; logo?: string | null }) {
-    return this.request<{ id: string; name: string; slug: string; logo?: string | null }>('/api/v1/auth/tenant', {
+  async updateTenant(data: { name?: string; logo?: string | null; settings?: { slackWebhookUrl?: string | null; teamsWebhookUrl?: string | null } }) {
+    return this.request<{ id: string; name: string; slug: string; logo?: string | null; settings?: Record<string, unknown> }>('/api/v1/auth/tenant', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+  }
+
+  async getTenant() {
+    return this.request<{ tenant: { id: string; name: string; slug: string; logo?: string | null; settings: Record<string, unknown> } }>('/api/v1/auth/tenant');
   }
 
   async getProfileStats() {

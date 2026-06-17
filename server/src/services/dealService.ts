@@ -3,6 +3,7 @@ import { DealStage } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
+import { notifyDealWon, notifyDealLost } from './slackService.js';
 
 const STAGE_PROBABILITY: Record<DealStage, number> = {
   QUALIFICATION: 20,
@@ -249,10 +250,12 @@ export const dealService = {
 
       if (data.stage === DealStage.WON) {
         webhookDispatcher.emitDealEvent(tenantId, 'deal.won', deal);
+        notifyDealWon(tenantId, deal).catch(() => {});
       } else if (data.stage === DealStage.LOST) {
         webhookDispatcher.emitDealEvent(tenantId, 'deal.lost', deal, {
           lost_reason: deal.lostReason || null,
         });
+        notifyDealLost(tenantId, deal).catch(() => {});
       }
     }
 
