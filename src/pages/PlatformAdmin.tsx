@@ -270,7 +270,7 @@ export function PlatformAdmin() {
 
       {/* Create Tenant Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[540px]">
           <DialogHeader>
             <DialogTitle>Novo Tenant</DialogTitle>
           </DialogHeader>
