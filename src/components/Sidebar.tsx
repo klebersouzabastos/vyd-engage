@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Webhook,
   KeyRound,
+  Shield,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -44,6 +45,7 @@ const menuItems = [
   { icon: Webhook, label: "Webhooks", path: "/app/webhooks", tourId: "sidebar-webhooks" },
   { icon: KeyRound, label: "API Keys", path: "/app/api-keys", tourId: "sidebar-api-keys" },
   { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
+  { icon: Shield, label: "Plataforma", path: "/app/admin", tourId: "sidebar-platform-admin", platformAdminOnly: true },
 ];
 
 interface SidebarProps {
@@ -160,7 +162,7 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
 
       {/* Menu Items */}
       <nav aria-label="Navegação do aplicativo" className={`flex-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
-        {menuItems.filter(item => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
+        {menuItems.filter(item => (!item.adminOnly || user?.role === 'ADMIN') && (!item.platformAdminOnly || user?.isPlatformAdmin)).map((item) => {
           const isActive = item.path.includes('?')
             ? `${location.pathname}${location.search}` === item.path
             : location.pathname === item.path;

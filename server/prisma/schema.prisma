@@ -43,6 +43,9 @@ model User {
   role         UserRole   @default(USER)
   status       UserStatus @default(PENDING)
 
+  // Super-admin da plataforma (cross-tenant). O papel por tenant continua em `role`.
+  isPlatformAdmin Boolean @default(false)
+
   // Tenant relationship
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

@@ -195,7 +195,31 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.request<{ user: { id: string; email: string; name: string; avatar?: string | null; role: string; tenantId: string; tenant?: { id: string; name: string; slug: string; logo?: string | null } } }>('/api/v1/auth/me');
+    return this.request<{ user: { id: string; email: string; name: string; avatar?: string | null; role: string; isPlatformAdmin?: boolean; tenantId: string; tenant?: { id: string; name: string; slug: string; logo?: string | null } } }>('/api/v1/auth/me');
+  }
+
+  // ---- Platform admin (super-admin / cross-tenant) ----
+  async getPlatformOverview() {
+    return this.request<{ status: number; data: { tenants: number; users: number; leads: number; deals: number; activeSubscriptions: number; mrr: number } }>('/api/v1/admin/overview');
+  }
+
+  async getPlatformTenants() {
+    return this.request<{ status: number; data: Array<{ id: string; name: string; slug: string; createdAt: string; _count: { users: number; leads: number }; subscription?: { status: string; plan: { type: string; name: string } } | null }> }>('/api/v1/admin/tenants');
+  }
+
+  async createPlatformTenant(data: {
+    tenantName: string;
+    slug: string;
+    planType: 'STARTER' | 'PRO' | 'ENTERPRISE';
+    subscriptionStatus?: 'ACTIVE' | 'TRIAL';
+    adminEmail: string;
+    adminName: string;
+    adminPassword?: string;
+  }) {
+    return this.request<{ status: number; data: { tenant: { id: string; name: string; slug: string }; admin: { id: string; email: string }; generatedPassword?: string } }>('/api/v1/admin/tenants', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async updateProfile(data: { name?: string; phone?: string; avatar?: string | null }) {

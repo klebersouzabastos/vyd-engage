@@ -70,6 +70,7 @@ const Forecast = lazyNamed(() => import("../pages/Forecast"), "Forecast");
 const FunnelConversion = lazyNamed(() => import("../pages/FunnelConversion"), "FunnelConversion");
 const Webhooks = lazyNamed(() => import("../pages/Webhooks"), "Webhooks");
 const ApiKeys = lazyNamed(() => import("../pages/ApiKeys"), "ApiKeys");
+const PlatformAdmin = lazyNamed(() => import("../pages/PlatformAdmin"), "PlatformAdmin");
 
 export const router = createBrowserRouter([
   {
@@ -255,6 +256,10 @@ export const router = createBrowserRouter([
       {
         path: "api-keys",
         element: ApiKeys,
+      },
+      {
+        path: "admin",
+        element: PlatformAdmin,
       },
     ],
   },

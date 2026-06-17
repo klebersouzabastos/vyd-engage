@@ -7,6 +7,7 @@ interface User {
   name: string;
   avatar?: string | null;
   role: string;
+  isPlatformAdmin?: boolean;
   tenantId: string;
   tenant?: {
     id: string;

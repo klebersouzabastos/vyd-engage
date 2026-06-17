@@ -129,6 +129,7 @@ import reportRoutes from './routes/reports.js';
 import dealRoutes from './routes/deals.js';
 import companyRoutes from './routes/companies.js';
 import trackingRoutes from './routes/tracking.js';
+import adminRoutes from './routes/admin.js';
 import outgoingWebhookRoutes from './routes/outgoingWebhooks.js';
 import exportRoutes from './routes/exports.js';
 import calendarRoutes from './routes/calendar.js';
@@ -194,6 +195,7 @@ v1Router.use('/auth/change-password', csrfProtection);
 v1Router.use('/auth/tenant', csrfProtection);
 v1Router.use('/ai', csrfProtection);
 v1Router.use('/saved-views', csrfProtection);
+v1Router.use('/admin', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -228,6 +230,7 @@ v1Router.use('/exports', exportRoutes);
 v1Router.use('/integrations', calendarRoutes);
 v1Router.use('/ai', aiRoutes);
 v1Router.use('/saved-views', savedViewRoutes);
+v1Router.use('/admin', adminRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 
