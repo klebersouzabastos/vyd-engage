@@ -39,6 +39,7 @@ const ResetPassword = lazyNamed(() => import("../pages/ResetPassword"), "ResetPa
 const Onboarding = lazyNamed(() => import("../pages/Onboarding"), "Onboarding");
 const PublicForm = lazyNamed(() => import("../pages/PublicForm"), "PublicForm");
 const PublicSchedule = lazyNamed(() => import("../pages/PublicSchedule"), "PublicSchedule");
+const AcceptInvitation = lazyNamed(() => import("../pages/AcceptInvitation"), "AcceptInvitation");
 
 // App pages (behind auth)
 const Dashboard = lazyNamed(() => import("../pages/Dashboard"), "Dashboard");
@@ -105,6 +106,10 @@ export const router = createBrowserRouter([
   {
     path: "/s/:slug",
     element: PublicSchedule,
+  },
+  {
+    path: "/accept-invitation",
+    element: AcceptInvitation,
   },
   {
     path: "/app",

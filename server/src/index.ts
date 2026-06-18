@@ -204,7 +204,11 @@ v1Router.use('/custom-fields', csrfProtection);
 v1Router.use('/interactions', csrfProtection);
 v1Router.use('/notifications', csrfProtection);
 v1Router.use('/outgoing-webhooks', csrfProtection);
-v1Router.use('/invitations', csrfProtection);
+v1Router.use('/invitations', (req, res, next) => {
+  // POST /invitations/accept is a public endpoint (no session yet) — skip CSRF
+  if (req.method === 'POST' && req.path === '/accept') return next();
+  csrfProtection(req, res, next);
+});
 v1Router.use('/funnels', csrfProtection);
 v1Router.use('/scoring-rules', csrfProtection);
 v1Router.use('/deals', csrfProtection);
