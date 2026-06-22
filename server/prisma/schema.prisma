@@ -79,6 +79,7 @@ model User {
   calendarConnections   CalendarConnection[]   @relation("UserCalendarConnections")
   savedViews            SavedView[]
   meetingAvailabilities MeetingAvailability[]
+  auditLogs             AuditLog[]
 
   @@index([email])
   @@index([tenantId])
@@ -158,6 +159,7 @@ model Tenant {
   savedViews          SavedView[]
   emailTemplates        EmailTemplate[]
   meetingAvailabilities MeetingAvailability[]
+  auditLogs           AuditLog[]
 
   @@index([slug])
 }
@@ -1131,4 +1133,26 @@ model MeetingAvailability {
 
   @@index([tenantId])
   @@index([userId])
+}
+
+// ============================================
+// AUDIT TRAIL
+// ============================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  entityType String
+  entityId   String
+  userId     String
+  action     String
+  changes    Json     @default("[]")
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
 }

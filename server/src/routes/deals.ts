@@ -7,6 +7,8 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { DealStage } from '@prisma/client';
+import prisma from '../config/database.js';
+import { createAuditLog } from '../utils/auditLogger.js';
 
 const router = Router();
 
@@ -138,6 +140,26 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// GET /api/deals/:id/audit - Get audit trail for a deal
+router.get('/:id/audit', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { id } = req.params;
+    const { tenantId } = req.user;
+    const logs = await prisma.auditLog.findMany({
+      where: { entityType: 'deal', entityId: id, tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: { user: { select: { name: true, email: true } } },
+    });
+    res.json({ status: 200, data: { logs } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/deals/:id - Get deal by ID
 router.get('/:id', async (req, res, next) => {
   try {
@@ -211,7 +233,27 @@ router.put('/:id', async (req, res, next) => {
       ...req.body,
       id: req.params.id,
     });
+
+    // Fetch existing deal for audit diff
+    const existing = await prisma.deal.findUnique({
+      where: { id: req.params.id, tenantId: req.user.tenantId },
+    });
+
     const deal = await dealService.update(req.user.tenantId, data);
+
+    // Fire audit log asynchronously — must not block the response
+    if (existing) {
+      createAuditLog({
+        tenantId: req.user.tenantId,
+        entityType: 'deal',
+        entityId: req.params.id,
+        userId: req.user.userId,
+        action: 'update',
+        oldData: existing as Record<string, unknown>,
+        newData: deal as Record<string, unknown>,
+      }).catch(() => {});
+    }
+
     res.json(deal);
   } catch (error) {
     if (error instanceof z.ZodError) {

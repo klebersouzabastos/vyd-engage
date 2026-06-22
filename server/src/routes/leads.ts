@@ -8,6 +8,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { LeadStatus, LeadSource, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import prisma from '../config/database.js';
+import { createAuditLog } from '../utils/auditLogger.js';
 
 const router = Router();
 
@@ -344,6 +345,26 @@ router.post('/:id/revert', async (req, res, next) => {
   }
 });
 
+// GET /api/leads/:id/audit - Get audit trail for a lead
+router.get('/:id/audit', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { id } = req.params;
+    const { tenantId } = req.user;
+    const logs = await prisma.auditLog.findMany({
+      where: { entityType: 'lead', entityId: id, tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: { user: { select: { name: true, email: true } } },
+    });
+    res.json({ status: 200, data: { logs } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/leads/:id - Get lead by ID
 router.get('/:id', async (req, res, next) => {
   try {
@@ -402,7 +423,27 @@ router.put('/:id', async (req, res, next) => {
       ...req.body,
       id: req.params.id,
     });
+
+    // Fetch existing lead for audit diff
+    const existing = await prisma.lead.findUnique({
+      where: { id: req.params.id, tenantId: req.user.tenantId },
+    });
+
     const lead = await leadService.update(req.user.tenantId, data);
+
+    // Fire audit log asynchronously — must not block the response
+    if (existing) {
+      createAuditLog({
+        tenantId: req.user.tenantId,
+        entityType: 'lead',
+        entityId: req.params.id,
+        userId: req.user.userId,
+        action: 'update',
+        oldData: existing as Record<string, unknown>,
+        newData: lead as Record<string, unknown>,
+      }).catch(() => {});
+    }
+
     res.json(lead);
   } catch (error) {
     if (error instanceof z.ZodError) {

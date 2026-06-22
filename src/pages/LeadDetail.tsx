@@ -16,6 +16,7 @@ import {
   ArrowRightLeft,
   Calendar,
   FileText,
+  History,
   Loader2,
   Mail,
   MessageSquare,
@@ -38,6 +39,7 @@ import { DealStageBadge } from "../components/deals/DealStageBadge";
 import { DealForm } from "../components/deals/DealForm";
 import { NextActionCard } from "../components/NextActionCard";
 import { AIDraftDialog } from "../components/ai/AIDraftDialog";
+import { AuditTimeline } from "../components/AuditTimeline";
 import { Deal, DealStage } from "../types";
 import { Handshake, DollarSign } from "lucide-react";
 import { Timeline, TimelineItem } from "../components/ui/timeline";
@@ -509,6 +511,15 @@ export function LeadDetail() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Audit Trail */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <History size={18} />
+                Histórico de alterações
+              </h2>
+              <AuditTimeline entityType="lead" entityId={id || ""} />
             </div>
           </div>
 

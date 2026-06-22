@@ -12,6 +12,7 @@ import {
   ArrowRightLeft,
   Calendar,
   FileText,
+  History,
   Loader2,
   Mail,
   MessageSquare,
@@ -30,6 +31,7 @@ import { apiClient } from "../services/api/client";
 import { DealForm } from "../components/deals/DealForm";
 import { NextActionCard } from "../components/NextActionCard";
 import { AIDraftDialog } from "../components/ai/AIDraftDialog";
+import { AuditTimeline } from "../components/AuditTimeline";
 import { formatCurrency } from "../utils/format";
 import { Timeline, TimelineItem } from "../components/ui/timeline";
 
@@ -280,6 +282,15 @@ export function DealDetail() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Audit Trail */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <History size={18} />
+                Histórico de alterações
+              </h2>
+              <AuditTimeline entityType="deal" entityId={id || ""} />
             </div>
           </div>
 
