@@ -80,6 +80,7 @@ model User {
   savedViews            SavedView[]
   meetingAvailabilities MeetingAvailability[]
   auditLogs             AuditLog[]
+  goals Goal[]
 
   @@index([email])
   @@index([tenantId])
@@ -160,6 +161,10 @@ model Tenant {
   emailTemplates        EmailTemplate[]
   meetingAvailabilities MeetingAvailability[]
   auditLogs           AuditLog[]
+  staleDays          Int                 @default(5)
+  products           Product[]
+  goals              Goal[]
+  stageTaskTemplates StageTaskTemplate[]
 
   @@index([slug])
 }
@@ -337,6 +342,7 @@ model FunnelColumn {
   // Relations
   leads Lead[] @relation("LeadFunnelColumn")
   deals Deal[] @relation("DealFunnelColumn")
+  stageTaskTemplates StageTaskTemplate[]
 
   @@index([funnelId])
   @@index([funnelId, order])
@@ -454,6 +460,7 @@ model Deal {
   notes             String?
   customFields      Json       @default("{}")
   lostReason        String?
+  lostCompetitor String?
 
   // Pipeline position
   funnelId         String?
@@ -470,6 +477,8 @@ model Deal {
   closedAt          DateTime?
   interactions      Interaction[]
   tasks             Task[]
+  stageHistory DealStageHistory[]
+  dealProducts DealProduct[]
 
   @@index([tenantId])
   @@index([tenantId, stage])
@@ -1005,6 +1014,7 @@ enum NotificationType {
   AUTOMATION_ERROR
   PAYMENT_FAILED
   SUBSCRIPTION_EXPIRING
+  DEAL_AT_RISK
   SYSTEM
 }
 
@@ -1155,4 +1165,95 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([tenantId, createdAt])
   @@map("audit_logs")
+}
+
+// ============================================
+// COMERCIAL PRO
+// ============================================
+
+model Product {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  unitPrice   Float
+  category    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dealProducts DealProduct[]
+
+  @@index([tenantId])
+  @@index([tenantId, active])
+  @@map("products")
+}
+
+model DealProduct {
+  id        String @id @default(uuid())
+  dealId    String
+  productId String
+  quantity  Float  @default(1)
+  unitPrice Float
+  discount  Float  @default(0)
+
+  deal    Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([dealId])
+  @@map("deal_products")
+}
+
+model Goal {
+  id            String   @id @default(uuid())
+  tenantId      String
+  userId        String
+  month         Int
+  year          Int
+  targetRevenue Float    @default(0)
+  targetDeals   Int      @default(0)
+  targetLeads   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, month, year])
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("goals")
+}
+
+model DealStageHistory {
+  id        String    @id @default(uuid())
+  dealId    String
+  stage     String
+  enteredAt DateTime  @default(now())
+  exitedAt  DateTime?
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@map("deal_stage_history")
+}
+
+model StageTaskTemplate {
+  id             String   @id @default(uuid())
+  tenantId       String
+  funnelColumnId String
+  taskTitle      String
+  dueDaysFromNow Int      @default(3)
+  priority       String   @default("MEDIUM")
+  assignToOwner  Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  funnelColumn FunnelColumn @relation(fields: [funnelColumnId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([funnelColumnId])
+  @@map("stage_task_templates")
 }
