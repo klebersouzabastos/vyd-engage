@@ -7,7 +7,7 @@ export function VYDEcosystemBanner() {
   const location = useLocation();
 
   // Define public routes where banner should ALWAYS appear
-  const publicRoutes = ['/', '/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/verify-email'];
+  const publicRoutes = ['/', '/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/verify-email', '/accept-invitation'];
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/capture/');
 
   // Hide banner only if:

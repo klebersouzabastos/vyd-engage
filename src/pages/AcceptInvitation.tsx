@@ -77,36 +77,41 @@ export function AcceptInvitation() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+      <div className="min-h-screen flex flex-col bg-white">
         <VYDEcosystemBanner />
-        <div className="flex-1 flex flex-col justify-center items-center px-6 bg-white">
-          <AlertCircle size={48} className="text-red-400 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Link inválido</h2>
-          <p className="text-gray-500">O link de convite não contém um token válido.</p>
+        <div className="flex-1 flex flex-col lg:flex-row">
+          <div className="flex-1 flex flex-col justify-center items-center px-6 bg-white">
+            <AlertCircle size={48} className="text-red-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Link inválido</h2>
+            <p className="text-gray-500">O link de convite não contém um token válido.</p>
+          </div>
+          <RightPanel />
         </div>
-        <RightPanel />
       </div>
     );
   }
 
   if (done) {
     return (
-      <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+      <div className="min-h-screen flex flex-col bg-white">
         <VYDEcosystemBanner />
-        <div className="flex-1 flex flex-col justify-center items-center px-6 bg-white">
-          <CheckCircle size={48} className="text-green-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Conta criada!</h2>
-          <p className="text-gray-500">Redirecionando para o login…</p>
+        <div className="flex-1 flex flex-col lg:flex-row">
+          <div className="flex-1 flex flex-col justify-center items-center px-6 bg-white">
+            <CheckCircle size={48} className="text-green-500 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Conta criada!</h2>
+            <p className="text-gray-500">Redirecionando para o login…</p>
+          </div>
+          <RightPanel />
         </div>
-        <RightPanel />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <VYDEcosystemBanner />
 
+      <div className="flex-1 flex flex-col lg:flex-row">
       {/* Left side — form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
@@ -218,6 +223,7 @@ export function AcceptInvitation() {
       </div>
 
       <RightPanel />
+      </div>
     </div>
   );
 }
