@@ -616,7 +616,7 @@ export function Pipeline() {
         <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <div className="flex gap-6 min-w-max">
             {filteredColumns.map((column) => (
-              <DroppableColumn key={column.id} columnId={column.id}>
+              <DroppableColumn key={column.id} columnId={column.id} isActiveDrag={!!activeLead}>
               {/* Column Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 flex-1">
@@ -1105,7 +1105,10 @@ function DraggableLeadCard({
       {...attributes}
       {...listeners}
       onClick={(e) => onCardClick(e, lead)}
-      className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className={cn(
+        "bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150",
+        isDragging && "shadow-2xl ring-2 ring-primary/60 scale-[1.02] z-50 rotate-1",
+      )}
     >
       {children}
     </div>
@@ -1113,14 +1116,15 @@ function DraggableLeadCard({
 }
 
 /** A funnel column that accepts dropped lead cards. */
-function DroppableColumn({ columnId, children }: { columnId: string; children: ReactNode }) {
+function DroppableColumn({ columnId, children, isActiveDrag }: { columnId: string; children: ReactNode; isActiveDrag?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: columnId });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0 transition-colors",
-        isOver && "ring-2 ring-primary ring-inset bg-gray-200",
+        "bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0 transition-all duration-200",
+        isOver && "ring-2 ring-primary/40 bg-primary/5",
+        isActiveDrag && !isOver && "opacity-60",
       )}
     >
       {children}
