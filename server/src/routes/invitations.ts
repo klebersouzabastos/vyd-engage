@@ -18,9 +18,6 @@ const tokenLookupLimiter = rateLimit({
 
 const router = Router();
 
-router.use(authenticate);
-router.use(tenantScope);
-
 const createInvitationSchema = z.object({
   email: z.string().email(),
   role: z.nativeEnum(UserRole).default(UserRole.USER),
@@ -31,6 +28,37 @@ const acceptInvitationSchema = z.object({
   password: z.string().min(8),
   name: z.string().min(2),
 });
+
+// PUBLIC routes — must be registered BEFORE router.use(authenticate)
+// so they are not blocked by the auth middleware
+
+// GET /api/invitations/token/:token - Get invitation by token (public)
+router.get('/token/:token', tokenLookupLimiter, async (req, res, next) => {
+  try {
+    const invitation = await invitationService.findByToken(req.params.token);
+    res.json(invitation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/invitations/accept - Accept invitation (public)
+router.post('/accept', async (req, res, next) => {
+  try {
+    const data = acceptInvitationSchema.parse(req.body);
+    const user = await invitationService.accept(data.token, data.password, data.name);
+    res.status(201).json({ user, message: 'Invitation accepted successfully' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// AUTHENTICATED routes — apply auth middleware from this point on
+router.use(authenticate);
+router.use(tenantScope);
 
 // GET /api/invitations - List all pending invitations (Admin only)
 router.get('/', requireRole('ADMIN'), async (req, res, next) => {
@@ -60,30 +88,6 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
       data
     );
     res.status(201).json(invitation);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
-    }
-    next(error);
-  }
-});
-
-// GET /api/invitations/token/:token - Get invitation by token (public)
-router.get('/token/:token', tokenLookupLimiter, async (req, res, next) => {
-  try {
-    const invitation = await invitationService.findByToken(req.params.token);
-    res.json(invitation);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/invitations/accept - Accept invitation (public)
-router.post('/accept', async (req, res, next) => {
-  try {
-    const data = acceptInvitationSchema.parse(req.body);
-    const user = await invitationService.accept(data.token, data.password, data.name);
-    res.status(201).json({ user, message: 'Invitation accepted successfully' });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
