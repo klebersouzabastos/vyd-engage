@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
+import { useSocket } from './useSocket';
 
 export interface Task {
   id: string;
@@ -36,6 +37,60 @@ export function useTasks() {
       };
     },
   });
+
+  const { on } = useSocket();
+
+  useEffect(() => {
+    const offUpdated = on('task:updated', (data: unknown) => {
+      const payload = data as { task: Record<string, unknown> };
+      queryClient.setQueryData(['tasks', filters], (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        const prev = old as Record<string, unknown>;
+        if (Array.isArray(prev)) {
+          return prev.map((t: Record<string, unknown>) => t.id === payload.task?.id ? payload.task : t);
+        }
+        if (Array.isArray((prev as { tasks?: unknown[] }).tasks)) {
+          return {
+            ...prev,
+            tasks: (prev as { tasks: Record<string, unknown>[] }).tasks.map(
+              (t) => t.id === payload.task?.id ? payload.task : t
+            ),
+          };
+        }
+        return prev;
+      });
+    });
+
+    const offCreated = on('task:created', () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    });
+
+    const offDeleted = on('task:deleted', (data: unknown) => {
+      const payload = data as { taskId: string };
+      queryClient.setQueryData(['tasks', filters], (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        const prev = old as Record<string, unknown>;
+        if (Array.isArray(prev)) {
+          return prev.filter((t: Record<string, unknown>) => t.id !== payload.taskId);
+        }
+        if (Array.isArray((prev as { tasks?: unknown[] }).tasks)) {
+          return {
+            ...prev,
+            tasks: (prev as { tasks: Record<string, unknown>[] }).tasks.filter(
+              (t) => t.id !== payload.taskId
+            ),
+          };
+        }
+        return prev;
+      });
+    });
+
+    return () => {
+      offUpdated();
+      offCreated();
+      offDeleted();
+    };
+  }, [on, queryClient, filters]);
 
   // Preserves the previous signature `fetchTasks(filters, { silent })`; the
   // silent option is a no-op now (read errors surface via the `error` field).

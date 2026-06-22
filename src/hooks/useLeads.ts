@@ -4,6 +4,7 @@ import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Lead } from '../types';
 import { mapStatusToBackend, mapSourceToBackend, mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
+import { useSocket } from './useSocket';
 
 export interface LeadsFilters {
   page?: number;
@@ -105,6 +106,60 @@ export function useLeads() {
   useEffect(() => {
     if (query.isError) toast.error('Erro ao carregar leads');
   }, [query.isError]);
+
+  const { on } = useSocket();
+
+  useEffect(() => {
+    const offUpdated = on('lead:updated', (data: unknown) => {
+      const payload = data as { lead: Record<string, unknown> };
+      queryClient.setQueryData(['leads', filters], (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        const prev = old as Record<string, unknown>;
+        if (Array.isArray(prev)) {
+          return prev.map((l: Record<string, unknown>) => l.id === payload.lead?.id ? payload.lead : l);
+        }
+        if (Array.isArray((prev as { leads?: unknown[] }).leads)) {
+          return {
+            ...prev,
+            leads: (prev as { leads: Record<string, unknown>[] }).leads.map(
+              (l) => l.id === payload.lead?.id ? payload.lead : l
+            ),
+          };
+        }
+        return prev;
+      });
+    });
+
+    const offCreated = on('lead:created', () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    });
+
+    const offDeleted = on('lead:deleted', (data: unknown) => {
+      const payload = data as { leadId: string };
+      queryClient.setQueryData(['leads', filters], (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        const prev = old as Record<string, unknown>;
+        if (Array.isArray(prev)) {
+          return prev.filter((l: Record<string, unknown>) => l.id !== payload.leadId);
+        }
+        if (Array.isArray((prev as { leads?: unknown[] }).leads)) {
+          return {
+            ...prev,
+            leads: (prev as { leads: Record<string, unknown>[] }).leads.filter(
+              (l) => l.id !== payload.leadId
+            ),
+          };
+        }
+        return prev;
+      });
+    });
+
+    return () => {
+      offUpdated();
+      offCreated();
+      offDeleted();
+    };
+  }, [on, queryClient, filters]);
 
   const fetchLeads = useCallback((next?: LeadsFilters) => {
     setFilters(next);

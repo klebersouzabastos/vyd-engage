@@ -7,6 +7,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { TaskStatus, TaskPriority, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import { googleCalendarService } from '../services/googleCalendarService.js';
+import { emitToTenant } from '../services/socketService.js';
 
 const router = Router();
 
@@ -95,6 +96,9 @@ router.post('/', async (req, res, next) => {
     // Google Calendar sync (fire-and-forget)
     googleCalendarService.syncTaskForUser(req.user.userId, req.user.tenantId, task).catch(() => {});
 
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(req.user.tenantId, 'task:created', { task });
+
     res.status(201).json(task);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -131,6 +135,9 @@ router.put('/:id', async (req, res, next) => {
     // Google Calendar sync (fire-and-forget)
     googleCalendarService.syncTaskForUser(req.user.userId, req.user.tenantId, task).catch(() => {});
 
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(req.user.tenantId, 'task:updated', { task });
+
     res.json(task);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -156,6 +163,9 @@ router.delete('/:id', async (req, res, next) => {
     if (googleEventId) {
       googleCalendarService.deleteEventForUser(req.user.userId, req.user.tenantId, googleEventId).catch(() => {});
     }
+
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(req.user.tenantId, 'task:deleted', { taskId: req.params.id });
 
     res.status(204).send();
   } catch (error) {

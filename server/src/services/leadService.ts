@@ -5,6 +5,7 @@ import { scoringService } from './scoringService.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { planLimitsService } from './planLimitsService.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
+import { emitToTenant } from './socketService.js';
 
 export interface CreateLeadData {
   name: string;
@@ -83,6 +84,9 @@ export const leadService = {
     // Dispatch outgoing webhook
     const createdLead = await this.findById(tenantId, lead.id);
     webhookDispatcher.emitLeadEvent(tenantId, 'lead.created', createdLead);
+
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(tenantId, 'lead:created', { lead: createdLead });
 
     return createdLead;
   },
@@ -361,6 +365,9 @@ export const leadService = {
     }
     webhookDispatcher.emitLeadEvent(tenantId, 'lead.updated', updatedLead);
 
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(tenantId, 'lead:updated', { lead: updatedLead });
+
     // Dispatch automation trigger
     dispatchTrigger(tenantId, 'lead_updated', data.id, {
       changedFields: Object.keys(updateData),
@@ -379,6 +386,9 @@ export const leadService = {
 
     // Dispatch outgoing webhook for deletion
     webhookDispatcher.emitLeadEvent(tenantId, 'lead.deleted', lead);
+
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(tenantId, 'lead:deleted', { leadId: id });
   },
 
   async count(tenantId: string) {

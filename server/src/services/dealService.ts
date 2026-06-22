@@ -4,6 +4,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
 import { notifyDealWon, notifyDealLost } from './slackService.js';
+import { emitToTenant } from './socketService.js';
 
 const STAGE_PROBABILITY: Record<DealStage, number> = {
   QUALIFICATION: 20,
@@ -74,6 +75,9 @@ export const dealService = {
 
     // Dispatch webhook event
     webhookDispatcher.emitDealEvent(tenantId, 'deal.created', deal);
+
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(tenantId, 'deal:created', { deal });
 
     return deal;
   },
@@ -262,6 +266,9 @@ export const dealService = {
     // Always emit deal.updated for any update
     webhookDispatcher.emitDealEvent(tenantId, 'deal.updated', deal);
 
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(tenantId, 'deal:updated', { deal });
+
     return deal;
   },
 
@@ -272,6 +279,9 @@ export const dealService = {
       throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
     }
     await prisma.deal.update({ where: { id }, data: { deletedAt: new Date() } });
+
+    // Emit Socket.IO event for real-time cache updates
+    emitToTenant(tenantId, 'deal:deleted', { dealId: id });
   },
 
   async getStats(tenantId: string) {
