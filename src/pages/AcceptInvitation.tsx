@@ -31,7 +31,7 @@ export function AcceptInvitation() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { toast.error('Informe seu nome'); return; }
-    if (password.length < 6) { toast.error('A senha deve ter pelo menos 6 caracteres'); return; }
+    if (password.length < 8) { toast.error('A senha deve ter pelo menos 8 caracteres'); return; }
     if (password !== confirm) { toast.error('As senhas não coincidem'); return; }
 
     setLoading(true);
@@ -168,7 +168,7 @@ export function AcceptInvitation() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
