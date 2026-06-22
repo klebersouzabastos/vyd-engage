@@ -23,6 +23,7 @@ export const tenantFactory = Factory.define<Tenant>(({ sequence }) => ({
   slug: `${faker.helpers.slugify(faker.company.name()).toLowerCase()}-${sequence}`,
   logo: null,
   settings: {},
+  staleDays: 5,
   createdAt: new Date(),
   updatedAt: new Date(),
 }));

@@ -73,6 +73,9 @@ const FunnelConversion = lazyNamed(() => import("../pages/FunnelConversion"), "F
 const Webhooks = lazyNamed(() => import("../pages/Webhooks"), "Webhooks");
 const ApiKeys = lazyNamed(() => import("../pages/ApiKeys"), "ApiKeys");
 const PlatformAdmin = lazyNamed(() => import("../pages/PlatformAdmin"), "PlatformAdmin");
+const TeamPerformance = lazyNamed(() => import('../pages/TeamPerformance'), 'TeamPerformance');
+const WinLossReport = lazyNamed(() => import('../pages/WinLossReport'), 'WinLossReport');
+const Products = lazyNamed(() => import('../pages/Products'), 'Products');
 
 export const router = createBrowserRouter([
   {
@@ -258,6 +261,18 @@ export const router = createBrowserRouter([
       {
         path: "reports/:id",
         element: ReportBuilder,
+      },
+      {
+        path: "performance",
+        element: TeamPerformance,
+      },
+      {
+        path: "reports/win-loss",
+        element: WinLossReport,
+      },
+      {
+        path: "settings/products",
+        element: Products,
       },
       {
         path: "webhooks",

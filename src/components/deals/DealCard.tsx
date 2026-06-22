@@ -12,9 +12,10 @@ interface DealCardProps {
   onDragStart: () => void;
   onClick: () => void;
   onEdit: () => void;
+  isStale?: boolean;
 }
 
-export function DealCard({ deal, onDragStart, onClick, onEdit }: DealCardProps) {
+export function DealCard({ deal, onDragStart, onClick, onEdit, isStale }: DealCardProps) {
   return (
     <div
       draggable
@@ -23,8 +24,13 @@ export function DealCard({ deal, onDragStart, onClick, onEdit }: DealCardProps) 
         onDragStart();
       }}
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className="relative bg-white rounded-lg border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
     >
+      {isStale && (
+        <span className="absolute top-2 right-2 text-[10px] font-semibold bg-red-100 text-red-700 rounded-full px-2 py-0.5">
+          Em risco
+        </span>
+      )}
       <div className="flex items-start justify-between mb-2">
         <h4 className="text-sm font-medium text-gray-900 truncate flex-1">{deal.name}</h4>
       </div>

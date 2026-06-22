@@ -13,6 +13,8 @@ interface MonthlyForecast {
   totalValue: number;
   weightedValue: number;
   dealCount: number;
+  conservative: number;
+  optimistic: number;
 }
 
 interface WonLostMonth {
@@ -27,6 +29,8 @@ interface ForecastSummary {
   avgDealSize: number;
   avgCloseTimeDays: number;
   winRate: number;
+  conservativeTotal: number;
+  optimisticTotal: number;
 }
 
 export interface ForecastResponse {
@@ -95,7 +99,7 @@ export const forecastService = {
     for (let i = 0; i < months; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthMap.set(key, { month: key, totalValue: 0, weightedValue: 0, dealCount: 0 });
+      monthMap.set(key, { month: key, totalValue: 0, weightedValue: 0, dealCount: 0, conservative: 0, optimistic: 0 });
     }
 
     let noDateTotal = 0;
@@ -120,6 +124,12 @@ export const forecastService = {
         bucket.totalValue += value;
         bucket.weightedValue += weighted;
         bucket.dealCount++;
+        // conservative: weighted value only for high-probability deals (>= 70%)
+        if (deal.probability >= 70) {
+          bucket.conservative += weighted;
+        }
+        // optimistic: full face value regardless of probability
+        bucket.optimistic += value;
       }
       // Deals outside the forecast window are ignored in monthly breakdown
     }
@@ -139,6 +149,13 @@ export const forecastService = {
     );
     const avgDealSize =
       allActiveDeals.length > 0 ? totalPipelineValue / allActiveDeals.length : 0;
+
+    // Conservative: weighted value for high-probability deals only (>= 70%)
+    const conservativeTotal = allActiveDeals.reduce((sum, d) => {
+      return d.probability >= 70 ? sum + Number(d.value) * (d.probability / 100) : sum;
+    }, 0);
+    // Optimistic: full face value of all open deals
+    const optimisticTotal = totalPipelineValue;
 
     // Win rate and avg cycle time from closed deals
     const [wonAgg, lostCount, wonCycleDeals] = await Promise.all([
@@ -163,8 +180,14 @@ export const forecastService = {
     const avgCloseTimeDays =
       cycleTimes.length > 0 ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length : 0;
 
+    const monthlyRounded = monthly.map((m) => ({
+      ...m,
+      conservative: Math.round(m.conservative * 100) / 100,
+      optimistic: Math.round(m.optimistic * 100) / 100,
+    }));
+
     return {
-      monthly,
+      monthly: monthlyRounded,
       noDateBucket: {
         totalValue: Math.round(noDateTotal * 100) / 100,
         weightedValue: Math.round(noDateWeighted * 100) / 100,
@@ -176,6 +199,8 @@ export const forecastService = {
         avgDealSize: Math.round(avgDealSize * 100) / 100,
         avgCloseTimeDays: Math.round(avgCloseTimeDays * 10) / 10,
         winRate: Math.round(winRate * 10) / 10,
+        conservativeTotal: Math.round(conservativeTotal * 100) / 100,
+        optimisticTotal: Math.round(optimisticTotal * 100) / 100,
       },
     };
   },

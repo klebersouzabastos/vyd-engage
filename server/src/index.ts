@@ -88,6 +88,12 @@ import('./jobs/taskNotificationChecker.js').then(({ initializeTaskNotificationCh
   logger.error('Failed to initialize task notification checker', error);
 });
 
+import('./jobs/staleDeals.js').then(({ initializeStaleDealsChecker }) => {
+  initializeStaleDealsChecker();
+}).catch((error) => {
+  logger.error('Failed to initialize stale deals checker', error);
+});
+
 // Initialize backup job (opt-in — requires ENABLE_BACKUP_JOB=true)
 if (process.env.ENABLE_BACKUP_JOB === 'true') {
   import('./jobs/backup.js').then(({ initializeBackupJob }) => {
@@ -155,6 +161,9 @@ import aiRoutes from './routes/ai.js';
 import savedViewRoutes from './routes/savedViews.js';
 import emailTemplateRoutes from './routes/emailTemplates.js';
 import scheduleRoutes from './routes/schedule.js';
+import productRoutes from './routes/products.js';
+import goalRoutes from './routes/goals.js';
+import stageTaskTemplateRoutes from './routes/stageTaskTemplates.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -223,6 +232,9 @@ v1Router.use('/saved-views', csrfProtection);
 v1Router.use('/email-templates', csrfProtection);
 v1Router.use('/schedule', csrfProtection);
 v1Router.use('/admin', csrfProtection);
+v1Router.use('/products', csrfProtection);
+v1Router.use('/goals', csrfProtection);
+v1Router.use('/stage-task-templates', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -260,6 +272,9 @@ v1Router.use('/saved-views', savedViewRoutes);
 v1Router.use('/email-templates', emailTemplateRoutes);
 v1Router.use('/schedule', scheduleRoutes);
 v1Router.use('/admin', adminRoutes);
+v1Router.use('/products', productRoutes);
+v1Router.use('/goals', goalRoutes);
+v1Router.use('/stage-task-templates', stageTaskTemplateRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

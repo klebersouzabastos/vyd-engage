@@ -231,6 +231,42 @@ export const dealService = {
       },
     });
 
+    // HOOK A — Stage History tracking
+    const newStage = deal.stage;
+    if (existing.stage !== newStage) {
+      await prisma.dealStageHistory.updateMany({
+        where: { dealId: data.id, exitedAt: null },
+        data: { exitedAt: new Date() },
+      }).catch(() => {});
+      await prisma.dealStageHistory.create({
+        data: { dealId: data.id, stage: newStage },
+      }).catch(() => {});
+    }
+
+    // HOOK B — Auto-task creation on funnel column change
+    if (existing.funnelColumnId !== deal.funnelColumnId && deal.funnelColumnId) {
+      prisma.stageTaskTemplate.findMany({
+        where: { funnelColumnId: deal.funnelColumnId },
+      }).then(async (templates) => {
+        for (const t of templates) {
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + t.dueDaysFromNow);
+          await prisma.task.create({
+            data: {
+              tenantId: deal.tenantId,
+              title: t.taskTitle,
+              priority: t.priority as any,
+              dueDate,
+              dealId: deal.id,
+              assignedTo: t.assignToOwner ? (deal.assignedTo || null) : null,
+            },
+          });
+        }
+      }).catch((err) => {
+        logger.error('Failed to create auto-tasks on stage change', err, { dealId: deal.id });
+      });
+    }
+
     // When deal is WON and has a leadId, update lead status to WON
     if (data.stage === DealStage.WON && deal.leadId) {
       await prisma.lead.update({

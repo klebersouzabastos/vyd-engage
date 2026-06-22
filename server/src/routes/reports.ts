@@ -283,6 +283,186 @@ router.get('/metrics', async (req, res, next) => {
   }
 });
 
+// GET /api/reports/team-performance?from=&to=&funnelId= - Per-user performance metrics (admin/gestor)
+router.get('/team-performance', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    if (!['admin', 'gestor'].includes(req.user.role)) {
+      return next(createError('Forbidden', 403));
+    }
+    const tenantId = req.user.tenantId;
+    const { from, to, funnelId } = req.query;
+
+    const fromDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate = to ? new Date(to as string) : new Date();
+
+    // Fetch all users in this tenant
+    const users = await prisma.user.findMany({
+      where: { tenantId },
+      select: { id: true, name: true, email: true },
+    });
+
+    const results = await Promise.all(users.map(async (user) => {
+      const closedFilter: any = {
+        tenantId,
+        assignedTo: user.id,
+        closedAt: { gte: fromDate, lte: toDate },
+        deletedAt: null,
+        ...(funnelId ? { funnelId: funnelId as string } : {}),
+      };
+
+      const [wonDeals, lostCount, openDeals, tasksDone, wonCycleDeals] = await Promise.all([
+        prisma.deal.aggregate({
+          where: { ...closedFilter, stage: 'WON' },
+          _count: { id: true },
+          _sum: { value: true },
+        }),
+        prisma.deal.count({ where: { ...closedFilter, stage: 'LOST' } }),
+        prisma.deal.aggregate({
+          where: {
+            tenantId,
+            assignedTo: user.id,
+            stage: { notIn: ['WON', 'LOST'] },
+            deletedAt: null,
+            ...(funnelId ? { funnelId: funnelId as string } : {}),
+          },
+          _sum: { value: true },
+        }),
+        prisma.task.count({
+          where: {
+            tenantId,
+            assignedTo: user.id,
+            status: 'COMPLETED',
+            completedAt: { gte: fromDate, lte: toDate },
+            deletedAt: null,
+          },
+        }),
+        prisma.deal.findMany({
+          where: { ...closedFilter, stage: 'WON', closedAt: { not: null } },
+          select: { createdAt: true, closedAt: true },
+        }),
+      ]);
+
+      const wonCount = wonDeals._count.id;
+      const revenueWon = Number(wonDeals._sum.value || 0);
+      const closedCount = wonCount + lostCount;
+      const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 1000) / 10 : 0;
+
+      const cycleTimes = wonCycleDeals.map(
+        (d) => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const avgCycleDays = cycleTimes.length > 0
+        ? Math.round(cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length * 10) / 10
+        : 0;
+
+      return {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        dealsWon: wonCount,
+        revenueWon: Math.round(revenueWon * 100) / 100,
+        dealsLost: lostCount,
+        winRate,
+        avgCycleDays,
+        pipelineValue: Math.round(Number(openDeals._sum.value || 0) * 100) / 100,
+        tasksDone,
+      };
+    }));
+
+    results.sort((a, b) => b.revenueWon - a.revenueWon);
+    res.json({ status: 200, data: results });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/reports/win-loss?from=&to= - Win/loss analysis with reason breakdown
+router.get('/win-loss', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const tenantId = req.user.tenantId;
+    const { from, to } = req.query;
+
+    const fromDate = from ? new Date(from as string) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const toDate = to ? new Date(to as string) : new Date();
+
+    const closedDeals = await prisma.deal.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        stage: { in: ['WON', 'LOST'] },
+        closedAt: { gte: fromDate, lte: toDate },
+      },
+      select: { stage: true, value: true, closedAt: true, lostReason: true, lostCompetitor: true },
+    });
+
+    // Reason breakdown for LOST deals
+    const reasonMap = new Map<string, number>();
+    for (const deal of closedDeals) {
+      if (deal.stage === 'LOST') {
+        const reason = deal.lostReason || 'Não informado';
+        reasonMap.set(reason, (reasonMap.get(reason) || 0) + 1);
+      }
+    }
+    const lostTotal = Array.from(reasonMap.values()).reduce((a, b) => a + b, 0);
+    const reasonBreakdown = Array.from(reasonMap.entries())
+      .map(([reason, count]) => ({
+        reason,
+        count,
+        percentage: lostTotal > 0 ? Math.round((count / lostTotal) * 1000) / 10 : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Monthly trend
+    const monthMap = new Map<string, { month: string; won: number; lost: number; wonValue: number; lostValue: number }>();
+    for (const deal of closedDeals) {
+      if (!deal.closedAt) continue;
+      const key = `${deal.closedAt.getFullYear()}-${String(deal.closedAt.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthMap.has(key)) monthMap.set(key, { month: key, won: 0, lost: 0, wonValue: 0, lostValue: 0 });
+      const bucket = monthMap.get(key)!;
+      if (deal.stage === 'WON') { bucket.won++; bucket.wonValue += Number(deal.value); }
+      else { bucket.lost++; bucket.lostValue += Number(deal.value); }
+    }
+    const monthlyTrend = Array.from(monthMap.values())
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map((m) => ({
+        ...m,
+        wonValue: Math.round(m.wonValue * 100) / 100,
+        lostValue: Math.round(m.lostValue * 100) / 100,
+      }));
+
+    // Competitor breakdown
+    const competitorMap = new Map<string, number>();
+    for (const deal of closedDeals) {
+      if (deal.lostCompetitor) {
+        competitorMap.set(deal.lostCompetitor, (competitorMap.get(deal.lostCompetitor) || 0) + 1);
+      }
+    }
+    const competitors = Array.from(competitorMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    res.json({ status: 200, data: { reasonBreakdown, monthlyTrend, competitors } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/reports/pipeline-health - Pipeline health indicators
+router.get('/pipeline-health', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const tenantId = req.user.tenantId;
+
+    const { getPipelineHealth } = await import('../services/pipelineHealthService.js');
+    const result = await getPipelineHealth(tenantId);
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/reports/:id - Get single report
 router.get('/:id', async (req, res, next) => {
   try {

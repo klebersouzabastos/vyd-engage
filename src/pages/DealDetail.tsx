@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Header } from "../components/Header";
 import { DealStageBadge } from "../components/deals/DealStageBadge";
@@ -29,11 +30,16 @@ import {
 } from "lucide-react";
 import { apiClient } from "../services/api/client";
 import { DealForm } from "../components/deals/DealForm";
+import { DealProducts } from "../components/deals/DealProducts";
 import { NextActionCard } from "../components/NextActionCard";
 import { AIDraftDialog } from "../components/ai/AIDraftDialog";
 import { AuditTimeline } from "../components/AuditTimeline";
 import { formatCurrency } from "../utils/format";
 import { Timeline, TimelineItem } from "../components/ui/timeline";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -112,6 +118,10 @@ export function DealDetail() {
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showLostModal, setShowLostModal] = useState(false);
+  const [lostReason, setLostReason] = useState('');
+  const [lostCompetitor, setLostCompetitor] = useState('');
+  const [stageHistoryOpen, setStageHistoryOpen] = useState(false);
 
   const fetchDeal = useCallback(async () => {
     if (!id) return;
@@ -145,6 +155,21 @@ export function DealDetail() {
     fetchInteractions();
   }, [fetchDeal, fetchInteractions]);
 
+  const { data: stageHistory = [] } = useQuery({
+    queryKey: ['deal-stage-history', id],
+    queryFn: async () => {
+      if (!id) return [];
+      const response = await fetch(
+        `${apiClient.getApiUrl()}/api/v1/deals/${id}/stage-history`,
+        { credentials: 'include' }
+      );
+      if (!response.ok) return [];
+      const json = await response.json();
+      return Array.isArray(json) ? json : json?.data || [];
+    },
+    enabled: !!id,
+  });
+
   const handleDownloadPdf = async () => {
     if (!id) return;
     setDownloadingPdf(true);
@@ -162,6 +187,21 @@ export function DealDetail() {
       toast.error('Erro ao exportar proposta');
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  const handleConfirmLost = async () => {
+    if (!id) return;
+    try {
+      const result = await apiClient.updateDeal(id, { stage: 'LOST', lostReason, lostCompetitor });
+      setDeal({ ...result, value: Number(result.value) });
+      toast.success("Deal marcado como perdido");
+    } catch {
+      toast.error("Erro ao atualizar deal");
+    } finally {
+      setShowLostModal(false);
+      setLostReason('');
+      setLostCompetitor('');
     }
   };
 
@@ -292,6 +332,50 @@ export function DealDetail() {
               </h2>
               <AuditTimeline entityType="deal" entityId={id || ""} />
             </div>
+
+            {/* Stage History */}
+            {stageHistory.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
+                <button
+                  className="w-full flex items-center justify-between text-left"
+                  onClick={() => setStageHistoryOpen((v) => !v)}
+                >
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <ArrowRightLeft size={18} />
+                    Histórico de Estágios
+                  </h2>
+                  <ChevronDown
+                    size={16}
+                    className={`text-gray-400 transition-transform ${stageHistoryOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {stageHistoryOpen && (
+                  <ul className="mt-4 space-y-2">
+                    {stageHistory.map((entry: any) => {
+                      const entered = new Date(entry.enteredAt);
+                      const exitedMs = entry.exitedAt ? new Date(entry.exitedAt).getTime() : null;
+                      const durationDays = exitedMs
+                        ? Math.round((exitedMs - entered.getTime()) / 86400000)
+                        : null;
+                      return (
+                        <li
+                          key={entry.id}
+                          className="flex items-center justify-between text-sm border-b border-gray-100 pb-2 last:border-0 last:pb-0"
+                        >
+                          <span className="font-medium text-gray-900">{entry.stage}</span>
+                          <span className="text-gray-500 text-xs">
+                            {entered.toLocaleDateString('pt-BR')} &mdash;{' '}
+                            {durationDays !== null
+                              ? `${durationDays} dia${durationDays !== 1 ? 's' : ''}`
+                              : 'em andamento'}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Info Sidebar (30%) */}
@@ -308,6 +392,17 @@ export function DealDetail() {
               <div className="text-center">
                 <p className="text-3xl font-bold text-gray-900">{formatCurrency(deal.value)}</p>
               </div>
+
+              {/* Deal Products */}
+              <DealProducts
+                dealId={deal.id}
+                currentValue={Number(deal.value)}
+                onValueChange={async (v) => {
+                  if (!id) return;
+                  const result = await apiClient.updateDeal(id, { value: v });
+                  setDeal({ ...result, value: Number(result.value) });
+                }}
+              />
 
               {/* Stage and probability */}
               <div className="space-y-3">
@@ -427,7 +522,62 @@ export function DealDetail() {
         </div>
       </div>
 
-      <DealForm open={editFormOpen} onClose={() => setEditFormOpen(false)} onSave={handleEditSave} deal={deal} />
+      <DealForm
+        open={editFormOpen}
+        onClose={() => setEditFormOpen(false)}
+        onSave={async (data) => {
+          if (data.stage === 'LOST' && deal?.stage !== 'LOST') {
+            setEditFormOpen(false);
+            setShowLostModal(true);
+            return;
+          }
+          await handleEditSave(data);
+        }}
+        deal={deal}
+      />
+
+      {/* Win/Loss Modal */}
+      <Dialog open={showLostModal} onOpenChange={setShowLostModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Motivo da Perda</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Motivo</Label>
+              <Select value={lostReason} onValueChange={setLostReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preço">Preço</SelectItem>
+                  <SelectItem value="Concorrente">Concorrente</SelectItem>
+                  <SelectItem value="Timing">Timing</SelectItem>
+                  <SelectItem value="Sem orçamento">Sem orçamento</SelectItem>
+                  <SelectItem value="Não qualificado">Não qualificado</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Concorrente (opcional)</Label>
+              <Input
+                placeholder="Nome do concorrente"
+                value={lostCompetitor}
+                onChange={(e) => setLostCompetitor(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowLostModal(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmLost} disabled={!lostReason}>
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AIDraftDialog
         open={aiDraftOpen}

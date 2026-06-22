@@ -40,15 +40,34 @@ export function Forecast() {
   const [months, setMonths] = useState<MonthsFilter>(6);
   const { forecast, trend, loading, error, refetch } = useForecast({ months });
 
+  const hasScenarios = useMemo(() => {
+    if (!forecast) return false;
+    return forecast.monthly.some((m: any) => m.conservativeValue != null || m.optimisticValue != null);
+  }, [forecast]);
+
   const forecastChartData = useMemo(() => {
     if (!forecast) return [];
-    return forecast.monthly.map((m) => ({
+    return forecast.monthly.map((m: any) => ({
       name: formatMonthLabel(m.month),
       totalValue: Math.round(m.totalValue),
       weightedValue: Math.round(m.weightedValue),
       dealCount: m.dealCount,
+      conservativeValue: m.conservativeValue != null ? Math.round(m.conservativeValue) : undefined,
+      optimisticValue: m.optimisticValue != null ? Math.round(m.optimisticValue) : undefined,
     }));
   }, [forecast]);
+
+  const scenarioTotals = useMemo(() => {
+    if (!forecast || !hasScenarios) return null;
+    return forecast.monthly.reduce(
+      (acc: any, m: any) => ({
+        conservative: acc.conservative + (m.conservativeValue || 0),
+        weighted: acc.weighted + (m.weightedValue || 0),
+        optimistic: acc.optimistic + (m.optimisticValue || 0),
+      }),
+      { conservative: 0, weighted: 0, optimistic: 0 }
+    );
+  }, [forecast, hasScenarios]);
 
   const trendChartData = useMemo(() => {
     if (!trend) return [];
@@ -154,6 +173,23 @@ export function Forecast() {
             <h3 className="text-sm font-semibold text-gray-900 mb-4">
               Forecast Ponderado por Mês
             </h3>
+            {/* Scenario summary cards when data available */}
+            {hasScenarios && scenarioTotals && (
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="rounded-lg bg-blue-50 p-3 text-center">
+                  <p className="text-xs text-blue-600 font-medium mb-0.5">Conservador</p>
+                  <p className="text-sm font-bold text-blue-700">{formatCurrency(scenarioTotals.conservative)}</p>
+                </div>
+                <div className="rounded-lg bg-purple-50 p-3 text-center">
+                  <p className="text-xs text-purple-600 font-medium mb-0.5">Esperado</p>
+                  <p className="text-sm font-bold text-purple-700">{formatCurrency(scenarioTotals.weighted)}</p>
+                </div>
+                <div className="rounded-lg bg-green-50 p-3 text-center">
+                  <p className="text-xs text-green-600 font-medium mb-0.5">Otimista</p>
+                  <p className="text-sm font-bold text-green-700">{formatCurrency(scenarioTotals.optimistic)}</p>
+                </div>
+              </div>
+            )}
             {forecastChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={forecastChartData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -167,18 +203,39 @@ export function Forecast() {
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => {
-                      const label = name === "weightedValue" ? "Ponderado" : "Valor Total";
-                      return [formatCurrency(value), label];
+                      const labels: Record<string, string> = {
+                        weightedValue: "Esperado",
+                        totalValue: "Valor Total",
+                        conservativeValue: "Conservador",
+                        optimisticValue: "Otimista",
+                      };
+                      return [formatCurrency(value), labels[name] || name];
                     }}
                     contentStyle={{ fontSize: 12, borderRadius: 8 }}
                   />
                   <Legend
-                    formatter={(value) =>
-                      value === "weightedValue" ? "Ponderado" : "Valor Total"
-                    }
+                    formatter={(value) => {
+                      const labels: Record<string, string> = {
+                        weightedValue: "Esperado",
+                        totalValue: "Valor Total",
+                        conservativeValue: "Conservador",
+                        optimisticValue: "Otimista",
+                      };
+                      return labels[value] || value;
+                    }}
                   />
-                  <Bar dataKey="totalValue" fill="#93C5FD" radius={[4, 4, 0, 0]} name="totalValue" />
-                  <Bar dataKey="weightedValue" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="weightedValue" />
+                  {hasScenarios ? (
+                    <>
+                      <Bar dataKey="conservativeValue" fill="#60A5FA" radius={[4, 4, 0, 0]} name="conservativeValue" />
+                      <Bar dataKey="weightedValue" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="weightedValue" />
+                      <Bar dataKey="optimisticValue" fill="#4ADE80" radius={[4, 4, 0, 0]} name="optimisticValue" />
+                    </>
+                  ) : (
+                    <>
+                      <Bar dataKey="totalValue" fill="#93C5FD" radius={[4, 4, 0, 0]} name="totalValue" />
+                      <Bar dataKey="weightedValue" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="weightedValue" />
+                    </>
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             ) : (

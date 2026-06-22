@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
-import { Settings, Download, Calendar, AlertTriangle, RefreshCw, Users, CheckSquare, Zap } from "lucide-react";
+import { Settings, Download, Calendar, AlertTriangle, RefreshCw, Users, CheckSquare, Zap, AlertCircle } from "lucide-react";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { getCurrentLayout, removeWidget, DashboardLayout } from "../utils/dashboard";
 import { LeadStatusBadge } from "../components/LeadStatusBadge";
@@ -11,6 +12,8 @@ import { DealAnalytics } from "../components/deals/DealAnalytics";
 import { ForecastWidget } from "../components/forecast/ForecastWidget";
 import { FunnelWidget } from "../components/forecast/FunnelWidget";
 import { ActionSummaryRow } from "../components/NextActionCard";
+import { GoalProgress } from "../components/GoalProgress";
+import { PipelineHealthGauge } from "../components/PipelineHealthGauge";
 import { useDashboard, DateRange } from "../hooks/useDashboard";
 import { CHART_COLORS } from "../utils/designTokens";
 import { apiClient } from "../services/api/client";
@@ -56,6 +59,25 @@ export function Dashboard() {
   const { stats, loading: dashboardLoading, error: dashboardError, refetch } = useDashboard(dateRange);
   const [actionSummary, setActionSummary] = useState<ActionSummaryItem[]>([]);
   const [loadingActions, setLoadingActions] = useState(false);
+
+  const now = new Date();
+  const goalMonth = now.getMonth() + 1;
+  const goalYear = now.getFullYear();
+
+  const { data: staleDealsData } = useQuery({
+    queryKey: ['stale-deals'],
+    queryFn: async () => {
+      const result = await apiClient.getDeals({ limit: 50 });
+      const deals = Array.isArray(result) ? result : (result as any)?.deals || [];
+      const staleThreshold = Date.now() - 5 * 24 * 60 * 60 * 1000;
+      const stale = deals.filter((d: any) => {
+        if (d.stage === 'WON' || d.stage === 'LOST') return false;
+        return new Date(d.updatedAt).getTime() < staleThreshold;
+      });
+      return stale as any[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     setLayout(getCurrentLayout());
@@ -237,6 +259,11 @@ export function Dashboard() {
                 stats={stats}
               />
             ))}
+          {/* Pipeline Health Widget */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 flex flex-col items-center justify-center">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Saúde do Pipeline</p>
+            <PipelineHealthGauge compact />
+          </div>
         </div>
 
         {/* Charts Row */}
@@ -267,6 +294,55 @@ export function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <ForecastWidget />
           <FunnelWidget />
+        </div>
+
+        {/* Stale Deals + Goal Progress */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Deals em Risco */}
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
+            <div className="p-6 border-b border-gray-300 flex items-center gap-2">
+              <AlertCircle size={18} className="text-red-500" />
+              <h3 className="text-gray-900 font-semibold">Deals em Risco</h3>
+              {staleDealsData && staleDealsData.length > 0 && (
+                <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded-full">
+                  {staleDealsData.length}
+                </span>
+              )}
+            </div>
+            {!staleDealsData || staleDealsData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <p className="text-sm font-medium text-gray-700">Nenhum deal em risco</p>
+                <p className="text-xs text-gray-500 mt-1">Deals sem atualização há 5+ dias aparecerão aqui</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {staleDealsData.slice(0, 3).map((d: any) => {
+                  const daysSince = Math.floor((Date.now() - new Date(d.updatedAt).getTime()) / 86400000);
+                  return (
+                    <div key={d.id} className="p-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{d.name}</p>
+                        {d.assignedUser && (
+                          <p className="text-xs text-gray-500">{d.assignedUser.name}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-red-600 font-semibold">{daysSince}d sem update</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Goal Progress */}
+          <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
+            <div className="p-6 border-b border-gray-300">
+              <h3 className="text-gray-900 font-semibold">Meta do Mês</h3>
+            </div>
+            <div className="p-6">
+              <GoalProgress month={goalMonth} year={goalYear} />
+            </div>
+          </div>
         </div>
 
         {/* Suggested Actions */}

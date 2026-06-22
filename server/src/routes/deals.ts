@@ -229,8 +229,13 @@ router.put('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    const body = req.body;
+    if (body.stage === 'LOST' && !body.lostReason) {
+      return res.status(400).json({ error: 'Informe o motivo da perda (lostReason) ao marcar um deal como perdido.' });
+    }
+
     const data = updateDealSchema.parse({
-      ...req.body,
+      ...body,
       id: req.params.id,
     });
 
@@ -271,6 +276,108 @@ router.delete('/:id', async (req, res, next) => {
     }
 
     await dealService.delete(req.user.tenantId, req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/products - List deal line items with product info
+router.get('/:id/products', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { id: dealId } = req.params;
+    const { tenantId } = req.user;
+
+    // Verify deal belongs to tenant
+    const deal = await prisma.deal.findFirst({ where: { id: dealId, tenantId, deletedAt: null } });
+    if (!deal) return next(createError('Deal not found', 404));
+
+    const items = await prisma.dealProduct.findMany({
+      where: { dealId },
+      include: { product: true },
+    });
+    res.json({ status: 200, data: items });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/products - Add a product to deal
+router.post('/:id/products', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { id: dealId } = req.params;
+    const { tenantId } = req.user;
+
+    const schema = z.object({
+      productId: z.string().uuid(),
+      quantity: z.number().min(0),
+      unitPrice: z.number().min(0),
+      discount: z.number().min(0).max(100).default(0),
+    });
+    const body = schema.parse(req.body);
+
+    // Verify deal belongs to tenant
+    const deal = await prisma.deal.findFirst({ where: { id: dealId, tenantId, deletedAt: null } });
+    if (!deal) return next(createError('Deal not found', 404));
+
+    const item = await prisma.dealProduct.create({
+      data: {
+        dealId,
+        productId: body.productId,
+        quantity: body.quantity,
+        unitPrice: body.unitPrice,
+        discount: body.discount,
+      },
+      include: { product: true },
+    });
+
+    // Recalculate deal.value as sum of all line items
+    const allItems = await prisma.dealProduct.findMany({ where: { dealId } });
+    const newValue = allItems.reduce((sum, i) => {
+      return sum + Number(i.quantity) * Number(i.unitPrice) * (1 - Number(i.discount) / 100);
+    }, 0);
+    await prisma.deal.update({ where: { id: dealId }, data: { value: Math.round(newValue * 100) / 100 } });
+
+    res.status(201).json({ status: 201, data: item });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// DELETE /api/deals/:id/products/:dealProductId - Remove a line item and recalculate deal value
+router.delete('/:id/products/:dealProductId', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { id: dealId, dealProductId } = req.params;
+    const { tenantId } = req.user;
+
+    // Verify deal belongs to tenant
+    const deal = await prisma.deal.findFirst({ where: { id: dealId, tenantId, deletedAt: null } });
+    if (!deal) return next(createError('Deal not found', 404));
+
+    const existing = await prisma.dealProduct.findFirst({ where: { id: dealProductId, dealId } });
+    if (!existing) return next(createError('Line item not found', 404));
+
+    await prisma.dealProduct.delete({ where: { id: dealProductId } });
+
+    // Recalculate deal.value
+    const remaining = await prisma.dealProduct.findMany({ where: { dealId } });
+    const newValue = remaining.reduce((sum, i) => {
+      return sum + Number(i.quantity) * Number(i.unitPrice) * (1 - Number(i.discount) / 100);
+    }, 0);
+    await prisma.deal.update({ where: { id: dealId }, data: { value: Math.round(newValue * 100) / 100 } });
+
     res.status(204).send();
   } catch (error) {
     next(error);
