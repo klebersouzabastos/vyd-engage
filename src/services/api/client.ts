@@ -1011,6 +1011,28 @@ class ApiClient {
   }
 
   // ========================
+  // Goals
+  // ========================
+
+  async getGoals(params?: { userId?: string; month?: number; year?: number }) {
+    const qs = params ? new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))
+    ).toString() : '';
+    return this.request<{ status: number; data: Array<Record<string, unknown>> }>(`/api/v1/goals${qs ? `?${qs}` : ''}`);
+  }
+
+  async upsertGoal(data: { userId: string; month: number; year: number; targetRevenue?: number; targetDeals?: number; targetLeads?: number }) {
+    return this.request<{ status: number; data: Record<string, unknown> }>('/api/v1/goals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteGoal(id: string) {
+    return this.request<void>(`/api/v1/goals/${id}`, { method: 'DELETE' });
+  }
+
+  // ========================
   // Reports
   // ========================
 

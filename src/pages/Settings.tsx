@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router";
 import { Header } from "../components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Bell, Building2, Plug, CreditCard, Tag, Target, Shield, Webhook, Key, Calendar, Sparkles } from "lucide-react";
+import { Bell, Building2, Plug, CreditCard, Tag, Target, Shield, Webhook, Key, Calendar, Sparkles, TrendingUp } from "lucide-react";
 import { TagManager } from "../components/TagManager";
 import { CompanyTab } from "../components/settings/CompanyTab";
 import { NotificationsTab } from "../components/settings/NotificationsTab";
@@ -14,6 +14,7 @@ import { WebhooksTab } from "../components/settings/WebhooksTab";
 import { ApiKeysTab } from "../components/settings/ApiKeysTab";
 import { CalendarTab } from "../components/settings/CalendarTab";
 import { AISettingsTab } from "../components/settings/AISettingsTab";
+import { GoalsTab } from "../components/settings/GoalsTab";
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -112,6 +113,13 @@ export function Settings() {
                   API Keys
                 </TabsTrigger>
                 <TabsTrigger
+                  value="goals"
+                  className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
+                >
+                  <TrendingUp size={16} className="mr-2" />
+                  Metas
+                </TabsTrigger>
+                <TabsTrigger
                   value="security"
                   className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
                 >
@@ -163,6 +171,10 @@ export function Settings() {
 
             <TabsContent value="api-keys" className="p-6">
               <ApiKeysTab />
+            </TabsContent>
+
+            <TabsContent value="goals" className="p-6">
+              <GoalsTab />
             </TabsContent>
 
             <TabsContent value="security" className="p-6">

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import { apiClient } from "../services/api/client";
 import { Progress } from "./ui/progress";
 import { Skeleton } from "./ui/skeleton";
@@ -36,6 +37,7 @@ function badgeColor(percentage: number): string {
 }
 
 export function GoalProgress({ userId, month, year, compact = false }: GoalProgressProps) {
+  const navigate = useNavigate();
   const params = new URLSearchParams({ month: String(month), year: String(year) });
   if (userId) params.set("userId", userId);
 
@@ -69,9 +71,7 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
         <div className="flex justify-center mt-2">
           <button
             className="text-xs text-gray-500 border border-gray-200 rounded px-3 py-1 hover:bg-gray-50 transition-colors"
-            onClick={() => {
-              /* parent should handle navigation to goal settings */
-            }}
+            onClick={() => navigate("/app/settings?tab=goals")}
           >
             Definir meta
           </button>

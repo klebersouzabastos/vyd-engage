@@ -4,7 +4,10 @@ import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Plus, FileText, Calendar, Mail, Download, Trash2, Edit, Search, Grid3x3, List, X, Zap, Loader2 } from "lucide-react";
+import { Plus, FileText, Calendar, Mail, Download, Trash2, Edit, Search, Grid3x3, List, X, Zap, Loader2, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { Switch } from "../components/ui/switch";
+import { Label } from "../components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +73,18 @@ export function Reports() {
   const [showWizard, setShowWizard] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+  const [scheduleReport, setScheduleReport] = useState<Report | null>(null);
+  const [scheduleForm, setScheduleForm] = useState<ReportSchedule>({
+    enabled: false,
+    frequency: "weekly",
+    dayOfWeek: 1,
+    dayOfMonth: 1,
+    time: "09:00",
+    recipients: [],
+    format: "pdf",
+  });
+  const [scheduleRecipientInput, setScheduleRecipientInput] = useState("");
+  const [savingSchedule, setSavingSchedule] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -131,6 +146,55 @@ export function Reports() {
     } catch (error) {
       console.error("Erro ao criar relatório:", error);
     }
+  };
+
+  const openScheduleModal = (report: Report, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setScheduleReport(report);
+    setScheduleForm(report.schedule ?? {
+      enabled: false,
+      frequency: "weekly",
+      dayOfWeek: 1,
+      dayOfMonth: 1,
+      time: "09:00",
+      recipients: [],
+      format: "pdf",
+    });
+    setScheduleRecipientInput("");
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!scheduleReport) return;
+    setSavingSchedule(true);
+    try {
+      const updated = { ...scheduleReport, schedule: scheduleForm };
+      await apiClient.updateReport(scheduleReport.id, reportToApi(updated));
+      setReports(reports.map(r => r.id === scheduleReport.id ? updated : r));
+      toast.success("Agendamento salvo");
+      setScheduleReport(null);
+    } catch {
+      toast.error("Erro ao salvar agendamento");
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
+  const addRecipient = () => {
+    const email = scheduleRecipientInput.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Email inválido");
+      return;
+    }
+    if (scheduleForm.recipients.includes(email)) {
+      toast.error("Email já adicionado");
+      return;
+    }
+    setScheduleForm(f => ({ ...f, recipients: [...f.recipients, email] }));
+    setScheduleRecipientInput("");
+  };
+
+  const removeRecipient = (email: string) => {
+    setScheduleForm(f => ({ ...f, recipients: f.recipients.filter(r => r !== email) }));
   };
 
   const handleExportPDF = (report: Report, e: React.MouseEvent) => {
@@ -338,6 +402,9 @@ export function Reports() {
                           <FileText size={14} className="mr-1" />
                           Visualizar
                         </Button>
+                        <Button variant="outline" size="sm" onClick={(e) => openScheduleModal(report, e)} title="Agendar envio">
+                          <Clock size={14} />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
                           <Edit size={14} />
                         </Button>
@@ -378,6 +445,9 @@ export function Reports() {
                         <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/app/reports/view/${report.id}`)}>
                           <FileText size={14} className="mr-1" />
                           Visualizar
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={(e) => openScheduleModal(report, e)} title="Agendar envio">
+                          <Clock size={14} />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
                           <Edit size={14} />
@@ -435,6 +505,155 @@ export function Reports() {
           </div>
         )}
       </div>
+
+      {/* Schedule Modal */}
+      <Dialog open={!!scheduleReport} onOpenChange={open => { if (!open) setScheduleReport(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agendar Relatório — {scheduleReport?.name}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* Enable toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="font-medium">Envio automático</Label>
+                <p className="text-xs text-gray-500 mt-0.5">Ativar envio periódico por email</p>
+              </div>
+              <Switch
+                checked={scheduleForm.enabled}
+                onCheckedChange={v => setScheduleForm(f => ({ ...f, enabled: v }))}
+              />
+            </div>
+
+            {scheduleForm.enabled && (
+              <>
+                {/* Frequency */}
+                <div className="space-y-2">
+                  <Label>Frequência</Label>
+                  <Select
+                    value={scheduleForm.frequency}
+                    onValueChange={v => setScheduleForm(f => ({ ...f, frequency: v as ReportSchedule["frequency"] }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Diário</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="monthly">Mensal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Day of week (weekly) */}
+                {scheduleForm.frequency === "weekly" && (
+                  <div className="space-y-2">
+                    <Label>Dia da semana</Label>
+                    <Select
+                      value={String(scheduleForm.dayOfWeek ?? 1)}
+                      onValueChange={v => setScheduleForm(f => ({ ...f, dayOfWeek: Number(v) }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"].map((d, i) => (
+                          <SelectItem key={i} value={String(i)}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Day of month (monthly) */}
+                {scheduleForm.frequency === "monthly" && (
+                  <div className="space-y-2">
+                    <Label>Dia do mês</Label>
+                    <Select
+                      value={String(scheduleForm.dayOfMonth ?? 1)}
+                      onValueChange={v => setScheduleForm(f => ({ ...f, dayOfMonth: Number(v) }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+                          <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Time */}
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-time">Horário</Label>
+                  <Input
+                    id="schedule-time"
+                    type="time"
+                    value={scheduleForm.time}
+                    onChange={e => setScheduleForm(f => ({ ...f, time: e.target.value }))}
+                  />
+                </div>
+
+                {/* Format */}
+                <div className="space-y-2">
+                  <Label>Formato</Label>
+                  <Select
+                    value={scheduleForm.format}
+                    onValueChange={v => setScheduleForm(f => ({ ...f, format: v as ReportSchedule["format"] }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
+                      <SelectItem value="both">PDF + Excel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Recipients */}
+                <div className="space-y-2">
+                  <Label>Destinatários</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      value={scheduleRecipientInput}
+                      onChange={e => setScheduleRecipientInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addRecipient(); } }}
+                    />
+                    <Button type="button" variant="outline" onClick={addRecipient}>
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  {scheduleForm.recipients.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {scheduleForm.recipients.map(email => (
+                        <span
+                          key={email}
+                          className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                        >
+                          {email}
+                          <button
+                            type="button"
+                            onClick={() => removeRecipient(email)}
+                            className="text-gray-400 hover:text-gray-700"
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScheduleReport(null)}>Cancelar</Button>
+            <Button onClick={handleSaveSchedule} disabled={savingSchedule}>
+              {savingSchedule ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
