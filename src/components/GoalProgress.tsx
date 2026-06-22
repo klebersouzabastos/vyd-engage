@@ -50,7 +50,27 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
       );
       if (!response.ok) throw new Error("Falha ao carregar metas");
       const json = await response.json();
-      return json.data ?? json;
+      // Backend returns array [{userId, goal:{...}, actual:{...}, pct:{...}}]
+      // Transform to flat format expected by this component
+      const list: Array<{
+        userId: string;
+        goal: { targetRevenue: number; targetDeals: number; targetLeads: number };
+        actual: { revenue: number; deals: number; leads: number };
+      }> = json.data ?? [];
+
+      if (!list.length) {
+        return { hasGoal: false, revenue: { current: 0, target: 0 }, deals: { current: 0, target: 0 }, leads: { current: 0, target: 0 } };
+      }
+
+      const entry = userId ? (list.find(e => e.userId === userId) ?? list[0]) : list[0];
+      if (!entry) return { hasGoal: false, revenue: { current: 0, target: 0 }, deals: { current: 0, target: 0 }, leads: { current: 0, target: 0 } };
+
+      return {
+        hasGoal: true,
+        revenue: { current: entry.actual.revenue, target: entry.goal.targetRevenue },
+        deals: { current: entry.actual.deals, target: entry.goal.targetDeals },
+        leads: { current: entry.actual.leads, target: entry.goal.targetLeads },
+      };
     },
   });
 
