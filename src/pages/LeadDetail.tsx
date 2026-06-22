@@ -40,6 +40,7 @@ import { NextActionCard } from "../components/NextActionCard";
 import { AIDraftDialog } from "../components/ai/AIDraftDialog";
 import { Deal, DealStage } from "../types";
 import { Handshake, DollarSign } from "lucide-react";
+import { Timeline, TimelineItem } from "../components/ui/timeline";
 
 // Number of interactions to show per "page"
 const ITEMS_PER_PAGE = 10;
@@ -476,51 +477,20 @@ export function LeadDetail() {
                 </div>
               ) : (
                 <div className="relative">
-                  {/* Vertical line */}
-                  <div className="absolute left-5 top-0 bottom-0 w-px bg-gray-200" />
-
-                  <div className="space-y-1">
+                  <Timeline>
                     {visibleInteractions.map((interaction) => (
-                      <div
+                      <TimelineItem
                         key={interaction.id}
-                        className="relative flex gap-4 py-3 group"
-                      >
-                        {/* Icon circle */}
-                        <div
-                          className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 ${getInteractionIconStyle(
-                            interaction.type
-                          )}`}
-                        >
-                          {getInteractionIcon(interaction.type)}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0 pb-3">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-sm font-medium text-gray-900">
-                              {getInteractionTypeLabel(interaction.type)}
-                            </span>
-                            <DirectionBadge
-                              direction={interaction.direction}
-                            />
-                            <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
-                              {formatRelativeTime(interaction.createdAt)}
-                            </span>
-                          </div>
-
-                          {interaction.subject && (
-                            <p className="text-sm font-medium text-gray-700 mb-1">
-                              {interaction.subject}
-                            </p>
-                          )}
-
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
-                            {interaction.content}
-                          </p>
-                        </div>
-                      </div>
+                        id={interaction.id}
+                        title={getInteractionTypeLabel(interaction.type)}
+                        subtitle={interaction.subject || undefined}
+                        description={interaction.content}
+                        date={formatRelativeTime(interaction.createdAt)}
+                        icon={getInteractionIcon(interaction.type)}
+                        iconClassName={getInteractionIconStyle(interaction.type)}
+                      />
                     ))}
-                  </div>
+                  </Timeline>
 
                   {/* Load more */}
                   {hasMore && (
