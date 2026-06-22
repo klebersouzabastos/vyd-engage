@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react
 import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/button";
+import { useAuth } from "../contexts/AuthContext";
 import { Input } from "../components/ui/input";
 import { TaskCard, getPriorityColor, getPriorityLabel, getPriorityIcon, getStatusInfo } from "../components/TaskCard";
 import { PageSkeleton } from "../components/PageSkeleton";
@@ -50,7 +51,9 @@ export function Tasks() {
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const { tasks, loading, createTask, updateTask, deleteTask, completeTask, uncompleteTask, refetch, fetchTasks } = useTasks();
+  const [myTasksOnly, setMyTasksOnly] = useState(false);
   const [viewMode, setViewMode] = useState<CalendarViewMode>(() => isMobile ? "agenda" : "list");
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -207,15 +210,16 @@ export function Tasks() {
     }
   };
 
-  // Refetch baseado no viewMode e calendarDate
+  // Refetch baseado no viewMode, calendarDate e myTasksOnly
   useEffect(() => {
+    const assignedTo = myTasksOnly && user?.id ? user.id : undefined;
     if (viewMode === "list") {
-      fetchTasks(undefined, { silent: true });
+      fetchTasks(assignedTo ? { assignedTo } : undefined, { silent: true });
     } else {
       const { startDate, endDate } = getDateRangeForView(viewMode, calendarDate);
-      fetchTasks({ startDate, endDate, limit: 200 }, { silent: true });
+      fetchTasks({ startDate, endDate, limit: 200, ...(assignedTo ? { assignedTo } : {}) }, { silent: true });
     }
-  }, [viewMode, calendarDate, fetchTasks]);
+  }, [viewMode, calendarDate, fetchTasks, myTasksOnly, user?.id]);
 
   // Navegação do calendário
   const handleCalendarNavigate = useCallback((direction: "prev" | "next" | "today") => {
@@ -578,6 +582,14 @@ export function Tasks() {
                 </Button>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setMyTasksOnly(v => !v)}
+              className={"px-3 py-1.5 text-sm rounded-lg font-medium border transition-colors " + (myTasksOnly ? "bg-primary text-white border-primary" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50")}
+            >
+              {myTasksOnly ? "Minhas tarefas" : "Todas"}
+            </button>
 
             <ExportButton
               onExport={async (format) => {

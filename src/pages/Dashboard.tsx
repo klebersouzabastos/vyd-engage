@@ -51,6 +51,7 @@ export function Dashboard() {
   const [layout, setLayout] = useState<DashboardLayout | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [rangePreset, setRangePreset] = useState<RangePreset>("30d");
+  const [myDataOnly, setMyDataOnly] = useState(false);
   const dateRange = useMemo(() => getDateRange(rangePreset), [rangePreset]);
   const { stats, loading: dashboardLoading, error: dashboardError, refetch } = useDashboard(dateRange);
   const [actionSummary, setActionSummary] = useState<ActionSummaryItem[]>([]);
@@ -202,6 +203,13 @@ export function Dashboard() {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMyDataOnly(v => !v)}
+              className={"px-3 py-1.5 text-sm rounded-lg font-medium border transition-colors " + (myDataOnly ? "bg-primary text-white border-primary" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50")}
+            >
+              {myDataOnly ? "Meus dados" : "Todos"}
+            </button>
             <Button variant="outline" onClick={handleExportCSV} className="gap-2">
               <Download size={16} /> <span className="hidden sm:inline">Exportar</span>
             </Button>
