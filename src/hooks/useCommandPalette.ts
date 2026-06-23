@@ -26,8 +26,20 @@ export interface PaletteItem {
 const HISTORY_KEY_PREFIX = 'cmd_palette_history_'
 const MAX_HISTORY = 5
 
+// Module-level singleton so any component can open the palette
+let _setOpen: ((v: boolean) => void) | null = null
+export function openCommandPalette() {
+  _setOpen?.(true)
+}
+
 export function useCommandPalette() {
   const [open, setOpen] = useState(false)
+
+  // Register this instance as the global handler
+  useEffect(() => {
+    _setOpen = setOpen
+    return () => { _setOpen = null }
+  }, [setOpen])
   const [query, setQuery] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
