@@ -1,6 +1,7 @@
 import { Deal } from "../../types";
 import { User, Calendar } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
+import { cn } from "../ui/utils";
 
 function formatDate(date: string | null | undefined): string {
   if (!date) return "";
@@ -9,22 +10,20 @@ function formatDate(date: string | null | undefined): string {
 
 interface DealCardProps {
   deal: Deal;
-  onDragStart: () => void;
   onClick: () => void;
   onEdit: () => void;
   isStale?: boolean;
+  isOverlay?: boolean;
 }
 
-export function DealCard({ deal, onDragStart, onClick, onEdit, isStale }: DealCardProps) {
+export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }: DealCardProps) {
   return (
     <div
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = "move";
-        onDragStart();
-      }}
       onClick={onClick}
-      className="relative bg-white rounded-lg border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className={cn(
+        "relative bg-white rounded-lg border p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none",
+        isOverlay ? "shadow-lg border-primary ring-2 ring-primary/20" : "border-gray-200",
+      )}
     >
       {isStale && (
         <span className="absolute top-2 right-2 text-[10px] font-semibold bg-red-100 text-red-700 rounded-full px-2 py-0.5">

@@ -275,6 +275,18 @@ router.delete('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Cancel any pending automation steps waiting for this deal's lead
+    const deal = await prisma.deal.findFirst({
+      where: { id: req.params.id, tenantId: req.user.tenantId, deletedAt: null },
+      select: { leadId: true },
+    });
+    if (deal?.leadId) {
+      await prisma.automationLog.updateMany({
+        where: { leadId: deal.leadId, status: 'WAITING' },
+        data: { status: 'CANCELLED' },
+      });
+    }
+
     await dealService.delete(req.user.tenantId, req.params.id);
     res.status(204).send();
   } catch (error) {

@@ -460,6 +460,12 @@ router.delete('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Cancel any pending automation steps waiting for this lead
+    await prisma.automationLog.updateMany({
+      where: { leadId: req.params.id, status: 'WAITING' },
+      data: { status: 'CANCELLED' },
+    });
+
     await leadService.delete(req.user.tenantId, req.params.id);
     res.status(204).send();
   } catch (error) {

@@ -520,6 +520,16 @@ export const automationWorker = new Worker(
 
       // Nó de atraso agenda seus sucessores com delay (fan-out preservado).
       const delayMs = step.type === 'delay' ? computeDelayMs(step.config) : 0;
+      const executeAt = delayMs > 0 ? new Date(Date.now() + delayMs) : undefined;
+
+      // Atualiza o log do step de delay para WAITING (visibilidade no log de automações)
+      if (step.type === 'delay' && executeAt) {
+        await prisma.automationLog.updateMany({
+          where: { executionId, stepOrder: stepIdx >= 0 ? stepIdx : undefined, status: AutomationLogStatus.SUCCESS },
+          data: { status: AutomationLogStatus.WAITING, executeAt },
+        });
+      }
+
       for (const nextId of nextIds) {
         // jobId determinístico por (execução, nó): o BullMQ ignora um add com id
         // já existente, evitando dupla execução em reconvergência (diamante) e

@@ -9,8 +9,8 @@
 **Fase:** 3 — Pipeline Visual (paralelo com Fase 1 e 2)
 **Dependências:** Nenhuma (`@dnd-kit` já instalado)
 **Desbloqueia:** Nenhuma
-**Status:** Ready
-**Agente:** @sm (River) — draft | @po (Pax) — validado 2026-06-23
+**Status:** InReview
+**Agente:** @sm (River) — draft | @po (Pax) — validado 2026-06-23 | @dev (Dex) — implementado 2026-06-23
 
 ---
 

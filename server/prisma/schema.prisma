@@ -721,6 +721,8 @@ enum AutomationLogStatus {
   SUCCESS
   ERROR
   SKIPPED
+  WAITING
+  CANCELLED
 }
 
 enum AutomationStepType {
@@ -780,6 +782,7 @@ model AutomationLog {
   stepOrder   Int?
   stepType    AutomationStepType?
   executionId String?
+  executeAt   DateTime?
 
   createdAt DateTime @default(now())
 

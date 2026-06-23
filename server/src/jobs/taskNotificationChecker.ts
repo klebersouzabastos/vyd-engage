@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { TaskStatus, NotificationType } from '@prisma/client';
+import { AutomationLogStatus, TaskStatus, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import { notifyTaskOverdue } from '../services/slackService.js';
 import { logger } from '../utils/logger.js';
@@ -14,6 +14,9 @@ import { logger } from '../utils/logger.js';
  */
 
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const WAITING_STEPS_CHECK_INTERVAL_MS = process.env.AUTOMATION_CHECK_INTERVAL_MS
+  ? parseInt(process.env.AUTOMATION_CHECK_INTERVAL_MS)
+  : 5 * 60 * 1000; // 5 minutes
 
 async function checkTaskNotifications() {
   try {
@@ -133,7 +136,33 @@ async function checkTaskNotifications() {
   }
 }
 
+/**
+ * Cleanup stale WAITING automation log steps.
+ * When BullMQ engine is disabled, marks overdue WAITING steps as ERROR so they don't pile up.
+ * When BullMQ is enabled, BullMQ handles actual execution; this is just a safety net.
+ */
+async function cleanupStaleWaitingSteps() {
+  try {
+    // Steps that are still WAITING but executeAt was more than 24h ago are considered stale
+    const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result = await prisma.automationLog.updateMany({
+      where: {
+        status: AutomationLogStatus.WAITING,
+        executeAt: { lte: staleThreshold },
+      },
+      data: { status: AutomationLogStatus.ERROR, error: 'Step aguardando expirou sem execução (verifique ENABLE_AUTOMATION_ENGINE)' },
+    });
+
+    if (result.count > 0) {
+      logger.warn(`Automation waiting steps cleanup: ${result.count} stale steps marked as ERROR`);
+    }
+  } catch (error) {
+    logger.error('Failed to cleanup stale waiting automation steps', error);
+  }
+}
+
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let waitingStepsIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export function initializeTaskNotificationChecker() {
   // Run immediately on startup
@@ -142,12 +171,19 @@ export function initializeTaskNotificationChecker() {
   // Then run every 30 minutes
   intervalId = setInterval(checkTaskNotifications, CHECK_INTERVAL_MS);
 
-  logger.info('Task notification checker initialized (interval: 30min)');
+  // Cleanup stale waiting automation steps every 5 minutes
+  waitingStepsIntervalId = setInterval(cleanupStaleWaitingSteps, WAITING_STEPS_CHECK_INTERVAL_MS);
+
+  logger.info('Task notification checker initialized (interval: 30min, automation waiting cleanup: 5min)');
 }
 
 export function stopTaskNotificationChecker() {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
+  }
+  if (waitingStepsIntervalId) {
+    clearInterval(waitingStepsIntervalId);
+    waitingStepsIntervalId = null;
   }
 }

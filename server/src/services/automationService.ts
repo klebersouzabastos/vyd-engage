@@ -149,7 +149,7 @@ export const automationService = {
     message?: string,
     data?: any,
     error?: string,
-    extra?: { leadId?: string; stepOrder?: number; stepType?: AutomationStepType | null; executionId?: string }
+    extra?: { leadId?: string; stepOrder?: number; stepType?: AutomationStepType | null; executionId?: string; executeAt?: Date }
   ) {
     const log = await prisma.automationLog.create({
       data: {
@@ -162,6 +162,7 @@ export const automationService = {
         stepOrder: extra?.stepOrder ?? null,
         stepType: extra?.stepType || null,
         executionId: extra?.executionId || null,
+        executeAt: extra?.executeAt || null,
       },
       include: {
         automation: { select: { id: true, name: true, tenantId: true } },

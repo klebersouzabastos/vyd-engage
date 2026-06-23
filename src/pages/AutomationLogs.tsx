@@ -23,6 +23,7 @@ interface LogEntry {
   errorMessage?: string;
   executionId?: string;
   executedAt: string;
+  executeAt?: string | null;
   automation?: { id: string; name: string };
   lead?: { id: string; name: string; email?: string };
 }
@@ -57,6 +58,7 @@ function normalizeLog(raw: any): LogEntry {
     errorMessage: raw.error || raw.errorMessage,
     executionId: raw.executionId,
     executedAt: raw.executedAt || raw.createdAt,
+    executeAt: raw.executeAt || null,
     automation: raw.automation,
     lead: raw.lead,
   };
@@ -226,22 +228,31 @@ export function AutomationLogs() {
     if (status === "SUCCESS") return <CheckCircle size={16} className="text-success" />;
     if (status === "ERROR") return <XCircle size={16} className="text-error" />;
     if (status === "SKIPPED") return <AlertTriangle size={16} className="text-yellow-500" />;
+    if (status === "WAITING") return <Clock size={16} className="text-amber-500" />;
+    if (status === "CANCELLED") return <XCircle size={16} className="text-gray-400" />;
     return <Clock size={16} className="text-warning" />;
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, executeAt?: string | null) => {
     const config: Record<string, { label: string; className: string }> = {
       SUCCESS: { label: "Sucesso", className: "bg-green-100 text-green-700" },
       ERROR: { label: "Erro", className: "bg-red-100 text-red-700" },
       SKIPPED: { label: "Pulado", className: "bg-yellow-100 text-yellow-700" },
       PENDING: { label: "Pendente", className: "bg-yellow-100 text-yellow-700" },
       RUNNING: { label: "Executando", className: "bg-blue-100 text-blue-700" },
+      WAITING: { label: "Aguardando", className: "bg-amber-100 text-amber-700" },
+      CANCELLED: { label: "Cancelado", className: "bg-gray-100 text-gray-500" },
     };
     const c = config[status] || { label: status, className: "bg-gray-100 text-gray-700" };
     return (
       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${c.className}`}>
         {getStatusIcon(status)}
         {c.label}
+        {status === "WAITING" && executeAt && (
+          <span className="ml-1 font-normal opacity-80">
+            — executa em {new Date(executeAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+          </span>
+        )}
       </span>
     );
   };
@@ -340,7 +351,7 @@ export function AutomationLogs() {
                         <div className="flex-1 pb-2">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm text-gray-900">{log.stepType || "Step"}</span>
-                            {getStatusBadge(log.status)}
+                            {getStatusBadge(log.status, log.executeAt)}
                           </div>
                           {log.message && <p className="text-sm text-gray-600 mt-1">{log.message}</p>}
                           {log.errorMessage && <p className="text-sm text-red-600 mt-1">{log.errorMessage}</p>}
@@ -470,6 +481,8 @@ export function AutomationLogs() {
                             <option value="ERROR">Erro</option>
                             <option value="SKIPPED">Pulado</option>
                             <option value="PENDING">Pendente</option>
+                            <option value="WAITING">Aguardando</option>
+                            <option value="CANCELLED">Cancelado</option>
                           </select>
                         </div>
                       </th>
@@ -501,7 +514,7 @@ export function AutomationLogs() {
                             <p className="text-sm text-gray-600 truncate max-w-xs">{log.message || "—"}</p>
                             {log.errorMessage && <p className="text-xs text-error mt-1 truncate max-w-xs">{log.errorMessage}</p>}
                           </td>
-                          <td className="px-6 py-4">{getStatusBadge(log.status)}</td>
+                          <td className="px-6 py-4">{getStatusBadge(log.status, log.executeAt)}</td>
                           <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">
                             {new Date(log.executedAt).toLocaleString("pt-BR")}
                           </td>
