@@ -25,12 +25,23 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// CORS origins — single source of truth
-const corsOrigins: string[] = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
-  : process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL || 'http://localhost:5173']
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'];
+// CORS origins — single source of truth, fail-closed in production
+function getAllowedOrigins(): string[] | false {
+  if (process.env.NODE_ENV !== 'production') {
+    return [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:5174',
+    ];
+  }
+  // Production: explicit allow-list required; reject all if not configured
+  const fromEnv = process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean);
+  if (fromEnv && fromEnv.length > 0) return fromEnv;
+  if (process.env.FRONTEND_URL) return [process.env.FRONTEND_URL];
+  return false; // fail-closed: no origins configured = reject all
+}
+
+const corsOrigins = getAllowedOrigins();
 
 // Initialize Socket.IO
 initSocketIO(httpServer, corsOrigins);
