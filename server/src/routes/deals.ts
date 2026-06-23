@@ -9,6 +9,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { DealStage } from '@prisma/client';
 import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
+import { dispatchTrigger } from '../jobs/automationEngine.js';
 
 const router = Router();
 
@@ -213,6 +214,15 @@ router.post('/', async (req, res, next) => {
 
     const data = createDealSchema.parse(req.body);
     const deal = await dealService.create(req.user.tenantId, data);
+
+    dispatchTrigger(
+      req.user.tenantId,
+      'deal_created',
+      deal.leadId ?? undefined,
+      { dealId: deal.id, dealName: deal.name, stage: deal.stage },
+      deal.id
+    ).catch(() => {});
+
     res.status(201).json(deal);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -257,6 +267,16 @@ router.put('/:id', async (req, res, next) => {
         oldData: existing as Record<string, unknown>,
         newData: deal as Record<string, unknown>,
       }).catch(() => {});
+
+      if (existing.stage !== deal.stage) {
+        dispatchTrigger(
+          req.user.tenantId,
+          'deal_stage_changed',
+          deal.leadId ?? undefined,
+          { dealId: deal.id, dealName: deal.name, fromStage: existing.stage, toStage: deal.stage },
+          deal.id
+        ).catch(() => {});
+      }
     }
 
     res.json(deal);
