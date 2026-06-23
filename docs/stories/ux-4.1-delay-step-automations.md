@@ -9,7 +9,7 @@
 **Fase:** 4 — SDR Sequences
 **Dependências:** Nenhuma (independente das Fases 1-3)
 **Desbloqueia:** Nenhuma
-**Status:** InReview
+**Status:** Done
 **Agente:** @sm (River) — draft | @po (Pax) — validado 2026-06-23 | @dev (Dex) — implementado 2026-06-23
 
 ---

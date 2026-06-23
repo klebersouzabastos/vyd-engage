@@ -3,7 +3,7 @@
 **Epic ID:** EPIC-UX-POWER
 **PRD:** [docs/prd/prd-ux-power.md](../prd/prd-ux-power.md)
 **Prioridade:** P0/P1
-**Status:** Draft
+**Status:** Done
 **Criado em:** 2026-06-23
 **Origem:** Deep research em projetos OSS do GitHub (jun/2026) — 101 agentes, 13 claims verificados
 

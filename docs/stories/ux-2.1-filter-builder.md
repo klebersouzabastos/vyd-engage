@@ -9,7 +9,7 @@
 **Fase:** 2 — Filtros e Views (paralelo com UX-1.1 e UX-1.2)
 **Dependências:** Nenhuma
 **Desbloqueia:** UX-2.2 (reutiliza FilterBuilder em Deals/Empresas)
-**Status:** InReview
+**Status:** Done
 **Agente:** @sm (River) — draft | @po (Pax) — validado 2026-06-23 | @dev (Dex) — já implementado (pré-existente), verificado 2026-06-23
 
 ---

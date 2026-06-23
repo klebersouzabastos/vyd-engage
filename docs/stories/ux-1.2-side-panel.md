@@ -9,7 +9,7 @@
 **Fase:** 1 — Navegação (paralelo com UX-1.1)
 **Dependências:** Nenhuma
 **Desbloqueia:** UX-2.2 (side panel usado em views de deals também)
-**Status:** InReview
+**Status:** Done
 **Agente:** @sm (River) — draft | @po (Pax) — validado 2026-06-23 | @dev (Dex) — implementado 2026-06-23
 
 ---
