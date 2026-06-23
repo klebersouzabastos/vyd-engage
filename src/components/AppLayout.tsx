@@ -3,6 +3,7 @@ import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { OnboardingTour } from "./OnboardingTour";
+import { CommandPalette } from "./CommandPalette";
 import { Menu } from "lucide-react";
 
 const SIDEBAR_COLLAPSED_KEY = "vyd-sidebar-collapsed";
@@ -29,6 +30,7 @@ export function AppLayout() {
 
   return (
     <NuqsAdapter>
+      <CommandPalette />
     <div className="flex min-h-screen bg-gray-100">
       {/* Skip to main content — a11y */}
       <a
