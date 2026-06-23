@@ -37,6 +37,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { EmptyState } from "../components/EmptyState";
 import { useDeals } from "../hooks/useDeals";
 import { useDealsPipeline } from "../hooks/useDealsPipeline";
+import { useSidePanel } from "../contexts/SidePanelContext";
 import { Deal, DealStage } from "../types";
 import {
   Plus,
@@ -79,6 +80,7 @@ function formatDate(date: string | null | undefined): string {
 
 export function Deals() {
   const navigate = useNavigate();
+  const { openPanel } = useSidePanel();
   const { deals, loading, pagination, fetchDeals, createDeal, updateDeal, deleteDeal } = useDeals();
   const {
     funnels: dealFunnels,
@@ -531,7 +533,7 @@ export function Deals() {
                 <DataTable
                   columns={dealTableColumns}
                   data={deals}
-                  onRowClick={(deal) => navigate(`/app/deals/${deal.id}`)}
+                  onRowClick={(deal) => openPanel('deal', deal.id)}
                   emptyState={
                     <EmptyState
                       icon={Handshake}

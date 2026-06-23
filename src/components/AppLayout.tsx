@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { OnboardingTour } from "./OnboardingTour";
 import { CommandPalette } from "./CommandPalette";
+import { SidePanel } from "./SidePanel";
+import { SidePanelProvider } from "@/contexts/SidePanelContext";
 import { Menu } from "lucide-react";
 
 const SIDEBAR_COLLAPSED_KEY = "vyd-sidebar-collapsed";
@@ -30,7 +32,9 @@ export function AppLayout() {
 
   return (
     <NuqsAdapter>
+      <SidePanelProvider>
       <CommandPalette />
+      <SidePanel />
     <div className="flex min-h-screen bg-gray-100">
       {/* Skip to main content — a11y */}
       <a
@@ -82,6 +86,7 @@ export function AppLayout() {
       {/* Onboarding Tour */}
       <OnboardingTour />
     </div>
+    </SidePanelProvider>
     </NuqsAdapter>
   );
 }

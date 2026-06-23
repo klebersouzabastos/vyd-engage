@@ -28,6 +28,7 @@ interface LeadTableProps {
   onToggleExpansion: (leadId: string) => void;
   getTagById: (id: string) => Tag | undefined;
   getAutomationById: (id: number) => Automation | undefined;
+  onRowClick?: (leadId: string) => void;
 }
 
 function hasCustomFields(lead: Lead): boolean {
@@ -47,6 +48,7 @@ export function LeadTable({
   onToggleExpansion,
   getTagById,
   getAutomationById,
+  onRowClick,
 }: LeadTableProps) {
   const navigate = useNavigate();
 
@@ -81,21 +83,30 @@ export function LeadTable({
           <tbody className="divide-y divide-gray-300">
             {leads.map((lead) => (
               <React.Fragment key={lead.id}>
-                <tr className="hover:bg-gray-100 transition-colors">
-                  <td className="px-6 py-4">
+                <tr
+                  className={`hover:bg-gray-100 transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
+                  onClick={onRowClick ? () => onRowClick(lead.id) : undefined}
+                >
+                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <Checkbox checked={selectedLeads.includes(lead.id)} onCheckedChange={() => onSelectLead(lead.id)} aria-label={`Selecionar ${lead.name}`} />
                   </td>
                   <td className="px-6 py-4">
-                    <Link
-                      to={`/app/leads/${lead.id}`}
-                      className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
-                    >
-                      {lead.name}
-                    </Link>
+                    {onRowClick ? (
+                      <span className="font-medium text-gray-900 hover:text-primary transition-colors">
+                        {lead.name}
+                      </span>
+                    ) : (
+                      <Link
+                        to={`/app/leads/${lead.id}`}
+                        className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
+                      >
+                        {lead.name}
+                      </Link>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.phone}</td>
                   <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.email}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <button type="button" onClick={() => onScoreClick(lead.id)} className="cursor-pointer">
                       <LeadScoreBadge score={lead.score || 0} />
                     </button>

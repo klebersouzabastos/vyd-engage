@@ -15,6 +15,7 @@ import { Pagination } from "../components/Pagination";
 import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
 import { useTags } from "../contexts/TagsContext";
 import { useCustomFields } from "../contexts/CustomFieldsContext";
+import { useSidePanel } from "../contexts/SidePanelContext";
 import { Lead } from "../types";
 // excelExport is dynamically imported to avoid bundling ExcelJS eagerly
 import { apiClient } from "../services/api/client";
@@ -82,6 +83,7 @@ export function Leads() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { getTagById, tags } = useTags();
   const { fields: customFields } = useCustomFields();
+  const { openPanel } = useSidePanel();
   const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
   const {
     views: savedViews,
@@ -651,6 +653,7 @@ export function Leads() {
               onToggleExpansion={toggleLeadExpansion}
               getTagById={getTagById}
               getAutomationById={getAutomationById}
+              onRowClick={(id) => openPanel('lead', id)}
             />
             <Pagination
               page={pagination.page}
