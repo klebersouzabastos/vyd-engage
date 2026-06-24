@@ -203,6 +203,7 @@ import { NotificationType } from '@prisma/client';
 import { notificationService } from './services/notificationService.js';
 import { notifyLeadCaptured } from './services/slackService.js';
 import { dispatchTrigger } from './jobs/automationEngine.js';
+import { webhookDispatcher } from './services/webhookDispatcher.js';
 
 // ============================================
 // Versioned API Router (v1)
@@ -402,6 +403,11 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
       source: leadSource,
       status: 'NEW',
     }).catch(() => {});
+
+    // Emit the outgoing webhook lead.created event too (this route bypasses
+    // leadService.create, which is where the webhook normally fires) — parity
+    // for external integrations. Fire-and-forget.
+    webhookDispatcher.emitLeadEvent(tenant.id, 'lead.created', lead);
 
     notifyLeadCaptured(tenant.id, { name: data.name, email: data.email, company: data.company }).catch(() => {});
 
