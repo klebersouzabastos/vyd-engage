@@ -76,6 +76,7 @@ const PlatformAdmin = lazyNamed(() => import("../pages/PlatformAdmin"), "Platfor
 const TeamPerformance = lazyNamed(() => import('../pages/TeamPerformance'), 'TeamPerformance');
 const WinLossReport = lazyNamed(() => import('../pages/WinLossReport'), 'WinLossReport');
 const Products = lazyNamed(() => import('../pages/Products'), 'Products');
+const Import = lazyNamed(() => import('../pages/Import'), 'Import');
 
 export const router = createBrowserRouter([
   {
@@ -273,6 +274,10 @@ export const router = createBrowserRouter([
       {
         path: "settings/products",
         element: Products,
+      },
+      {
+        path: "settings/import",
+        element: Import,
       },
       {
         path: "webhooks",

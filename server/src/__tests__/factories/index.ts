@@ -78,6 +78,7 @@ export const leadFactory = Factory.define<Lead>(() => ({
   assignedTo: null,
   funnelColumnId: null,
   positionInColumn: 0,
+  importBatchId: null,
   deletedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),

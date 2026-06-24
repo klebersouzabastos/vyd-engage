@@ -1470,6 +1470,86 @@ class ApiClient {
   async deleteEmailTemplate(id: string) {
     return this.request<void>(`/api/v1/email-templates/${id}`, { method: 'DELETE' });
   }
+
+  // ========================
+  // Import Pro (data migration)
+  // ========================
+
+  /**
+   * Posts a multipart import request (file + mapping JSON). Cannot reuse
+   * `request()` because that forces Content-Type: application/json — FormData
+   * must let the browser set the multipart boundary itself. Mirrors the
+   * cookie + CSRF auth handling used by the rest of the client.
+   */
+  private async postImport<T>(entity: 'leads' | 'deals' | 'interactions', formData: FormData, dryRun: boolean): Promise<T> {
+    const csrfToken = this.getCsrfToken();
+    const headers: Record<string, string> = {};
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    const url = `${this.baseURL}/api/v1/import/${entity}${dryRun ? '?dry_run=true' : ''}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      let errorData: Record<string, unknown>;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: response.statusText || 'Import failed' };
+      }
+      const message = (errorData.error as string) || (errorData.message as string) || 'Falha na importação';
+      throw new ApiError(message, response.status, errorData);
+    }
+    // Backend wraps every import response in the standard { status, data } envelope.
+    // Unwrap .data so callers get the inner shape their signatures promise.
+    const json = await response.json();
+    return (json?.data ?? json) as T;
+  }
+
+  async importLeadsFile(file: File, mapping: Record<string, string>, dryRun: boolean, options?: { duplicateActions?: Record<string, ImportDuplicateAction> }): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify(mapping));
+    if (options?.duplicateActions) {
+      formData.append('duplicateActions', JSON.stringify(options.duplicateActions));
+    }
+    return this.postImport<ImportResult>('leads', formData, dryRun);
+  }
+
+  async importDealsFile(file: File, dryRun: boolean): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.postImport<ImportResult>('deals', formData, dryRun);
+  }
+
+  async importInteractionsFile(file: File, dryRun: boolean): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.postImport<ImportResult>('interactions', formData, dryRun);
+  }
+
+  async getImportBatches(): Promise<{ batches: ImportBatch[] }> {
+    const res = await this.request<{ data: { batches: ImportBatch[] } }>('/api/v1/import/batches');
+    return res.data;
+  }
+
+  async getImportBatch(batchId: string): Promise<{ batch: ImportBatch }> {
+    const res = await this.request<{ data: { batch: ImportBatch } }>(`/api/v1/import/batches/${batchId}`);
+    return res.data;
+  }
+
+  async rollbackImportBatch(
+    batchId: string,
+  ): Promise<{ deleted: { leads: number; deals: number; interactions: number } }> {
+    const res = await this.request<{
+      data: { deleted: { leads: number; deals: number; interactions: number } };
+    }>(`/api/v1/import/batches/${batchId}`, {
+      method: 'DELETE',
+    });
+    return res.data;
+  }
 }
 
 export interface SavedView {
@@ -1560,5 +1640,70 @@ export interface EmailTemplateListItem {
 
 export interface EmailTemplateDetail extends EmailTemplateListItem {
   html: string;
+}
+
+// ── Import Pro types ────────────────────────────────
+
+export type ImportType = 'LEADS' | 'DEALS' | 'INTERACTIONS';
+
+export type ImportBatchStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'ROLLED_BACK';
+
+export type ImportDuplicateAction = 'skip' | 'update';
+
+/** A row that failed validation, surfaced in the dry-run preview. */
+export interface ImportValidationError {
+  row: number;
+  field: string;
+  message: string;
+}
+
+/** A duplicate detected during dry-run, matched by email or phone. */
+export interface ImportDuplicate {
+  row: number;
+  matchedBy: 'email' | 'phone';
+  /** Identifier the row collides with (email/phone value or existing record id). */
+  value: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+/**
+ * Response shape for both dry-run and final imports. On dry-run, `dryRun` is
+ * true and `batchId` is absent; on async final imports `batchId` is returned
+ * for polling.
+ */
+export interface ImportResult {
+  dryRun?: boolean;
+  batchId?: string;
+  status?: ImportBatchStatus;
+  /** True when the file was queued for async processing (> 500 rows). */
+  async?: boolean;
+  totalRows: number;
+  newCount: number;
+  duplicateCount: number;
+  errorCount: number;
+  duplicates?: ImportDuplicate[];
+  errors?: ImportValidationError[];
+}
+
+export interface ImportBatch {
+  id: string;
+  type: ImportType;
+  status: ImportBatchStatus;
+  totalRows: number;
+  importedRows: number;
+  errorRows: number;
+  skippedRows: number;
+  errorLog?: ImportValidationError[] | null;
+  rolledBackAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: { id: string; name: string; email?: string } | null;
 }
 

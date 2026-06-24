@@ -21,6 +21,7 @@ import {
   KeyRound,
   Shield,
   Package,
+  Upload,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -45,6 +46,7 @@ const menuItems = [
   { icon: Webhook, label: "Webhooks", path: "/app/webhooks", tourId: "sidebar-webhooks" },
   { icon: KeyRound, label: "API Keys", path: "/app/api-keys", tourId: "sidebar-api-keys" },
   { icon: Package, label: "Produtos", path: "/app/settings/products", tourId: "sidebar-products" },
+  { icon: Upload, label: "Importar", path: "/app/settings/import", tourId: "sidebar-import" },
   { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
   { icon: Shield, label: "Plataforma", path: "/app/admin", tourId: "sidebar-platform-admin", platformAdminOnly: true },
 ];

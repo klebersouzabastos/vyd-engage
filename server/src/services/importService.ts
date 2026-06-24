@@ -1,0 +1,1147 @@
+import { parse as parseCsv } from 'csv-parse/sync';
+import ExcelJS from 'exceljs';
+import prisma from '../config/database.js';
+import { logger } from '../utils/logger.js';
+import {
+  ImportType,
+  ImportStatus,
+  LeadStatus,
+  LeadSource,
+  DealStage,
+  InteractionType,
+  InteractionDirection,
+} from '@prisma/client';
+
+// ────────────────────────────────────────────────────────────────────
+// Constants (mirror spec restrictions)
+// ────────────────────────────────────────────────────────────────────
+
+/** Max rows per import (spec req 4 / restriction). */
+export const MAX_IMPORT_ROWS = 10_000;
+/** Files at/below this size are processed synchronously (spec reqs 30-31). */
+export const SYNC_ROW_THRESHOLD = 500;
+/** Insert batch size to avoid blocking the event loop (spec req 9). */
+export const BATCH_SIZE = 100;
+/** Rollback is only allowed within this window (spec req 26). */
+export const ROLLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Lead destination fields available for column mapping (spec req 6).
+export const LEAD_TARGET_FIELDS = [
+  'name',
+  'email',
+  'phone',
+  'company',
+  'position',
+  'source',
+  'notes',
+  'status',
+] as const;
+
+// ────────────────────────────────────────────────────────────────────
+// Types
+// ────────────────────────────────────────────────────────────────────
+
+export type ColumnMapping = Record<string, string>; // fileColumn -> targetField
+
+export type DuplicateStrategy = 'skip' | 'update';
+
+/** Per-row duplicate decisions keyed by 1-based row number (Gap 4). */
+export type DuplicateActionMap = Record<string, DuplicateStrategy>;
+
+export interface ParsedFile {
+  headers: string[];
+  rows: Record<string, string>[];
+}
+
+export interface ValidationError {
+  row: number; // 1-based data row number (excludes header)
+  field: string;
+  message: string;
+}
+
+/**
+ * Duplicate detected during analysis. Shape matches the frontend contract
+ * (Gap 2): `matchedBy`/`value` plus the file row's name/email/phone. The
+ * existing record id is kept internal-only (not part of the response) so the
+ * writer can re-derive the update target — see `writeLeads`.
+ */
+export interface DuplicateInfo {
+  row: number;
+  matchedBy: 'email' | 'phone';
+  value: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface ImportAnalysis {
+  totalRows: number;
+  newCount: number;
+  duplicateCount: number;
+  errorCount: number;
+  duplicates: DuplicateInfo[];
+  errors: ValidationError[];
+  previewRows: Record<string, unknown>[]; // first 5 rows with mapping applied
+}
+
+export class ImportError extends Error {
+  statusCode: number;
+  code: string;
+  constructor(message: string, code: string, statusCode = 400) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// File parsing
+// ────────────────────────────────────────────────────────────────────
+
+const VALID_SEPARATORS = [',', ';'] as const;
+
+/**
+ * Detect the CSV delimiter by inspecting the header line. Only comma and
+ * semicolon are supported (spec restriction). If the line contains neither but
+ * looks delimited by something else (e.g. tab), the separator is ambiguous and
+ * we reject (spec edge case "separador ambíguo").
+ */
+function detectCsvDelimiter(firstLine: string): ',' | ';' {
+  const counts = VALID_SEPARATORS.map((sep) => ({
+    sep,
+    count: firstLine.split(sep).length - 1,
+  }));
+  const best = counts.reduce((a, b) => (b.count > a.count ? b : a));
+
+  if (best.count === 0) {
+    // No supported separator. If there is a single column (no other delimiter
+    // either) treat it as a one-column comma file; otherwise it's ambiguous.
+    if (/\t/.test(firstLine)) {
+      throw new ImportError(
+        'Separador de colunas não reconhecido. Salve o arquivo com separador vírgula (,) ou ponto-e-vírgula (;).',
+        'AMBIGUOUS_SEPARATOR',
+      );
+    }
+    return ',';
+  }
+  return best.sep;
+}
+
+/**
+ * Reject buffers that are not valid UTF-8 (spec edge case "codificação não-UTF-8").
+ * UTF-16 BOM or replacement characters from a lossy decode are the signal.
+ */
+function assertUtf8(buffer: Buffer): void {
+  // UTF-16 LE / BE BOMs
+  if (
+    buffer.length >= 2 &&
+    ((buffer[0] === 0xff && buffer[1] === 0xfe) ||
+      (buffer[0] === 0xfe && buffer[1] === 0xff))
+  ) {
+    throw new ImportError(
+      'Arquivo não está em UTF-8. Salve o CSV com codificação UTF-8 e tente novamente.',
+      'NON_UTF8',
+    );
+  }
+  const decoded = buffer.toString('utf-8');
+  // U+FFFD replacement char indicates invalid UTF-8 byte sequences.
+  if (decoded.includes('�')) {
+    throw new ImportError(
+      'Arquivo não está em UTF-8. Salve o CSV com codificação UTF-8 e tente novamente.',
+      'NON_UTF8',
+    );
+  }
+}
+
+/** Strip a UTF-8 BOM if present. */
+function stripBom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+export function parseCsvBuffer(buffer: Buffer): ParsedFile {
+  assertUtf8(buffer);
+  const text = stripBom(buffer.toString('utf-8'));
+  const firstLine = text.split(/\r?\n/, 1)[0] || '';
+  const delimiter = detectCsvDelimiter(firstLine);
+
+  let records: Record<string, string>[];
+  try {
+    records = parseCsv(text, {
+      columns: (header: string[]) => header.map((h) => h.trim()),
+      delimiter,
+      skip_empty_lines: true,
+      trim: true,
+      relax_quotes: true,
+      bom: true,
+    }) as Record<string, string>[];
+  } catch (err) {
+    throw new ImportError(
+      'Não foi possível ler o arquivo CSV. Verifique o separador (vírgula ou ponto-e-vírgula) e a codificação UTF-8.',
+      'CSV_PARSE_FAILED',
+    );
+  }
+
+  const headers =
+    records.length > 0
+      ? Object.keys(records[0])
+      : firstLine.split(delimiter).map((h) => h.trim());
+
+  return { headers, rows: records };
+}
+
+export async function parseXlsxBuffer(buffer: Buffer): Promise<ParsedFile> {
+  const workbook = new ExcelJS.Workbook();
+  try {
+    // Cast: @types/exceljs types load() with the untemplated global Buffer,
+    // while @types/node@20 produces Buffer<ArrayBufferLike> — structurally
+    // incompatible at the type level only. Runtime value is identical.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await workbook.xlsx.load(buffer as any);
+  } catch (err) {
+    // exceljs throws when the file is encrypted/password-protected (it is an
+    // OLE compound file, not a zip) — surface a specific message (spec edge case).
+    throw new ImportError(
+      'Arquivo XLSX protegido por senha ou inválido. Remova a proteção por senha e tente novamente.',
+      'XLSX_PROTECTED',
+    );
+  }
+
+  const sheet = workbook.worksheets[0];
+  if (!sheet) {
+    throw new ImportError('A planilha está vazia.', 'EMPTY_FILE');
+  }
+
+  const cellToString = (value: ExcelJS.CellValue): string => {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'object') {
+      const v = value as { text?: string; result?: unknown; hyperlink?: string };
+      if (typeof v.text === 'string') return v.text;
+      if (v.result !== undefined && v.result !== null) return String(v.result);
+      if (typeof v.hyperlink === 'string') return v.hyperlink;
+      return '';
+    }
+    return String(value);
+  };
+
+  const headerRow = sheet.getRow(1);
+  const headers: string[] = [];
+  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    headers[colNumber - 1] = cellToString(cell.value).trim();
+  });
+
+  const rows: Record<string, string>[] = [];
+  for (let r = 2; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r);
+    const record: Record<string, string> = {};
+    let hasValue = false;
+    for (let c = 0; c < headers.length; c++) {
+      const key = headers[c];
+      if (!key) continue;
+      const val = cellToString(row.getCell(c + 1).value).trim();
+      record[key] = val;
+      if (val) hasValue = true;
+    }
+    if (hasValue) rows.push(record);
+  }
+
+  return { headers, rows };
+}
+
+/** Parse an uploaded file by extension/mimetype. */
+export async function parseImportFile(
+  buffer: Buffer,
+  filename: string,
+  mimetype?: string,
+): Promise<ParsedFile> {
+  const lower = (filename || '').toLowerCase();
+  const isXlsx =
+    lower.endsWith('.xlsx') ||
+    mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const isCsv = lower.endsWith('.csv') || mimetype === 'text/csv';
+
+  let parsed: ParsedFile;
+  if (isXlsx) {
+    parsed = await parseXlsxBuffer(buffer);
+  } else if (isCsv) {
+    parsed = parseCsvBuffer(buffer);
+  } else {
+    throw new ImportError(
+      'Formato de arquivo não suportado. Envie um arquivo .csv (UTF-8) ou .xlsx.',
+      'UNSUPPORTED_FORMAT',
+    );
+  }
+
+  if (parsed.rows.length > MAX_IMPORT_ROWS) {
+    throw new ImportError(
+      `A importação excede o máximo de ${MAX_IMPORT_ROWS.toLocaleString('pt-BR')} linhas.`,
+      'TOO_MANY_ROWS',
+    );
+  }
+
+  return parsed;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Mapping & validation helpers
+// ────────────────────────────────────────────────────────────────────
+
+function applyMapping(
+  row: Record<string, string>,
+  mapping: ColumnMapping,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [fileCol, target] of Object.entries(mapping)) {
+    if (!target) continue;
+    const raw = row[fileCol];
+    out[target] = raw === undefined || raw === null ? '' : String(raw).trim();
+  }
+  return out;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(email?: string): string | undefined {
+  const e = (email || '').trim().toLowerCase();
+  return e || undefined;
+}
+
+function normalizePhone(phone?: string): string | undefined {
+  const p = (phone || '').replace(/\D/g, '');
+  return p || undefined;
+}
+
+function parseEnum<T extends Record<string, string>>(
+  value: string | undefined,
+  enumObj: T,
+): T[keyof T] | undefined {
+  if (!value) return undefined;
+  const upper = value.trim().toUpperCase();
+  return (Object.values(enumObj) as string[]).includes(upper)
+    ? (upper as T[keyof T])
+    : undefined;
+}
+
+function parseDate(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const d = new Date(value.trim());
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// LEADS — analysis
+// ────────────────────────────────────────────────────────────────────
+
+interface MappedLead {
+  row: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  position?: string;
+  source?: LeadSource;
+  notes?: string;
+  status?: LeadStatus;
+  customFields: Record<string, string>;
+}
+
+function mapLeadRow(
+  row: Record<string, string>,
+  mapping: ColumnMapping,
+  rowNum: number,
+  customFieldNames: Set<string>,
+): MappedLead {
+  const mapped = applyMapping(row, mapping);
+  const customFields: Record<string, string> = {};
+  for (const [key, val] of Object.entries(mapped)) {
+    if (customFieldNames.has(key) && val) customFields[key] = val;
+  }
+  return {
+    row: rowNum,
+    name: mapped.name?.trim() || undefined,
+    email: mapped.email?.trim() || undefined,
+    phone: mapped.phone?.trim() || undefined,
+    company: mapped.company?.trim() || undefined,
+    position: mapped.position?.trim() || undefined,
+    source: parseEnum(mapped.source, LeadSource),
+    notes: mapped.notes?.trim() || undefined,
+    status: parseEnum(mapped.status, LeadStatus),
+    customFields,
+  };
+}
+
+/**
+ * Analyze a parsed leads file: detect new rows, duplicates (email primary,
+ * phone secondary) and validation errors. Used by both dry-run and the real
+ * import path so the numbers are consistent (spec reqs 11-13, 15, edge cases).
+ */
+export async function analyzeLeads(
+  tenantId: string,
+  parsed: ParsedFile,
+  mapping: ColumnMapping,
+): Promise<{ analysis: ImportAnalysis; mappedRows: MappedLead[] }> {
+  const customFieldDefs = await prisma.customField.findMany({
+    where: { tenantId, active: true },
+    select: { name: true },
+  });
+  const customFieldNames = new Set(customFieldDefs.map((c) => c.name));
+
+  // Existing tenant records for dedup lookup (email + phone).
+  const existing = await prisma.lead.findMany({
+    where: { tenantId, deletedAt: null },
+    select: { id: true, email: true, phone: true },
+  });
+  const existingByEmail = new Map<string, string>();
+  const existingByPhone = new Map<string, string>();
+  for (const l of existing) {
+    const e = normalizeEmail(l.email ?? undefined);
+    if (e && !existingByEmail.has(e)) existingByEmail.set(e, l.id);
+    const p = normalizePhone(l.phone ?? undefined);
+    if (p && !existingByPhone.has(p)) existingByPhone.set(p, l.id);
+  }
+
+  const errors: ValidationError[] = [];
+  const duplicates: DuplicateInfo[] = [];
+  const mappedRows: MappedLead[] = [];
+
+  // Track within-file occurrences so the second of two identical rows counts as
+  // a duplicate too.
+  const seenEmails = new Set<string>();
+  const seenPhones = new Set<string>();
+
+  let newCount = 0;
+  let duplicateCount = 0;
+  let errorCount = 0;
+
+  parsed.rows.forEach((raw, idx) => {
+    const rowNum = idx + 1;
+    const lead = mapLeadRow(raw, mapping, rowNum, customFieldNames);
+    mappedRows.push(lead);
+
+    let rowHasError = false;
+
+    if (!lead.name) {
+      errors.push({ row: rowNum, field: 'name', message: 'Nome é obrigatório.' });
+      rowHasError = true;
+    }
+    // Email is the primary identity field — required & must be valid (edge case).
+    if (!lead.email) {
+      errors.push({ row: rowNum, field: 'email', message: 'Email ausente.' });
+      rowHasError = true;
+    } else if (!EMAIL_RE.test(lead.email)) {
+      errors.push({ row: rowNum, field: 'email', message: 'Email inválido.' });
+      rowHasError = true;
+    }
+
+    if (rowHasError) {
+      errorCount++;
+      return;
+    }
+
+    const email = normalizeEmail(lead.email);
+    const phone = normalizePhone(lead.phone);
+
+    // Duplicate detection: email first (primary), then phone (secondary).
+    // Emits the frontend contract shape (Gap 2): matchedBy/value + row fields.
+    let dup: DuplicateInfo | null = null;
+    if (email && (existingByEmail.has(email) || seenEmails.has(email))) {
+      dup = {
+        row: rowNum,
+        matchedBy: 'email',
+        value: email,
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+      };
+    } else if (phone && (existingByPhone.has(phone) || seenPhones.has(phone))) {
+      dup = {
+        row: rowNum,
+        matchedBy: 'phone',
+        value: phone,
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+      };
+    }
+
+    if (dup) {
+      duplicates.push(dup);
+      duplicateCount++;
+    } else {
+      newCount++;
+    }
+
+    if (email) seenEmails.add(email);
+    if (phone) seenPhones.add(phone);
+  });
+
+  const previewRows = mappedRows.slice(0, 5).map((m) => ({
+    name: m.name ?? '',
+    email: m.email ?? '',
+    phone: m.phone ?? '',
+    company: m.company ?? '',
+    position: m.position ?? '',
+    source: m.source ?? '',
+    status: m.status ?? '',
+    notes: m.notes ?? '',
+    ...m.customFields,
+  }));
+
+  const analysis: ImportAnalysis = {
+    totalRows: parsed.rows.length,
+    newCount,
+    duplicateCount,
+    errorCount,
+    duplicates,
+    errors,
+    previewRows,
+  };
+
+  return { analysis, mappedRows };
+}
+
+// ────────────────────────────────────────────────────────────────────
+// DEALS — analysis
+// ────────────────────────────────────────────────────────────────────
+
+interface MappedDeal {
+  row: number;
+  leadEmail?: string;
+  name?: string;
+  value?: number;
+  stage?: DealStage;
+  expectedCloseDate?: Date;
+  leadId?: string;
+}
+
+export async function analyzeDeals(
+  tenantId: string,
+  parsed: ParsedFile,
+): Promise<{ analysis: ImportAnalysis; mappedRows: MappedDeal[] }> {
+  // Build a lookup of lead email -> id for association (spec reqs 18, 20).
+  const leads = await prisma.lead.findMany({
+    where: { tenantId, deletedAt: null, email: { not: null } },
+    select: { id: true, email: true },
+  });
+  const leadByEmail = new Map<string, string>();
+  for (const l of leads) {
+    const e = normalizeEmail(l.email ?? undefined);
+    if (e && !leadByEmail.has(e)) leadByEmail.set(e, l.id);
+  }
+
+  const errors: ValidationError[] = [];
+  const mappedRows: MappedDeal[] = [];
+  let newCount = 0;
+  let errorCount = 0;
+
+  parsed.rows.forEach((raw, idx) => {
+    const rowNum = idx + 1;
+    const leadEmail = normalizeEmail(raw['lead_email']);
+    const name = (raw['deal_name'] || '').trim() || undefined;
+    const valueRaw = (raw['value'] || '').trim();
+    const stage = parseEnum(raw['stage'], DealStage);
+    const expectedCloseDate = parseDate(raw['expected_close_date']);
+
+    const deal: MappedDeal = { row: rowNum, leadEmail, name, stage, expectedCloseDate };
+    let rowHasError = false;
+
+    if (!name) {
+      errors.push({ row: rowNum, field: 'deal_name', message: 'Nome do deal é obrigatório.' });
+      rowHasError = true;
+    }
+
+    // value: parse a number; empty/invalid is an error.
+    if (valueRaw) {
+      const num = Number(valueRaw.replace(/\./g, '').replace(',', '.'));
+      if (isNaN(num)) {
+        errors.push({ row: rowNum, field: 'value', message: 'Valor inválido.' });
+        rowHasError = true;
+      } else {
+        deal.value = num;
+      }
+    } else {
+      deal.value = 0;
+    }
+
+    if (raw['stage'] && !stage) {
+      errors.push({ row: rowNum, field: 'stage', message: 'Estágio inválido.' });
+      rowHasError = true;
+    }
+    if (raw['expected_close_date'] && !expectedCloseDate) {
+      errors.push({ row: rowNum, field: 'expected_close_date', message: 'Data inválida.' });
+      rowHasError = true;
+    }
+
+    // Lead association required (spec req 20 + edge case "lead não encontrado").
+    if (!leadEmail) {
+      errors.push({ row: rowNum, field: 'lead_email', message: 'lead_email ausente.' });
+      rowHasError = true;
+    } else {
+      const leadId = leadByEmail.get(leadEmail);
+      if (!leadId) {
+        errors.push({ row: rowNum, field: 'lead_email', message: 'lead não encontrado.' });
+        rowHasError = true;
+      } else {
+        deal.leadId = leadId;
+      }
+    }
+
+    mappedRows.push(deal);
+    if (rowHasError) errorCount++;
+    else newCount++;
+  });
+
+  const previewRows = mappedRows.slice(0, 5).map((m) => ({
+    lead_email: m.leadEmail ?? '',
+    deal_name: m.name ?? '',
+    value: m.value ?? 0,
+    stage: m.stage ?? '',
+    expected_close_date: m.expectedCloseDate ? m.expectedCloseDate.toISOString() : '',
+  }));
+
+  const analysis: ImportAnalysis = {
+    totalRows: parsed.rows.length,
+    newCount,
+    duplicateCount: 0,
+    errorCount,
+    duplicates: [],
+    errors,
+    previewRows,
+  };
+
+  return { analysis, mappedRows };
+}
+
+// ────────────────────────────────────────────────────────────────────
+// INTERACTIONS — analysis
+// ────────────────────────────────────────────────────────────────────
+
+const ALLOWED_INTERACTION_TYPES: InteractionType[] = [
+  InteractionType.CALL,
+  InteractionType.EMAIL,
+  InteractionType.MEETING,
+  InteractionType.NOTE,
+];
+
+interface MappedInteraction {
+  row: number;
+  leadEmail?: string;
+  type?: InteractionType;
+  date?: Date;
+  notes?: string;
+  leadId?: string;
+}
+
+export async function analyzeInteractions(
+  tenantId: string,
+  parsed: ParsedFile,
+): Promise<{ analysis: ImportAnalysis; mappedRows: MappedInteraction[] }> {
+  const leads = await prisma.lead.findMany({
+    where: { tenantId, deletedAt: null, email: { not: null } },
+    select: { id: true, email: true },
+  });
+  const leadByEmail = new Map<string, string>();
+  for (const l of leads) {
+    const e = normalizeEmail(l.email ?? undefined);
+    if (e && !leadByEmail.has(e)) leadByEmail.set(e, l.id);
+  }
+
+  const errors: ValidationError[] = [];
+  const mappedRows: MappedInteraction[] = [];
+  let newCount = 0;
+  let errorCount = 0;
+
+  parsed.rows.forEach((raw, idx) => {
+    const rowNum = idx + 1;
+    const leadEmail = normalizeEmail(raw['lead_email']);
+    const typeRaw = (raw['type'] || '').trim().toUpperCase();
+    const type = ALLOWED_INTERACTION_TYPES.find((t) => t === typeRaw);
+    const date = parseDate(raw['date']);
+    const notes = (raw['notes'] || '').trim() || undefined;
+
+    const interaction: MappedInteraction = { row: rowNum, leadEmail, type, date, notes };
+    let rowHasError = false;
+
+    if (!typeRaw) {
+      errors.push({ row: rowNum, field: 'type', message: 'Tipo é obrigatório.' });
+      rowHasError = true;
+    } else if (!type) {
+      errors.push({
+        row: rowNum,
+        field: 'type',
+        message: 'Tipo inválido (use CALL, EMAIL, MEETING ou NOTE).',
+      });
+      rowHasError = true;
+    }
+
+    if (raw['date'] && !date) {
+      errors.push({ row: rowNum, field: 'date', message: 'Data inválida.' });
+      rowHasError = true;
+    }
+
+    if (!leadEmail) {
+      errors.push({ row: rowNum, field: 'lead_email', message: 'lead_email ausente.' });
+      rowHasError = true;
+    } else {
+      const leadId = leadByEmail.get(leadEmail);
+      if (!leadId) {
+        errors.push({ row: rowNum, field: 'lead_email', message: 'lead não encontrado.' });
+        rowHasError = true;
+      } else {
+        interaction.leadId = leadId;
+      }
+    }
+
+    mappedRows.push(interaction);
+    if (rowHasError) errorCount++;
+    else newCount++;
+  });
+
+  const previewRows = mappedRows.slice(0, 5).map((m) => ({
+    lead_email: m.leadEmail ?? '',
+    type: m.type ?? '',
+    date: m.date ? m.date.toISOString() : '',
+    notes: m.notes ?? '',
+  }));
+
+  const analysis: ImportAnalysis = {
+    totalRows: parsed.rows.length,
+    newCount,
+    duplicateCount: 0,
+    errorCount,
+    duplicates: [],
+    errors,
+    previewRows,
+  };
+
+  return { analysis, mappedRows };
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Batch writers (process in chunks of BATCH_SIZE — spec req 9)
+// ────────────────────────────────────────────────────────────────────
+
+async function processInChunks<T>(
+  items: T[],
+  worker: (chunk: T[]) => Promise<void>,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const chunk = items.slice(i, i + BATCH_SIZE);
+    await worker(chunk);
+    // Yield to the event loop between chunks.
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+}
+
+interface BatchCounters {
+  imported: number;
+  skipped: number;
+  errors: ValidationError[];
+}
+
+async function writeLeads(
+  tenantId: string,
+  batchId: string,
+  mappedRows: MappedLead[],
+  duplicateStrategy: DuplicateStrategy,
+  duplicateActions: DuplicateActionMap = {},
+): Promise<BatchCounters> {
+  const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
+
+  // Per-row decision: explicit action for this row wins; otherwise fall back to
+  // the global strategy (Gap 4). The analysis numbers a duplicate by its 1-based
+  // row, which is the key the frontend sends in `duplicateActions`.
+  const decideAction = (row: number): DuplicateStrategy =>
+    duplicateActions[String(row)] ?? duplicateStrategy;
+
+  // Re-derive validity + duplicate decisions deterministically.
+  const existing = await prisma.lead.findMany({
+    where: { tenantId, deletedAt: null },
+    select: { id: true, email: true, phone: true },
+  });
+  const existingByEmail = new Map<string, string>();
+  const existingByPhone = new Map<string, string>();
+  for (const l of existing) {
+    const e = normalizeEmail(l.email ?? undefined);
+    if (e && !existingByEmail.has(e)) existingByEmail.set(e, l.id);
+    const p = normalizePhone(l.phone ?? undefined);
+    if (p && !existingByPhone.has(p)) existingByPhone.set(p, l.id);
+  }
+  const seenEmails = new Set<string>();
+  const seenPhones = new Set<string>();
+
+  await processInChunks(mappedRows, async (chunk) => {
+    for (const lead of chunk) {
+      try {
+        // Skip invalid rows (already counted as errors in analysis).
+        if (!lead.name || !lead.email || !EMAIL_RE.test(lead.email)) {
+          continue;
+        }
+        const email = normalizeEmail(lead.email);
+        const phone = normalizePhone(lead.phone);
+
+        let existingId: string | undefined;
+        let matched = false;
+        if (email && (existingByEmail.has(email) || seenEmails.has(email))) {
+          existingId = existingByEmail.get(email);
+          matched = true;
+        } else if (phone && (existingByPhone.has(phone) || seenPhones.has(phone))) {
+          existingId = existingByPhone.get(phone);
+          matched = true;
+        }
+
+        if (matched) {
+          const action = decideAction(lead.row);
+          if (action === 'skip') {
+            counters.skipped++;
+            if (email) seenEmails.add(email);
+            if (phone) seenPhones.add(phone);
+            continue;
+          }
+          // 'update' — overwrite the existing record when we have its id.
+          if (existingId) {
+            await prisma.lead.update({
+              where: { id: existingId },
+              data: {
+                name: lead.name,
+                email: lead.email,
+                phone: lead.phone ?? null,
+                company: lead.company ?? null,
+                position: lead.position ?? null,
+                source: lead.source ?? undefined,
+                status: lead.status ?? undefined,
+                notes: lead.notes ?? null,
+                ...(Object.keys(lead.customFields).length > 0
+                  ? { customFields: lead.customFields }
+                  : {}),
+                importBatchId: batchId,
+              },
+            });
+            counters.imported++;
+            if (email) seenEmails.add(email);
+            if (phone) seenPhones.add(phone);
+            continue;
+          }
+          // Duplicate within the same file with no existing row to update → skip.
+          counters.skipped++;
+          if (email) seenEmails.add(email);
+          if (phone) seenPhones.add(phone);
+          continue;
+        }
+
+        const created = await prisma.lead.create({
+          data: {
+            tenantId,
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone ?? null,
+            company: lead.company ?? null,
+            position: lead.position ?? null,
+            source: lead.source ?? LeadSource.OTHER,
+            status: lead.status ?? LeadStatus.NEW,
+            notes: lead.notes ?? null,
+            customFields: lead.customFields,
+            importBatchId: batchId,
+          },
+          select: { id: true },
+        });
+        counters.imported++;
+        if (email) {
+          seenEmails.add(email);
+          existingByEmail.set(email, created.id);
+        }
+        if (phone) {
+          seenPhones.add(phone);
+          existingByPhone.set(phone, created.id);
+        }
+      } catch (err) {
+        counters.errors.push({
+          row: lead.row,
+          field: '_row',
+          message: err instanceof Error ? err.message : 'Erro desconhecido',
+        });
+      }
+    }
+  });
+
+  return counters;
+}
+
+async function writeDeals(
+  tenantId: string,
+  batchId: string,
+  mappedRows: MappedDeal[],
+): Promise<BatchCounters> {
+  const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
+
+  await processInChunks(mappedRows, async (chunk) => {
+    for (const deal of chunk) {
+      try {
+        // Skip rows that failed validation (no lead match / no name).
+        if (!deal.name || !deal.leadId) continue;
+        await prisma.deal.create({
+          data: {
+            tenantId,
+            name: deal.name,
+            value: deal.value ?? 0,
+            stage: deal.stage ?? DealStage.QUALIFICATION,
+            expectedCloseDate: deal.expectedCloseDate ?? null,
+            leadId: deal.leadId,
+            importBatchId: batchId,
+          },
+          select: { id: true },
+        });
+        counters.imported++;
+      } catch (err) {
+        counters.errors.push({
+          row: deal.row,
+          field: '_row',
+          message: err instanceof Error ? err.message : 'Erro desconhecido',
+        });
+      }
+    }
+  });
+
+  return counters;
+}
+
+async function writeInteractions(
+  tenantId: string,
+  batchId: string,
+  mappedRows: MappedInteraction[],
+): Promise<BatchCounters> {
+  const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
+
+  await processInChunks(mappedRows, async (chunk) => {
+    for (const it of chunk) {
+      try {
+        if (!it.type || !it.leadId) continue;
+        await prisma.interaction.create({
+          data: {
+            tenantId,
+            leadId: it.leadId,
+            type: it.type,
+            direction: InteractionDirection.OUTBOUND,
+            content: it.notes ?? '',
+            createdAt: it.date ?? new Date(),
+            importBatchId: batchId,
+          },
+          select: { id: true },
+        });
+        counters.imported++;
+      } catch (err) {
+        counters.errors.push({
+          row: it.row,
+          field: '_row',
+          message: err instanceof Error ? err.message : 'Erro desconhecido',
+        });
+      }
+    }
+  });
+
+  return counters;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Batch lifecycle (create, run, status, rollback)
+// ────────────────────────────────────────────────────────────────────
+
+export interface RunImportInput {
+  tenantId: string;
+  userId: string;
+  type: ImportType;
+  parsed: ParsedFile;
+  mapping: ColumnMapping;
+  duplicateStrategy: DuplicateStrategy;
+  /** Per-row skip/update decisions for leads (Gap 4). */
+  duplicateActions?: DuplicateActionMap;
+}
+
+/** Decide whether to run synchronously (spec reqs 30-31). */
+export function shouldRunSync(rowCount: number): boolean {
+  return rowCount <= SYNC_ROW_THRESHOLD;
+}
+
+/**
+ * Execute the actual write phase for a batch and update its status/counters.
+ * On any failure the batch is marked FAILED with the error logged; rows already
+ * written are NOT auto-reverted (spec edge case "falha de banco no meio do lote").
+ */
+export async function executeBatch(
+  batchId: string,
+  input: RunImportInput,
+  precomputed?:
+    | { type: 'LEADS'; rows: MappedLead[] }
+    | { type: 'DEALS'; rows: MappedDeal[] }
+    | { type: 'INTERACTIONS'; rows: MappedInteraction[] },
+): Promise<void> {
+  const { tenantId, type, parsed, mapping, duplicateStrategy, duplicateActions } = input;
+  try {
+    await prisma.importBatch.update({
+      where: { id: batchId },
+      data: { status: ImportStatus.PROCESSING },
+    });
+
+    let counters: BatchCounters;
+    if (type === ImportType.LEADS) {
+      const rows =
+        precomputed?.type === 'LEADS'
+          ? precomputed.rows
+          : (await analyzeLeads(tenantId, parsed, mapping)).mappedRows;
+      counters = await writeLeads(tenantId, batchId, rows, duplicateStrategy, duplicateActions);
+    } else if (type === ImportType.DEALS) {
+      const rows =
+        precomputed?.type === 'DEALS'
+          ? precomputed.rows
+          : (await analyzeDeals(tenantId, parsed)).mappedRows;
+      counters = await writeDeals(tenantId, batchId, rows);
+    } else {
+      const rows =
+        precomputed?.type === 'INTERACTIONS'
+          ? precomputed.rows
+          : (await analyzeInteractions(tenantId, parsed)).mappedRows;
+      counters = await writeInteractions(tenantId, batchId, rows);
+    }
+
+    const errorRows = parsed.rows.length - counters.imported - counters.skipped;
+    await prisma.importBatch.update({
+      where: { id: batchId },
+      data: {
+        status: ImportStatus.COMPLETED,
+        importedRows: counters.imported,
+        skippedRows: counters.skipped,
+        errorRows: errorRows < 0 ? 0 : errorRows,
+        errorLog: counters.errors.length > 0 ? (counters.errors.slice(0, 100) as unknown as object) : undefined,
+      },
+    });
+  } catch (err) {
+    logger.error('Import batch failed', err, { batchId, tenantId, type });
+    await prisma.importBatch
+      .update({
+        where: { id: batchId },
+        data: {
+          status: ImportStatus.FAILED,
+          errorLog: [
+            {
+              row: 0,
+              field: '_batch',
+              message: err instanceof Error ? err.message : 'Erro no processamento',
+            },
+          ] as unknown as object,
+        },
+      })
+      .catch(() => {});
+  }
+}
+
+/** Create the ImportBatch row in PENDING state. */
+export async function createBatch(
+  tenantId: string,
+  userId: string,
+  type: ImportType,
+  totalRows: number,
+): Promise<{ id: string }> {
+  return prisma.importBatch.create({
+    data: { tenantId, userId, type, status: ImportStatus.PENDING, totalRows },
+    select: { id: true },
+  });
+}
+
+/** List the tenant's import history (spec req 22). */
+export async function listBatches(tenantId: string) {
+  const batches = await prisma.importBatch.findMany({
+    where: { tenantId },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+
+  const userIds = [...new Set(batches.map((b) => b.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds }, tenantId },
+    select: { id: true, name: true, email: true },
+  });
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return batches.map((b) => ({
+    id: b.id,
+    type: b.type,
+    status: b.status,
+    totalRows: b.totalRows,
+    importedRows: b.importedRows,
+    errorRows: b.errorRows,
+    skippedRows: b.skippedRows,
+    createdAt: b.createdAt,
+    rolledBackAt: b.rolledBackAt,
+    user: userMap.get(b.userId) ?? null,
+    canRollback:
+      b.status === ImportStatus.COMPLETED &&
+      Date.now() - b.createdAt.getTime() <= ROLLBACK_WINDOW_MS,
+  }));
+}
+
+/** Fetch a single batch scoped to tenant (spec req 32) — for status polling. */
+export async function getBatch(tenantId: string, batchId: string) {
+  return prisma.importBatch.findFirst({
+    where: { id: batchId, tenantId },
+  });
+}
+
+/**
+ * Roll back a batch: soft-delete every record created by it and flip the batch
+ * to ROLLED_BACK (spec reqs 27-28). Enforces the 24h window and status guards
+ * (spec edge cases).
+ */
+export async function rollbackBatch(tenantId: string, batchId: string) {
+  const batch = await prisma.importBatch.findFirst({
+    where: { id: batchId, tenantId },
+  });
+  if (!batch) {
+    throw new ImportError('Lote de importação não encontrado.', 'BATCH_NOT_FOUND', 404);
+  }
+  if (batch.status === ImportStatus.ROLLED_BACK) {
+    throw new ImportError('Este lote já foi desfeito.', 'ALREADY_ROLLED_BACK', 400);
+  }
+  if (batch.status === ImportStatus.PROCESSING || batch.status === ImportStatus.PENDING) {
+    throw new ImportError(
+      'A importação ainda está em andamento. Aguarde a conclusão para desfazer.',
+      'BATCH_IN_PROGRESS',
+      400,
+    );
+  }
+  if (Date.now() - batch.createdAt.getTime() > ROLLBACK_WINDOW_MS) {
+    throw new ImportError(
+      'O prazo de 24h para desfazer esta importação expirou.',
+      'ROLLBACK_WINDOW_EXPIRED',
+      400,
+    );
+  }
+
+  const now = new Date();
+  const [leads, deals, interactions] = await prisma.$transaction([
+    prisma.lead.updateMany({
+      where: { tenantId, importBatchId: batchId, deletedAt: null },
+      data: { deletedAt: now },
+    }),
+    prisma.deal.updateMany({
+      where: { tenantId, importBatchId: batchId, deletedAt: null },
+      data: { deletedAt: now },
+    }),
+    prisma.interaction.updateMany({
+      where: { tenantId, importBatchId: batchId, deletedAt: null },
+      data: { deletedAt: now },
+    }),
+  ]);
+
+  await prisma.importBatch.update({
+    where: { id: batchId },
+    data: { status: ImportStatus.ROLLED_BACK, rolledBackAt: now },
+  });
+
+  return {
+    deleted: {
+      leads: leads.count,
+      deals: deals.count,
+      interactions: interactions.count,
+    },
+  };
+}

@@ -175,6 +175,7 @@ import scheduleRoutes from './routes/schedule.js';
 import productRoutes from './routes/products.js';
 import goalRoutes from './routes/goals.js';
 import stageTaskTemplateRoutes from './routes/stageTaskTemplates.js';
+import importRoutes from './routes/import.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -246,6 +247,7 @@ v1Router.use('/admin', csrfProtection);
 v1Router.use('/products', csrfProtection);
 v1Router.use('/goals', csrfProtection);
 v1Router.use('/stage-task-templates', csrfProtection);
+v1Router.use('/import', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -286,6 +288,7 @@ v1Router.use('/admin', adminRoutes);
 v1Router.use('/products', productRoutes);
 v1Router.use('/goals', goalRoutes);
 v1Router.use('/stage-task-templates', stageTaskTemplateRoutes);
+v1Router.use('/import', importRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

@@ -30,6 +30,19 @@ export const passwordResetLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Dedicated limiter for data imports: 5 imports per hour PER TENANT.
+// Keyed by tenantId (not IP) — must run after `authenticate`/`tenantScope`.
+export const importLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: isDevelopment ? 100 : 5,
+  message: 'Too many imports, please try again later. Limit is 5 per hour.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.tenantId || req.ip || 'anonymous',
+  // Only count actual import submissions, not history/status reads.
+  skip: (req) => req.method === 'GET',
+});
+
 
 
 
