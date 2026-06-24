@@ -31,6 +31,7 @@ import {
 import { apiClient } from "../services/api/client";
 import { DealForm } from "../components/deals/DealForm";
 import { DealProducts } from "../components/deals/DealProducts";
+import { DealAIScore } from "../components/deals/DealAIScore";
 import { NextActionCard } from "../components/NextActionCard";
 import { AIDraftDialog } from "../components/ai/AIDraftDialog";
 import { AuditTimeline } from "../components/AuditTimeline";
@@ -388,9 +389,15 @@ export function DealDetail() {
             )}
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
-              {/* Value highlight */}
-              <div className="text-center">
+              {/* Value highlight + AI close-propensity score */}
+              <div className="flex items-center justify-between gap-4">
                 <p className="text-3xl font-bold text-gray-900">{formatCurrency(deal.value)}</p>
+                {id && (
+                  <div className="flex flex-col items-center gap-1">
+                    <DealAIScore dealId={id} size="md" />
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400">Propensão IA</span>
+                  </div>
+                )}
               </div>
 
               {/* Deal Products */}

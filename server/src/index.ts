@@ -90,6 +90,13 @@ if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
       logger.error('Failed to initialize automation engine', error);
     });
   });
+
+  // AI deal-score weekly recalc — same gate (requires BullMQ + Redis)
+  import('./jobs/scoreDeals.js').then(({ initializeScoreDealsJob }) => {
+    initializeScoreDealsJob().catch((error) => {
+      logger.error('Failed to initialize scoreDeals job', error);
+    });
+  });
 }
 
 // Initialize task notification checker (always active — lightweight, no Redis needed)

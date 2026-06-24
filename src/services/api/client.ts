@@ -1399,6 +1399,60 @@ class ApiClient {
   }
 
   // ========================
+  // AI Sales Assistant
+  // ========================
+
+  /**
+   * Gating check (req 33). When `enabled` is false the frontend hides all AI
+   * components and makes no further AI calls.
+   */
+  async getAIStatus() {
+    const res = await this.request<{ status: number; data: import('../../types').AIStatus }>('/api/v1/ai/status');
+    return res.data;
+  }
+
+  /**
+   * Contextual lead summary (req 8). Pass `force` to bypass the server cache
+   * (mirrors the "Atualizar" button); sent as `?refresh=true`.
+   */
+  async getLeadAISummary(leadId: string, force = false) {
+    const query = force ? '?refresh=true' : '';
+    const res = await this.request<{ status: number; data: import('../../types').AISummary }>(`/api/v1/leads/${leadId}/ai-summary${query}`);
+    return res.data;
+  }
+
+  /**
+   * Deal close-propensity score with top factors (req 22).
+   */
+  async getDealAIScore(dealId: string) {
+    const res = await this.request<{ status: number; data: import('../../types').DealAIScore }>(`/api/v1/deals/${dealId}/ai-score`);
+    return res.data;
+  }
+
+  /**
+   * Opens the AI chat stream (req 30). Returns the raw Response so the caller
+   * can read `response.body` as a ReadableStream of text chunks — the standard
+   * `request()` helper is bypassed because the body is a streamed text response,
+   * not a JSON envelope. Mirrors the cookie + CSRF auth handling used elsewhere.
+   */
+  async streamLeadAIChat(
+    leadId: string,
+    body: { message: string; history: import('../../types').ChatMessage[] },
+    signal?: AbortSignal,
+  ): Promise<Response> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const csrfToken = this.getCsrfToken();
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    return fetch(`${this.baseURL}/api/v1/leads/${leadId}/ai-chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      credentials: 'include',
+      signal,
+    });
+  }
+
+  // ========================
   // Saved Views
   // ========================
 

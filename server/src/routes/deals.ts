@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { dealService } from '../services/dealService.js';
 import { forecastService } from '../services/forecastService.js';
 import { getDealNextAction, getActionSummary } from '../services/nextActionService.js';
+import { dealScoringService } from '../services/dealScoringService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
+import { aiLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
 import { DealStage } from '@prisma/client';
 import prisma from '../config/database.js';
@@ -200,6 +202,25 @@ router.get('/:id/next-action', async (req, res, next) => {
 
     const action = await getDealNextAction(req.user.tenantId, req.params.id);
     res.json({ status: 200, data: action });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/ai-score - AI close-propensity score + top-3 factors (req 22).
+// Pass ?recalc=true to force an on-demand recalculation (req 21).
+router.get('/:id/ai-score', aiLimiter, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const forceRecalc = req.query.recalc === 'true' || req.query.recalc === '1';
+    const result = forceRecalc
+      ? await dealScoringService.computeAndStore(req.user.tenantId, req.params.id)
+      : await dealScoringService.getOrCompute(req.user.tenantId, req.params.id);
+
+    res.json({ status: 200, data: result });
   } catch (error) {
     next(error);
   }

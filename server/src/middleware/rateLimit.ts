@@ -43,6 +43,21 @@ export const importLimiter = rateLimit({
   skip: (req) => req.method === 'GET',
 });
 
+// Dedicated limiter for AI Sales Assistant calls: 30 calls per minute PER TENANT
+// (cost control, spec req 32). Keyed by tenantId — must run after
+// `authenticate`/`tenantScope`. On limit, express-rate-limit returns HTTP 429.
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: isDevelopment ? 1000 : 30,
+  message: {
+    status: 429,
+    error: 'Limite de chamadas de IA atingido (30/min). Tente novamente em instantes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.tenantId || req.ip || 'anonymous',
+});
+
 
 
 
