@@ -1,32 +1,45 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import { Plus, Trash2, Copy, Key, Loader2, AlertTriangle } from "lucide-react";
-import { apiClient } from "../../services/api/client";
+import { apiClient, type ApiKeyListItem } from "../../services/api/client";
 
-interface ApiKey {
-  id: string;
-  name: string;
-  key: string; // masked
-  lastUsedAt: string | null;
-  expiresAt: string | null;
-  active: boolean;
-  createdAt: string;
-}
+// Available scopes grouped by resource (req 17, 18).
+const SCOPE_GROUPS: { resource: string; scopes: { value: string; label: string }[] }[] = [
+  { resource: "Leads", scopes: [{ value: "leads:read", label: "Ler" }, { value: "leads:write", label: "Escrever" }] },
+  { resource: "Deals", scopes: [{ value: "deals:read", label: "Ler" }, { value: "deals:write", label: "Escrever" }] },
+  { resource: "Tarefas", scopes: [{ value: "tasks:read", label: "Ler" }, { value: "tasks:write", label: "Escrever" }] },
+  { resource: "Contatos", scopes: [{ value: "contacts:read", label: "Ler" }] },
+  { resource: "Relatórios", scopes: [{ value: "reports:read", label: "Ler" }] },
+  { resource: "Webhooks", scopes: [{ value: "webhooks:manage", label: "Gerenciar" }] },
+];
+
+const SCOPE_LABELS: Record<string, string> = {
+  "leads:read": "Leads: Ler",
+  "leads:write": "Leads: Escrever",
+  "deals:read": "Deals: Ler",
+  "deals:write": "Deals: Escrever",
+  "tasks:read": "Tarefas: Ler",
+  "tasks:write": "Tarefas: Escrever",
+  "contacts:read": "Contatos: Ler",
+  "reports:read": "Relatórios: Ler",
+  "webhooks:manage": "Webhooks: Gerenciar",
+};
 
 export function ApiKeysTab() {
-  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [keys, setKeys] = useState<ApiKeyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formExpiry, setFormExpiry] = useState("");
+  const [formScopes, setFormScopes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [newFullKey, setNewFullKey] = useState<string | null>(null);
 
   const loadKeys = useCallback(async () => {
     try {
-      const result = await apiClient.getApiKeys();
-      const data = result?.data || result || [];
+      const data = await apiClient.getApiKeys();
       setKeys(Array.isArray(data) ? data : []);
     } catch {
       // silent
@@ -44,20 +57,22 @@ export function ApiKeysTab() {
     }
     setSaving(true);
     try {
-      const result = await apiClient.createApiKey({
+      const data = await apiClient.createApiKey({
         name: formName,
         expiresAt: formExpiry || undefined,
+        // Empty selection → omit → full access (req 20).
+        scopes: formScopes.length > 0 ? formScopes : undefined,
       });
-      const data = result?.data || result;
       // The API returns the full key only once
-      setNewFullKey(data?.key || data?.fullKey || null);
+      setNewFullKey(data.key);
       toast.success("Chave API criada");
       setShowForm(false);
       setFormName("");
       setFormExpiry("");
+      setFormScopes([]);
       await loadKeys();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao criar chave");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao criar chave");
     } finally {
       setSaving(false);
     }
@@ -68,9 +83,15 @@ export function ApiKeysTab() {
       await apiClient.deleteApiKey(id);
       toast.success("Chave revogada");
       await loadKeys();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao revogar chave");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao revogar chave");
     }
+  };
+
+  const toggleScope = (scope: string) => {
+    setFormScopes((prev) =>
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]
+    );
   };
 
   const copyToClipboard = (text: string) => {
@@ -162,8 +183,32 @@ export function ApiKeysTab() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
+          {/* Scopes selector — checkboxes grouped by resource (req 17). */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Scopes <span className="text-gray-400">(deixe vazio para acesso total)</span>
+            </label>
+            <div className="space-y-3 max-h-52 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+              {SCOPE_GROUPS.map((group) => (
+                <div key={group.resource}>
+                  <p className="text-xs font-semibold text-gray-700 mb-1">{group.resource}</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {group.scopes.map((scope) => (
+                      <label key={scope.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={formScopes.includes(scope.value)}
+                          onCheckedChange={() => toggleScope(scope.value)}
+                        />
+                        <span className="text-gray-700">{scope.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setFormName(""); setFormExpiry(""); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setFormName(""); setFormExpiry(""); setFormScopes([]); }}>
               Cancelar
             </Button>
             <Button size="sm" onClick={handleCreate} disabled={saving}>
@@ -200,6 +245,18 @@ export function ApiKeysTab() {
                     )}
                   </div>
                   <code className="text-xs text-gray-500 font-mono">{apiKey.key}</code>
+                  {/* req 21 — scopes per key; empty = full access (req 20). */}
+                  <div className="flex flex-wrap items-center gap-1 mt-1">
+                    {apiKey.scopes && apiKey.scopes.length > 0 ? (
+                      apiKey.scopes.map((scope) => (
+                        <span key={scope} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                          {SCOPE_LABELS[scope] || scope}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Acesso total</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                     <span>Criada em {new Date(apiKey.createdAt).toLocaleDateString("pt-BR")}</span>
                     {apiKey.lastUsedAt && (
@@ -233,10 +290,10 @@ export function ApiKeysTab() {
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <h4 className="text-sm font-medium text-blue-900 mb-2">Como usar</h4>
         <p className="text-sm text-blue-800 mb-2">
-          Use a chave de API para enviar leads via webhook HTTP POST:
+          Inclua a chave no header <code className="bg-white px-1 py-0.5 rounded text-xs">X-API-Key</code> de cada requisicao.
         </p>
         <code className="text-xs bg-white px-3 py-2 rounded border border-blue-200 font-mono block">
-          POST /api/webhooks/capture/&#123;sua_api_key&#125;
+          curl -H "X-API-Key: fcrm_sua_chave" /api/v1/leads
         </code>
       </div>
     </div>

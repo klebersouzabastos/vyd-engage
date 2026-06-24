@@ -299,7 +299,17 @@ export const router = createBrowserRouter([
         element: Webhooks,
       },
       {
+        // Spec-required path for the API Hub webhooks page (API-1.2, req 8).
+        path: "settings/webhooks",
+        element: Webhooks,
+      },
+      {
         path: "api-keys",
+        element: ApiKeys,
+      },
+      {
+        // Spec-required path for the API keys page with scopes (API-2.1, req 21).
+        path: "settings/api-keys",
         element: ApiKeys,
       },
       {

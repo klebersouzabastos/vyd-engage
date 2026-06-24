@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Checkbox } from "../components/ui/checkbox";
 import { PageSkeleton } from "../components/PageSkeleton";
 import {
   Dialog,
@@ -36,25 +37,64 @@ import {
   Loader2,
   Terminal,
 } from "lucide-react";
-import { apiClient } from "../services/api/client";
+import { apiClient, type ApiKeyListItem } from "../services/api/client";
 
-// Types
-interface ApiKeyData {
-  id: string;
-  name: string;
-  key: string;
-  lastUsedAt?: string | null;
-  expiresAt?: string | null;
-  active?: boolean;
-  createdAt: string;
-}
+// Available scopes grouped by resource (req 17, 18).
+const SCOPE_GROUPS: { resource: string; scopes: { value: string; label: string }[] }[] = [
+  {
+    resource: "Leads",
+    scopes: [
+      { value: "leads:read", label: "Ler" },
+      { value: "leads:write", label: "Escrever" },
+    ],
+  },
+  {
+    resource: "Deals",
+    scopes: [
+      { value: "deals:read", label: "Ler" },
+      { value: "deals:write", label: "Escrever" },
+    ],
+  },
+  {
+    resource: "Tarefas",
+    scopes: [
+      { value: "tasks:read", label: "Ler" },
+      { value: "tasks:write", label: "Escrever" },
+    ],
+  },
+  {
+    resource: "Contatos",
+    scopes: [{ value: "contacts:read", label: "Ler" }],
+  },
+  {
+    resource: "Relatórios",
+    scopes: [{ value: "reports:read", label: "Ler" }],
+  },
+  {
+    resource: "Webhooks",
+    scopes: [{ value: "webhooks:manage", label: "Gerenciar" }],
+  },
+];
+
+const SCOPE_LABELS: Record<string, string> = {
+  "leads:read": "Leads: Ler",
+  "leads:write": "Leads: Escrever",
+  "deals:read": "Deals: Ler",
+  "deals:write": "Deals: Escrever",
+  "tasks:read": "Tarefas: Ler",
+  "tasks:write": "Tarefas: Escrever",
+  "contacts:read": "Contatos: Ler",
+  "reports:read": "Relatórios: Ler",
+  "webhooks:manage": "Webhooks: Gerenciar",
+};
 
 export function ApiKeys() {
-  const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
+  const [apiKeys, setApiKeys] = useState<ApiKeyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [revokingKey, setRevokingKey] = useState<ApiKeyData | null>(null);
+  const [revokingKey, setRevokingKey] = useState<ApiKeyListItem | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyScopes, setNewKeyScopes] = useState<string[]>([]);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -63,9 +103,9 @@ export function ApiKeys() {
   const fetchKeys = useCallback(async () => {
     try {
       const data = await apiClient.getApiKeys();
-      setApiKeys(data as unknown as ApiKeyData[]);
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao carregar API keys");
+      setApiKeys(data);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao carregar API keys");
     } finally {
       setLoading(false);
     }
@@ -83,12 +123,16 @@ export function ApiKeys() {
 
     setSaving(true);
     try {
-      const result = await apiClient.createApiKey({ name: newKeyName.trim() });
+      const result = await apiClient.createApiKey({
+        name: newKeyName.trim(),
+        // Empty selection → omit scopes → backend grants full access (req 20).
+        scopes: newKeyScopes.length > 0 ? newKeyScopes : undefined,
+      });
       setCreatedKey(result.key);
       toast.success("API key criada com sucesso");
       fetchKeys();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao criar API key");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao criar API key");
     } finally {
       setSaving(false);
     }
@@ -101,8 +145,8 @@ export function ApiKeys() {
       toast.success("API key revogada");
       setRevokingKey(null);
       fetchKeys();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao revogar API key");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao revogar API key");
     }
   };
 
@@ -115,8 +159,15 @@ export function ApiKeys() {
     }
   };
 
+  const toggleScope = (scope: string) => {
+    setNewKeyScopes((prev) =>
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]
+    );
+  };
+
   const openCreateDialog = () => {
     setNewKeyName("");
+    setNewKeyScopes([]);
     setCreatedKey(null);
     setIsCreateOpen(true);
   };
@@ -125,9 +176,11 @@ export function ApiKeys() {
     setIsCreateOpen(false);
     setCreatedKey(null);
     setNewKeyName("");
+    setNewKeyScopes([]);
   };
 
-  const maskKey = (key: string) => {
+  const maskKey = (key?: string) => {
+    if (!key) return "—";
     if (key.startsWith("fcrm_****")) return key;
     if (key.length > 12) return `${key.slice(0, 5)}${"*".repeat(key.length - 9)}${key.slice(-4)}`;
     return key;
@@ -184,11 +237,11 @@ export function ApiKeys() {
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">
                       Chave
                     </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">
+                      Scopes
+                    </th>
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3 hidden md:table-cell">
                       Criado em
-                    </th>
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3 hidden lg:table-cell">
-                      Ultimo uso
                     </th>
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">
                       Status
@@ -207,7 +260,7 @@ export function ApiKeys() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <code className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">
-                            {showKeyFor === apiKey.id ? apiKey.key : maskKey(apiKey.key)}
+                            {showKeyFor === apiKey.id ? (apiKey.key ?? "—") : maskKey(apiKey.key)}
                           </code>
                           <button
                             onClick={() =>
@@ -219,7 +272,7 @@ export function ApiKeys() {
                             {showKeyFor === apiKey.id ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
                           <button
-                            onClick={() => copyToClipboard(apiKey.key, apiKey.id)}
+                            onClick={() => apiKey.key && copyToClipboard(apiKey.key, apiKey.id)}
                             className="text-gray-400 hover:text-gray-600"
                             title="Copiar"
                           >
@@ -231,13 +284,24 @@ export function ApiKeys() {
                           </button>
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        {/* req 21 — list scopes; empty array = full access (req 20). */}
+                        {apiKey.scopes && apiKey.scopes.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {apiKey.scopes.map((scope) => (
+                              <Badge key={scope} variant="outline" className="text-xs">
+                                {SCOPE_LABELS[scope] || scope}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Acesso total
+                          </Badge>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-500 hidden md:table-cell">
                         {new Date(apiKey.createdAt).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">
-                        {apiKey.lastUsedAt
-                          ? new Date(apiKey.lastUsedAt).toLocaleString("pt-BR")
-                          : "Nunca"}
                       </td>
                       <td className="px-6 py-4">
                         <Badge
@@ -289,6 +353,19 @@ export function ApiKeys() {
               Nunca compartilhe suas API keys publicamente ou inclua em codigo client-side. Trate-as como senhas.
             </p>
           </div>
+          {/* Link to interactive API docs (do not reimplement docs UI). */}
+          <p className="text-sm text-gray-600 mt-4">
+            Consulte a{" "}
+            <a
+              href={`${apiBaseUrl}/api/docs`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline"
+            >
+              documentação interativa da API
+            </a>
+            {" "}para a referência completa de endpoints.
+          </p>
         </div>
       </div>
 
@@ -302,7 +379,7 @@ export function ApiKeys() {
             <DialogDescription>
               {createdKey
                 ? "Copie a chave abaixo. Ela nao sera exibida novamente."
-                : "De um nome para identificar esta chave de API."}
+                : "De um nome e selecione os scopes desta chave de API."}
             </DialogDescription>
           </DialogHeader>
 
@@ -327,16 +404,51 @@ export function ApiKeys() {
               </div>
             </div>
           ) : (
-            <div className="py-4">
-              <Label htmlFor="key-name">Nome da chave</Label>
-              <Input
-                id="key-name"
-                placeholder="Ex: Integracao Zapier, App Mobile"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                className="mt-1"
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
+            <div className="py-4 space-y-4">
+              <div>
+                <Label htmlFor="key-name">Nome da chave</Label>
+                <Input
+                  id="key-name"
+                  placeholder="Ex: Integracao Zapier, App Mobile"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Scopes selector — checkboxes grouped by resource (req 17). */}
+              <div>
+                <Label className="mb-1 block">Scopes (permissões)</Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Deixe tudo desmarcado para conceder acesso total.
+                </p>
+                <div className="space-y-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  {SCOPE_GROUPS.map((group) => (
+                    <div key={group.resource}>
+                      <p className="text-xs font-semibold text-gray-700 mb-1">{group.resource}</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {group.scopes.map((scope) => (
+                          <label
+                            key={scope.value}
+                            className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5"
+                          >
+                            <Checkbox
+                              checked={newKeyScopes.includes(scope.value)}
+                              onCheckedChange={() => toggleScope(scope.value)}
+                            />
+                            <span>{scope.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {newKeyScopes.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newKeyScopes.length} scope(s) selecionado(s)
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { webhookService, WEBHOOK_EVENTS } from '../services/webhookService.js';
+import {
+  webhookService,
+  SELECTABLE_WEBHOOK_EVENTS,
+} from '../services/webhookService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -10,20 +13,27 @@ const router = Router();
 router.use(authenticate);
 router.use(tenantScope);
 
+// Events selectable on creation are exactly the 9 from req 10.
+const selectableEvent = z.enum(
+  SELECTABLE_WEBHOOK_EVENTS as unknown as [string, ...string[]],
+);
+
 const createWebhookSchema = z.object({
   url: z.string().url(),
-  events: z.array(z.string()).min(1),
+  events: z.array(selectableEvent).min(1),
+  // Secret required, non-empty (req 9 edge case).
+  secret: z.string().min(1, 'Secret é obrigatório'),
 });
 
 const updateWebhookSchema = z.object({
   url: z.string().url().optional(),
-  events: z.array(z.string()).min(1).optional(),
+  events: z.array(selectableEvent).min(1).optional(),
   active: z.boolean().optional(),
 });
 
-// GET /api/outgoing-webhooks/events - List available event types
+// GET /api/outgoing-webhooks/events - List available (selectable) event types (req 10)
 router.get('/events', (_req, res) => {
-  res.json(WEBHOOK_EVENTS);
+  res.json(SELECTABLE_WEBHOOK_EVENTS);
 });
 
 // GET /api/outgoing-webhooks - List webhooks

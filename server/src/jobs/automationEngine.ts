@@ -9,6 +9,7 @@ import { notificationService } from '../services/notificationService.js';
 import { interpolateMergeTags, type MergeContext } from '../utils/mergeTags.js';
 import { computeDelayMs, evaluateCondition } from '../utils/automationEval.js';
 import { assertPublicHttpUrl } from '../utils/safeFetch.js';
+import { webhookDispatcher } from '../services/webhookDispatcher.js';
 
 // Redis connection configuration
 const redisConnection = {
@@ -695,6 +696,17 @@ export async function dispatchTrigger(
         undefined,
         { leadId, executionId }
       );
+
+      // Fire outgoing webhook (req: automation.triggered) — fire-and-forget.
+      webhookDispatcher.dispatch(tenantId, 'automation.triggered', {
+        automation_id: automation.id,
+        automation_name: automation.name,
+        trigger_type: triggerType,
+        lead_id: leadId ?? null,
+        deal_id: dealId ?? null,
+        execution_id: executionId,
+        triggered_at: new Date().toISOString(),
+      });
 
       dispatched++;
     }

@@ -980,6 +980,7 @@ model ApiKey {
   name       String
   key        String    @unique
   keyHash    String // Hashed version for verification
+  scopes     String[]  @default([]) // Granular permission scopes (empty = full access, backward compat)
   lastUsedAt DateTime?
   expiresAt  DateTime?
   active     Boolean   @default(true)
@@ -1024,6 +1025,8 @@ model WebhookLog {
   event      String
   status     WebhookLogStatus @default(PENDING)
   statusCode Int?
+  durationMs Int? // Delivery duration in milliseconds (req 14)
+  success    Boolean? // Delivery success indicator (req 14)
   response   String?
   error      String?
   attempts   Int              @default(1)

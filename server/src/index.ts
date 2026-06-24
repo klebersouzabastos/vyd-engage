@@ -192,6 +192,7 @@ import stageTaskTemplateRoutes from './routes/stageTaskTemplates.js';
 import importRoutes from './routes/import.js';
 import campaignRoutes from './routes/campaigns.js';
 import campaignTrackingRoutes from './routes/campaignTracking.js';
+import zapierRoutes from './routes/zapier.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -310,6 +311,8 @@ v1Router.use('/goals', goalRoutes);
 v1Router.use('/stage-task-templates', stageTaskTemplateRoutes);
 v1Router.use('/import', importRoutes);
 v1Router.use('/campaigns', campaignRoutes);
+// Zapier integration (API-2.2) — API-key auth (X-API-Key), no session/CSRF.
+v1Router.use('/zapier', zapierRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 
@@ -510,6 +513,15 @@ const openApiDocument = buildOpenApiDocument();
 app.get(['/api/v1/openapi.json', '/api/openapi.json'], (_req, res) => {
   res.json(openApiDocument);
 });
+
+// API-1.1 — Interactive API docs (Redoc) generated from @openapi JSDoc.
+// GET /api/docs serves Redoc; /api/docs/openapi.json serves the spec.
+// Gated in production by ENABLE_API_DOCS (404 otherwise). No auth/CSRF (GET).
+import { redocHandler, openApiJsonHandler, swaggerUiHandlers } from './config/openapi.js';
+app.get(['/api/docs/openapi.json', '/api/v1/docs/openapi.json'], openApiJsonHandler);
+app.get(['/api/docs', '/api/v1/docs'], redocHandler());
+// Swagger UI provides functional "try it out" (req 5) alongside Redoc, same gating.
+app.use(['/api/docs/try', '/api/v1/docs/try'], ...swaggerUiHandlers());
 
 // Bull Board queue dashboard (Basic-Auth gated; mounted before the 404 handler)
 import { mountQueueDashboard } from './admin/queueDashboard.js';

@@ -719,12 +719,14 @@ class ApiClient {
   }
 
   // API Keys
+  // List returns each key with `scopes: string[]` (empty array = full access / legacy).
   async getApiKeys() {
-    return this.request<Array<{ id: string; name: string; key?: string; lastUsedAt?: string; expiresAt?: string; createdAt: string }>>('/api/v1/api-keys');
+    return this.request<ApiKeyListItem[]>('/api/v1/api-keys');
   }
 
-  async createApiKey(data: { name: string; expiresAt?: string }) {
-    return this.request<{ id: string; name: string; key: string; expiresAt?: string; createdAt: string }>('/api/v1/api-keys', {
+  // Create body: { name, expiresAt?, scopes?: string[] }; returns the full key once.
+  async createApiKey(data: { name: string; expiresAt?: string; scopes?: string[] }) {
+    return this.request<ApiKeyCreated>('/api/v1/api-keys', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -740,18 +742,19 @@ class ApiClient {
   }
 
   async getOutgoingWebhooks() {
-    return this.request<Array<Record<string, unknown>>>('/api/v1/outgoing-webhooks');
+    return this.request<OutgoingWebhook[]>('/api/v1/outgoing-webhooks');
   }
 
-  async createOutgoingWebhook(data: { url: string; events: string[] }) {
-    return this.request<Record<string, unknown>>('/api/v1/outgoing-webhooks', {
+  // Create body: { url, events, secret } — secret must be non-empty (validated client-side too).
+  async createOutgoingWebhook(data: { url: string; events: string[]; secret: string }) {
+    return this.request<OutgoingWebhook>('/api/v1/outgoing-webhooks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateOutgoingWebhook(id: string, data: { url?: string; events?: string[]; active?: boolean }) {
-    return this.request<Record<string, unknown>>(`/api/v1/outgoing-webhooks/${id}`, {
+    return this.request<OutgoingWebhook>(`/api/v1/outgoing-webhooks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -762,7 +765,7 @@ class ApiClient {
   }
 
   async getWebhookLogs(webhookId: string) {
-    return this.request<Array<Record<string, unknown>>>(`/api/v1/outgoing-webhooks/${webhookId}/logs`);
+    return this.request<OutgoingWebhookLog[]>(`/api/v1/outgoing-webhooks/${webhookId}/logs`);
   }
 
   async testOutgoingWebhook(id: string, event?: string) {
@@ -1660,6 +1663,59 @@ class ApiClient {
     });
     return res.data;
   }
+}
+
+// ── API Hub types (api-hub spec) ────────────────────
+/** An API key as returned by the list endpoint (key value is masked). */
+export interface ApiKeyListItem {
+  id: string;
+  name: string;
+  key?: string;
+  /** Granular scopes; empty array = full access (legacy keys). */
+  scopes: string[];
+  lastUsedAt?: string | null;
+  expiresAt?: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+/** Create response — full key shown only once. */
+export interface ApiKeyCreated {
+  id: string;
+  name: string;
+  key: string;
+  scopes: string[];
+  expiresAt?: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface OutgoingWebhook {
+  id: string;
+  tenantId: string;
+  url: string;
+  events: string[];
+  secret: string;
+  active: boolean;
+  successCount: number;
+  failureCount: number;
+  lastTriggeredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { logs: number };
+}
+
+export interface OutgoingWebhookLog {
+  id: string;
+  event: string;
+  status: string;
+  statusCode: number | null;
+  durationMs: number | null;
+  success: boolean;
+  response?: string | null;
+  error?: string | null;
+  attempts: number;
+  createdAt: string;
 }
 
 export interface SavedView {
