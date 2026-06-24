@@ -70,6 +70,14 @@ export async function mountQueueDashboard(app: Express): Promise<void> {
     if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
       const { automationQueue, automationDLQ } = await import('../jobs/automationEngine.js');
       adapters.push(new BullMQAdapter(automationQueue), new BullMQAdapter(automationDLQ));
+
+      // Campaign sender shares the automation-engine gate (Redis required).
+      try {
+        const { getCampaignSenderQueue } = await import('../jobs/campaignSender.js');
+        adapters.push(new BullMQAdapter(getCampaignSenderQueue()));
+      } catch {
+        logger.warn('Queue dashboard: campaign sender queue unavailable');
+      }
     }
 
     if (process.env.ENABLE_BILLING_JOBS === 'true') {

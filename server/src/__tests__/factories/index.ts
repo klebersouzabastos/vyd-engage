@@ -73,6 +73,8 @@ export const leadFactory = Factory.define<Lead>(() => ({
   status: LeadStatus.NEW,
   source: LeadSource.WEBSITE,
   score: 0,
+  unsubscribed: false,
+  unsubscribedAt: null,
   customFields: {},
   notes: null,
   assignedTo: null,

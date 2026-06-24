@@ -3,7 +3,38 @@ import crypto from 'crypto';
 import { paymentService } from '../services/paymentService.js';
 import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
+import { recordBounceByEmail } from '../services/campaignService.js';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Extract bounced recipient emails from a provider webhook payload and record a
+ * campaign BOUNCED event for each (req 24). Does not touch unsubscribe state
+ * (edge case: bounce on an already-unsubscribed lead must not duplicate
+ * UNSUBSCRIBED). Best-effort: never throws into the webhook handler.
+ */
+async function recordCampaignBounces(provider: string, payload: any): Promise<void> {
+  try {
+    const emails = new Set<string>();
+    if (provider === 'sendgrid' && Array.isArray(payload)) {
+      for (const ev of payload) {
+        if ((ev?.event === 'bounce' || ev?.event === 'dropped') && ev?.email) {
+          emails.add(String(ev.email));
+        }
+      }
+    } else if (provider === 'resend') {
+      if (payload?.type === 'email.bounced') {
+        const to = payload?.data?.to;
+        const list = Array.isArray(to) ? to : to ? [to] : [];
+        for (const e of list) emails.add(String(e));
+      }
+    }
+    for (const email of emails) {
+      await recordBounceByEmail(email);
+    }
+  } catch (err: any) {
+    logger.error('Failed to record campaign bounces', { provider, err: err?.message });
+  }
+}
 
 const router = Router();
 
@@ -217,6 +248,8 @@ router.post('/email/sendgrid', async (req: Request, res: Response) => {
     emailMessagingService.processWebhook('sendgrid', req.body).catch(error => {
       logger.error('Error processing SendGrid webhook', error);
     });
+    // Campaign bounce tracking (req 24) — best-effort, async.
+    recordCampaignBounces('sendgrid', req.body).catch(() => {});
     res.status(200).json({ received: true });
   } catch (error) {
     logger.error('Error handling SendGrid webhook', error);
@@ -236,6 +269,8 @@ router.post('/email/resend', async (req: Request, res: Response) => {
     emailMessagingService.processWebhook('resend', req.body).catch(error => {
       logger.error('Error processing Resend webhook', error);
     });
+    // Campaign bounce tracking (req 24) — best-effort, async.
+    recordCampaignBounces('resend', req.body).catch(() => {});
     res.status(200).json({ received: true });
   } catch (error) {
     logger.error('Error handling Resend webhook', error);

@@ -1498,6 +1498,62 @@ class ApiClient {
     });
   }
 
+  // ── Campaigns (Email Campaigns) ─────────────────────
+  async getCampaigns() {
+    const res = await this.request<{ status: number; data: CampaignListItem[] }>('/api/v1/campaigns');
+    return res.data;
+  }
+
+  async getCampaign(id: string) {
+    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}`);
+    return res.data;
+  }
+
+  async createCampaign(data: CampaignInput) {
+    const res = await this.request<{ status: number; data: Campaign }>('/api/v1/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  }
+
+  async updateCampaign(id: string, data: Partial<CampaignInput>) {
+    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  }
+
+  async deleteCampaign(id: string) {
+    return this.request<void>(`/api/v1/campaigns/${id}`, { method: 'DELETE' });
+  }
+
+  async previewCampaignAudience(id: string) {
+    const res = await this.request<{ status: number; data: CampaignAudiencePreview }>(`/api/v1/campaigns/${id}/preview-audience`);
+    return res.data;
+  }
+
+  async scheduleCampaign(id: string, sendAt: string | null) {
+    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}/schedule`, {
+      method: 'POST',
+      body: JSON.stringify({ sendAt }),
+    });
+    return res.data;
+  }
+
+  async sendCampaignTestEmail(id: string) {
+    const res = await this.request<{ status: number; data: { success: boolean } }>(`/api/v1/campaigns/${id}/test-email`, {
+      method: 'POST',
+    });
+    return res.data;
+  }
+
+  async getCampaignStats(id: string) {
+    const res = await this.request<{ status: number; data: CampaignStats }>(`/api/v1/campaigns/${id}/stats`);
+    return res.data;
+  }
+
   // ── Email Templates ────────────────────────────────
   async getEmailTemplates() {
     return this.request<EmailTemplateListItem[]>('/api/v1/email-templates');
@@ -1694,6 +1750,91 @@ export interface EmailTemplateListItem {
 
 export interface EmailTemplateDetail extends EmailTemplateListItem {
   html: string;
+}
+
+// ── Campaign types ──────────────────────────────────
+// Block schema — shared contract with backend (`blocksToHtml`). The campaign
+// body is `blocks: Block[]`; the frontend renders the preview by mapping these.
+export type Block =
+  | { id: string; type: 'text'; content: string }
+  | { id: string; type: 'image'; url: string; alt?: string }
+  | { id: string; type: 'button'; label: string; href: string }
+  | { id: string; type: 'divider' }
+  | { id: string; type: 'spacer'; height?: number };
+
+export type CampaignStatus = 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'PAUSED' | 'CANCELLED';
+
+/** Audience segmentation filters (req 12). */
+export interface CampaignAudienceFilters {
+  status?: string;
+  tagId?: string;
+  assignedTo?: string;
+  source?: string;
+  minScore?: number;
+  maxScore?: number;
+  /** ISO date — last interaction before this date. */
+  lastInteractionBefore?: string;
+  /** ISO date — last interaction after this date. */
+  lastInteractionAfter?: string;
+  /** Leads with no interaction in the last N days. */
+  noInteractionDays?: number;
+}
+
+export interface CampaignInput {
+  name: string;
+  fromName?: string;
+  fromEmail?: string;
+  subject: string;
+  blocks: Block[];
+  audienceFilters: CampaignAudienceFilters;
+}
+
+export interface CampaignListItem {
+  id: string;
+  name: string;
+  status: CampaignStatus;
+  subject: string;
+  sentCount?: number;
+  openRate?: number;
+  ctr?: number;
+  scheduledAt?: string | null;
+  sentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Campaign extends CampaignListItem {
+  fromName?: string | null;
+  fromEmail?: string | null;
+  blocks: Block[];
+  audienceFilters: CampaignAudienceFilters;
+}
+
+export interface CampaignAudiencePreview {
+  count: number;
+  sample: Array<{ name: string; email: string }>;
+}
+
+export interface CampaignRecipientRow {
+  leadId: string;
+  name: string;
+  email: string;
+  status: string;
+  openedAt: string | null;
+}
+
+export interface CampaignStats {
+  sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  unsubscribed: number;
+  bounced: number;
+  openRate: number;
+  ctr: number;
+  unsubRate: number;
+  timeline: Array<{ hour: string; opens: number }>;
+  recipients: CampaignRecipientRow[];
 }
 
 // ── Import Pro types ────────────────────────────────

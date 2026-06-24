@@ -166,6 +166,7 @@ model Tenant {
   goals              Goal[]
   stageTaskTemplates StageTaskTemplate[]
   importBatches      ImportBatch[]
+  campaigns          Campaign[]
 
   @@index([slug])
 }
@@ -547,6 +548,10 @@ model Lead {
   source LeadSource @default(WEBSITE)
   score  Int        @default(0)
 
+  // Email marketing opt-out (LGPD) — excluded from all current/future campaigns
+  unsubscribed   Boolean   @default(false)
+  unsubscribedAt DateTime?
+
   // Custom fields (JSON for flexibility)
   customFields Json @default("{}")
 
@@ -571,11 +576,12 @@ model Lead {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tags           LeadTag[]
-  interactions   Interaction[]
-  tasks          Task[]
-  automationLogs AutomationLog[]
-  deals          Deal[]
+  tags               LeadTag[]
+  interactions       Interaction[]
+  tasks              Task[]
+  automationLogs     AutomationLog[]
+  deals              Deal[]
+  campaignRecipients CampaignRecipient[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -586,6 +592,7 @@ model Lead {
   @@index([tenantId, companyId])
   @@index([tenantId, deletedAt])
   @@index([tenantId, importBatchId])
+  @@index([tenantId, unsubscribed])
 }
 
 model Tag {
@@ -1318,4 +1325,129 @@ model ImportBatch {
 
   @@index([tenantId, createdAt])
   @@map("import_batches")
+}
+
+// ============================================
+// EMAIL CAMPAIGNS
+// ============================================
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum CampaignRecipientStatus {
+  PENDING
+  SENT
+  OPENED
+  CLICKED
+  UNSUBSCRIBED
+  BOUNCED
+  ERROR
+}
+
+enum CampaignEventType {
+  OPENED
+  CLICKED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+model Campaign {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name    String
+  status  CampaignStatus @default(DRAFT)
+
+  // Sender
+  fromName  String?
+  fromEmail String?
+  // Email config (provider) used to send — references EmailConfig.id
+  configId  String?
+
+  // Content
+  subject String @default("")
+  // Body as Block[] (text|image|button|divider|spacer) — see shared contract
+  blocks  Json   @default("[]")
+
+  // Audience segmentation filters (status/tag/responsavel/source/score/lastInteraction/no-interaction)
+  audienceFilters Json @default("{}")
+
+  // Scheduling
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipients CampaignRecipient[]
+  events     CampaignEvent[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("campaigns")
+}
+
+model CampaignRecipient {
+  id         String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tenantId   String
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Public token for open/click/unsubscribe tracking (unique per recipient)
+  token String @unique
+
+  // Denormalized recipient identity (snapshot at send time)
+  email String
+  name  String?
+
+  status CampaignRecipientStatus @default(PENDING)
+
+  // Per-recipient delivery bookkeeping (edge case: max 3 retries)
+  errorCount Int     @default(0)
+  lastError  String?
+  sentAt     DateTime?
+  openedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events CampaignEvent[]
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId])
+  @@index([tenantId])
+  @@index([campaignId, status])
+  @@map("campaign_recipients")
+}
+
+model CampaignEvent {
+  id          String            @id @default(uuid())
+  campaignId  String
+  campaign    Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   CampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  tenantId    String
+  leadId      String
+
+  type CampaignEventType
+  // Original URL for CLICKED events
+  url  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([campaignId, type])
+  @@index([recipientId])
+  @@index([campaignId, type, createdAt])
+  @@map("campaign_events")
 }

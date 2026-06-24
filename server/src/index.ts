@@ -97,6 +97,13 @@ if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
       logger.error('Failed to initialize scoreDeals job', error);
     });
   });
+
+  // Email campaign sender — same gate (requires BullMQ + Redis)
+  import('./jobs/campaignSender.js').then(({ initializeCampaignSender }) => {
+    initializeCampaignSender().catch((error) => {
+      logger.error('Failed to initialize campaign sender', error);
+    });
+  });
 }
 
 // Initialize task notification checker (always active — lightweight, no Redis needed)
@@ -183,6 +190,8 @@ import productRoutes from './routes/products.js';
 import goalRoutes from './routes/goals.js';
 import stageTaskTemplateRoutes from './routes/stageTaskTemplates.js';
 import importRoutes from './routes/import.js';
+import campaignRoutes from './routes/campaigns.js';
+import campaignTrackingRoutes from './routes/campaignTracking.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -255,11 +264,15 @@ v1Router.use('/products', csrfProtection);
 v1Router.use('/goals', csrfProtection);
 v1Router.use('/stage-task-templates', csrfProtection);
 v1Router.use('/import', csrfProtection);
+v1Router.use('/campaigns', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
 // Tracking routes (public, no auth, no CSRF)
 v1Router.use('/track', trackingRoutes);
+// Campaign tracking (public, no auth, no CSRF) — canonical paths:
+//   GET /api/v1/track/campaign-open/:token | campaign-click/:token | unsubscribe/:token
+v1Router.use('/track', campaignTrackingRoutes);
 
 // API Routes
 v1Router.use('/auth', authRoutes);
@@ -296,6 +309,7 @@ v1Router.use('/products', productRoutes);
 v1Router.use('/goals', goalRoutes);
 v1Router.use('/stage-task-templates', stageTaskTemplateRoutes);
 v1Router.use('/import', importRoutes);
+v1Router.use('/campaigns', campaignRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 
@@ -306,6 +320,11 @@ app.use('/api', v1Router);
 // Public routes (no auth required)
 
 const publicRouter = ExpressRouter();
+
+// Public campaign tracking (no auth, no CSRF) — backward-compat alias.
+// Canonical paths are /api/v1/track/* (mounted on v1Router above).
+//   /api/v1/public/track/campaign-open/:token | campaign-click/:token | unsubscribe/:token
+publicRouter.use('/track', campaignTrackingRoutes);
 
 const captureLeadSchema = zodLib.object({
   name: zodLib.string().min(1),

@@ -22,6 +22,7 @@ import {
   Shield,
   Package,
   Upload,
+  Mail,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,6 +40,7 @@ const menuItems = [
   { icon: GitBranch, label: "Pipeline", path: "/app/pipeline", tourId: "sidebar-pipeline" },
   { icon: Inbox, label: "Inbox", path: "/app/inbox", tourId: "sidebar-inbox" },
   { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },
+  { icon: Mail, label: "Campanhas", path: "/app/campaigns", tourId: "sidebar-campaigns" },
   { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
   { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
   { icon: TrendingUp, label: "Performance", path: "/app/performance", tourId: "sidebar-performance" },

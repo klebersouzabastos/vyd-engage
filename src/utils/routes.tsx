@@ -77,6 +77,9 @@ const TeamPerformance = lazyNamed(() => import('../pages/TeamPerformance'), 'Tea
 const WinLossReport = lazyNamed(() => import('../pages/WinLossReport'), 'WinLossReport');
 const Products = lazyNamed(() => import('../pages/Products'), 'Products');
 const Import = lazyNamed(() => import('../pages/Import'), 'Import');
+const Campaigns = lazyNamed(() => import('../pages/Campaigns'), 'Campaigns');
+const CampaignWizard = lazyNamed(() => import('../pages/CampaignWizard'), 'CampaignWizard');
+const CampaignDetail = lazyNamed(() => import('../pages/CampaignDetail'), 'CampaignDetail');
 
 export const router = createBrowserRouter([
   {
@@ -246,6 +249,18 @@ export const router = createBrowserRouter([
       {
         path: "email/campaigns",
         element: EmailCampaigns,
+      },
+      {
+        path: "campaigns",
+        element: Campaigns,
+      },
+      {
+        path: "campaigns/new",
+        element: CampaignWizard,
+      },
+      {
+        path: "campaigns/:id",
+        element: CampaignDetail,
       },
       {
         path: "reports",
