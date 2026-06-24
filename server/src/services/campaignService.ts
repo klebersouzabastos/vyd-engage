@@ -116,7 +116,7 @@ export function applyMergeTags(template: string | null | undefined, ctx: MergeTa
 }
 
 /** Replace merge tags inside HTML content, escaping substituted values. */
-function applyMergeTagsHtml(template: string, ctx: MergeTagContext): string {
+export function applyMergeTagsHtml(template: string, ctx: MergeTagContext): string {
   return template.replace(/\{\{\s*([a-zA-Z._-]+)\s*\}\}/g, (match, rawKey: string) => {
     const field = MERGE_FIELDS[rawKey.toLowerCase()];
     if (!field) return match;

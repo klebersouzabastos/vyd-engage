@@ -33,12 +33,21 @@ export interface OutgoingWebhookPayload {
   data: Record<string, unknown>;
 }
 
-function buildOutgoingPayload(
+export function buildOutgoingPayload(
   tenantId: string,
   event: string,
   data: Record<string, unknown>,
 ): OutgoingWebhookPayload {
   return { event, tenantId, timestamp: new Date().toISOString(), data };
+}
+
+/**
+ * Compute the HMAC-SHA256 signature sent in the X-VYD-Signature header (req 12).
+ * Hex digest of the raw request body keyed by the webhook secret. Exported as a
+ * pure helper so receivers can verify deliveries with the same algorithm.
+ */
+export function computeSignature(secret: string, body: string): string {
+  return crypto.createHmac('sha256', secret).update(body).digest('hex');
 }
 
 interface DeliveryJobData {
@@ -87,10 +96,7 @@ async function deliverOnce(job: DeliveryJobData, attempts: number): Promise<void
   if (!webhook) return;
 
   const body = JSON.stringify(job.payload);
-  const signature = crypto
-    .createHmac('sha256', webhook.secret)
-    .update(body)
-    .digest('hex');
+  const signature = computeSignature(webhook.secret, body);
 
   const startTime = Date.now();
   try {
