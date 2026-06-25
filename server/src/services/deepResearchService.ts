@@ -154,6 +154,13 @@ export const deepResearchService = {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.status !== undefined) updateData.status = data.status;
+
+    // Re-solicitar limpa o disparo anterior, permitindo nova tentativa (ex.: após
+    // uma falha) — o maybeTrigger volta a disparar pois não há mais responseId.
+    if (data.status === DeepResearchStatus.RESEARCHING) {
+      updateData.providerResponseId = null;
+      updateData.providerError = null;
+    }
     if (data.variables !== undefined) {
       updateData.variables = data.variables;
       // Re-monta o prompt (server-side) com os novos valores.
