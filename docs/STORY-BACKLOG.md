@@ -1,6 +1,6 @@
 # Story Backlog — VYD Engage
 
-**Atualizado:** 2026-03-21
+**Atualizado:** 2026-06-23
 **Revisado por:** Pax (PO)
 
 ---
@@ -9,17 +9,87 @@
 
 | Métrica | Valor |
 |---------|-------|
-| Total de itens | 52 |
+| Total de itens | 68 |
 | 🔴 HIGH | 0 |
 | 🟡 MEDIUM | 0 |
 | 🟢 LOW | 0 |
-| 📋 TODO | 0 |
+| 📋 TODO | 16 |
 | 🚧 IN PROGRESS | 0 |
 | ✅ DONE | 52 |
 
 ---
 
-## 🟢 Backlog Cleared — All Items Done
+## 📋 PLANNED (Growth Roadmap — 4 Épicos)
+
+> PRD mestre: [docs/prd/prd-growth-roadmap.md](prd/prd-growth-roadmap.md)
+
+---
+
+### [EPIC-IMPORT-PRO] Import Pro — Migração de Dados
+**Status:** Planejado | **Prioridade:** P0 | **Pontos:** 21  
+**Épico:** [docs/stories/epic-import-pro.md](stories/epic-import-pro.md) | **PRD:** [docs/prd/prd-import-pro.md](prd/prd-import-pro.md)
+
+| Story | Título | Pts | Sprint | Status |
+|-------|--------|-----|--------|--------|
+| [IMP-1.1](stories/imp-1.1-csv-upload-mapping.md) | Upload CSV/Excel com Mapeamento de Campos | 8 | 1 | Draft |
+| [IMP-1.2](stories/imp-1.2-dedup-preview.md) | Deduplicação e Preview antes de Importar | 5 | 1 | Draft |
+| [IMP-2.1](stories/imp-2.1-deals-interactions-import.md) | Importação de Deals e Histórico de Interações | 5 | 2 | Draft |
+| [IMP-2.2](stories/imp-2.2-import-history-rollback.md) | Histórico e Rollback de Importações | 3 | 2 | Draft |
+
+---
+
+### [EPIC-AI-SALES] AI Sales Assistant
+**Status:** Planejado | **Prioridade:** P0 | **Pontos:** 26  
+**Épico:** [docs/stories/epic-ai-sales-assistant.md](stories/epic-ai-sales-assistant.md) | **PRD:** [docs/prd/prd-ai-sales-assistant.md](prd/prd-ai-sales-assistant.md)
+
+| Story | Título | Pts | Sprint | Status |
+|-------|--------|-----|--------|--------|
+| [AI-1.1](stories/ai-1.1-lead-summary.md) | Resumo Contextual do Lead (IA) | 5 | 1 | Draft |
+| [AI-1.2](stories/ai-1.2-next-action-suggestion.md) | Sugestão de Próxima Ação com Justificativa | 5 | 1 | Draft |
+| [AI-2.1](stories/ai-2.1-deal-closing-score.md) | Score de Propensão de Fechamento por Deal | 8 | 2 | Draft |
+| [AI-2.2](stories/ai-2.2-contextual-chat.md) | Chat Contextual no Lead | 8 | 2 | Draft |
+
+---
+
+### [EPIC-EMAIL-CAMPAIGNS] Email Campaigns
+**Status:** Planejado | **Prioridade:** P1 | **Pontos:** 28  
+**Épico:** [docs/stories/epic-email-campaigns.md](stories/epic-email-campaigns.md) | **PRD:** [docs/prd/prd-email-campaigns.md](prd/prd-email-campaigns.md)
+
+| Story | Título | Pts | Sprint | Status |
+|-------|--------|-----|--------|--------|
+| [EC-1.1](stories/ec-1.1-campaign-editor.md) | Criação de Campanha com Editor de Blocos | 13 | 1 | Draft |
+| [EC-1.2](stories/ec-1.2-segmentation-scheduling.md) | Segmentação de Audiência e Agendamento | 5 | 1 | Draft |
+| [EC-2.1](stories/ec-2.1-click-open-tracking.md) | Tracking de Abertura e Clique por Campanha | 5 | 2 | Draft |
+| [EC-2.2](stories/ec-2.2-campaign-dashboard.md) | Dashboard de Resultados de Campanha | 5 | 2 | Draft |
+
+---
+
+### [EPIC-API-HUB] API Hub — Integrações e API Pública
+**Status:** Planejado | **Prioridade:** P1 | **Pontos:** 31  
+**Épico:** [docs/stories/epic-api-hub.md](stories/epic-api-hub.md) | **PRD:** [docs/prd/prd-api-hub.md](prd/prd-api-hub.md)
+
+| Story | Título | Pts | Sprint | Status |
+|-------|--------|-----|--------|--------|
+| [API-1.1](stories/api-1.1-swagger-docs.md) | Documentação Interativa da API (Swagger/Redoc) | 5 | 1 | Draft |
+| [API-1.2](stories/api-1.2-outgoing-webhooks.md) | Webhooks de Saída Configuráveis por Evento | 8 | 1 | Draft |
+| [API-2.1](stories/api-2.1-api-key-scopes.md) | Scopes e Permissões por API Key | 5 | 2 | Draft |
+| [API-2.2](stories/api-2.2-zapier-app.md) | Zapier App Nativo | 13 | 2 | Draft |
+
+---
+
+## Resumo Growth Roadmap
+
+| Épico | Stories | Pontos | Sequência |
+|-------|---------|--------|-----------|
+| Import Pro | 4 | 21 | 1º — Desbloqueador de adoção |
+| AI Sales | 4 | 26 | 2º — Diferenciador competitivo |
+| Email Campaigns | 4 | 28 | 3º — Retenção e MRR |
+| API Hub | 4 | 31 | 4º — Ecossistema de integrações |
+| **Total** | **16** | **106** | **~7-9 sprints** |
+
+---
+
+## 🟢 Backlog Cleared — Previous Epics Done
 
 ---
 

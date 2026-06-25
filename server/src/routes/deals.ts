@@ -3,12 +3,15 @@ import { z } from 'zod';
 import { dealService } from '../services/dealService.js';
 import { forecastService } from '../services/forecastService.js';
 import { getDealNextAction, getActionSummary } from '../services/nextActionService.js';
+import { dealScoringService } from '../services/dealScoringService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
+import { aiLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
 import { DealStage } from '@prisma/client';
 import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
+import { dispatchTrigger } from '../jobs/automationEngine.js';
 
 const router = Router();
 
@@ -204,6 +207,25 @@ router.get('/:id/next-action', async (req, res, next) => {
   }
 });
 
+// GET /api/deals/:id/ai-score - AI close-propensity score + top-3 factors (req 22).
+// Pass ?recalc=true to force an on-demand recalculation (req 21).
+router.get('/:id/ai-score', aiLimiter, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const forceRecalc = req.query.recalc === 'true' || req.query.recalc === '1';
+    const result = forceRecalc
+      ? await dealScoringService.computeAndStore(req.user.tenantId, req.params.id)
+      : await dealScoringService.getOrCompute(req.user.tenantId, req.params.id);
+
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/deals - Create deal
 router.post('/', async (req, res, next) => {
   try {
@@ -213,6 +235,15 @@ router.post('/', async (req, res, next) => {
 
     const data = createDealSchema.parse(req.body);
     const deal = await dealService.create(req.user.tenantId, data);
+
+    dispatchTrigger(
+      req.user.tenantId,
+      'deal_created',
+      deal.leadId ?? undefined,
+      { dealId: deal.id, dealName: deal.name, stage: deal.stage },
+      deal.id
+    ).catch(() => {});
+
     res.status(201).json(deal);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -257,6 +288,16 @@ router.put('/:id', async (req, res, next) => {
         oldData: existing as Record<string, unknown>,
         newData: deal as Record<string, unknown>,
       }).catch(() => {});
+
+      if (existing.stage !== deal.stage) {
+        dispatchTrigger(
+          req.user.tenantId,
+          'deal_stage_changed',
+          deal.leadId ?? undefined,
+          { dealId: deal.id, dealName: deal.name, fromStage: existing.stage, toStage: deal.stage },
+          deal.id
+        ).catch(() => {});
+      }
     }
 
     res.json(deal);

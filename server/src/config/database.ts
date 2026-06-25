@@ -7,7 +7,7 @@ const prisma = new PrismaClient({
     : ['error'],
 });
 
-const SOFT_DELETE_MODELS = new Set(['Lead', 'Deal', 'Company', 'Task', 'SavedView']);
+const SOFT_DELETE_MODELS = new Set(['Lead', 'Deal', 'Company', 'Task', 'SavedView', 'Interaction']);
 
 // Automatically exclude soft-deleted records from read queries.
 // Queries that explicitly need deleted records must pass `deletedAt: { not: null }`.

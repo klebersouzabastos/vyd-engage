@@ -45,32 +45,7 @@ import {
   Webhook,
   Loader2,
 } from "lucide-react";
-import { apiClient } from "../services/api/client";
-
-// Types
-interface WebhookData {
-  id: string;
-  url: string;
-  events: string[];
-  secret: string;
-  active: boolean;
-  successCount: number;
-  failureCount: number;
-  lastTriggeredAt: string | null;
-  createdAt: string;
-  _count?: { logs: number };
-}
-
-interface WebhookLog {
-  id: string;
-  webhookId: string;
-  event: string;
-  status: string;
-  statusCode?: number;
-  response?: string;
-  error?: string;
-  createdAt: string;
-}
+import { apiClient, ApiError, type OutgoingWebhook, type OutgoingWebhookLog } from "../services/api/client";
 
 interface TestResult {
   success: boolean;
@@ -78,6 +53,20 @@ interface TestResult {
   responseTime?: number;
   error?: string;
 }
+
+// The 9 selectable events (req 10). Used as fallback if the events endpoint
+// is unavailable; otherwise the server list is authoritative.
+const SELECTABLE_EVENTS = [
+  "lead.created",
+  "lead.updated",
+  "lead.deleted",
+  "deal.created",
+  "deal.updated",
+  "deal.won",
+  "deal.lost",
+  "task.completed",
+  "automation.triggered",
+];
 
 // Event label formatting
 function formatEventLabel(event: string): string {
@@ -88,14 +77,14 @@ function formatEventLabel(event: string): string {
 }
 
 export function Webhooks() {
-  const [webhooks, setWebhooks] = useState<WebhookData[]>([]);
+  const [webhooks, setWebhooks] = useState<OutgoingWebhook[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingWebhook, setEditingWebhook] = useState<WebhookData | null>(null);
-  const [deletingWebhook, setDeletingWebhook] = useState<WebhookData | null>(null);
+  const [editingWebhook, setEditingWebhook] = useState<OutgoingWebhook | null>(null);
+  const [deletingWebhook, setDeletingWebhook] = useState<OutgoingWebhook | null>(null);
   const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null);
-  const [webhookLogs, setWebhookLogs] = useState<Record<string, WebhookLog[]>>({});
+  const [webhookLogs, setWebhookLogs] = useState<Record<string, OutgoingWebhookLog[]>>({});
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [saving, setSaving] = useState(false);
@@ -103,13 +92,14 @@ export function Webhooks() {
   // Form state
   const [formUrl, setFormUrl] = useState("");
   const [formEvents, setFormEvents] = useState<string[]>([]);
+  const [formSecret, setFormSecret] = useState("");
 
   const fetchWebhooks = useCallback(async () => {
     try {
       const data = await apiClient.getOutgoingWebhooks();
-      setWebhooks(data as unknown as WebhookData[]);
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao carregar webhooks");
+      setWebhooks(data);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao carregar webhooks");
     } finally {
       setLoading(false);
     }
@@ -118,15 +108,9 @@ export function Webhooks() {
   const fetchEvents = useCallback(async () => {
     try {
       const data = await apiClient.getWebhookEvents();
-      setEvents(data);
+      setEvents(data.length > 0 ? data : SELECTABLE_EVENTS);
     } catch {
-      // Fallback events
-      setEvents([
-        "lead.created", "lead.updated", "lead.deleted", "lead.status_changed",
-        "deal.created", "deal.updated", "deal.stage_changed", "deal.won", "deal.lost",
-        "task.created", "task.completed", "automation.triggered",
-        "payment.approved", "payment.failed",
-      ]);
+      setEvents(SELECTABLE_EVENTS);
     }
   }, []);
 
@@ -138,8 +122,8 @@ export function Webhooks() {
   const fetchLogs = async (webhookId: string) => {
     try {
       const data = await apiClient.getWebhookLogs(webhookId);
-      setWebhookLogs((prev) => ({ ...prev, [webhookId]: data as unknown as WebhookLog[] }));
-    } catch (error: any) {
+      setWebhookLogs((prev) => ({ ...prev, [webhookId]: data }));
+    } catch {
       toast.error("Erro ao carregar logs");
     }
   };
@@ -158,13 +142,15 @@ export function Webhooks() {
   const openCreate = () => {
     setFormUrl("");
     setFormEvents([]);
+    setFormSecret("");
     setEditingWebhook(null);
     setIsCreateOpen(true);
   };
 
-  const openEdit = (webhook: WebhookData) => {
+  const openEdit = (webhook: OutgoingWebhook) => {
     setFormUrl(webhook.url);
     setFormEvents([...webhook.events]);
+    setFormSecret("");
     setEditingWebhook(webhook);
     setIsCreateOpen(true);
   };
@@ -176,6 +162,11 @@ export function Webhooks() {
     }
     if (formEvents.length === 0) {
       toast.error("Selecione ao menos um evento");
+      return;
+    }
+    // Secret required on creation (req 9 edge case). Updates keep the existing secret.
+    if (!editingWebhook && !formSecret.trim()) {
+      toast.error("O secret e obrigatorio para assinatura HMAC");
       return;
     }
 
@@ -191,13 +182,25 @@ export function Webhooks() {
         await apiClient.createOutgoingWebhook({
           url: formUrl.trim(),
           events: formEvents,
+          secret: formSecret.trim(),
         });
         toast.success("Webhook criado");
       }
       setIsCreateOpen(false);
       fetchWebhooks();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar webhook");
+    } catch (error) {
+      // Tenant reached the 10-webhook limit (req 15 / edge case → HTTP 422).
+      if (
+        error instanceof ApiError &&
+        (error.statusCode === 422 || error.code === "WEBHOOK_LIMIT_REACHED")
+      ) {
+        toast.error(
+          error.message ||
+            "Limite de 10 webhooks atingido. Remova um webhook existente para criar outro."
+        );
+      } else {
+        toast.error(error instanceof Error ? error.message : "Erro ao salvar webhook");
+      }
     } finally {
       setSaving(false);
     }
@@ -210,21 +213,21 @@ export function Webhooks() {
       toast.success("Webhook removido");
       setDeletingWebhook(null);
       fetchWebhooks();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao remover webhook");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao remover webhook");
     }
   };
 
-  const handleToggleActive = async (webhook: WebhookData) => {
+  const handleToggleActive = async (webhook: OutgoingWebhook) => {
     try {
       await apiClient.updateOutgoingWebhook(webhook.id, { active: !webhook.active });
       fetchWebhooks();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao alterar status");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao alterar status");
     }
   };
 
-  const handleTest = async (webhook: WebhookData) => {
+  const handleTest = async (webhook: OutgoingWebhook) => {
     setTestingId(webhook.id);
     setTestResult(null);
     try {
@@ -233,14 +236,14 @@ export function Webhooks() {
       if (result.success) {
         toast.success(`Teste OK — ${result.statusCode} em ${result.responseTime}ms`);
       } else {
-        toast.error(`Teste falhou — ${result.statusCode || result.error || "Erro desconhecido"}`);
+        toast.error(`Teste falhou — ${result.statusCode ?? "Erro desconhecido"}`);
       }
       fetchWebhooks();
       if (expandedWebhook === webhook.id) {
         fetchLogs(webhook.id);
       }
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao testar webhook");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao testar webhook");
     } finally {
       setTestingId(null);
     }
@@ -418,7 +421,8 @@ export function Webhooks() {
                               key={log.id}
                               className="flex items-center gap-3 bg-white rounded border border-gray-200 px-3 py-2 text-sm"
                             >
-                              {log.status === "SUCCESS" ? (
+                              {/* success indicator (req 14) */}
+                              {log.success ? (
                                 <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
                               ) : (
                                 <XCircle size={14} className="text-red-500 flex-shrink-0" />
@@ -426,10 +430,15 @@ export function Webhooks() {
                               <Badge variant="outline" className="text-xs">
                                 {log.event}
                               </Badge>
-                              {log.statusCode && (
+                              {/* HTTP status code (req 14) */}
+                              {log.statusCode != null && (
                                 <span className="font-mono text-xs text-gray-600">
                                   {log.statusCode}
                                 </span>
+                              )}
+                              {/* duration in ms (req 14) */}
+                              {log.durationMs != null && (
+                                <span className="text-xs text-gray-500">{log.durationMs}ms</span>
                               )}
                               <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
                                 {new Date(log.createdAt).toLocaleString("pt-BR")}
@@ -497,6 +506,24 @@ export function Webhooks() {
                 className="mt-1"
               />
             </div>
+
+            {/* Secret — required on creation for HMAC signing (req 9). */}
+            {!editingWebhook && (
+              <div>
+                <Label htmlFor="webhook-secret">Secret (assinatura HMAC)</Label>
+                <Input
+                  id="webhook-secret"
+                  type="text"
+                  placeholder="Ex: uma string secreta e aleatoria"
+                  value={formSecret}
+                  onChange={(e) => setFormSecret(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Usado para assinar cada disparo no header X-VYD-Signature. Obrigatorio.
+                </p>
+              </div>
+            )}
 
             <div>
               <Label className="mb-2 block">Eventos</Label>

@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { leadService } from '../services/leadService.js';
-import { getLeadNextAction } from '../services/nextActionService.js';
+import { getLeadNextActionWithReasoning } from '../services/nextActionService.js';
+import { aiAssistantService } from '../services/aiAssistantService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
+import { aiLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
 import { LeadStatus, LeadSource, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
@@ -303,16 +305,82 @@ router.get('/stats/count', async (req, res, next) => {
   }
 });
 
-// GET /api/leads/:id/next-action - Get suggested next action for a lead
-router.get('/:id/next-action', async (req, res, next) => {
+// GET /api/leads/:id/next-action - Suggested next action with AI reasoning (reqs 10, 13, 15)
+router.get('/:id/next-action', aiLimiter, async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
     }
 
-    const action = await getLeadNextAction(req.user.tenantId, req.params.id);
+    const action = await getLeadNextActionWithReasoning(req.user.tenantId, req.params.id);
     res.json({ status: 200, data: action });
   } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/leads/:id/ai-summary - Contextual AI summary of the lead (req 8)
+router.get('/:id/ai-summary', aiLimiter, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const summary = await aiAssistantService.generateLeadSummary(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: summary });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/leads/:id/ai-chat - Contextual AI chat, streamed as raw text (req 30)
+const aiChatSchema = z.object({
+  message: z.string().min(1).max(4000),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+      })
+    )
+    .optional()
+    .default([]),
+});
+
+router.post('/:id/ai-chat', aiLimiter, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const data = aiChatSchema.parse(req.body);
+
+    const result = await aiAssistantService.streamLeadChat(
+      req.user.tenantId,
+      req.params.id,
+      data.message,
+      data.history
+    );
+
+    // Stream tokens as a raw text/plain stream so the frontend can read it via
+    // ReadableStream without the `ai` package.
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    try {
+      for await (const chunk of result.textStream) {
+        res.write(chunk);
+      }
+      res.end();
+    } catch {
+      // Provider dropped mid-stream — flush what we have and close (edge case).
+      if (!res.writableEnded) res.end();
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

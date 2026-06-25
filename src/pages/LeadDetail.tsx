@@ -39,6 +39,9 @@ import { DealStageBadge } from "../components/deals/DealStageBadge";
 import { DealForm } from "../components/deals/DealForm";
 import { NextActionCard } from "../components/NextActionCard";
 import { AIDraftDialog } from "../components/ai/AIDraftDialog";
+import { AISummaryCard } from "../components/leads/AISummaryCard";
+import { NextActionBadge } from "../components/leads/NextActionBadge";
+import { AIChatPanel } from "../components/leads/AIChatPanel";
 import { AuditTimeline } from "../components/AuditTimeline";
 import { Deal, DealStage } from "../types";
 import { Handshake, DollarSign } from "lucide-react";
@@ -404,6 +407,9 @@ export function LeadDetail() {
           <span className="text-sm">Voltar para Leads</span>
         </button>
 
+        {/* AI Summary Card — top of the lead detail page */}
+        {id && <AISummaryCard leadId={id} />}
+
         {/* Split layout: 70/30 */}
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left: Activity Timeline (70%) */}
@@ -540,6 +546,12 @@ export function LeadDetail() {
                 </h2>
                 {lead.position && (
                   <p className="text-sm text-gray-500">{lead.position}</p>
+                )}
+                {/* AI next-action suggestion with reasoning tooltip */}
+                {id && (
+                  <div className="mt-2">
+                    <NextActionBadge leadId={id} />
+                  </div>
                 )}
               </div>
 
@@ -750,6 +762,13 @@ export function LeadDetail() {
                 Editar
               </Button>
             </div>
+
+            {/* AI Chat Panel */}
+            {id && (
+              <div className="mt-4">
+                <AIChatPanel leadId={id} />
+              </div>
+            )}
           </div>
         </div>
       </div>

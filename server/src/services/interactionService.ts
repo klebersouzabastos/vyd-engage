@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { InteractionType, InteractionDirection, ScoreEvent } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { scoringService } from './scoringService.js';
+import { getLeadNextActionWithReasoning } from './nextActionService.js';
 
 export interface CreateInteractionData {
   leadId?: string;
@@ -44,6 +45,9 @@ export const interactionService = {
     // Score interaction event
     if (interaction.leadId) {
       scoringService.processEvent(tenantId, interaction.leadId, ScoreEvent.INTERACTION_CREATED).catch(() => {});
+      // Recalculate the lead's next-action suggestion after a new interaction
+      // (spec req 14). Fire-and-forget — must not block interaction creation.
+      getLeadNextActionWithReasoning(tenantId, interaction.leadId).catch(() => {});
     }
 
     return interaction;

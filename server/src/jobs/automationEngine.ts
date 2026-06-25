@@ -9,6 +9,7 @@ import { notificationService } from '../services/notificationService.js';
 import { interpolateMergeTags, type MergeContext } from '../utils/mergeTags.js';
 import { computeDelayMs, evaluateCondition } from '../utils/automationEval.js';
 import { assertPublicHttpUrl } from '../utils/safeFetch.js';
+import { webhookDispatcher } from '../services/webhookDispatcher.js';
 
 // Redis connection configuration
 const redisConnection = {
@@ -24,7 +25,8 @@ const redisConnection = {
 export interface AutomationJobData {
   automationId: string;
   tenantId: string;
-  leadId: string;
+  leadId?: string;
+  dealId?: string;
   triggerEvent: string;
   triggerData?: Record<string, any>;
   /** Modelo de grafo: id do nó atual a executar. */
@@ -109,7 +111,7 @@ export function normalizeSteps(rawSteps: unknown): NormalizedStep[] {
 }
 
 export interface AutomationTrigger {
-  type: 'lead_created' | 'status_changed' | 'tag_added' | 'manual';
+  type: 'lead_created' | 'status_changed' | 'tag_added' | 'manual' | 'deal_created' | 'deal_stage_changed';
   conditions?: Record<string, any>;
 }
 
@@ -167,6 +169,7 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
     }
 
     case 'update_lead': {
+      if (!jobData.leadId) return { success: false, message: 'Step update_lead requer leadId' };
       const updateData: any = {};
       if (step.config.status !== undefined) updateData.status = step.config.status;
       if (step.config.assignedTo !== undefined) updateData.assignedTo = step.config.assignedTo;
@@ -187,6 +190,7 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
     }
 
     case 'add_tag': {
+      if (!jobData.leadId) return { success: false, message: 'Step add_tag requer leadId' };
       // UI grava tagName; resolvemos para tagId (criando a tag se necessário).
       let tagId: string | undefined = step.config.tagId;
       const tagName: string | undefined = step.config.tagName;
@@ -212,6 +216,7 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
     }
 
     case 'remove_tag': {
+      if (!jobData.leadId) return { success: false, message: 'Step remove_tag requer leadId' };
       // UI grava tagName; resolvemos para tagId. Tag inexistente = sucesso (no-op).
       let removeTagId: string | undefined = step.config.tagId;
       const tagName: string | undefined = step.config.tagName;
@@ -300,6 +305,7 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
     }
 
     case 'condition': {
+      if (!jobData.leadId) return { success: false, message: 'Step condition requer leadId' };
       // Avalia a condição; o roteamento (true/false) é feito pelo worker.
       const lead = await prisma.lead.findUnique({
         where: { id: jobData.leadId },
@@ -444,14 +450,15 @@ export const automationWorker = new Worker(
         return;
       }
 
-      // Verify lead still exists
-      const lead = await prisma.lead.findFirst({
-        where: { id: leadId, tenantId },
-      });
-
-      if (!lead) {
-        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, `Lead ${leadId} não encontrado`, null, undefined, { leadId, executionId });
-        return;
+      // Verify lead still exists (only when the trigger is lead-scoped)
+      if (leadId) {
+        const lead = await prisma.lead.findFirst({
+          where: { id: leadId, tenantId },
+        });
+        if (!lead) {
+          await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, `Lead ${leadId} não encontrado`, null, undefined, { leadId, executionId });
+          return;
+        }
       }
 
       // Normaliza os steps para o modelo de grafo (tolera automações antigas).
@@ -610,8 +617,9 @@ automationWorker.on('failed', (job, err) => {
 export async function dispatchTrigger(
   tenantId: string,
   triggerType: string,
-  leadId: string,
-  triggerData?: Record<string, any>
+  leadId: string | undefined,
+  triggerData?: Record<string, any>,
+  dealId?: string
 ): Promise<number> {
   try {
     // Find all active automations for this tenant
@@ -653,7 +661,7 @@ export async function dispatchTrigger(
           automation.id,
           AutomationLogStatus.SKIPPED,
           `Trigger ${triggerType}: automação sem passos`,
-          { executionId, leadId },
+          { executionId, leadId, dealId },
           undefined,
           { leadId, executionId },
         );
@@ -669,6 +677,7 @@ export async function dispatchTrigger(
             automationId: automation.id,
             tenantId,
             leadId,
+            dealId,
             triggerEvent: triggerType,
             triggerData,
             currentNodeId: nodeId,
@@ -678,25 +687,37 @@ export async function dispatchTrigger(
         );
       }
 
+      const subject = leadId ? `lead ${leadId}` : dealId ? `deal ${dealId}` : 'evento';
       await automationService.addLog(
         automation.id,
         AutomationLogStatus.SUCCESS,
-        `Trigger ${triggerType} disparado para lead ${leadId}`,
-        { executionId, leadId, triggerData },
+        `Trigger ${triggerType} disparado para ${subject}`,
+        { executionId, leadId, dealId, triggerData },
         undefined,
         { leadId, executionId }
       );
+
+      // Fire outgoing webhook (req: automation.triggered) — fire-and-forget.
+      webhookDispatcher.dispatch(tenantId, 'automation.triggered', {
+        automation_id: automation.id,
+        automation_name: automation.name,
+        trigger_type: triggerType,
+        lead_id: leadId ?? null,
+        deal_id: dealId ?? null,
+        execution_id: executionId,
+        triggered_at: new Date().toISOString(),
+      });
 
       dispatched++;
     }
 
     if (dispatched > 0) {
-      logger.info('Automation triggers dispatched', { tenantId, triggerType, leadId, dispatched });
+      logger.info('Automation triggers dispatched', { tenantId, triggerType, leadId, dealId, dispatched });
     }
 
     return dispatched;
   } catch (error: any) {
-    logger.error('Error dispatching automation trigger', error, { tenantId, triggerType, leadId });
+    logger.error('Error dispatching automation trigger', error, { tenantId, triggerType, leadId, dealId });
     return 0;
   }
 }

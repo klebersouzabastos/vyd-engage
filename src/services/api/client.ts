@@ -719,12 +719,14 @@ class ApiClient {
   }
 
   // API Keys
+  // List returns each key with `scopes: string[]` (empty array = full access / legacy).
   async getApiKeys() {
-    return this.request<Array<{ id: string; name: string; key?: string; lastUsedAt?: string; expiresAt?: string; createdAt: string }>>('/api/v1/api-keys');
+    return this.request<ApiKeyListItem[]>('/api/v1/api-keys');
   }
 
-  async createApiKey(data: { name: string; expiresAt?: string }) {
-    return this.request<{ id: string; name: string; key: string; expiresAt?: string; createdAt: string }>('/api/v1/api-keys', {
+  // Create body: { name, expiresAt?, scopes?: string[] }; returns the full key once.
+  async createApiKey(data: { name: string; expiresAt?: string; scopes?: string[] }) {
+    return this.request<ApiKeyCreated>('/api/v1/api-keys', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -740,18 +742,19 @@ class ApiClient {
   }
 
   async getOutgoingWebhooks() {
-    return this.request<Array<Record<string, unknown>>>('/api/v1/outgoing-webhooks');
+    return this.request<OutgoingWebhook[]>('/api/v1/outgoing-webhooks');
   }
 
-  async createOutgoingWebhook(data: { url: string; events: string[] }) {
-    return this.request<Record<string, unknown>>('/api/v1/outgoing-webhooks', {
+  // Create body: { url, events, secret } — secret must be non-empty (validated client-side too).
+  async createOutgoingWebhook(data: { url: string; events: string[]; secret: string }) {
+    return this.request<OutgoingWebhook>('/api/v1/outgoing-webhooks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateOutgoingWebhook(id: string, data: { url?: string; events?: string[]; active?: boolean }) {
-    return this.request<Record<string, unknown>>(`/api/v1/outgoing-webhooks/${id}`, {
+    return this.request<OutgoingWebhook>(`/api/v1/outgoing-webhooks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -762,7 +765,7 @@ class ApiClient {
   }
 
   async getWebhookLogs(webhookId: string) {
-    return this.request<Array<Record<string, unknown>>>(`/api/v1/outgoing-webhooks/${webhookId}/logs`);
+    return this.request<OutgoingWebhookLog[]>(`/api/v1/outgoing-webhooks/${webhookId}/logs`);
   }
 
   async testOutgoingWebhook(id: string, event?: string) {
@@ -1399,6 +1402,60 @@ class ApiClient {
   }
 
   // ========================
+  // AI Sales Assistant
+  // ========================
+
+  /**
+   * Gating check (req 33). When `enabled` is false the frontend hides all AI
+   * components and makes no further AI calls.
+   */
+  async getAIStatus() {
+    const res = await this.request<{ status: number; data: import('../../types').AIStatus }>('/api/v1/ai/status');
+    return res.data;
+  }
+
+  /**
+   * Contextual lead summary (req 8). Pass `force` to bypass the server cache
+   * (mirrors the "Atualizar" button); sent as `?refresh=true`.
+   */
+  async getLeadAISummary(leadId: string, force = false) {
+    const query = force ? '?refresh=true' : '';
+    const res = await this.request<{ status: number; data: import('../../types').AISummary }>(`/api/v1/leads/${leadId}/ai-summary${query}`);
+    return res.data;
+  }
+
+  /**
+   * Deal close-propensity score with top factors (req 22).
+   */
+  async getDealAIScore(dealId: string) {
+    const res = await this.request<{ status: number; data: import('../../types').DealAIScore }>(`/api/v1/deals/${dealId}/ai-score`);
+    return res.data;
+  }
+
+  /**
+   * Opens the AI chat stream (req 30). Returns the raw Response so the caller
+   * can read `response.body` as a ReadableStream of text chunks — the standard
+   * `request()` helper is bypassed because the body is a streamed text response,
+   * not a JSON envelope. Mirrors the cookie + CSRF auth handling used elsewhere.
+   */
+  async streamLeadAIChat(
+    leadId: string,
+    body: { message: string; history: import('../../types').ChatMessage[] },
+    signal?: AbortSignal,
+  ): Promise<Response> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const csrfToken = this.getCsrfToken();
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    return fetch(`${this.baseURL}/api/v1/leads/${leadId}/ai-chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      credentials: 'include',
+      signal,
+    });
+  }
+
+  // ========================
   // Saved Views
   // ========================
 
@@ -1444,6 +1501,62 @@ class ApiClient {
     });
   }
 
+  // ── Campaigns (Email Campaigns) ─────────────────────
+  async getCampaigns() {
+    const res = await this.request<{ status: number; data: CampaignListItem[] }>('/api/v1/campaigns');
+    return res.data;
+  }
+
+  async getCampaign(id: string) {
+    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}`);
+    return res.data;
+  }
+
+  async createCampaign(data: CampaignInput) {
+    const res = await this.request<{ status: number; data: Campaign }>('/api/v1/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  }
+
+  async updateCampaign(id: string, data: Partial<CampaignInput>) {
+    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  }
+
+  async deleteCampaign(id: string) {
+    return this.request<void>(`/api/v1/campaigns/${id}`, { method: 'DELETE' });
+  }
+
+  async previewCampaignAudience(id: string) {
+    const res = await this.request<{ status: number; data: CampaignAudiencePreview }>(`/api/v1/campaigns/${id}/preview-audience`);
+    return res.data;
+  }
+
+  async scheduleCampaign(id: string, sendAt: string | null) {
+    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}/schedule`, {
+      method: 'POST',
+      body: JSON.stringify({ sendAt }),
+    });
+    return res.data;
+  }
+
+  async sendCampaignTestEmail(id: string) {
+    const res = await this.request<{ status: number; data: { success: boolean } }>(`/api/v1/campaigns/${id}/test-email`, {
+      method: 'POST',
+    });
+    return res.data;
+  }
+
+  async getCampaignStats(id: string) {
+    const res = await this.request<{ status: number; data: CampaignStats }>(`/api/v1/campaigns/${id}/stats`);
+    return res.data;
+  }
+
   // ── Email Templates ────────────────────────────────
   async getEmailTemplates() {
     return this.request<EmailTemplateListItem[]>('/api/v1/email-templates');
@@ -1470,6 +1583,139 @@ class ApiClient {
   async deleteEmailTemplate(id: string) {
     return this.request<void>(`/api/v1/email-templates/${id}`, { method: 'DELETE' });
   }
+
+  // ========================
+  // Import Pro (data migration)
+  // ========================
+
+  /**
+   * Posts a multipart import request (file + mapping JSON). Cannot reuse
+   * `request()` because that forces Content-Type: application/json — FormData
+   * must let the browser set the multipart boundary itself. Mirrors the
+   * cookie + CSRF auth handling used by the rest of the client.
+   */
+  private async postImport<T>(entity: 'leads' | 'deals' | 'interactions', formData: FormData, dryRun: boolean): Promise<T> {
+    const csrfToken = this.getCsrfToken();
+    const headers: Record<string, string> = {};
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    const url = `${this.baseURL}/api/v1/import/${entity}${dryRun ? '?dry_run=true' : ''}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      let errorData: Record<string, unknown>;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: response.statusText || 'Import failed' };
+      }
+      const message = (errorData.error as string) || (errorData.message as string) || 'Falha na importação';
+      throw new ApiError(message, response.status, errorData);
+    }
+    // Backend wraps every import response in the standard { status, data } envelope.
+    // Unwrap .data so callers get the inner shape their signatures promise.
+    const json = await response.json();
+    return (json?.data ?? json) as T;
+  }
+
+  async importLeadsFile(file: File, mapping: Record<string, string>, dryRun: boolean, options?: { duplicateActions?: Record<string, ImportDuplicateAction> }): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify(mapping));
+    if (options?.duplicateActions) {
+      formData.append('duplicateActions', JSON.stringify(options.duplicateActions));
+    }
+    return this.postImport<ImportResult>('leads', formData, dryRun);
+  }
+
+  async importDealsFile(file: File, dryRun: boolean): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.postImport<ImportResult>('deals', formData, dryRun);
+  }
+
+  async importInteractionsFile(file: File, dryRun: boolean): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.postImport<ImportResult>('interactions', formData, dryRun);
+  }
+
+  async getImportBatches(): Promise<{ batches: ImportBatch[] }> {
+    const res = await this.request<{ data: { batches: ImportBatch[] } }>('/api/v1/import/batches');
+    return res.data;
+  }
+
+  async getImportBatch(batchId: string): Promise<{ batch: ImportBatch }> {
+    const res = await this.request<{ data: { batch: ImportBatch } }>(`/api/v1/import/batches/${batchId}`);
+    return res.data;
+  }
+
+  async rollbackImportBatch(
+    batchId: string,
+  ): Promise<{ deleted: { leads: number; deals: number; interactions: number } }> {
+    const res = await this.request<{
+      data: { deleted: { leads: number; deals: number; interactions: number } };
+    }>(`/api/v1/import/batches/${batchId}`, {
+      method: 'DELETE',
+    });
+    return res.data;
+  }
+}
+
+// ── API Hub types (api-hub spec) ────────────────────
+/** An API key as returned by the list endpoint (key value is masked). */
+export interface ApiKeyListItem {
+  id: string;
+  name: string;
+  key?: string;
+  /** Granular scopes; empty array = full access (legacy keys). */
+  scopes: string[];
+  lastUsedAt?: string | null;
+  expiresAt?: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+/** Create response — full key shown only once. */
+export interface ApiKeyCreated {
+  id: string;
+  name: string;
+  key: string;
+  scopes: string[];
+  expiresAt?: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface OutgoingWebhook {
+  id: string;
+  tenantId: string;
+  url: string;
+  events: string[];
+  secret: string;
+  active: boolean;
+  successCount: number;
+  failureCount: number;
+  lastTriggeredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { logs: number };
+}
+
+export interface OutgoingWebhookLog {
+  id: string;
+  event: string;
+  status: string;
+  statusCode: number | null;
+  durationMs: number | null;
+  success: boolean;
+  response?: string | null;
+  error?: string | null;
+  attempts: number;
+  createdAt: string;
 }
 
 export interface SavedView {
@@ -1560,5 +1806,155 @@ export interface EmailTemplateListItem {
 
 export interface EmailTemplateDetail extends EmailTemplateListItem {
   html: string;
+}
+
+// ── Campaign types ──────────────────────────────────
+// Block schema — shared contract with backend (`blocksToHtml`). The campaign
+// body is `blocks: Block[]`; the frontend renders the preview by mapping these.
+export type Block =
+  | { id: string; type: 'text'; content: string }
+  | { id: string; type: 'image'; url: string; alt?: string }
+  | { id: string; type: 'button'; label: string; href: string }
+  | { id: string; type: 'divider' }
+  | { id: string; type: 'spacer'; height?: number };
+
+export type CampaignStatus = 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'PAUSED' | 'CANCELLED';
+
+/** Audience segmentation filters (req 12). */
+export interface CampaignAudienceFilters {
+  status?: string;
+  tagId?: string;
+  assignedTo?: string;
+  source?: string;
+  minScore?: number;
+  maxScore?: number;
+  /** ISO date — last interaction before this date. */
+  lastInteractionBefore?: string;
+  /** ISO date — last interaction after this date. */
+  lastInteractionAfter?: string;
+  /** Leads with no interaction in the last N days. */
+  noInteractionDays?: number;
+}
+
+export interface CampaignInput {
+  name: string;
+  fromName?: string;
+  fromEmail?: string;
+  subject: string;
+  blocks: Block[];
+  audienceFilters: CampaignAudienceFilters;
+}
+
+export interface CampaignListItem {
+  id: string;
+  name: string;
+  status: CampaignStatus;
+  subject: string;
+  sentCount?: number;
+  openRate?: number;
+  ctr?: number;
+  scheduledAt?: string | null;
+  sentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Campaign extends CampaignListItem {
+  fromName?: string | null;
+  fromEmail?: string | null;
+  blocks: Block[];
+  audienceFilters: CampaignAudienceFilters;
+}
+
+export interface CampaignAudiencePreview {
+  count: number;
+  sample: Array<{ name: string; email: string }>;
+}
+
+export interface CampaignRecipientRow {
+  leadId: string;
+  name: string;
+  email: string;
+  status: string;
+  openedAt: string | null;
+}
+
+export interface CampaignStats {
+  sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  unsubscribed: number;
+  bounced: number;
+  openRate: number;
+  ctr: number;
+  unsubRate: number;
+  timeline: Array<{ hour: string; opens: number }>;
+  recipients: CampaignRecipientRow[];
+}
+
+// ── Import Pro types ────────────────────────────────
+
+export type ImportType = 'LEADS' | 'DEALS' | 'INTERACTIONS';
+
+export type ImportBatchStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'ROLLED_BACK';
+
+export type ImportDuplicateAction = 'skip' | 'update';
+
+/** A row that failed validation, surfaced in the dry-run preview. */
+export interface ImportValidationError {
+  row: number;
+  field: string;
+  message: string;
+}
+
+/** A duplicate detected during dry-run, matched by email or phone. */
+export interface ImportDuplicate {
+  row: number;
+  matchedBy: 'email' | 'phone';
+  /** Identifier the row collides with (email/phone value or existing record id). */
+  value: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+/**
+ * Response shape for both dry-run and final imports. On dry-run, `dryRun` is
+ * true and `batchId` is absent; on async final imports `batchId` is returned
+ * for polling.
+ */
+export interface ImportResult {
+  dryRun?: boolean;
+  batchId?: string;
+  status?: ImportBatchStatus;
+  /** True when the file was queued for async processing (> 500 rows). */
+  async?: boolean;
+  totalRows: number;
+  newCount: number;
+  duplicateCount: number;
+  errorCount: number;
+  duplicates?: ImportDuplicate[];
+  errors?: ImportValidationError[];
+}
+
+export interface ImportBatch {
+  id: string;
+  type: ImportType;
+  status: ImportBatchStatus;
+  totalRows: number;
+  importedRows: number;
+  errorRows: number;
+  skippedRows: number;
+  errorLog?: ImportValidationError[] | null;
+  rolledBackAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: { id: string; name: string; email?: string } | null;
 }
 

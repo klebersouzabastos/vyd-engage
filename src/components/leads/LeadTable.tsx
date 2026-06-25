@@ -7,6 +7,7 @@ import { LeadScoreBadge } from "../LeadScoreBadge";
 import { TagBadge } from "../TagBadge";
 import { CustomFieldDisplay } from "../CustomFieldDisplay";
 import { Pencil, Trash2, Mail, MessageSquare } from "lucide-react";
+import { NextActionBadge } from "./NextActionBadge";
 import type { Lead, CustomField, Tag } from "../../types";
 
 interface Automation {
@@ -91,18 +92,24 @@ export function LeadTable({
                     <Checkbox checked={selectedLeads.includes(lead.id)} onCheckedChange={() => onSelectLead(lead.id)} aria-label={`Selecionar ${lead.name}`} />
                   </td>
                   <td className="px-6 py-4">
-                    {onRowClick ? (
-                      <span className="font-medium text-gray-900 hover:text-primary transition-colors">
-                        {lead.name}
+                    <div className="flex items-center gap-2">
+                      {onRowClick ? (
+                        <span className="font-medium text-gray-900 hover:text-primary transition-colors">
+                          {lead.name}
+                        </span>
+                      ) : (
+                        <Link
+                          to={`/app/leads/${lead.id}`}
+                          className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
+                        >
+                          {lead.name}
+                        </Link>
+                      )}
+                      {/* AI next-action suggestion (icon + reasoning tooltip) */}
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <NextActionBadge leadId={lead.id} variant="icon" />
                       </span>
-                    ) : (
-                      <Link
-                        to={`/app/leads/${lead.id}`}
-                        className="font-medium text-gray-900 hover:text-primary hover:underline transition-colors"
-                      >
-                        {lead.name}
-                      </Link>
-                    )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.phone}</td>
                   <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{lead.email}</td>

@@ -25,12 +25,23 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// CORS origins — single source of truth
-const corsOrigins: string[] = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
-  : process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL || 'http://localhost:5173']
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'];
+// CORS origins — single source of truth, fail-closed in production
+function getAllowedOrigins(): string[] | false {
+  if (process.env.NODE_ENV !== 'production') {
+    return [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:5174',
+    ];
+  }
+  // Production: explicit allow-list required; reject all if not configured
+  const fromEnv = process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean);
+  if (fromEnv && fromEnv.length > 0) return fromEnv;
+  if (process.env.FRONTEND_URL) return [process.env.FRONTEND_URL];
+  return false; // fail-closed: no origins configured = reject all
+}
+
+const corsOrigins = getAllowedOrigins();
 
 // Initialize Socket.IO
 initSocketIO(httpServer, corsOrigins);
@@ -77,6 +88,20 @@ if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
   import('./jobs/automationEngine.js').then(({ initializeAutomationEngine }) => {
     initializeAutomationEngine().catch((error) => {
       logger.error('Failed to initialize automation engine', error);
+    });
+  });
+
+  // AI deal-score weekly recalc — same gate (requires BullMQ + Redis)
+  import('./jobs/scoreDeals.js').then(({ initializeScoreDealsJob }) => {
+    initializeScoreDealsJob().catch((error) => {
+      logger.error('Failed to initialize scoreDeals job', error);
+    });
+  });
+
+  // Email campaign sender — same gate (requires BullMQ + Redis)
+  import('./jobs/campaignSender.js').then(({ initializeCampaignSender }) => {
+    initializeCampaignSender().catch((error) => {
+      logger.error('Failed to initialize campaign sender', error);
     });
   });
 }
@@ -164,6 +189,10 @@ import scheduleRoutes from './routes/schedule.js';
 import productRoutes from './routes/products.js';
 import goalRoutes from './routes/goals.js';
 import stageTaskTemplateRoutes from './routes/stageTaskTemplates.js';
+import importRoutes from './routes/import.js';
+import campaignRoutes from './routes/campaigns.js';
+import campaignTrackingRoutes from './routes/campaignTracking.js';
+import zapierRoutes from './routes/zapier.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -174,6 +203,7 @@ import { NotificationType } from '@prisma/client';
 import { notificationService } from './services/notificationService.js';
 import { notifyLeadCaptured } from './services/slackService.js';
 import { dispatchTrigger } from './jobs/automationEngine.js';
+import { webhookDispatcher } from './services/webhookDispatcher.js';
 
 // ============================================
 // Versioned API Router (v1)
@@ -235,11 +265,16 @@ v1Router.use('/admin', csrfProtection);
 v1Router.use('/products', csrfProtection);
 v1Router.use('/goals', csrfProtection);
 v1Router.use('/stage-task-templates', csrfProtection);
+v1Router.use('/import', csrfProtection);
+v1Router.use('/campaigns', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
 // Tracking routes (public, no auth, no CSRF)
 v1Router.use('/track', trackingRoutes);
+// Campaign tracking (public, no auth, no CSRF) — canonical paths:
+//   GET /api/v1/track/campaign-open/:token | campaign-click/:token | unsubscribe/:token
+v1Router.use('/track', campaignTrackingRoutes);
 
 // API Routes
 v1Router.use('/auth', authRoutes);
@@ -275,6 +310,10 @@ v1Router.use('/admin', adminRoutes);
 v1Router.use('/products', productRoutes);
 v1Router.use('/goals', goalRoutes);
 v1Router.use('/stage-task-templates', stageTaskTemplateRoutes);
+v1Router.use('/import', importRoutes);
+v1Router.use('/campaigns', campaignRoutes);
+// Zapier integration (API-2.2) — API-key auth (X-API-Key), no session/CSRF.
+v1Router.use('/zapier', zapierRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 
@@ -285,6 +324,11 @@ app.use('/api', v1Router);
 // Public routes (no auth required)
 
 const publicRouter = ExpressRouter();
+
+// Public campaign tracking (no auth, no CSRF) — backward-compat alias.
+// Canonical paths are /api/v1/track/* (mounted on v1Router above).
+//   /api/v1/public/track/campaign-open/:token | campaign-click/:token | unsubscribe/:token
+publicRouter.use('/track', campaignTrackingRoutes);
 
 const captureLeadSchema = zodLib.object({
   name: zodLib.string().min(1),
@@ -359,6 +403,11 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
       source: leadSource,
       status: 'NEW',
     }).catch(() => {});
+
+    // Emit the outgoing webhook lead.created event too (this route bypasses
+    // leadService.create, which is where the webhook normally fires) — parity
+    // for external integrations. Fire-and-forget.
+    webhookDispatcher.emitLeadEvent(tenant.id, 'lead.created', lead);
 
     notifyLeadCaptured(tenant.id, { name: data.name, email: data.email, company: data.company }).catch(() => {});
 
@@ -470,6 +519,15 @@ const openApiDocument = buildOpenApiDocument();
 app.get(['/api/v1/openapi.json', '/api/openapi.json'], (_req, res) => {
   res.json(openApiDocument);
 });
+
+// API-1.1 — Interactive API docs (Redoc) generated from @openapi JSDoc.
+// GET /api/docs serves Redoc; /api/docs/openapi.json serves the spec.
+// Gated in production by ENABLE_API_DOCS (404 otherwise). No auth/CSRF (GET).
+import { redocHandler, openApiJsonHandler, swaggerUiHandlers } from './config/openapi.js';
+app.get(['/api/docs/openapi.json', '/api/v1/docs/openapi.json'], openApiJsonHandler);
+app.get(['/api/docs', '/api/v1/docs'], redocHandler());
+// Swagger UI provides functional "try it out" (req 5) alongside Redoc, same gating.
+app.use(['/api/docs/try', '/api/v1/docs/try'], ...swaggerUiHandlers());
 
 // Bull Board queue dashboard (Basic-Auth gated; mounted before the 404 handler)
 import { mountQueueDashboard } from './admin/queueDashboard.js';

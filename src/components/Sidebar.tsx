@@ -21,6 +21,8 @@ import {
   KeyRound,
   Shield,
   Package,
+  Upload,
+  Mail,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -38,13 +40,15 @@ const menuItems = [
   { icon: GitBranch, label: "Pipeline", path: "/app/pipeline", tourId: "sidebar-pipeline" },
   { icon: Inbox, label: "Inbox", path: "/app/inbox", tourId: "sidebar-inbox" },
   { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },
+  { icon: Mail, label: "Campanhas", path: "/app/campaigns", tourId: "sidebar-campaigns" },
   { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
   { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
   { icon: TrendingUp, label: "Performance", path: "/app/performance", tourId: "sidebar-performance" },
   { icon: CreditCard, label: "Billing", path: "/app/billing", tourId: "sidebar-billing" },
-  { icon: Webhook, label: "Webhooks", path: "/app/webhooks", tourId: "sidebar-webhooks" },
-  { icon: KeyRound, label: "API Keys", path: "/app/api-keys", tourId: "sidebar-api-keys" },
+  { icon: Webhook, label: "Webhooks", path: "/app/settings/webhooks", tourId: "sidebar-webhooks" },
+  { icon: KeyRound, label: "API Keys", path: "/app/settings/api-keys", tourId: "sidebar-api-keys" },
   { icon: Package, label: "Produtos", path: "/app/settings/products", tourId: "sidebar-products" },
+  { icon: Upload, label: "Importar", path: "/app/settings/import", tourId: "sidebar-import" },
   { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
   { icon: Shield, label: "Plataforma", path: "/app/admin", tourId: "sidebar-platform-admin", platformAdminOnly: true },
 ];

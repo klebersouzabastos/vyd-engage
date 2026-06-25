@@ -9,7 +9,7 @@
 **Fase:** 2 — Filtros e Views
 **Dependências:** UX-2.1 (FilterBuilder implementado e disponível)
 **Desbloqueia:** Nenhuma
-**Status:** InReview
+**Status:** Done
 **Agente:** @sm (River) — draft | @po (Pax) — validado 2026-06-23 | @dev (Dex) — já implementado em Deals.tsx (pré-existente), verificado 2026-06-23
 
 ---

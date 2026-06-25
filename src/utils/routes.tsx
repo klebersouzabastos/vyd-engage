@@ -76,6 +76,10 @@ const PlatformAdmin = lazyNamed(() => import("../pages/PlatformAdmin"), "Platfor
 const TeamPerformance = lazyNamed(() => import('../pages/TeamPerformance'), 'TeamPerformance');
 const WinLossReport = lazyNamed(() => import('../pages/WinLossReport'), 'WinLossReport');
 const Products = lazyNamed(() => import('../pages/Products'), 'Products');
+const Import = lazyNamed(() => import('../pages/Import'), 'Import');
+const Campaigns = lazyNamed(() => import('../pages/Campaigns'), 'Campaigns');
+const CampaignWizard = lazyNamed(() => import('../pages/CampaignWizard'), 'CampaignWizard');
+const CampaignDetail = lazyNamed(() => import('../pages/CampaignDetail'), 'CampaignDetail');
 
 export const router = createBrowserRouter([
   {
@@ -247,6 +251,18 @@ export const router = createBrowserRouter([
         element: EmailCampaigns,
       },
       {
+        path: "campaigns",
+        element: Campaigns,
+      },
+      {
+        path: "campaigns/new",
+        element: CampaignWizard,
+      },
+      {
+        path: "campaigns/:id",
+        element: CampaignDetail,
+      },
+      {
         path: "reports",
         element: Reports,
       },
@@ -275,11 +291,25 @@ export const router = createBrowserRouter([
         element: Products,
       },
       {
+        path: "settings/import",
+        element: Import,
+      },
+      {
         path: "webhooks",
         element: Webhooks,
       },
       {
+        // Spec-required path for the API Hub webhooks page (API-1.2, req 8).
+        path: "settings/webhooks",
+        element: Webhooks,
+      },
+      {
         path: "api-keys",
+        element: ApiKeys,
+      },
+      {
+        // Spec-required path for the API keys page with scopes (API-2.1, req 21).
+        path: "settings/api-keys",
         element: ApiKeys,
       },
       {

@@ -3,7 +3,38 @@ import crypto from 'crypto';
 import { paymentService } from '../services/paymentService.js';
 import { whatsappMessagingService } from '../services/whatsappMessagingService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
+import { recordBounceByEmail } from '../services/campaignService.js';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Extract bounced recipient emails from a provider webhook payload and record a
+ * campaign BOUNCED event for each (req 24). Does not touch unsubscribe state
+ * (edge case: bounce on an already-unsubscribed lead must not duplicate
+ * UNSUBSCRIBED). Best-effort: never throws into the webhook handler.
+ */
+async function recordCampaignBounces(provider: string, payload: any): Promise<void> {
+  try {
+    const emails = new Set<string>();
+    if (provider === 'sendgrid' && Array.isArray(payload)) {
+      for (const ev of payload) {
+        if ((ev?.event === 'bounce' || ev?.event === 'dropped') && ev?.email) {
+          emails.add(String(ev.email));
+        }
+      }
+    } else if (provider === 'resend') {
+      if (payload?.type === 'email.bounced') {
+        const to = payload?.data?.to;
+        const list = Array.isArray(to) ? to : to ? [to] : [];
+        for (const e of list) emails.add(String(e));
+      }
+    }
+    for (const email of emails) {
+      await recordBounceByEmail(email);
+    }
+  } catch (err: any) {
+    logger.error('Failed to record campaign bounces', { provider, err: err?.message });
+  }
+}
 
 const router = Router();
 
@@ -135,24 +166,81 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
 // Email Webhooks (SendGrid, Resend, etc.)
 // ========================
 
-// Validate email webhook signing secret (shared pattern for SendGrid & Resend)
-function validateEmailWebhookSecret(req: Request): boolean {
-  const secret = process.env.EMAIL_WEBHOOK_SECRET;
-  if (!secret) {
-    // No secret configured — allow through (operator's choice to not protect)
-    return true;
+// ========================
+// Email Webhook Signature Validators
+// ========================
+
+/**
+ * SendGrid Event Webhook — ECDSA verification.
+ * https://docs.sendgrid.com/for-developers/tracking-events/getting-started-event-webhook-security-features
+ * Fail-closed: rejects if SENDGRID_WEBHOOK_VERIFICATION_KEY is not configured.
+ */
+function validateSendGridWebhook(req: Request): boolean {
+  const publicKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
+  if (!publicKey) {
+    logger.warn('SENDGRID_WEBHOOK_VERIFICATION_KEY not configured — rejecting SendGrid webhook');
+    return false;
   }
-  const provided = req.headers['x-webhook-secret'] as string | undefined;
-  if (!provided) return false;
-  if (secret.length !== provided.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(provided));
+
+  const timestamp = req.headers['x-twilio-email-event-webhook-timestamp'] as string | undefined;
+  const signature = req.headers['x-twilio-email-event-webhook-signature'] as string | undefined;
+  if (!timestamp || !signature) return false;
+
+  // Verify ECDSA signature over (timestamp + body). Uses JSON.stringify as the
+  // payload proxy since Express pre-parses the body — accuracy depends on
+  // SendGrid sending canonical JSON. For maximum accuracy, configure raw body
+  // capture middleware before express.json() on this route.
+  try {
+    const payload = timestamp + JSON.stringify(req.body);
+    const verify = crypto.createVerify('SHA256');
+    verify.update(payload);
+    return verify.verify(publicKey, signature, 'base64');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resend Webhook — Svix HMAC-SHA256 verification.
+ * https://resend.com/docs/dashboard/webhooks/introduction
+ * Fail-closed: rejects if RESEND_WEBHOOK_SECRET is not configured.
+ */
+function validateResendWebhook(req: Request): boolean {
+  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  if (!secret) {
+    logger.warn('RESEND_WEBHOOK_SECRET not configured — rejecting Resend webhook');
+    return false;
+  }
+
+  const svixId = req.headers['svix-id'] as string | undefined;
+  const svixTimestamp = req.headers['svix-timestamp'] as string | undefined;
+  const svixSignature = req.headers['svix-signature'] as string | undefined;
+  if (!svixId || !svixTimestamp || !svixSignature) return false;
+
+  // Svix signs over "${svix-id}.${svix-timestamp}.${raw-body}".
+  // Using JSON.stringify(body) as proxy (see note in validateSendGridWebhook).
+  try {
+    const rawSecret = secret.startsWith('whsec_')
+      ? Buffer.from(secret.slice(6), 'base64')
+      : Buffer.from(secret);
+    const toSign = `${svixId}.${svixTimestamp}.${JSON.stringify(req.body)}`;
+    const hmac = crypto.createHmac('sha256', rawSecret).update(toSign).digest('base64');
+    const expected = `v1,${hmac}`;
+    // svix-signature may contain multiple space-separated versions
+    return svixSignature.split(' ').some(sig => {
+      if (sig.length !== expected.length) return false;
+      return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+    });
+  } catch {
+    return false;
+  }
 }
 
 // POST /api/webhooks/email/sendgrid - SendGrid event webhook
 router.post('/email/sendgrid', async (req: Request, res: Response) => {
   try {
-    if (!validateEmailWebhookSecret(req)) {
-      logger.warn('SendGrid webhook: invalid or missing secret', { ip: req.ip });
+    if (!validateSendGridWebhook(req)) {
+      logger.warn('SendGrid webhook: invalid or missing signature', { ip: req.ip });
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
@@ -160,6 +248,8 @@ router.post('/email/sendgrid', async (req: Request, res: Response) => {
     emailMessagingService.processWebhook('sendgrid', req.body).catch(error => {
       logger.error('Error processing SendGrid webhook', error);
     });
+    // Campaign bounce tracking (req 24) — best-effort, async.
+    recordCampaignBounces('sendgrid', req.body).catch(() => {});
     res.status(200).json({ received: true });
   } catch (error) {
     logger.error('Error handling SendGrid webhook', error);
@@ -170,8 +260,8 @@ router.post('/email/sendgrid', async (req: Request, res: Response) => {
 // POST /api/webhooks/email/resend - Resend event webhook
 router.post('/email/resend', async (req: Request, res: Response) => {
   try {
-    if (!validateEmailWebhookSecret(req)) {
-      logger.warn('Resend webhook: invalid or missing secret', { ip: req.ip });
+    if (!validateResendWebhook(req)) {
+      logger.warn('Resend webhook: invalid or missing signature', { ip: req.ip });
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
@@ -179,6 +269,8 @@ router.post('/email/resend', async (req: Request, res: Response) => {
     emailMessagingService.processWebhook('resend', req.body).catch(error => {
       logger.error('Error processing Resend webhook', error);
     });
+    // Campaign bounce tracking (req 24) — best-effort, async.
+    recordCampaignBounces('resend', req.body).catch(() => {});
     res.status(200).json({ received: true });
   } catch (error) {
     logger.error('Error handling Resend webhook', error);

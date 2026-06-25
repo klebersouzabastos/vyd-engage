@@ -7,6 +7,7 @@ import { getSamplePayload, type WebhookPayload } from '../utils/webhookPayloads.
 export interface CreateWebhookData {
   url: string;
   events: string[];
+  secret: string;
 }
 
 export interface UpdateWebhookData {
@@ -15,7 +16,27 @@ export interface UpdateWebhookData {
   active?: boolean;
 }
 
-// Available webhook event types
+// Max webhooks per tenant (API-1.2 req 15).
+export const MAX_WEBHOOKS_PER_TENANT = 10;
+
+// Max delivery logs retained/returned per webhook (API-1.2 req 14).
+export const MAX_WEBHOOK_LOGS = 100;
+
+// Events selectable when creating a webhook (API-1.2 req 10) — exactly these 9.
+export const SELECTABLE_WEBHOOK_EVENTS = [
+  'lead.created',
+  'lead.updated',
+  'lead.deleted',
+  'deal.created',
+  'deal.updated',
+  'deal.won',
+  'deal.lost',
+  'task.completed',
+  'automation.triggered',
+] as const;
+
+// Full emit vocabulary (superset — some events are emitted internally even if not
+// exposed in the create selector, e.g. lead.status_changed, payment.*).
 export const WEBHOOK_EVENTS = [
   'lead.created',
   'lead.updated',
@@ -58,7 +79,21 @@ export const webhookService = {
   },
 
   async create(tenantId: string, data: CreateWebhookData) {
-    const secret = crypto.randomBytes(32).toString('hex');
+    // Secret required, non-empty (req 9 edge case) — never create an unsigned webhook.
+    const secret = (data.secret || '').trim();
+    if (!secret) {
+      throw createError('Webhook secret is required', 400, 'WEBHOOK_SECRET_REQUIRED');
+    }
+
+    // Enforce per-tenant webhook limit (req 15) → 422 on the 11th.
+    const count = await prisma.webhook.count({ where: { tenantId } });
+    if (count >= MAX_WEBHOOKS_PER_TENANT) {
+      throw createError(
+        `Webhook limit reached (max ${MAX_WEBHOOKS_PER_TENANT} per tenant)`,
+        422,
+        'WEBHOOK_LIMIT_REACHED',
+      );
+    }
 
     return prisma.webhook.create({
       data: {
@@ -89,13 +124,14 @@ export const webhookService = {
     await prisma.webhook.delete({ where: { id } });
   },
 
-  async getLogs(tenantId: string, webhookId: string, limit = 50) {
+  async getLogs(tenantId: string, webhookId: string, limit = MAX_WEBHOOK_LOGS) {
     await this.findById(tenantId, webhookId);
 
+    // Last 100 logs per webhook (req 14). Cap defensively at MAX_WEBHOOK_LOGS.
     return prisma.webhookLog.findMany({
       where: { webhookId },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: Math.min(limit, MAX_WEBHOOK_LOGS),
     });
   },
 

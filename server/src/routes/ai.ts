@@ -4,11 +4,24 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { aiDraftService } from '../services/aiDraftService.js';
+import { isAIEnabled } from '../services/aiProvider.js';
 
 const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+
+// GET /api/ai/status — whether AI features are enabled (AI_PROVIDER configured).
+// Frontend uses this to hide all AI features (spec req 33). Not an AI call, so
+// it is intentionally NOT behind the AI rate limiter.
+router.get('/status', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    res.json({ status: 200, data: { enabled: isAIEnabled() } });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // ========================
 // Email Draft Generation

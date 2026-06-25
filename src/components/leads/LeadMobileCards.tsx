@@ -5,6 +5,7 @@ import { LeadSourceBadge } from "../LeadSourceBadge";
 import { LeadScoreBadge } from "../LeadScoreBadge";
 import { TagBadge } from "../TagBadge";
 import { Pencil, Trash2 } from "lucide-react";
+import { NextActionBadge } from "./NextActionBadge";
 import type { Lead, Tag } from "../../types";
 
 interface LeadMobileCardsProps {
@@ -76,6 +77,8 @@ export function LeadMobileCards({
                 <LeadScoreBadge score={lead.score || 0} />
               </button>
               <LeadSourceBadge source={lead.source} />
+              {/* AI next-action suggestion (icon + reasoning tooltip) */}
+              <NextActionBadge leadId={lead.id} variant="icon" />
             </div>
             {lead.tags && lead.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">

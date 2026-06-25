@@ -16,7 +16,7 @@ interface AuthPayload {
 /**
  * Initialize Socket.IO server attached to the HTTP server.
  */
-export function initSocketIO(httpServer: HttpServer, corsOrigins: string[]): Server {
+export function initSocketIO(httpServer: HttpServer, corsOrigins: string[] | false): Server {
   io = new Server(httpServer, {
     cors: {
       origin: corsOrigins,

@@ -3,9 +3,13 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { API_SCOPES } from '../middleware/apiKeyAuth.js';
 import prisma from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+
+// Scope enum for validation (API-2.1 req 18/21).
+const apiScopeEnum = z.enum(API_SCOPES as unknown as [string, ...string[]]);
 
 const router = Router();
 
@@ -25,6 +29,7 @@ router.get('/', async (req, res, next) => {
         id: true,
         name: true,
         key: true, // Already masked (stored as fcrm_****last8)
+        scopes: true, // req 21 — UI lists scopes per key
         lastUsedAt: true,
         expiresAt: true,
         active: true,
@@ -46,9 +51,11 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const { name, expiresAt } = z.object({
+    const { name, expiresAt, scopes } = z.object({
       name: z.string().min(1),
       expiresAt: z.coerce.date().optional(),
+      // req 17/18 — optional list of scopes; empty/omitted = full access (req 20).
+      scopes: z.array(apiScopeEnum).optional(),
     }).parse(req.body);
 
     // Generate API key — store only hash + masked suffix in DB
@@ -62,6 +69,7 @@ router.post('/', async (req, res, next) => {
         name,
         key: keySuffix, // Store only masked version, never plaintext
         keyHash,
+        scopes: scopes ?? [],
         expiresAt,
         active: true,
       },
@@ -72,6 +80,7 @@ router.post('/', async (req, res, next) => {
       id: created.id,
       name: created.name,
       key: apiKey, // Full key shown only on creation — never stored
+      scopes: created.scopes, // req 21
       expiresAt: created.expiresAt,
       active: created.active,
       createdAt: created.createdAt,
