@@ -80,6 +80,8 @@ const Import = lazyNamed(() => import('../pages/Import'), 'Import');
 const Campaigns = lazyNamed(() => import('../pages/Campaigns'), 'Campaigns');
 const CampaignWizard = lazyNamed(() => import('../pages/CampaignWizard'), 'CampaignWizard');
 const CampaignDetail = lazyNamed(() => import('../pages/CampaignDetail'), 'CampaignDetail');
+const DeepResearch = lazyNamed(() => import('../pages/DeepResearch'), 'DeepResearch');
+const DeepResearchView = lazyNamed(() => import('../pages/DeepResearchView'), 'DeepResearchView');
 
 export const router = createBrowserRouter([
   {
@@ -281,6 +283,14 @@ export const router = createBrowserRouter([
       {
         path: "performance",
         element: TeamPerformance,
+      },
+      {
+        path: "deep-research",
+        element: DeepResearch,
+      },
+      {
+        path: "deep-research/:id",
+        element: DeepResearchView,
       },
       {
         path: "reports/win-loss",

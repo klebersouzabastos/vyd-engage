@@ -1,0 +1,74 @@
+// Tipos da Inteligência de Mercado (Deep Research).
+//
+// O `promptBody`/`promptUsed` (IP da plataforma) só chega ao cliente quando o
+// usuário é platform admin — por isso são opcionais aqui. Para o usuário final,
+// o backend expõe apenas `placeholders` (campos a preencher) e `outline`
+// (resumo do que será entregue).
+
+export type DeepResearchStatus = 'DRAFT' | 'RESEARCHING' | 'COMPLETED' | 'FAILED';
+
+export interface DeepResearchTemplate {
+  id: string;
+  tenantId?: string;
+  name: string;
+  description?: string | null;
+  /** Texto do prompt — presente apenas para platform admins. */
+  promptBody?: string;
+  /** Campos a preencher (derivados do prompt no backend). */
+  placeholders?: string[];
+  /** Resumo do que será entregue (títulos de capítulo). */
+  outline?: string[];
+  isBuiltin: boolean;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeepResearchTemplateRef {
+  id: string;
+  name: string;
+}
+
+export interface DeepResearchReportMeta {
+  sources?: string[];
+  generatedAt?: string;
+  charCount?: number;
+}
+
+/** Item da lista — não carrega o markdown completo nem o prompt. */
+export interface DeepResearchListItem {
+  id: string;
+  title: string;
+  status: DeepResearchStatus;
+  templateId?: string | null;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  template?: DeepResearchTemplateRef | null;
+}
+
+/** Detalhe de uma pesquisa. `promptUsed` só vem para platform admins. */
+export interface DeepResearch extends DeepResearchListItem {
+  promptUsed?: string;
+  variables: Record<string, string>;
+  reportMarkdown?: string | null;
+  reportMeta?: DeepResearchReportMeta | null;
+  /** Integração OpenAI (só platform admin recebe response id/erro). */
+  providerResponseId?: string | null;
+  providerError?: string | null;
+  requestedAt?: string | null;
+}
+
+export interface CreateDeepResearchInput {
+  title: string;
+  templateId?: string;
+  variables?: Record<string, string>;
+  status?: DeepResearchStatus;
+}
+
+export interface UpdateDeepResearchInput {
+  title?: string;
+  variables?: Record<string, string>;
+  status?: DeepResearchStatus;
+  reportMarkdown?: string;
+}

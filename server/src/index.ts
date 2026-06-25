@@ -137,6 +137,15 @@ if (process.env.ENABLE_SCHEDULED_REPORTS === 'true') {
   });
 }
 
+// Initialize Deep Research poller (opt-in — requires ENABLE_DEEP_RESEARCH_API=true + OPENAI_API_KEY)
+if (process.env.ENABLE_DEEP_RESEARCH_API === 'true') {
+  import('./jobs/deepResearchPoller.js').then(({ initializeDeepResearchPoller }) => {
+    initializeDeepResearchPoller();
+  }).catch((error) => {
+    logger.error('Failed to initialize Deep Research poller', error);
+  });
+}
+
 // Health check
 import { getHealthStatus } from './utils/healthCheck.js';
 
@@ -193,6 +202,7 @@ import importRoutes from './routes/import.js';
 import campaignRoutes from './routes/campaigns.js';
 import campaignTrackingRoutes from './routes/campaignTracking.js';
 import zapierRoutes from './routes/zapier.js';
+import deepResearchRoutes from './routes/deepResearch.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -267,6 +277,7 @@ v1Router.use('/goals', csrfProtection);
 v1Router.use('/stage-task-templates', csrfProtection);
 v1Router.use('/import', csrfProtection);
 v1Router.use('/campaigns', csrfProtection);
+v1Router.use('/deep-research', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -314,6 +325,7 @@ v1Router.use('/import', importRoutes);
 v1Router.use('/campaigns', campaignRoutes);
 // Zapier integration (API-2.2) — API-key auth (X-API-Key), no session/CSRF.
 v1Router.use('/zapier', zapierRoutes);
+v1Router.use('/deep-research', deepResearchRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

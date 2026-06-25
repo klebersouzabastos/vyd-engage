@@ -1,0 +1,263 @@
+import prisma from '../config/database.js';
+import { DeepResearchStatus } from '@prisma/client';
+import { createError } from '../middleware/errorHandler.js';
+import { sanitizeMarkdown } from './deepResearch/sanitizeMarkdown.js';
+import { deepResearchTemplateService } from './deepResearch/templateService.js';
+import { buildPrompt } from './deepResearch/promptUtils.js';
+import {
+  isDeepResearchApiEnabled,
+  startDeepResearch,
+} from './deepResearch/deepResearchProvider.js';
+import { logger } from '../utils/logger.js';
+
+// Chave reservada em `variables` para o texto livre de enriquecimento do
+// usuário — anexado ao prompt como contexto adicional, sem ser um placeholder.
+export const CONTEXT_KEY = 'Contexto adicional';
+
+export interface CreateDeepResearchData {
+  title: string;
+  templateId?: string;
+  variables?: Record<string, string>;
+  status?: DeepResearchStatus;
+}
+
+export interface UpdateDeepResearchData {
+  title?: string;
+  variables?: Record<string, string>;
+  status?: DeepResearchStatus;
+  reportMarkdown?: string;
+}
+
+/**
+ * Remove o prompt montado (`promptUsed`) da resposta quando o solicitante não é
+ * platform admin — o prompt é IP da plataforma e nunca chega ao usuário final.
+ */
+function toClientResearch<
+  T extends { promptUsed?: string; providerResponseId?: string | null; providerError?: string | null },
+>(research: T, includePrompt: boolean) {
+  if (includePrompt) return research;
+  // Usuário comum não recebe o prompt nem detalhes técnicos do provider.
+  const { promptUsed: _p, providerResponseId: _r, providerError: _e, ...rest } = research;
+  return rest;
+}
+
+/** Monta o prompt final (server-side) a partir do template e dos valores. */
+async function buildPromptForResearch(
+  tenantId: string,
+  templateId: string | null | undefined,
+  variables: Record<string, string> | undefined,
+): Promise<string> {
+  if (!templateId) return '';
+  const tpl = await deepResearchTemplateService.getRaw(tenantId, templateId);
+  const vars = variables || {};
+  return buildPrompt(tpl.promptBody, vars, vars[CONTEXT_KEY]);
+}
+
+export const deepResearchService = {
+  async create(
+    tenantId: string,
+    createdById: string | undefined,
+    data: CreateDeepResearchData,
+    includePrompt = false,
+  ) {
+    const promptUsed = await buildPromptForResearch(tenantId, data.templateId, data.variables);
+    const research = await prisma.deepResearch.create({
+      data: {
+        tenantId,
+        createdById: createdById || null,
+        title: data.title,
+        templateId: data.templateId || null,
+        promptUsed,
+        variables: data.variables || {},
+        status: data.status || DeepResearchStatus.DRAFT,
+      },
+    });
+
+    if (research.status === DeepResearchStatus.RESEARCHING) {
+      void this.maybeTrigger(tenantId, research.id);
+    }
+
+    return this.findById(tenantId, research.id, includePrompt);
+  },
+
+  async findById(tenantId: string, id: string, includePrompt = false) {
+    const research = await prisma.deepResearch.findFirst({
+      where: { id, tenantId },
+      include: { template: { select: { id: true, name: true } } },
+    });
+    if (!research) {
+      throw createError('Deep research not found', 404, 'DEEP_RESEARCH_NOT_FOUND');
+    }
+    return toClientResearch(research, includePrompt);
+  },
+
+  async findAll(
+    tenantId: string,
+    filters?: {
+      status?: DeepResearchStatus;
+      search?: string;
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 50;
+    const skip = (page - 1) * limit;
+
+    const where: any = { tenantId };
+    if (filters?.status) where.status = filters.status;
+    if (filters?.search) {
+      where.title = { contains: filters.search, mode: 'insensitive' };
+    }
+
+    // A lista nunca traz promptUsed nem o promptBody do template.
+    const [items, total] = await Promise.all([
+      prisma.deepResearch.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          templateId: true,
+          createdById: true,
+          createdAt: true,
+          updatedAt: true,
+          template: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.deepResearch.count({ where }),
+    ]);
+
+    return {
+      items,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  },
+
+  async update(
+    tenantId: string,
+    id: string,
+    data: UpdateDeepResearchData,
+    includePrompt = false,
+  ) {
+    const current = await prisma.deepResearch.findFirst({
+      where: { id, tenantId },
+      select: { id: true, templateId: true },
+    });
+    if (!current) {
+      throw createError('Deep research not found', 404, 'DEEP_RESEARCH_NOT_FOUND');
+    }
+
+    const updateData: any = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.variables !== undefined) {
+      updateData.variables = data.variables;
+      // Re-monta o prompt (server-side) com os novos valores.
+      updateData.promptUsed = await buildPromptForResearch(
+        tenantId,
+        current.templateId,
+        data.variables,
+      );
+    }
+
+    // Recebimento do resultado (apenas platform admin chega aqui — gate na rota).
+    if (data.reportMarkdown !== undefined) {
+      const { markdown, sources } = sanitizeMarkdown(data.reportMarkdown);
+      updateData.reportMarkdown = markdown;
+      updateData.reportMeta = {
+        sources,
+        charCount: markdown.length,
+        generatedAt: new Date().toISOString(),
+      };
+      if (markdown.trim() && data.status === undefined) {
+        updateData.status = DeepResearchStatus.COMPLETED;
+      }
+    }
+
+    await prisma.deepResearch.update({ where: { id }, data: updateData });
+
+    if (updateData.status === DeepResearchStatus.RESEARCHING) {
+      void this.maybeTrigger(tenantId, id);
+    }
+
+    return this.findById(tenantId, id, includePrompt);
+  },
+
+  /**
+   * Dispara a OpenAI Deep Research API (background) quando habilitada. Idempotente:
+   * só dispara se a pesquisa está RESEARCHING, tem prompt e ainda não tem response.
+   * Fire-and-forget — falhas marcam a pesquisa como FAILED.
+   */
+  async maybeTrigger(tenantId: string, id: string) {
+    if (!isDeepResearchApiEnabled()) return;
+    try {
+      const r = await prisma.deepResearch.findFirst({
+        where: { id, tenantId },
+        select: { id: true, status: true, promptUsed: true, providerResponseId: true },
+      });
+      if (!r || r.status !== DeepResearchStatus.RESEARCHING) return;
+      if (r.providerResponseId || !r.promptUsed?.trim()) return;
+
+      const responseId = await startDeepResearch(r.promptUsed);
+      await prisma.deepResearch.update({
+        where: { id },
+        data: { providerResponseId: responseId, requestedAt: new Date(), providerError: null },
+      });
+    } catch (err: any) {
+      logger.error('Falha ao iniciar Deep Research na OpenAI', err);
+      await prisma.deepResearch
+        .update({
+          where: { id },
+          data: { status: DeepResearchStatus.FAILED, providerError: String(err?.message || err) },
+        })
+        .catch(() => {});
+    }
+  },
+
+  /** Aplica o resultado vindo do poller (markdown concluído ou falha). */
+  async applyProviderResult(
+    id: string,
+    result: { markdown?: string; sources?: string[]; failed?: boolean; error?: string },
+  ) {
+    if (result.failed) {
+      await prisma.deepResearch.update({
+        where: { id },
+        data: {
+          status: DeepResearchStatus.FAILED,
+          providerError: result.error || 'Falha ao gerar a pesquisa.',
+        },
+      });
+      return;
+    }
+    const cleaned = sanitizeMarkdown(result.markdown || '');
+    const sources = result.sources?.length ? result.sources : cleaned.sources;
+    await prisma.deepResearch.update({
+      where: { id },
+      data: {
+        reportMarkdown: cleaned.markdown,
+        reportMeta: {
+          sources,
+          charCount: cleaned.markdown.length,
+          generatedAt: new Date().toISOString(),
+        },
+        status: DeepResearchStatus.COMPLETED,
+        providerError: null,
+      },
+    });
+  },
+
+  async delete(tenantId: string, id: string) {
+    const existing = await prisma.deepResearch.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw createError('Deep research not found', 404, 'DEEP_RESEARCH_NOT_FOUND');
+    }
+    await prisma.deepResearch.delete({ where: { id } });
+  },
+};

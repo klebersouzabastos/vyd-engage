@@ -23,6 +23,7 @@ import {
   Package,
   Upload,
   Mail,
+  ScanSearch,
 } from "lucide-react";
 import { useCompany } from "../contexts/CompanyContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -43,6 +44,7 @@ const menuItems = [
   { icon: Mail, label: "Campanhas", path: "/app/campaigns", tourId: "sidebar-campaigns" },
   { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
   { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
+  { icon: ScanSearch, label: "Inteligência de Mercado", path: "/app/deep-research", tourId: "sidebar-deep-research" },
   { icon: TrendingUp, label: "Performance", path: "/app/performance", tourId: "sidebar-performance" },
   { icon: CreditCard, label: "Billing", path: "/app/billing", tourId: "sidebar-billing" },
   { icon: Webhook, label: "Webhooks", path: "/app/settings/webhooks", tourId: "sidebar-webhooks" },

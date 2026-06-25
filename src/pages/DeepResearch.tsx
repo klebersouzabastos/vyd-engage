@@ -1,0 +1,271 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  FileText,
+  ScanSearch,
+  Sparkles,
+  SlidersHorizontal,
+  FolderOpen,
+} from 'lucide-react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import { StatusBadge } from '../components/deepResearch/StatusBadge';
+import { ResearchEditor } from '../components/deepResearch/ResearchEditor';
+import { TemplateManager } from '../components/deepResearch/TemplateManager';
+import {
+  useDeepResearchList,
+  useDeepResearchTemplates,
+  useDeepResearchActions,
+} from '../hooks/useDeepResearch';
+import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../services/api/client';
+import type { DeepResearch as DeepResearchType } from '../types/deepResearch';
+
+export function DeepResearch() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isPlatformAdmin = !!user?.isPlatformAdmin;
+
+  const listQuery = useDeepResearchList();
+  const templatesQuery = useDeepResearchTemplates();
+  const { deleteResearch } = useDeepResearchActions();
+
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingResearch, setEditingResearch] = useState<DeepResearchType | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const researches = listQuery.data?.items ?? [];
+  const templates = templatesQuery.data?.items ?? [];
+
+  const openNewResearch = () => {
+    setEditingResearch(null);
+    setEditorOpen(true);
+  };
+
+  const openEditResearch = async (id: string) => {
+    try {
+      const detail = await apiClient.getDeepResearch(id);
+      setEditingResearch(detail);
+      setEditorOpen(true);
+    } catch {
+      /* erro tratado no client */
+    }
+  };
+
+  const scrollToList = () => {
+    document.getElementById('lista-pesquisas')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50/60">
+      <Header
+        title="Inteligência de Mercado"
+        subtitle="Relatórios profundos de inteligência comercial"
+      />
+
+      <div className="space-y-8 p-4 md:p-8">
+        {/* Hero */}
+        <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-blue-100">
+              <Sparkles className="h-3.5 w-3.5" />
+              Inteligência de Mercado
+            </span>
+            <h2 className="mt-3 text-2xl font-bold md:text-3xl">
+              Transforme dados em oportunidades comerciais
+            </h2>
+            <p className="mt-2 text-slate-300">
+              Solicite uma pesquisa profunda sobre uma empresa ou um segmento inteiro e receba um
+              relatório completo, pronto para apresentar à sua equipe.
+            </p>
+            <Button
+              className="mt-5 bg-white text-slate-900 hover:bg-slate-100"
+              onClick={openNewResearch}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Nova pesquisa
+            </Button>
+          </div>
+        </section>
+
+        {/* Cards de navegação */}
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <NavCard
+            icon={Plus}
+            title="Nova pesquisa"
+            description="Escolha o tipo, preencha os dados e solicite."
+            accent="bg-blue-50 text-primary"
+            onClick={openNewResearch}
+          />
+          <NavCard
+            icon={FolderOpen}
+            title="Minhas pesquisas"
+            description={`${researches.length} pesquisa(s) — acompanhe o status.`}
+            accent="bg-emerald-50 text-emerald-600"
+            onClick={scrollToList}
+          />
+          {isPlatformAdmin && (
+            <NavCard
+              icon={SlidersHorizontal}
+              title="Modelos"
+              description="Gerencie os prompts (admin da plataforma)."
+              accent="bg-amber-50 text-amber-600"
+              onClick={() => setTemplatesOpen(true)}
+            />
+          )}
+        </section>
+
+        {/* Lista */}
+        <section id="lista-pesquisas">
+          <h3 className="mb-3 text-lg font-semibold text-slate-900">Suas pesquisas</h3>
+
+          {listQuery.isLoading ? (
+            <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+          ) : researches.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
+              <ScanSearch className="h-10 w-10 text-slate-300" />
+              <p className="mt-3 font-medium text-slate-900">Nenhuma pesquisa ainda</p>
+              <p className="mt-1 max-w-sm text-sm text-slate-500">
+                Crie sua primeira pesquisa de inteligência de mercado.
+              </p>
+              <Button className="mt-4" onClick={openNewResearch}>
+                <Plus className="mr-1 h-4 w-4" />
+                Nova pesquisa
+              </Button>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {researches.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
+                >
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/app/deep-research/${r.id}`)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <FileText className="h-5 w-5 shrink-0 text-slate-400" />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-900">{r.title}</p>
+                      <p className="text-xs text-slate-500">
+                        {r.template?.name ? `${r.template.name} · ` : ''}
+                        {new Date(r.createdAt).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <StatusBadge status={r.status} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Editar"
+                      onClick={() => openEditResearch(r.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Excluir"
+                      onClick={() => setDeleteTarget({ id: r.id, name: r.title })}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <ResearchEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        templates={templates}
+        research={editingResearch}
+        onSaved={(saved) => {
+          if (saved.status === 'COMPLETED') navigate(`/app/deep-research/${saved.id}`);
+        }}
+      />
+
+      {isPlatformAdmin && (
+        <TemplateManager
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          templates={templates}
+        />
+      )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir definitivamente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `“${deleteTarget.name}” será removido permanentemente. Esta ação não pode ser desfeita.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={async () => {
+                if (deleteTarget) await deleteResearch(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function NavCard({
+  icon: Icon,
+  title,
+  description,
+  accent,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  accent: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow"
+    >
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${accent}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div>
+        <p className="font-semibold text-slate-900">{title}</p>
+        <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+      </div>
+    </button>
+  );
+}

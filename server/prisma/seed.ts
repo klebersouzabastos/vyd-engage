@@ -1,5 +1,6 @@
 import { PrismaClient, PlanType, LeadStatus, LeadSource, UserRole, UserStatus, DealStage } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
+import { BUILTIN_TEMPLATES } from '../src/services/deepResearch/builtinTemplates.js';
 
 const prisma = new PrismaClient();
 
@@ -328,6 +329,9 @@ async function seedDemoData(proPlanId: string) {
     }
   }
 
+  // Deep Research builtin templates (idempotente)
+  await seedDeepResearchTemplates(tenant.id);
+
   console.log('Demo data created:', {
     tenant: tenant.slug,
     adminUser: adminUser.email,
@@ -336,7 +340,27 @@ async function seedDemoData(proPlanId: string) {
     tags: tags.length,
     tasks: taskData.length,
     deals: dealData.length,
+    deepResearchTemplates: BUILTIN_TEMPLATES.length,
   });
+}
+
+async function seedDeepResearchTemplates(tenantId: string) {
+  for (const t of BUILTIN_TEMPLATES) {
+    const existing = await prisma.deepResearchTemplate.findFirst({
+      where: { tenantId, isBuiltin: true, name: t.name },
+    });
+    if (!existing) {
+      await prisma.deepResearchTemplate.create({
+        data: {
+          tenantId,
+          name: t.name,
+          description: t.description,
+          promptBody: t.promptBody,
+          isBuiltin: true,
+        },
+      });
+    }
+  }
 }
 
 async function main() {
