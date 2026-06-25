@@ -40,7 +40,8 @@ export async function startDeepResearch(prompt: string): Promise<string> {
       input: prompt,
       background: true,
       tools: [{ type: 'web_search_preview' }],
-      reasoning: { summary: 'auto' },
+      // Sem `reasoning.summary`: ele exige organização verificada na OpenAI e
+      // não agrega ao relatório final.
     }),
   });
 
