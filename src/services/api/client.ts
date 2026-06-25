@@ -1,3 +1,11 @@
+import type {
+  DeepResearch,
+  DeepResearchListItem,
+  DeepResearchTemplate,
+  CreateDeepResearchInput,
+  UpdateDeepResearchInput,
+} from '../../types/deepResearch';
+
 // Detect API URL automatically in production, use env var or localhost in development
 const getApiUrl = () => {
   // If VITE_API_URL is set, use it
@@ -1662,6 +1670,78 @@ class ApiClient {
       method: 'DELETE',
     });
     return res.data;
+  }
+
+  // ── Deep Research (Pesquisa Profunda) ──────────────
+  async getDeepResearches(filters?: Record<string, string | number | undefined>) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request<{
+      items: DeepResearchListItem[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/deep-research${query ? `?${query}` : ''}`);
+  }
+
+  async getDeepResearch(id: string) {
+    return this.request<DeepResearch>(`/api/v1/deep-research/${id}`);
+  }
+
+  async createDeepResearch(data: CreateDeepResearchInput) {
+    return this.request<DeepResearch>('/api/v1/deep-research', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDeepResearch(id: string, data: UpdateDeepResearchInput) {
+    return this.request<DeepResearch>(`/api/v1/deep-research/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteDeepResearch(id: string) {
+    return this.request(`/api/v1/deep-research/${id}`, { method: 'DELETE' });
+  }
+
+  async getDeepResearchTemplates() {
+    return this.request<{ items: DeepResearchTemplate[] }>(
+      '/api/v1/deep-research/templates',
+    );
+  }
+
+  async createDeepResearchTemplate(data: {
+    name: string;
+    description?: string;
+    promptBody: string;
+  }) {
+    return this.request<DeepResearchTemplate>('/api/v1/deep-research/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDeepResearchTemplate(
+    id: string,
+    data: { name?: string; description?: string; promptBody?: string },
+  ) {
+    return this.request<DeepResearchTemplate>(
+      `/api/v1/deep-research/templates/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) },
+    );
+  }
+
+  async deleteDeepResearchTemplate(id: string) {
+    return this.request(`/api/v1/deep-research/templates/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

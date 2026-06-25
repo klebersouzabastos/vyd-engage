@@ -167,6 +167,8 @@ model Tenant {
   stageTaskTemplates StageTaskTemplate[]
   importBatches      ImportBatch[]
   campaigns          Campaign[]
+  deepResearches        DeepResearch[]
+  deepResearchTemplates DeepResearchTemplate[]
 
   @@index([slug])
 }
@@ -1453,4 +1455,82 @@ model CampaignEvent {
   @@index([recipientId])
   @@index([campaignId, type, createdAt])
   @@map("campaign_events")
+}
+
+// ============================================
+// DEEP RESEARCH (Pesquisa Profunda)
+//
+// Paste-in flow (v1): o usuário edita um prompt-modelo, roda no ChatGPT
+// (Deep Research) manualmente e cola o markdown de volta, que é renderizado
+// como um site estilizado no frontend. `status`/`reportMeta` já preveem a
+// futura integração assíncrona com a OpenAI Deep Research API.
+// ============================================
+
+enum DeepResearchStatus {
+  DRAFT // criada; prompt sendo montado; sem markdown ainda
+  RESEARCHING // (futuro) job da API rodando; em v1 = aguardando colar resultado
+  COMPLETED // markdown colado/recebido e renderizável
+  FAILED // (futuro) job da API falhou
+}
+
+model DeepResearchTemplate {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String // "Empresa", "Segmento"
+  description String?
+  // Corpo do prompt com placeholders no formato [EMPRESA]
+  promptBody  String
+
+  // Template semente (não deletável pela UI); re-seed idempotente
+  isBuiltin   Boolean @default(false)
+  createdById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  researches DeepResearch[]
+
+  @@index([tenantId])
+  @@index([tenantId, isBuiltin])
+  @@map("deep_research_templates")
+}
+
+model DeepResearch {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  title       String
+
+  // Template de origem (snapshot do prompt final fica em promptUsed)
+  templateId String?
+  template   DeepResearchTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  // Prompt final com placeholders resolvidos + valores preenchidos
+  promptUsed String @default("")
+  variables  Json   @default("{}") // { "EMPRESA": "ACME" }
+
+  status DeepResearchStatus @default(DRAFT)
+
+  // Markdown bruto colado do ChatGPT (já limpo de marcadores no save)
+  reportMarkdown String?
+  // { sources: string[], generatedAt?: string, charCount?: number }
+  reportMeta     Json?
+
+  // Integração com a OpenAI Deep Research API (modo background)
+  providerResponseId String? // id do response da OpenAI
+  providerError      String?
+  requestedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([status, providerResponseId])
+  @@map("deep_research")
 }
