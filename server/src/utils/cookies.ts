@@ -25,7 +25,10 @@ export function setAuthCookies(res: Response, accessToken: string, refreshToken:
     secure: IS_PRODUCTION,
     sameSite: SAME_SITE,
     maxAge: REFRESH_TOKEN_MAX_AGE,
-    path: '/api/auth', // Only sent to auth endpoints (refresh/logout)
+    // Cobre /api/auth e /api/v1/auth (refresh/logout em ambos os prefixos). O
+    // frontend usa /api/v1/auth/refresh — com '/api/auth' o cookie nunca era
+    // enviado e a renovação de sessão falhava ("Refresh token missing").
+    path: '/api',
   });
 }
 
@@ -44,7 +47,7 @@ export function clearAuthCookies(res: Response): void {
     httpOnly: true,
     secure: IS_PRODUCTION,
     sameSite: SAME_SITE,
-    path: '/api/auth',
+    path: '/api',
   });
   res.clearCookie('csrf-token', {
     secure: IS_PRODUCTION,
