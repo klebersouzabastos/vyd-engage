@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Plus, Pencil, Trash2, FileText, ScanSearch, Sparkles, SlidersHorizontal } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  FileText,
+  ScanSearch,
+  Sparkles,
+  SlidersHorizontal,
+  Eye,
+  Loader2,
+} from 'lucide-react';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
 import {
@@ -146,19 +156,33 @@ export function DeepResearch() {
                   <button
                     type="button"
                     onClick={() => navigate(`/app/deep-research/${r.id}`)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    className="group flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
                     <FileText className="h-5 w-5 shrink-0 text-slate-400" />
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900">{r.title}</p>
+                      <p className="truncate font-medium text-slate-900 group-hover:text-primary">
+                        {r.title}
+                      </p>
                       <p className="text-xs text-slate-500">
                         {r.template?.name ? `${r.template.name} · ` : ''}
                         {new Date(r.createdAt).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                   </button>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <StatusBadge status={r.status} />
+                    {r.status === 'COMPLETED' && (
+                      <Button size="sm" onClick={() => navigate(`/app/deep-research/${r.id}`)}>
+                        <Eye className="mr-1 h-4 w-4" />
+                        Ver relatório
+                      </Button>
+                    )}
+                    {r.status === 'RESEARCHING' && (
+                      <span className="hidden items-center gap-1 text-xs font-medium text-blue-600 sm:flex">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Processando…
+                      </span>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

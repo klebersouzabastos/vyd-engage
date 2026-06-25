@@ -29,20 +29,33 @@ function apiKey(): string {
  * poller usa para acompanhar. Deep Research exige uma ferramenta de busca.
  */
 export async function startDeepResearch(prompt: string): Promise<string> {
+  const model = deepResearchModel();
+  // Os modelos *-deep-research buscam na web autonomamente. Modelos GA (gpt-4o,
+  // gpt-4.1) só buscam se forçados — então instruímos e forçamos a 1ª ação como
+  // web search, garantindo dados atuais e fontes citadas.
+  const isDeepResearch = /deep-research/i.test(model);
+  const input = isDeepResearch
+    ? prompt
+    : `Pesquise na web por informações atuais (2026) e cite as fontes. Use os resultados para elaborar o relatório a seguir.\n\n${prompt}`;
+
+  const body: Record<string, unknown> = {
+    model,
+    input,
+    background: true,
+    tools: [{ type: 'web_search_preview' }],
+    // Sem `reasoning.summary`: exige organização verificada e não agrega ao relatório.
+  };
+  if (!isDeepResearch) {
+    body.tool_choice = { type: 'web_search_preview' };
+  }
+
   const res = await fetch(`${OPENAI_BASE}/responses`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey()}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: deepResearchModel(),
-      input: prompt,
-      background: true,
-      tools: [{ type: 'web_search_preview' }],
-      // Sem `reasoning.summary`: ele exige organização verificada na OpenAI e
-      // não agrega ao relatório final.
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
