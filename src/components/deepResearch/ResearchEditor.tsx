@@ -13,7 +13,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { TemplatePicker } from './TemplatePicker';
-import { friendlyLabel } from './placeholders';
+import { friendlyLabel, placeholderExample } from './placeholders';
 import { useDeepResearchActions } from '../../hooks/useDeepResearch';
 import type {
   DeepResearch,
@@ -33,9 +33,8 @@ interface ResearchEditorProps {
 }
 
 /**
- * Formulário de pedido de pesquisa. NÃO expõe o prompt: o usuário escolhe o
- * tipo, preenche os campos e vê um resumo do que será entregue. O prompt é
- * montado no backend a partir desses dados.
+ * Formulário de pedido de pesquisa. Ordem: tipo → informações → título
+ * (auto-sugerido) → contexto → resumo. NÃO expõe o prompt (montado no backend).
  */
 export function ResearchEditor({
   open,
@@ -47,6 +46,7 @@ export function ResearchEditor({
   const { createResearch, updateResearch } = useDeepResearchActions();
 
   const [title, setTitle] = useState('');
+  const [titleEdited, setTitleEdited] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -54,6 +54,7 @@ export function ResearchEditor({
   useEffect(() => {
     if (!open) return;
     setTitle(research?.title ?? '');
+    setTitleEdited(!!research); // ao editar, não auto-sobrescreve o título existente
     setSelectedTemplateId(research?.templateId ?? templates[0]?.id ?? null);
     setVariables((research?.variables as Record<string, string>) ?? {});
     setSaving(false);
@@ -67,6 +68,13 @@ export function ResearchEditor({
 
   const placeholders = selectedTemplate?.placeholders ?? [];
   const outline = selectedTemplate?.outline ?? [];
+
+  // Título sugerido automaticamente a partir do primeiro campo preenchido.
+  const firstValue = placeholders[0] ? (variables[placeholders[0]] ?? '').trim() : '';
+  useEffect(() => {
+    if (titleEdited) return;
+    setTitle(firstValue);
+  }, [firstValue, titleEdited]);
 
   const handleVariableChange = (key: string, value: string) => {
     setVariables((prev) => ({ ...prev, [key]: value }));
@@ -104,24 +112,15 @@ export function ResearchEditor({
         <DialogHeader>
           <DialogTitle>{research ? 'Editar pesquisa' : 'Nova pesquisa de inteligência'}</DialogTitle>
           <DialogDescription>
-            Escolha o tipo de pesquisa, preencha as informações e solicite. Nossa inteligência
-            monta a pesquisa e você recebe um relatório completo.
+            Escolha o tipo, preencha as informações e solicite. Nossa inteligência monta a pesquisa
+            e você recebe um relatório completo.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          <div className="space-y-1">
-            <Label htmlFor="research-title">Título</Label>
-            <Input
-              id="research-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex.: ACME Mineração — oportunidades 2026"
-            />
-          </div>
-
+          {/* 1. Tipo */}
           <div className="space-y-2">
-            <Label>Tipo de pesquisa</Label>
+            <Label className="text-sm font-semibold text-slate-800">1. Tipo de pesquisa</Label>
             <TemplatePicker
               templates={templates}
               selectedId={selectedTemplateId}
@@ -131,29 +130,55 @@ export function ResearchEditor({
 
           {selectedTemplate && (
             <>
+              {/* 2. Informações */}
               {placeholders.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Informações da pesquisa</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-800">
+                    2. Sobre o que é a pesquisa
+                  </Label>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {placeholders.map((key) => (
-                      <div key={key} className="space-y-1">
-                        <Label htmlFor={`f-${key}`} className="text-xs text-gray-600">
-                          {friendlyLabel(key)}
-                        </Label>
-                        <Input
-                          id={`f-${key}`}
-                          value={variables[key] ?? ''}
-                          onChange={(e) => handleVariableChange(key, e.target.value)}
-                          placeholder={friendlyLabel(key)}
-                        />
-                      </div>
-                    ))}
+                    {placeholders.map((key) => {
+                      const example = placeholderExample(key);
+                      return (
+                        <div key={key} className="space-y-1">
+                          <Label htmlFor={`f-${key}`} className="text-xs text-slate-500">
+                            {friendlyLabel(key)}
+                          </Label>
+                          <Input
+                            id={`f-${key}`}
+                            value={variables[key] ?? ''}
+                            onChange={(e) => handleVariableChange(key, e.target.value)}
+                            placeholder={example ? `Ex.: ${example}` : friendlyLabel(key)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
+              {/* 3. Título */}
               <div className="space-y-1">
-                <Label htmlFor="extra-context">Informações adicionais (opcional)</Label>
+                <Label htmlFor="research-title" className="text-sm font-semibold text-slate-800">
+                  3. Título da pesquisa
+                </Label>
+                <Input
+                  id="research-title"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setTitleEdited(true);
+                  }}
+                  placeholder="Preenchido automaticamente — você pode ajustar"
+                />
+              </div>
+
+              {/* 4. Contexto adicional */}
+              <div className="space-y-1">
+                <Label htmlFor="extra-context" className="text-sm font-semibold text-slate-800">
+                  4. Informações adicionais{' '}
+                  <span className="font-normal text-slate-400">(opcional)</span>
+                </Label>
                 <Textarea
                   id="extra-context"
                   value={variables[CONTEXT_KEY] ?? ''}
@@ -163,6 +188,7 @@ export function ResearchEditor({
                 />
               </div>
 
+              {/* Resumo */}
               {outline.length > 0 && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -172,7 +198,7 @@ export function ResearchEditor({
                   <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                     {outline.map((item) => (
                       <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
                         {item}
                       </li>
                     ))}
@@ -184,7 +210,7 @@ export function ResearchEditor({
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
           <Button

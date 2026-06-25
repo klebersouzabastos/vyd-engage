@@ -50,3 +50,20 @@ export function friendlyLabel(key: string): string {
   if (!k) return k;
   return k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
 }
+
+// Exemplos para o placeholder dos campos (melhor que repetir o rótulo).
+// Inclui variações com/sem acento para não depender de normalização Unicode.
+const PLACEHOLDER_EXAMPLES: Record<string, string> = {
+  EMPRESA: 'Vale S.A.',
+  SETOR: 'Mineração',
+  SEGMENTO: 'Minerais críticos no Brasil',
+  REGIAO: 'Brasil',
+  'REGIÃO': 'Brasil',
+  PAIS: 'Brasil',
+  'PAÍS': 'Brasil',
+};
+
+/** Exemplo de preenchimento para um placeholder, ou '' se desconhecido. */
+export function placeholderExample(key: string): string {
+  return PLACEHOLDER_EXAMPLES[(key || '').toUpperCase()] || '';
+}
