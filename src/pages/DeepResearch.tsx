@@ -11,6 +11,7 @@ import {
   Eye,
   Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
 import {
@@ -63,7 +64,7 @@ export function DeepResearch() {
       setEditingResearch(detail);
       setEditorOpen(true);
     } catch {
-      /* erro tratado no client */
+      toast.error('Não foi possível abrir a pesquisa. Recarregue a página e tente novamente.');
     }
   };
 

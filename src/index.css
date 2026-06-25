@@ -2676,3 +2676,16 @@
     margin-left: 4rem;
   }
 }
+
+/* Fix — o Tailwind v4 pré-compilado resolveu max-w-md / max-w-lg para os tokens
+   de spacing (--spacing-md 24px / --spacing-lg 32px) em vez das larguras de
+   container, o que colapsava Dialog/AlertDialog para ~24–32px. Restaura a escala
+   pretendida de max-width (md = 28rem, lg = 32rem). */
+.max-w-md {
+  max-width: 28rem;
+}
+@media (width >= 40rem) {
+  .sm\:max-w-lg {
+    max-width: 32rem;
+  }
+}
