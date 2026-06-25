@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, Pencil, ListTree, Sparkles, FileEdit, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Pencil,
+  ListTree,
+  Sparkles,
+  FileEdit,
+  AlertTriangle,
+  ExternalLink,
+} from 'lucide-react';
 import { Header } from '../components/Header';
 import { Button, buttonVariants } from '../components/ui/button';
 import {
@@ -48,6 +56,7 @@ export function DeepResearchView() {
 
   const hasReport = item?.status === 'COMPLETED' && markdown.trim().length > 0;
   const sourceCount = item?.reportMeta?.sources?.length ?? 0;
+  const searchResults = item?.reportMeta?.searchResults ?? [];
 
   return (
     <div className="min-h-screen bg-slate-50/60">
@@ -143,10 +152,46 @@ export function DeepResearchView() {
                       </div>
                       <div className="px-6 py-8 md:px-10">
                         <ReportRenderer markdown={markdown} />
-                        {sourceCount > 0 && (
-                          <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">
-                            Relatório gerado com {sourceCount} citação(ões).
-                          </p>
+                        {searchResults.length > 0 ? (
+                          <section className="mt-10 border-t border-slate-200 pt-6">
+                            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                              Fontes ({searchResults.length})
+                            </p>
+                            <ol className="space-y-2">
+                              {searchResults.map((s, i) => (
+                                <li
+                                  key={`${s.url}-${i}`}
+                                  className="flex items-baseline gap-2 text-sm"
+                                >
+                                  <span className="shrink-0 select-none text-xs tabular-nums text-slate-400">
+                                    {i + 1}.
+                                  </span>
+                                  <a
+                                    href={s.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group inline-flex min-w-0 items-baseline gap-1 text-slate-700 hover:text-primary"
+                                  >
+                                    <span className="truncate underline decoration-slate-300 underline-offset-2 group-hover:decoration-primary">
+                                      {s.title?.trim() || hostnameOf(s.url)}
+                                    </span>
+                                    <ExternalLink className="h-3 w-3 shrink-0 self-center text-slate-300 group-hover:text-primary" />
+                                  </a>
+                                  {s.date && (
+                                    <span className="ml-auto shrink-0 text-xs text-slate-400">
+                                      {s.date}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ol>
+                          </section>
+                        ) : (
+                          sourceCount > 0 && (
+                            <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">
+                              Relatório gerado com {sourceCount} citação(ões).
+                            </p>
+                          )
                         )}
                       </div>
                     </div>
@@ -228,4 +273,13 @@ function StatusState({
       {config.action}
     </div>
   );
+}
+
+/** Nome de host limpo (sem www) para usar como rótulo de uma fonte sem título. */
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
 }

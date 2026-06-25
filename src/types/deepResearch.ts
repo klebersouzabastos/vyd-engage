@@ -29,8 +29,17 @@ export interface DeepResearchTemplateRef {
   name: string;
 }
 
+/** Fonte citada pela pesquisa (título clicável → URL, com data quando houver). */
+export interface ResearchSource {
+  title?: string;
+  url: string;
+  date?: string;
+}
+
 export interface DeepResearchReportMeta {
   sources?: string[];
+  /** Fontes ricas (título/URL/data) vindas do motor de pesquisa. */
+  searchResults?: ResearchSource[];
   generatedAt?: string;
   charCount?: number;
 }

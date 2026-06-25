@@ -4,10 +4,8 @@ import { createError } from '../middleware/errorHandler.js';
 import { sanitizeMarkdown } from './deepResearch/sanitizeMarkdown.js';
 import { deepResearchTemplateService } from './deepResearch/templateService.js';
 import { buildPrompt } from './deepResearch/promptUtils.js';
-import {
-  isDeepResearchApiEnabled,
-  startDeepResearch,
-} from './deepResearch/deepResearchProvider.js';
+import { getProvider } from './deepResearch/deepResearchProvider.js';
+import type { ResearchSource } from './deepResearch/providers/types.js';
 import { logger } from '../utils/logger.js';
 
 // Chave reservada em `variables` para o texto livre de enriquecimento do
@@ -200,7 +198,8 @@ export const deepResearchService = {
    * Fire-and-forget — falhas marcam a pesquisa como FAILED.
    */
   async maybeTrigger(tenantId: string, id: string) {
-    if (!isDeepResearchApiEnabled()) return;
+    const provider = getProvider();
+    if (!provider) return;
     try {
       const r = await prisma.deepResearch.findFirst({
         where: { id, tenantId },
@@ -209,13 +208,28 @@ export const deepResearchService = {
       if (!r || r.status !== DeepResearchStatus.RESEARCHING) return;
       if (r.providerResponseId || !r.promptUsed?.trim()) return;
 
-      const responseId = await startDeepResearch(r.promptUsed);
-      await prisma.deepResearch.update({
-        where: { id },
-        data: { providerResponseId: responseId, requestedAt: new Date(), providerError: null },
-      });
+      if (provider.isAsync) {
+        // Dispara em background; o poller acompanha via providerResponseId.
+        const jobId = await provider.start!(r.promptUsed);
+        await prisma.deepResearch.update({
+          where: { id },
+          data: { providerResponseId: jobId, requestedAt: new Date(), providerError: null },
+        });
+      } else {
+        // Síncrono (streaming): marca requestedAt e processa em background.
+        await prisma.deepResearch.update({
+          where: { id },
+          data: { requestedAt: new Date(), providerError: null },
+        });
+        provider
+          .run!(r.promptUsed)
+          .then((result) => this.applyProviderResult(id, result))
+          .catch((err) =>
+            this.applyProviderResult(id, { failed: true, error: String(err?.message || err) }),
+          );
+      }
     } catch (err: any) {
-      logger.error('Falha ao iniciar Deep Research na OpenAI', err);
+      logger.error('Falha ao iniciar Deep Research', err);
       await prisma.deepResearch
         .update({
           where: { id },
@@ -225,10 +239,16 @@ export const deepResearchService = {
     }
   },
 
-  /** Aplica o resultado vindo do poller (markdown concluído ou falha). */
+  /** Aplica o resultado vindo do provider (markdown concluído ou falha). */
   async applyProviderResult(
     id: string,
-    result: { markdown?: string; sources?: string[]; failed?: boolean; error?: string },
+    result: {
+      markdown?: string;
+      sources?: string[];
+      searchResults?: ResearchSource[];
+      failed?: boolean;
+      error?: string;
+    },
   ) {
     if (result.failed) {
       await prisma.deepResearch.update({
@@ -248,9 +268,10 @@ export const deepResearchService = {
         reportMarkdown: cleaned.markdown,
         reportMeta: {
           sources,
+          searchResults: result.searchResults || [],
           charCount: cleaned.markdown.length,
           generatedAt: new Date().toISOString(),
-        },
+        } as any,
         status: DeepResearchStatus.COMPLETED,
         providerError: null,
       },
