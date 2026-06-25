@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  FileText,
-  ScanSearch,
-  Sparkles,
-  SlidersHorizontal,
-  FolderOpen,
-} from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, ScanSearch, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
 import {
@@ -66,10 +57,6 @@ export function DeepResearch() {
     }
   };
 
-  const scrollToList = () => {
-    document.getElementById('lista-pesquisas')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <div className="min-h-screen bg-slate-50/60">
       <Header
@@ -77,8 +64,8 @@ export function DeepResearch() {
         subtitle="Relatórios profundos de inteligência comercial"
       />
 
-      <div className="space-y-8 p-4 md:p-8">
-        {/* Hero */}
+      <div className="space-y-6 p-4 md:p-8">
+        {/* Hero — ações principais consolidadas aqui */}
         <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-blue-100">
@@ -92,46 +79,48 @@ export function DeepResearch() {
               Solicite uma pesquisa profunda sobre uma empresa ou um segmento inteiro e receba um
               relatório completo, pronto para apresentar à sua equipe.
             </p>
-            <Button
-              className="mt-5 bg-white text-slate-900 hover:bg-slate-100"
-              onClick={openNewResearch}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Nova pesquisa
-            </Button>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button
+                size="lg"
+                className="bg-white text-slate-900 hover:bg-slate-100"
+                onClick={openNewResearch}
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Nova pesquisa
+              </Button>
+              {isPlatformAdmin && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                  onClick={() => setTemplatesOpen(true)}
+                >
+                  <SlidersHorizontal className="mr-1.5 h-4 w-4" />
+                  Gerenciar modelos
+                </Button>
+              )}
+            </div>
           </div>
         </section>
 
-        {/* Cards de navegação */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <NavCard
-            icon={Plus}
-            title="Nova pesquisa"
-            description="Escolha o tipo, preencha os dados e solicite."
-            accent="bg-blue-50 text-primary"
-            onClick={openNewResearch}
-          />
-          <NavCard
-            icon={FolderOpen}
-            title="Minhas pesquisas"
-            description={`${researches.length} pesquisa(s) — acompanhe o status.`}
-            accent="bg-emerald-50 text-emerald-600"
-            onClick={scrollToList}
-          />
-          {isPlatformAdmin && (
-            <NavCard
-              icon={SlidersHorizontal}
-              title="Modelos"
-              description="Gerencie os prompts (admin da plataforma)."
-              accent="bg-amber-50 text-amber-600"
-              onClick={() => setTemplatesOpen(true)}
-            />
-          )}
-        </section>
-
-        {/* Lista */}
-        <section id="lista-pesquisas">
-          <h3 className="mb-3 text-lg font-semibold text-slate-900">Suas pesquisas</h3>
+        {/* Lista de pesquisas */}
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Suas pesquisas
+              {researches.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-slate-400">
+                  {researches.length}
+                </span>
+              )}
+            </h3>
+            {researches.length > 0 && (
+              <Button variant="outline" size="sm" onClick={openNewResearch}>
+                <Plus className="mr-1 h-4 w-4" />
+                Nova
+              </Button>
+            )}
+          </div>
 
           {listQuery.isLoading ? (
             <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
@@ -140,7 +129,7 @@ export function DeepResearch() {
               <ScanSearch className="h-10 w-10 text-slate-300" />
               <p className="mt-3 font-medium text-slate-900">Nenhuma pesquisa ainda</p>
               <p className="mt-1 max-w-sm text-sm text-slate-500">
-                Crie sua primeira pesquisa de inteligência de mercado.
+                Comece criando sua primeira pesquisa de inteligência de mercado.
               </p>
               <Button className="mt-4" onClick={openNewResearch}>
                 <Plus className="mr-1 h-4 w-4" />
@@ -205,11 +194,7 @@ export function DeepResearch() {
       />
 
       {isPlatformAdmin && (
-        <TemplateManager
-          open={templatesOpen}
-          onOpenChange={setTemplatesOpen}
-          templates={templates}
-        />
+        <TemplateManager open={templatesOpen} onOpenChange={setTemplatesOpen} templates={templates} />
       )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
@@ -237,35 +222,5 @@ export function DeepResearch() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function NavCard({
-  icon: Icon,
-  title,
-  description,
-  accent,
-  onClick,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  accent: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow"
-    >
-      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${accent}`}>
-        <Icon className="h-5 w-5" />
-      </span>
-      <div>
-        <p className="font-semibold text-slate-900">{title}</p>
-        <p className="mt-0.5 text-sm text-slate-500">{description}</p>
-      </div>
-    </button>
   );
 }
