@@ -1,4 +1,4 @@
-import { Badge } from '../ui/badge';
+import { Check } from 'lucide-react';
 import type { DeepResearchTemplate } from '../../types/deepResearch';
 
 interface TemplatePickerProps {
@@ -7,12 +7,12 @@ interface TemplatePickerProps {
   onSelect: (id: string) => void;
 }
 
-/** Grade de cards para escolher o template-modelo da pesquisa. */
+/** Seletor compacto do tipo de pesquisa (cards lado a lado, seleção clara). */
 export function TemplatePicker({ templates, selectedId, onSelect }: TemplatePickerProps) {
   if (!templates.length) {
     return (
-      <p className="text-sm text-gray-500">
-        Nenhum template disponível. Crie um na aba “Templates”.
+      <p className="text-sm text-slate-500">
+        Nenhum tipo disponível. Um admin da plataforma precisa criar um modelo.
       </p>
     );
   }
@@ -27,22 +27,20 @@ export function TemplatePicker({ templates, selectedId, onSelect }: TemplatePick
             type="button"
             onClick={() => onSelect(t.id)}
             aria-pressed={isSelected}
-            className={`rounded-lg border p-4 text-left transition-colors ${
+            className={`relative rounded-xl border p-4 text-left transition-all ${
               isSelected
-                ? 'border-primary ring-1 ring-primary'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
             }`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium text-gray-900">{t.name}</span>
-              {t.isBuiltin && (
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700">
-                  Padrão
-                </Badge>
-              )}
-            </div>
+            {isSelected && (
+              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                <Check className="h-3 w-3 text-white" />
+              </span>
+            )}
+            <p className="pr-6 font-semibold text-slate-900">{t.name}</p>
             {t.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-gray-600">{t.description}</p>
+              <p className="mt-1 text-sm leading-snug text-slate-500">{t.description}</p>
             )}
           </button>
         );
