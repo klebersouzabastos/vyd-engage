@@ -4,33 +4,58 @@ import prisma from '../config/database.js';
 
 describe('Auth Service', () => {
   let testTenantId: string;
-  let testUserId: string;
+  // Tests run against a persistent DB, so emails must be unique per run to avoid
+  // USER_EXISTS collisions on re-runs. register() also creates its OWN tenant
+  // (from companyName) — not testTenantId — so we track and clean those up too.
+  const createdUserIds: string[] = [];
+  const createdTenantIds: string[] = [];
+  let seq = 0;
+  const uniqueEmail = (prefix: string) => `${prefix}-${Date.now()}-${seq++}@example.com`;
+
+  const trackRegister = async (args: {
+    email: string;
+    password: string;
+    name: string;
+    companyName: string;
+  }) => {
+    const result = await authService.register(args);
+    createdUserIds.push(result.user.id);
+    if (result.user.tenantId) createdTenantIds.push(result.user.tenantId);
+    return result;
+  };
 
   beforeEach(async () => {
     // Create test tenant
     const tenant = await prisma.tenant.create({
       data: {
         name: 'Test Company',
-        slug: `test-company-${Date.now()}`,
+        slug: `test-company-${Date.now()}-${seq++}`,
       },
     });
     testTenantId = tenant.id;
   });
 
   afterEach(async () => {
-    // Cleanup
-    if (testUserId) {
-      await prisma.user.deleteMany({ where: { id: testUserId } });
+    // Clean up users first (cascades their refresh tokens), then the tenants each
+    // registration created, then the bare tenant from beforeEach. Best-effort.
+    if (createdUserIds.length) {
+      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+      createdUserIds.length = 0;
+    }
+    if (createdTenantIds.length) {
+      await prisma.tenant.deleteMany({ where: { id: { in: createdTenantIds } } }).catch(() => {});
+      createdTenantIds.length = 0;
     }
     if (testTenantId) {
-      await prisma.tenant.delete({ where: { id: testTenantId } });
+      await prisma.tenant.delete({ where: { id: testTenantId } }).catch(() => {});
     }
   });
 
   describe('register', () => {
     it('should register a new user successfully', async () => {
-      const result = await authService.register({
-        email: 'test@example.com',
+      const email = uniqueEmail('test');
+      const result = await trackRegister({
+        email,
         password: 'password123',
         name: 'Test User',
         companyName: 'Test Company',
@@ -39,15 +64,14 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
-      expect(result.user.email).toBe('test@example.com');
+      expect(result.user.email).toBe(email);
       expect(result.user.name).toBe('Test User');
-      
-      testUserId = result.user.id;
     });
 
     it('should throw error if email already exists', async () => {
-      await authService.register({
-        email: 'existing@example.com',
+      const email = uniqueEmail('existing');
+      await trackRegister({
+        email,
         password: 'password123',
         name: 'First User',
         companyName: 'First Company',
@@ -55,7 +79,7 @@ describe('Auth Service', () => {
 
       await expect(
         authService.register({
-          email: 'existing@example.com',
+          email,
           password: 'password123',
           name: 'Second User',
           companyName: 'Second Company',
@@ -65,9 +89,12 @@ describe('Auth Service', () => {
   });
 
   describe('login', () => {
+    let loginEmail: string;
+
     beforeEach(async () => {
-      await authService.register({
-        email: 'login@example.com',
+      loginEmail = uniqueEmail('login');
+      await trackRegister({
+        email: loginEmail,
         password: 'password123',
         name: 'Login User',
         companyName: 'Login Company',
@@ -76,20 +103,20 @@ describe('Auth Service', () => {
 
     it('should login successfully with correct credentials', async () => {
       const result = await authService.login({
-        email: 'login@example.com',
+        email: loginEmail,
         password: 'password123',
       });
 
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
-      expect(result.user.email).toBe('login@example.com');
+      expect(result.user.email).toBe(loginEmail);
     });
 
     it('should throw error with incorrect password', async () => {
       await expect(
         authService.login({
-          email: 'login@example.com',
+          email: loginEmail,
           password: 'wrongpassword',
         })
       ).rejects.toThrow('Invalid email or password');
@@ -98,7 +125,7 @@ describe('Auth Service', () => {
     it('should throw error with non-existent email', async () => {
       await expect(
         authService.login({
-          email: 'nonexistent@example.com',
+          email: uniqueEmail('nonexistent'),
           password: 'password123',
         })
       ).rejects.toThrow('Invalid email or password');
@@ -106,34 +133,29 @@ describe('Auth Service', () => {
   });
 
   describe('password reset', () => {
+    let resetEmail: string;
+
     beforeEach(async () => {
-      const result = await authService.register({
-        email: 'reset@example.com',
+      resetEmail = uniqueEmail('reset');
+      await trackRegister({
+        email: resetEmail,
         password: 'password123',
         name: 'Reset User',
         companyName: 'Reset Company',
       });
-      testUserId = result.user.id;
     });
 
     it('should request password reset successfully', async () => {
       await expect(
-        authService.requestPasswordReset('reset@example.com')
+        authService.requestPasswordReset(resetEmail)
       ).resolves.not.toThrow();
     });
 
     it('should not reveal if email exists', async () => {
       // Should not throw even if email doesn't exist
       await expect(
-        authService.requestPasswordReset('nonexistent@example.com')
+        authService.requestPasswordReset(uniqueEmail('nonexistent'))
       ).resolves.not.toThrow();
     });
   });
 });
-
-
-
-
-
-
-
