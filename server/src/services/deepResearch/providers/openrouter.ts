@@ -16,19 +16,37 @@ function apiKey(): string {
   return key;
 }
 
-/** Parseia um chunk SSE da OpenRouter, acumulando conteúdo e fontes. */
+/**
+ * Parseia um chunk SSE da OpenRouter, acumulando conteúdo e fontes. As fontes
+ * chegam em dois formatos possíveis e são ACUMULADAS (dedup por url):
+ * - OpenRouter/OpenAI: `annotations[].url_citation` — chegam 1 por chunk em
+ *   `delta.annotations` no stream (também aceitamos `message.annotations`/top-level).
+ * - Perplexity direto: `search_results[]` (title/url/date) — vem completo num chunk.
+ */
 export function applyChunk(
   json: any,
   acc: { markdown: string; citations: string[]; searchResults: ResearchSource[] },
 ): void {
-  const delta = json?.choices?.[0]?.delta;
+  const choice = json?.choices?.[0];
+  const delta = choice?.delta;
   if (typeof delta?.content === 'string') acc.markdown += delta.content;
   if (Array.isArray(json?.citations)) acc.citations = json.citations;
-  const sr = json?.search_results || json?.choices?.[0]?.message?.search_results;
-  if (Array.isArray(sr)) {
-    acc.searchResults = sr
-      .map((s: any) => ({ title: s?.title, url: s?.url, date: s?.date }))
-      .filter((s: ResearchSource) => !!s.url);
+
+  const annotations = delta?.annotations || choice?.message?.annotations || json?.annotations;
+  const fromAnnotations: ResearchSource[] = Array.isArray(annotations)
+    ? annotations
+        .map((a: any) => a?.url_citation || a)
+        .filter((u: any) => u?.url)
+        .map((u: any) => ({ title: u.title, url: u.url, date: u.date }))
+    : [];
+
+  const sr = json?.search_results || choice?.message?.search_results;
+  const fromSearch: ResearchSource[] = Array.isArray(sr)
+    ? sr.map((s: any) => ({ title: s?.title, url: s?.url, date: s?.date })).filter((s: ResearchSource) => !!s.url)
+    : [];
+
+  for (const src of [...fromAnnotations, ...fromSearch]) {
+    if (!acc.searchResults.some((e) => e.url === src.url)) acc.searchResults.push(src);
   }
 }
 
