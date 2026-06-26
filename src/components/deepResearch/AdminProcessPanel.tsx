@@ -65,8 +65,8 @@ export function AdminProcessPanel({ research, onSaved }: AdminProcessPanelProps)
         Processamento — admin da plataforma
       </p>
       <p className="mt-1 text-xs text-amber-700">
-        Conteúdo confidencial. Copie o prompt, rode no ChatGPT (Deep Research) e cole o resultado
-        para publicar o relatório ao solicitante.
+        Conteúdo confidencial. A geração é automática; se ela não estiver disponível, copie o
+        prompt, rode num motor de Deep Research e cole o resultado para publicar o relatório.
       </p>
 
       {research.providerError ? (
@@ -74,10 +74,9 @@ export function AdminProcessPanel({ research, onSaved }: AdminProcessPanelProps)
           Erro no processamento automático: {research.providerError}. Você pode colar o resultado
           manualmente abaixo.
         </div>
-      ) : research.providerResponseId && research.status === 'RESEARCHING' ? (
+      ) : research.status === 'RESEARCHING' && (research.requestedAt || research.providerResponseId) ? (
         <div className="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
-          Processando automaticamente via OpenAI Deep Research… esta página atualiza sozinha quando
-          concluir.
+          Processando automaticamente… esta página atualiza sozinha quando concluir.
         </div>
       ) : null}
 
