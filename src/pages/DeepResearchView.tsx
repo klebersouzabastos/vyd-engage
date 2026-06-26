@@ -1,16 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import {
-  ArrowLeft,
-  Pencil,
-  ListTree,
-  Sparkles,
-  FileEdit,
-  AlertTriangle,
-  ExternalLink,
-} from 'lucide-react';
+import { ArrowLeft, Pencil, Sparkles, FileEdit, AlertTriangle } from 'lucide-react';
 import { Header } from '../components/Header';
-import { Button, buttonVariants } from '../components/ui/button';
+import { Button } from '../components/ui/button';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,20 +11,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '../components/ui/breadcrumb';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-  DrawerClose,
-} from '../components/ui/drawer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { ReportRenderer } from '../components/deepResearch/ReportRenderer';
-import { ReportTOC } from '../components/deepResearch/ReportTOC';
-import { extractToc } from '../components/deepResearch/extractToc';
 import { sanitizeReportMarkdown } from '../components/deepResearch/sanitizeReportMarkdown';
-import { useActiveHeading } from '../components/deepResearch/useActiveHeading';
+import { ReportViewer } from '../components/deepResearch/ReportViewer';
 import { ResearchEditor } from '../components/deepResearch/ResearchEditor';
 import { AdminProcessPanel } from '../components/deepResearch/AdminProcessPanel';
 import { useDeepResearchItem, useDeepResearchTemplates } from '../hooks/useDeepResearch';
@@ -51,103 +32,22 @@ export function DeepResearchView() {
   const item = itemQuery.data;
   const rawMarkdown = item?.reportMarkdown ?? '';
   const { markdown } = useMemo(() => sanitizeReportMarkdown(rawMarkdown), [rawMarkdown]);
-  const toc = useMemo(() => extractToc(markdown), [markdown]);
-  const tocIds = useMemo(() => toc.map((t) => t.id), [toc]);
-  const activeId = useActiveHeading(tocIds);
 
   const hasReport = item?.status === 'COMPLETED' && markdown.trim().length > 0;
   const sourceCount = item?.reportMeta?.sources?.length ?? 0;
   const searchResults = item?.reportMeta?.searchResults ?? [];
 
-  // Conteúdo do relatório (web page renderizada ou estado vazio). Reutilizado na
-  // aba "Relatório" do platform admin e na visão direta do usuário comum.
+  // Conteúdo do relatório (visualizador ou estado vazio). Reutilizado na aba
+  // "Relatório" do platform admin e na visão direta do usuário comum.
   const reportBody = !item ? null : hasReport ? (
-    <>
-      {/* Sumário no mobile (drawer) */}
-      {toc.length > 0 && (
-        <div className="mb-4 md:hidden">
-          <Drawer direction="left">
-            <DrawerTrigger className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              <ListTree className="mr-1 h-4 w-4" />
-              Sumário
-            </DrawerTrigger>
-            <DrawerContent className="w-72 p-4">
-              <DrawerHeader className="p-0">
-                <DrawerTitle className="sr-only">Sumário</DrawerTitle>
-              </DrawerHeader>
-              <DrawerClose asChild>
-                <div className="mt-2 overflow-y-auto">
-                  <ReportTOC items={toc} activeId={activeId} />
-                </div>
-              </DrawerClose>
-            </DrawerContent>
-          </Drawer>
-        </div>
-      )}
-
-      <div className="md:grid md:grid-cols-[260px_1fr] md:gap-8">
-        {toc.length > 0 && (
-          <aside className="hidden md:block">
-            <div className="sticky top-6 max-h-[calc(100vh-6rem)] overflow-y-auto">
-              <ReportTOC items={toc} activeId={activeId} />
-            </div>
-          </aside>
-        )}
-
-        <div className="min-w-0">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/70 px-6 py-3 md:px-10">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Relatório · Inteligência de Mercado
-              </span>
-              <span className="text-xs text-slate-400">
-                {item.template?.name ? `${item.template.name} · ` : ''}
-                {new Date(item.updatedAt).toLocaleDateString('pt-BR')}
-              </span>
-            </div>
-            <div className="px-6 py-8 md:px-10">
-              <ReportRenderer markdown={markdown} />
-              {searchResults.length > 0 ? (
-                <section className="mt-10 border-t border-slate-200 pt-6">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Fontes ({searchResults.length})
-                  </p>
-                  <ol className="space-y-2">
-                    {searchResults.map((s, i) => (
-                      <li key={`${s.url}-${i}`} className="flex items-baseline gap-2 text-sm">
-                        <span className="shrink-0 select-none text-xs tabular-nums text-slate-400">
-                          {i + 1}.
-                        </span>
-                        <a
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group inline-flex min-w-0 items-baseline gap-1 text-slate-700 hover:text-primary"
-                        >
-                          <span className="truncate underline decoration-slate-300 underline-offset-2 group-hover:decoration-primary">
-                            {s.title?.trim() || hostnameOf(s.url)}
-                          </span>
-                          <ExternalLink className="h-3 w-3 shrink-0 self-center text-slate-300 group-hover:text-primary" />
-                        </a>
-                        {s.date && (
-                          <span className="ml-auto shrink-0 text-xs text-slate-400">{s.date}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              ) : (
-                sourceCount > 0 && (
-                  <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">
-                    Relatório gerado com {sourceCount} citação(ões).
-                  </p>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    <ReportViewer
+      markdown={markdown}
+      title={item.title}
+      templateName={item.template?.name ?? null}
+      updatedAt={item.updatedAt}
+      searchResults={searchResults}
+      sourceCount={sourceCount}
+    />
   ) : (
     <StatusState status={item.status} onEdit={() => setEditorOpen(true)} />
   );
@@ -284,13 +184,4 @@ function StatusState({
       {config.action}
     </div>
   );
-}
-
-/** Nome de host limpo (sem www) para usar como rótulo de uma fonte sem título. */
-function hostnameOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return url;
-  }
 }
