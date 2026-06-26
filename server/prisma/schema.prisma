@@ -68,19 +68,19 @@ model User {
   lastLoginAt DateTime?
 
   // Relations
-  refreshTokens RefreshToken[]
-  invitations   Invitation[]   @relation("InvitedBy")
-  assignedLeads Lead[]         @relation("LeadAssignment")
-  assignedDeals Deal[]         @relation("DealAssignment")
-  assignedTasks Task[]         @relation("TaskAssignment")
-  interactions  Interaction[]  @relation("InteractionUser")
-  notifications         Notification[]       @relation("NotificationUser")
-  reports               Report[]             @relation("ReportCreator")
-  calendarConnections   CalendarConnection[]   @relation("UserCalendarConnections")
+  refreshTokens         RefreshToken[]
+  invitations           Invitation[]          @relation("InvitedBy")
+  assignedLeads         Lead[]                @relation("LeadAssignment")
+  assignedDeals         Deal[]                @relation("DealAssignment")
+  assignedTasks         Task[]                @relation("TaskAssignment")
+  interactions          Interaction[]         @relation("InteractionUser")
+  notifications         Notification[]        @relation("NotificationUser")
+  reports               Report[]              @relation("ReportCreator")
+  calendarConnections   CalendarConnection[]  @relation("UserCalendarConnections")
   savedViews            SavedView[]
   meetingAvailabilities MeetingAvailability[]
   auditLogs             AuditLog[]
-  goals Goal[]
+  goals                 Goal[]
 
   @@index([email])
   @@index([tenantId])
@@ -137,38 +137,41 @@ model Tenant {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users               User[]
-  invitations         Invitation[]
-  leads               Lead[]
-  companies           Company[]
-  tasks               Task[]
-  automations         Automation[]
-  tags                Tag[]
-  customFields        CustomField[]
-  whatsappConnections WhatsAppConnection[]
-  emailConfigs        EmailConfig[]
-  payments            Payment[]
-  apiKeys             ApiKey[]
-  webhooks            Webhook[]
-  notifications       Notification[]
-  interactions        Interaction[]
-  funnels             Funnel[]
-  scoreRules          ScoreRule[]
-  reports             Report[]
-  deals               Deal[]
-  calendarConnections CalendarConnection[]
-  savedViews          SavedView[]
+  users                 User[]
+  invitations           Invitation[]
+  leads                 Lead[]
+  companies             Company[]
+  tasks                 Task[]
+  automations           Automation[]
+  tags                  Tag[]
+  customFields          CustomField[]
+  whatsappConnections   WhatsAppConnection[]
+  emailConfigs          EmailConfig[]
+  payments              Payment[]
+  apiKeys               ApiKey[]
+  webhooks              Webhook[]
+  notifications         Notification[]
+  interactions          Interaction[]
+  funnels               Funnel[]
+  scoreRules            ScoreRule[]
+  reports               Report[]
+  deals                 Deal[]
+  calendarConnections   CalendarConnection[]
+  savedViews            SavedView[]
   emailTemplates        EmailTemplate[]
   meetingAvailabilities MeetingAvailability[]
-  auditLogs           AuditLog[]
-  staleDays          Int                 @default(5)
-  products           Product[]
-  goals              Goal[]
-  stageTaskTemplates StageTaskTemplate[]
-  importBatches      ImportBatch[]
-  campaigns          Campaign[]
+  auditLogs             AuditLog[]
+  staleDays             Int                    @default(5)
+  products              Product[]
+  goals                 Goal[]
+  stageTaskTemplates    StageTaskTemplate[]
+  importBatches         ImportBatch[]
+  campaigns             Campaign[]
   deepResearches        DeepResearch[]
   deepResearchTemplates DeepResearchTemplate[]
+  empreendimentos       Empreendimento[]
+  commercialRoadmaps    CommercialRoadmap[]
+  playbookTemplates     PlaybookTemplate[]
 
   @@index([slug])
 }
@@ -344,8 +347,8 @@ model FunnelColumn {
   updatedAt DateTime @updatedAt
 
   // Relations
-  leads Lead[] @relation("LeadFunnelColumn")
-  deals Deal[] @relation("DealFunnelColumn")
+  leads              Lead[]              @relation("LeadFunnelColumn")
+  deals              Deal[]              @relation("DealFunnelColumn")
   stageTaskTemplates StageTaskTemplate[]
 
   @@index([funnelId])
@@ -402,18 +405,30 @@ enum CompanySize {
 }
 
 model Company {
-  id       String  @id @default(uuid())
+  id       String @id @default(uuid())
   tenantId String
-  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  name     String
-  domain   String?
-  industry String?
-  size     CompanySize?
-  phone    String?
-  address  String?
-  website  String?
-  notes    String?
+  name        String
+  fantasyName String? // Nome fantasia (name = razão social)
+  cnpj        String?
+  domain      String?
+  industry    String?
+  size        CompanySize?
+  phone       String?
+  address     String?
+  website     String?
+  notes       String?
+
+  // External identifier from a source system (e.g. legacy CRM export) — used as
+  // the primary idempotency key when importing companies.
+  externalId String?
+
+  // Custom fields (JSON for flexibility) — mirrors Lead/Deal.
+  customFields Json @default("{}")
+
+  // Import Pro — batch this record was created by (for history + rollback).
+  importBatchId String?
 
   // Soft delete
   deletedAt DateTime?
@@ -423,14 +438,20 @@ model Company {
   updatedAt DateTime @updatedAt
 
   // Relations
-  leads        Lead[]
-  deals        Deal[]
-  interactions Interaction[]
+  leads              Lead[]
+  deals              Deal[]
+  interactions       Interaction[]
+  tasks              Task[]
+  empreendimentos    Empreendimento[]
+  commercialRoadmaps CommercialRoadmap[]
+  deepResearches     DeepResearch[]
 
   @@index([tenantId])
   @@index([tenantId, name])
   @@index([tenantId, domain])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, externalId])
+  @@index([tenantId, importBatchId])
 }
 
 // ============================================
@@ -447,24 +468,26 @@ enum DealStage {
 }
 
 model Deal {
-  id                String     @id @default(uuid())
+  id                String          @id @default(uuid())
   tenantId          String
-  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name              String
-  value             Decimal    @db.Decimal(12, 2)
-  stage             DealStage  @default(QUALIFICATION)
-  probability       Int        @default(20)
+  value             Decimal         @db.Decimal(12, 2)
+  stage             DealStage       @default(QUALIFICATION)
+  probability       Int             @default(20)
   expectedCloseDate DateTime?
   leadId            String?
-  lead              Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead              Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
   companyId         String?
-  company           Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  company           Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  empreendimentoId  String?
+  empreendimento    Empreendimento? @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
   assignedTo        String?
-  assignedUser      User?      @relation("DealAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+  assignedUser      User?           @relation("DealAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
   notes             String?
-  customFields      Json       @default("{}")
+  customFields      Json            @default("{}")
   lostReason        String?
-  lostCompetitor String?
+  lostCompetitor    String?
 
   // Pipeline position
   funnelId         String?
@@ -484,16 +507,18 @@ model Deal {
   // Soft delete
   deletedAt DateTime?
 
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  closedAt          DateTime?
-  interactions      Interaction[]
-  tasks             Task[]
-  stageHistory DealStageHistory[]
-  dealProducts DealProduct[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  closedAt           DateTime?
+  interactions       Interaction[]
+  tasks              Task[]
+  stageHistory       DealStageHistory[]
+  dealProducts       DealProduct[]
+  commercialRoadmaps CommercialRoadmap[]
 
   @@index([tenantId])
   @@index([tenantId, stage])
+  @@index([tenantId, empreendimentoId])
   @@index([tenantId, assignedTo])
   @@index([tenantId, leadId])
   @@index([tenantId, companyId])
@@ -533,13 +558,20 @@ model Lead {
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Basic info
-  name      String
-  email     String?
-  phone     String?
-  company   String?
-  position  String?
-  companyId String?
+  name       String
+  email      String?
+  phone      String?
+  company    String?
+  position   String?
+  companyId  String?
   companyRef Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  // Desdobramento comercial — organograma de decisores + vínculo a empreendimento
+  reportsToId      String?
+  reportsTo        Lead?           @relation("LeadHierarchy", fields: [reportsToId], references: [id], onDelete: SetNull)
+  directReports    Lead[]          @relation("LeadHierarchy")
+  empreendimentoId String?
+  empreendimento   Empreendimento? @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
 
   // Contact conversion
   isContact   Boolean   @default(false)
@@ -578,16 +610,19 @@ model Lead {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tags               LeadTag[]
-  interactions       Interaction[]
-  tasks              Task[]
-  automationLogs     AutomationLog[]
-  deals              Deal[]
-  campaignRecipients CampaignRecipient[]
+  tags                LeadTag[]
+  interactions        Interaction[]
+  tasks               Task[]
+  automationLogs      AutomationLog[]
+  deals               Deal[]
+  campaignRecipients  CampaignRecipient[]
+  roadmapStakeholders RoadmapStakeholder[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, email])
+  @@index([tenantId, empreendimentoId])
+  @@index([reportsToId])
   @@index([tenantId, createdAt])
   @@index([funnelColumnId])
   @@index([tenantId, isContact])
@@ -672,11 +707,20 @@ model Task {
 
   // Assignment
   assignedTo   String?
-  assignedUser User?   @relation("TaskAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+  assignedUser User?    @relation("TaskAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
   leadId       String?
-  lead         Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead         Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   dealId       String?
-  deal         Deal?   @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  deal         Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  companyId    String?
+  company      Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  // Desdobramento comercial — tipo de ação de acesso + vínculo a empreendimento/roadmap
+  type             TaskType?
+  empreendimentoId String?
+  empreendimento   Empreendimento?    @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+  roadmapId        String?
+  roadmap          CommercialRoadmap? @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
 
   // Dates
   dueDate     DateTime?
@@ -697,6 +741,10 @@ model Task {
   @@index([tenantId, assignedTo])
   @@index([tenantId, dueDate])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, companyId])
+  @@index([tenantId, empreendimentoId])
+  @@index([tenantId, roadmapId])
+  @@index([tenantId, type])
 }
 
 // ============================================
@@ -708,11 +756,11 @@ enum CalendarProvider {
 }
 
 model CalendarConnection {
-  id       String           @id @default(uuid())
+  id       String @id @default(uuid())
   tenantId String
-  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId   String
-  user     User             @relation("UserCalendarConnections", fields: [userId], references: [id], onDelete: Cascade)
+  user     User   @relation("UserCalendarConnections", fields: [userId], references: [id], onDelete: Cascade)
 
   provider     CalendarProvider @default(GOOGLE)
   accessToken  String
@@ -801,7 +849,7 @@ model AutomationLog {
 
   // Structured fields (previously buried in JSON `data`)
   leadId      String?
-  lead        Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead        Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
   stepOrder   Int?
   stepType    AutomationStepType?
   executionId String?
@@ -1095,19 +1143,19 @@ enum ReportType {
 }
 
 model Report {
-  id          String  @id @default(uuid())
+  id          String @id @default(uuid())
   tenantId    String
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdById String
-  createdBy   User    @relation("ReportCreator", fields: [createdById], references: [id])
+  createdBy   User   @relation("ReportCreator", fields: [createdById], references: [id])
 
   name        String
   description String?
   type        ReportType @default(CUSTOM)
   config      Json       @default("{}") // widgets, schedule, filters, shareSettings
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@index([tenantId, createdById])
@@ -1118,19 +1166,19 @@ model Report {
 // ============================================
 
 model SavedView {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   tenantId  String
   userId    String
   name      String
-  page      String   // 'leads', 'deals', 'tasks', 'companies'
-  filters   Json     // stored filter configuration
-  columns   Json?    // optional column visibility/order
-  isDefault Boolean  @default(false)
-  isShared  Boolean  @default(false)
+  page      String // 'leads', 'deals', 'tasks', 'companies'
+  filters   Json // stored filter configuration
+  columns   Json? // optional column visibility/order
+  isDefault Boolean   @default(false)
+  isShared  Boolean   @default(false)
   sortBy    String?
-  sortOrder String?  // 'asc' | 'desc'
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  sortOrder String? // 'asc' | 'desc'
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1163,16 +1211,16 @@ model EmailTemplate {
 // ============================================
 
 model MeetingAvailability {
-  id           String   @id @default(uuid())
-  tenantId     String
-  userId       String
-  slug         String   @unique
-  title        String
-  duration     Int
-  bufferMinutes Int     @default(15)
-  availableHours Json   @default("{}")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(uuid())
+  tenantId       String
+  userId         String
+  slug           String   @unique
+  title          String
+  duration       Int
+  bufferMinutes  Int      @default(15)
+  availableHours Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1302,6 +1350,7 @@ enum ImportType {
   LEADS
   DEALS
   INTERACTIONS
+  COMPANIES
 }
 
 enum ImportStatus {
@@ -1367,8 +1416,8 @@ model Campaign {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  name    String
-  status  CampaignStatus @default(DRAFT)
+  name   String
+  status CampaignStatus @default(DRAFT)
 
   // Sender
   fromName  String?
@@ -1418,7 +1467,7 @@ model CampaignRecipient {
   status CampaignRecipientStatus @default(PENDING)
 
   // Per-recipient delivery bookkeeping (edge case: max 3 retries)
-  errorCount Int     @default(0)
+  errorCount Int       @default(0)
   lastError  String?
   sentAt     DateTime?
   openedAt   DateTime?
@@ -1505,6 +1554,10 @@ model DeepResearch {
   createdById String?
   title       String
 
+  // Desdobramento comercial — empresa-alvo (opcional, para semear um roadmap)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
   // Template de origem (snapshot do prompt final fica em promptUsed)
   templateId String?
   template   DeepResearchTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
@@ -1528,9 +1581,187 @@ model DeepResearch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  commercialRoadmaps CommercialRoadmap[]
+
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
   @@index([status, providerResponseId])
+  @@index([tenantId, companyId])
   @@map("deep_research")
+}
+
+// ============================================
+// DESDOBRAMENTO COMERCIAL
+// ============================================
+
+enum TaskType {
+  VISITA
+  APRESENTACAO
+  LIGACAO
+  REUNIAO
+  EMAIL
+  PROPOSTA
+  OUTRO
+}
+
+enum CommercialRoadmapStatus {
+  PLANEJAMENTO
+  EM_ANDAMENTO
+  PROPOSTA
+  GANHO
+  PERDIDO
+  ARQUIVADO
+}
+
+enum StakeholderRole {
+  DECISOR
+  INFLUENCIADOR
+  TECNICO
+  APROVADOR
+  USUARIO
+}
+
+enum StakeholderPosture {
+  FAVORAVEL
+  NEUTRO
+  CONTRARIO
+  DESCONHECIDO
+}
+
+model Empreendimento {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Sempre vinculado a uma empresa (cliente)
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name                 String
+  type                 String? // obra, expansão, planta, licitação...
+  location             String?
+  estimatedValue       Decimal?  @db.Decimal(14, 2)
+  phase                String? // estudo, projeto, licitação, execução...
+  expectedDecisionDate DateTime?
+  status               String    @default("ATIVO") // ATIVO | STANDBY | ENCERRADO
+  notes                String?
+  customFields         Json      @default("{}")
+  createdById          String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  contacts Lead[]
+  deals    Deal[]
+  tasks    Task[]
+  roadmaps CommercialRoadmap[]
+
+  @@index([tenantId])
+  @@index([tenantId, companyId])
+  @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+  @@map("empreendimentos")
+}
+
+model PlaybookTemplate {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  isBuiltin   Boolean @default(false)
+  createdById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  steps    PlaybookStep[]
+  roadmaps CommercialRoadmap[]
+
+  @@index([tenantId])
+  @@index([tenantId, isBuiltin])
+  @@map("playbook_templates")
+}
+
+model PlaybookStep {
+  id         String           @id @default(uuid())
+  templateId String
+  template   PlaybookTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  order       Int
+  title       String
+  actionType  TaskType         @default(OUTRO)
+  targetRole  StakeholderRole?
+  offsetDays  Int              @default(0)
+  priority    TaskPriority     @default(MEDIUM)
+  description String?
+
+  @@index([templateId])
+  @@map("playbook_steps")
+}
+
+model CommercialRoadmap {
+  id          String  @id @default(uuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdById String?
+
+  title String
+
+  // Sempre por empresa; opcionalmente por empreendimento. companyId usa Restrict
+  // para não destruir o roadmap em um hard-delete de empresa (o app usa soft-delete).
+  companyId        String
+  company          Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  empreendimentoId String?
+  empreendimento   Empreendimento? @relation(fields: [empreendimentoId], references: [id], onDelete: SetNull)
+
+  // Funil + semente (pesquisa) + playbook usado
+  dealId             String?
+  deal               Deal?             @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  deepResearchId     String?
+  deepResearch       DeepResearch?     @relation(fields: [deepResearchId], references: [id], onDelete: SetNull)
+  playbookTemplateId String?
+  playbookTemplate   PlaybookTemplate? @relation(fields: [playbookTemplateId], references: [id], onDelete: SetNull)
+
+  status             CommercialRoadmapStatus @default(PLANEJAMENTO)
+  targetProposalDate DateTime?
+  notes              String?
+  customFields       Json                    @default("{}")
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  stakeholders RoadmapStakeholder[]
+  tasks        Task[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, companyId])
+  @@index([tenantId, empreendimentoId])
+  @@index([tenantId, deletedAt])
+  @@map("commercial_roadmaps")
+}
+
+model RoadmapStakeholder {
+  id        String            @id @default(uuid())
+  roadmapId String
+  roadmap   CommercialRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  leadId    String
+  lead      Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  roleInDecision StakeholderRole    @default(USUARIO)
+  posture        StakeholderPosture @default(DESCONHECIDO)
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roadmapId, leadId])
+  @@index([roadmapId])
+  @@index([leadId])
+  @@map("roadmap_stakeholders")
 }

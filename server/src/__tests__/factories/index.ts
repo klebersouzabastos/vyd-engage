@@ -68,6 +68,8 @@ export const leadFactory = Factory.define<Lead>(() => ({
   company: faker.company.name(),
   position: faker.person.jobTitle(),
   companyId: null,
+  reportsToId: null,
+  empreendimentoId: null,
   isContact: false,
   convertedAt: null,
   status: LeadStatus.NEW,

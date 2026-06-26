@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { DealStage } from '@prisma/client';
+import { DealStage, CommercialRoadmapStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
@@ -22,6 +22,8 @@ export interface CreateDealData {
   probability?: number;
   expectedCloseDate?: string;
   leadId?: string | null;
+  companyId?: string | null;
+  empreendimentoId?: string | null;
   assignedTo?: string | null;
   notes?: string;
   customFields?: Record<string, any>;
@@ -60,6 +62,8 @@ export const dealService = {
         probability,
         expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
         leadId: data.leadId || null,
+        companyId: data.companyId || null,
+        empreendimentoId: data.empreendimentoId || null,
         assignedTo: data.assignedTo || null,
         notes: data.notes || null,
         customFields: data.customFields || {},
@@ -190,6 +194,8 @@ export const dealService = {
         ? (data.expectedCloseDate ? new Date(data.expectedCloseDate) : null)
         : undefined,
       leadId: data.leadId,
+      companyId: data.companyId,
+      empreendimentoId: data.empreendimentoId,
       assignedTo: data.assignedTo,
       notes: data.notes,
       customFields: data.customFields,
@@ -279,6 +285,25 @@ export const dealService = {
           tenantId,
         });
       });
+    }
+
+    // Desdobramento comercial — refletir a etapa do Deal no status dos roadmaps
+    // vinculados (req 17). Só "espelha" os marcos relevantes; não rebaixa.
+    if (data.stage && data.stage !== existing.stage) {
+      const ROADMAP_STATUS_BY_STAGE: Partial<Record<DealStage, CommercialRoadmapStatus>> = {
+        [DealStage.PROPOSAL]: CommercialRoadmapStatus.PROPOSTA,
+        [DealStage.WON]: CommercialRoadmapStatus.GANHO,
+        [DealStage.LOST]: CommercialRoadmapStatus.PERDIDO,
+      };
+      const roadmapStatus = ROADMAP_STATUS_BY_STAGE[data.stage];
+      if (roadmapStatus) {
+        prisma.commercialRoadmap
+          .updateMany({
+            where: { tenantId, dealId: deal.id, deletedAt: null },
+            data: { status: roadmapStatus },
+          })
+          .catch(() => {});
+      }
     }
 
     // Dispatch webhook events based on what changed
