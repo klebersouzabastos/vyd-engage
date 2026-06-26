@@ -103,8 +103,12 @@ export function DeepResearchView() {
           <p className="py-12 text-center text-sm text-slate-500">Pesquisa não encontrada.</p>
         ) : (
           <>
-            {/* Painel de processamento — somente platform admin */}
-            {isPlatformAdmin && <AdminProcessPanel research={item} />}
+            {/* Painel de processamento manual — só platform admin e só quando o
+                relatório AINDA não está pronto (rascunho/processando/falha). Num
+                relatório concluído, o admin vê apenas a web page renderizada. */}
+            {isPlatformAdmin && item.status !== 'COMPLETED' && (
+              <AdminProcessPanel research={item} />
+            )}
 
             {hasReport ? (
               <>
