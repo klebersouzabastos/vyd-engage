@@ -1,5 +1,6 @@
 import { parse as parseCsv } from 'csv-parse/sync';
 import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
 import prisma from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import {
@@ -10,6 +11,7 @@ import {
   DealStage,
   InteractionType,
   InteractionDirection,
+  CustomFieldType,
 } from '@prisma/client';
 
 // ────────────────────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ export interface ValidationError {
  */
 export interface DuplicateInfo {
   row: number;
-  matchedBy: 'email' | 'phone';
+  matchedBy: 'email' | 'phone' | 'externalId' | 'cnpj' | 'name';
   value: string;
   name?: string;
   email?: string;
@@ -248,6 +250,59 @@ export async function parseXlsxBuffer(buffer: Buffer): Promise<ParsedFile> {
   return { headers, rows };
 }
 
+/**
+ * Parse a legacy `.xls` (BIFF8 / OLE2 compound file) using SheetJS — ExcelJS
+ * only reads the OOXML `.xlsx` format. Produces the same `{ headers, rows }`
+ * shape so mapping/preview/import are format-agnostic (spec IEC-1).
+ */
+export function parseXlsBuffer(buffer: Buffer): ParsedFile {
+  let workbook: XLSX.WorkBook;
+  try {
+    // raw:false → SheetJS returns formatted cell text (keeps the original
+    // representation our string pipeline + BR parsers expect).
+    workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
+  } catch {
+    throw new ImportError(
+      'Arquivo .xls inválido, corrompido ou protegido por senha. Remova a proteção e tente novamente.',
+      'XLS_INVALID',
+    );
+  }
+
+  const sheetName = workbook.SheetNames[0];
+  const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
+  if (!sheet) {
+    throw new ImportError('A planilha está vazia.', 'EMPTY_FILE');
+  }
+
+  const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    raw: false,
+    defval: '',
+    blankrows: false,
+  });
+  if (matrix.length === 0) {
+    throw new ImportError('A planilha está vazia.', 'EMPTY_FILE');
+  }
+
+  const headers = (matrix[0] as unknown[]).map((h) => String(h ?? '').trim());
+  const rows: Record<string, string>[] = [];
+  for (let r = 1; r < matrix.length; r++) {
+    const cells = matrix[r] as unknown[];
+    const record: Record<string, string> = {};
+    let hasValue = false;
+    for (let c = 0; c < headers.length; c++) {
+      const key = headers[c];
+      if (!key) continue;
+      const val = String(cells[c] ?? '').trim();
+      record[key] = val;
+      if (val) hasValue = true;
+    }
+    if (hasValue) rows.push(record);
+  }
+
+  return { headers, rows };
+}
+
 /** Parse an uploaded file by extension/mimetype. */
 export async function parseImportFile(
   buffer: Buffer,
@@ -258,16 +313,22 @@ export async function parseImportFile(
   const isXlsx =
     lower.endsWith('.xlsx') ||
     mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  // Legacy .xls (BIFF8). Checked after .xlsx so "...xlsx" never matches here.
+  const isXls =
+    (lower.endsWith('.xls') && !lower.endsWith('.xlsx')) ||
+    mimetype === 'application/vnd.ms-excel';
   const isCsv = lower.endsWith('.csv') || mimetype === 'text/csv';
 
   let parsed: ParsedFile;
   if (isXlsx) {
     parsed = await parseXlsxBuffer(buffer);
+  } else if (isXls) {
+    parsed = parseXlsBuffer(buffer);
   } else if (isCsv) {
     parsed = parseCsvBuffer(buffer);
   } else {
     throw new ImportError(
-      'Formato de arquivo não suportado. Envie um arquivo .csv (UTF-8) ou .xlsx.',
+      'Formato de arquivo não suportado. Envie um arquivo .csv (UTF-8), .xlsx ou .xls.',
       'UNSUPPORTED_FORMAT',
     );
   }
@@ -328,6 +389,84 @@ function parseDate(value: string | undefined): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
+/**
+ * Parse a Brazilian-format date `DD/MM/YYYY` with an optional `HH:MM` time
+ * (often in a separate column). Falls back to native Date parsing for ISO or
+ * other recognizable strings. The native `parseDate` above interprets
+ * `MM/DD/YYYY` and is wrong for Brazilian data (spec restriction).
+ */
+export function parseBrDate(dateStr?: string, timeStr?: string): Date | undefined {
+  const ds = (dateStr || '').trim();
+  if (!ds) return undefined;
+
+  const m = ds.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  let year: number;
+  let month: number;
+  let day: number;
+  if (m) {
+    day = parseInt(m[1], 10);
+    month = parseInt(m[2], 10);
+    year = parseInt(m[3], 10);
+    if (year < 100) year += 2000;
+  } else {
+    const fallback = new Date(ds);
+    return isNaN(fallback.getTime()) ? undefined : fallback;
+  }
+
+  let hours = 0;
+  let minutes = 0;
+  const tm = (timeStr || '').trim().match(/^(\d{1,2}):(\d{2})/);
+  if (tm) {
+    hours = parseInt(tm[1], 10);
+    minutes = parseInt(tm[2], 10);
+  }
+
+  const d = new Date(year, month - 1, day, hours, minutes);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+/**
+ * Parse a Brazilian-format number into a JS number (spec req 18). The decimal
+ * separator is whichever of `.`/`,` appears LAST; the other is treated as a
+ * thousands separator. This tolerates both BR text (`25.350,29`) and the
+ * dot-decimal form SheetJS emits for numeric .xls cells (`25350.29`). Currency
+ * symbols and spaces are stripped.
+ */
+export function parseBrNumber(value?: string): number | undefined {
+  let v = (value || '').trim().replace(/[^\d.,-]/g, '');
+  if (v === '' || v === '-') return undefined;
+  const lastComma = v.lastIndexOf(',');
+  const lastDot = v.lastIndexOf('.');
+  if (lastComma > lastDot) {
+    // Comma is the decimal separator (BR): drop dot thousands, comma → dot.
+    v = v.replace(/\./g, '').replace(',', '.');
+  } else if (lastDot > lastComma) {
+    // Dot is the decimal separator: drop comma thousands.
+    v = v.replace(/,/g, '');
+  }
+  const n = Number(v);
+  return isNaN(n) ? undefined : n;
+}
+
+/**
+ * Coerce a raw cell into the right JSON type for a custom field: NUMBER →
+ * number (BR format), DATE → ISO string (BR format), anything else → trimmed
+ * string. Returns undefined for empty so empty cells are not stored.
+ */
+function coerceCustomFieldValue(
+  type: CustomFieldType | undefined,
+  raw: string,
+): string | number | undefined {
+  const v = (raw || '').trim();
+  if (!v) return undefined;
+  if (type === CustomFieldType.NUMBER) return parseBrNumber(v);
+  if (type === CustomFieldType.DATE) {
+    const d = parseBrDate(v);
+    return d ? d.toISOString() : v;
+  }
+  return v;
+}
+
 // ────────────────────────────────────────────────────────────────────
 // LEADS — analysis
 // ────────────────────────────────────────────────────────────────────
@@ -342,19 +481,52 @@ interface MappedLead {
   source?: LeadSource;
   notes?: string;
   status?: LeadStatus;
-  customFields: Record<string, string>;
+  /** Original creation timestamp from the source file (contacts import). */
+  createdAt?: Date;
+  customFields: Record<string, string | number>;
+}
+
+/** Import-mode options shared by analyze + write for leads/contacts. */
+export interface LeadImportOptions {
+  /**
+   * Contacts mode (spec IEC-4/5/6): email is optional, dedup is by
+   * name+email (or name+company when there is no email), records are flagged
+   * `isContact` and linked to companies by name. Default (false) preserves the
+   * original Import Pro leads behavior (email required, dedup by email/phone).
+   */
+  contactsMode?: boolean;
+}
+
+/** Normalize a person/company name for matching (case + whitespace folded). */
+function normalizeName(value?: string): string {
+  return (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Composite dedup key for a contact (spec reqs 25-27): name + email when an
+ * email exists, otherwise name + company. Two different names sharing one email
+ * therefore yield different keys (kept as distinct records, req 26).
+ */
+function contactKey(name: string, email?: string, company?: string): string {
+  const n = normalizeName(name);
+  if (!n) return '';
+  if (email) return `e|${n}|${email}`;
+  return `c|${n}|${normalizeName(company)}`;
 }
 
 function mapLeadRow(
   row: Record<string, string>,
   mapping: ColumnMapping,
   rowNum: number,
-  customFieldNames: Set<string>,
+  customFieldTypes: Map<string, CustomFieldType>,
 ): MappedLead {
   const mapped = applyMapping(row, mapping);
-  const customFields: Record<string, string> = {};
+  const customFields: Record<string, string | number> = {};
   for (const [key, val] of Object.entries(mapped)) {
-    if (customFieldNames.has(key) && val) customFields[key] = val;
+    if (customFieldTypes.has(key) && val) {
+      const coerced = coerceCustomFieldValue(customFieldTypes.get(key), val);
+      if (coerced !== undefined) customFields[key] = coerced;
+    }
   }
   return {
     row: rowNum,
@@ -366,38 +538,50 @@ function mapLeadRow(
     source: parseEnum(mapped.source, LeadSource),
     notes: mapped.notes?.trim() || undefined,
     status: parseEnum(mapped.status, LeadStatus),
+    // Combine a "createdAt" date column with an optional "createdAtTime" column
+    // (spec req 16). Absent in normal leads mode (targets don't include it).
+    createdAt: parseBrDate(mapped.createdAt, mapped.createdAtTime),
     customFields,
   };
 }
 
 /**
- * Analyze a parsed leads file: detect new rows, duplicates (email primary,
- * phone secondary) and validation errors. Used by both dry-run and the real
- * import path so the numbers are consistent (spec reqs 11-13, 15, edge cases).
+ * Analyze a parsed leads/contacts file: detect new rows, duplicates and
+ * validation errors. In leads mode dedup is email (primary) + phone
+ * (secondary) and email is required; in contacts mode dedup is name+email /
+ * name+company and email is optional (spec reqs 11-13, 15, IEC-4/5/6).
  */
 export async function analyzeLeads(
   tenantId: string,
   parsed: ParsedFile,
   mapping: ColumnMapping,
+  options: LeadImportOptions = {},
 ): Promise<{ analysis: ImportAnalysis; mappedRows: MappedLead[] }> {
+  const contactsMode = options.contactsMode === true;
+
   const customFieldDefs = await prisma.customField.findMany({
     where: { tenantId, active: true },
-    select: { name: true },
+    select: { name: true, type: true },
   });
-  const customFieldNames = new Set(customFieldDefs.map((c) => c.name));
+  const customFieldTypes = new Map(customFieldDefs.map((c) => [c.name, c.type]));
 
-  // Existing tenant records for dedup lookup (email + phone).
+  // Existing tenant records for dedup lookup.
   const existing = await prisma.lead.findMany({
     where: { tenantId, deletedAt: null },
-    select: { id: true, email: true, phone: true },
+    select: { id: true, email: true, phone: true, name: true, company: true },
   });
   const existingByEmail = new Map<string, string>();
   const existingByPhone = new Map<string, string>();
+  const existingByContactKey = new Map<string, string>();
   for (const l of existing) {
     const e = normalizeEmail(l.email ?? undefined);
-    if (e && !existingByEmail.has(e)) existingByEmail.set(e, l.id);
     const p = normalizePhone(l.phone ?? undefined);
+    if (e && !existingByEmail.has(e)) existingByEmail.set(e, l.id);
     if (p && !existingByPhone.has(p)) existingByPhone.set(p, l.id);
+    if (contactsMode) {
+      const k = contactKey(l.name ?? '', e, l.company ?? undefined);
+      if (k && !existingByContactKey.has(k)) existingByContactKey.set(k, l.id);
+    }
   }
 
   const errors: ValidationError[] = [];
@@ -408,6 +592,7 @@ export async function analyzeLeads(
   // a duplicate too.
   const seenEmails = new Set<string>();
   const seenPhones = new Set<string>();
+  const seenContactKeys = new Set<string>();
 
   let newCount = 0;
   let duplicateCount = 0;
@@ -415,7 +600,7 @@ export async function analyzeLeads(
 
   parsed.rows.forEach((raw, idx) => {
     const rowNum = idx + 1;
-    const lead = mapLeadRow(raw, mapping, rowNum, customFieldNames);
+    const lead = mapLeadRow(raw, mapping, rowNum, customFieldTypes);
     mappedRows.push(lead);
 
     let rowHasError = false;
@@ -424,11 +609,18 @@ export async function analyzeLeads(
       errors.push({ row: rowNum, field: 'name', message: 'Nome é obrigatório.' });
       rowHasError = true;
     }
-    // Email is the primary identity field — required & must be valid (edge case).
-    if (!lead.email) {
-      errors.push({ row: rowNum, field: 'email', message: 'Email ausente.' });
-      rowHasError = true;
-    } else if (!EMAIL_RE.test(lead.email)) {
+
+    if (!contactsMode) {
+      // Leads: email is the primary identity field — required & must be valid.
+      if (!lead.email) {
+        errors.push({ row: rowNum, field: 'email', message: 'Email ausente.' });
+        rowHasError = true;
+      } else if (!EMAIL_RE.test(lead.email)) {
+        errors.push({ row: rowNum, field: 'email', message: 'Email inválido.' });
+        rowHasError = true;
+      }
+    } else if (lead.email && !EMAIL_RE.test(lead.email)) {
+      // Contacts: email optional, but a present email must still be valid.
       errors.push({ row: rowNum, field: 'email', message: 'Email inválido.' });
       rowHasError = true;
     }
@@ -441,27 +633,45 @@ export async function analyzeLeads(
     const email = normalizeEmail(lead.email);
     const phone = normalizePhone(lead.phone);
 
-    // Duplicate detection: email first (primary), then phone (secondary).
-    // Emits the frontend contract shape (Gap 2): matchedBy/value + row fields.
     let dup: DuplicateInfo | null = null;
-    if (email && (existingByEmail.has(email) || seenEmails.has(email))) {
-      dup = {
-        row: rowNum,
-        matchedBy: 'email',
-        value: email,
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone,
-      };
-    } else if (phone && (existingByPhone.has(phone) || seenPhones.has(phone))) {
-      dup = {
-        row: rowNum,
-        matchedBy: 'phone',
-        value: phone,
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone,
-      };
+    if (contactsMode) {
+      // Dedup by name+email / name+company (reqs 25-26).
+      const key = contactKey(lead.name ?? '', email, lead.company);
+      if (key && (existingByContactKey.has(key) || seenContactKeys.has(key))) {
+        dup = {
+          // Contacts dedup by name+email or name+company — never phone alone.
+          row: rowNum,
+          matchedBy: email ? 'email' : 'name',
+          value: email ?? lead.name ?? '',
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+        };
+      }
+      if (key) seenContactKeys.add(key);
+    } else {
+      // Dedup by email (primary), then phone (secondary).
+      if (email && (existingByEmail.has(email) || seenEmails.has(email))) {
+        dup = {
+          row: rowNum,
+          matchedBy: 'email',
+          value: email,
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+        };
+      } else if (phone && (existingByPhone.has(phone) || seenPhones.has(phone))) {
+        dup = {
+          row: rowNum,
+          matchedBy: 'phone',
+          value: phone,
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+        };
+      }
+      if (email) seenEmails.add(email);
+      if (phone) seenPhones.add(phone);
     }
 
     if (dup) {
@@ -470,9 +680,6 @@ export async function analyzeLeads(
     } else {
       newCount++;
     }
-
-    if (email) seenEmails.add(email);
-    if (phone) seenPhones.add(phone);
   });
 
   const previewRows = mappedRows.slice(0, 5).map((m) => ({
@@ -484,6 +691,7 @@ export async function analyzeLeads(
     source: m.source ?? '',
     status: m.status ?? '',
     notes: m.notes ?? '',
+    ...(m.createdAt ? { createdAt: m.createdAt.toISOString() } : {}),
     ...m.customFields,
   }));
 
@@ -745,8 +953,10 @@ async function writeLeads(
   mappedRows: MappedLead[],
   duplicateStrategy: DuplicateStrategy,
   duplicateActions: DuplicateActionMap = {},
+  options: LeadImportOptions = {},
 ): Promise<BatchCounters> {
   const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
+  const contactsMode = options.contactsMode === true;
 
   // Per-row decision: explicit action for this row wins; otherwise fall back to
   // the global strategy (Gap 4). The analysis numbers a duplicate by its 1-based
@@ -757,32 +967,68 @@ async function writeLeads(
   // Re-derive validity + duplicate decisions deterministically.
   const existing = await prisma.lead.findMany({
     where: { tenantId, deletedAt: null },
-    select: { id: true, email: true, phone: true },
+    select: { id: true, email: true, phone: true, name: true, company: true },
   });
   const existingByEmail = new Map<string, string>();
   const existingByPhone = new Map<string, string>();
+  const existingByContactKey = new Map<string, string>();
   for (const l of existing) {
     const e = normalizeEmail(l.email ?? undefined);
-    if (e && !existingByEmail.has(e)) existingByEmail.set(e, l.id);
     const p = normalizePhone(l.phone ?? undefined);
+    if (e && !existingByEmail.has(e)) existingByEmail.set(e, l.id);
     if (p && !existingByPhone.has(p)) existingByPhone.set(p, l.id);
+    if (contactsMode) {
+      const k = contactKey(l.name ?? '', e, l.company ?? undefined);
+      if (k && !existingByContactKey.has(k)) existingByContactKey.set(k, l.id);
+    }
   }
+
+  // Company name -> id lookup for linking contacts to companies (spec req 21).
+  const companyByName = new Map<string, string>();
+  if (contactsMode) {
+    const companies = await prisma.company.findMany({
+      where: { tenantId, deletedAt: null },
+      select: { id: true, name: true },
+    });
+    for (const c of companies) {
+      const k = normalizeName(c.name);
+      if (k && !companyByName.has(k)) companyByName.set(k, c.id);
+    }
+  }
+
   const seenEmails = new Set<string>();
   const seenPhones = new Set<string>();
+  const seenContactKeys = new Set<string>();
 
   await processInChunks(mappedRows, async (chunk) => {
     for (const lead of chunk) {
       try {
-        // Skip invalid rows (already counted as errors in analysis).
-        if (!lead.name || !lead.email || !EMAIL_RE.test(lead.email)) {
+        // Skip rows that failed validation in analysis. Name is always required;
+        // email is required only in leads mode (optional for contacts, req 15).
+        if (!lead.name) continue;
+        if (contactsMode) {
+          if (lead.email && !EMAIL_RE.test(lead.email)) continue;
+        } else if (!lead.email || !EMAIL_RE.test(lead.email)) {
           continue;
         }
+
         const email = normalizeEmail(lead.email);
         const phone = normalizePhone(lead.phone);
+        const companyId =
+          contactsMode && lead.company
+            ? companyByName.get(normalizeName(lead.company))
+            : undefined;
 
         let existingId: string | undefined;
         let matched = false;
-        if (email && (existingByEmail.has(email) || seenEmails.has(email))) {
+        let key = '';
+        if (contactsMode) {
+          key = contactKey(lead.name, email, lead.company);
+          if (key && (existingByContactKey.has(key) || seenContactKeys.has(key))) {
+            existingId = existingByContactKey.get(key);
+            matched = true;
+          }
+        } else if (email && (existingByEmail.has(email) || seenEmails.has(email))) {
           existingId = existingByEmail.get(email);
           matched = true;
         } else if (phone && (existingByPhone.has(phone) || seenPhones.has(phone))) {
@@ -790,12 +1036,17 @@ async function writeLeads(
           matched = true;
         }
 
+        const markSeen = () => {
+          if (email) seenEmails.add(email);
+          if (phone) seenPhones.add(phone);
+          if (key) seenContactKeys.add(key);
+        };
+
         if (matched) {
           const action = decideAction(lead.row);
           if (action === 'skip') {
             counters.skipped++;
-            if (email) seenEmails.add(email);
-            if (phone) seenPhones.add(phone);
+            markSeen();
             continue;
           }
           // 'update' — overwrite the existing record when we have its id.
@@ -804,13 +1055,16 @@ async function writeLeads(
               where: { id: existingId },
               data: {
                 name: lead.name,
-                email: lead.email,
+                email: lead.email ?? null,
                 phone: lead.phone ?? null,
                 company: lead.company ?? null,
                 position: lead.position ?? null,
                 source: lead.source ?? undefined,
                 status: lead.status ?? undefined,
                 notes: lead.notes ?? null,
+                ...(contactsMode ? { isContact: true } : {}),
+                ...(companyId ? { companyId } : {}),
+                ...(lead.createdAt ? { createdAt: lead.createdAt } : {}),
                 ...(Object.keys(lead.customFields).length > 0
                   ? { customFields: lead.customFields }
                   : {}),
@@ -818,14 +1072,12 @@ async function writeLeads(
               },
             });
             counters.imported++;
-            if (email) seenEmails.add(email);
-            if (phone) seenPhones.add(phone);
+            markSeen();
             continue;
           }
           // Duplicate within the same file with no existing row to update → skip.
           counters.skipped++;
-          if (email) seenEmails.add(email);
-          if (phone) seenPhones.add(phone);
+          markSeen();
           continue;
         }
 
@@ -833,27 +1085,26 @@ async function writeLeads(
           data: {
             tenantId,
             name: lead.name,
-            email: lead.email,
+            email: lead.email ?? null,
             phone: lead.phone ?? null,
             company: lead.company ?? null,
             position: lead.position ?? null,
+            companyId: companyId ?? undefined,
+            isContact: contactsMode ? true : undefined,
             source: lead.source ?? LeadSource.OTHER,
             status: lead.status ?? LeadStatus.NEW,
             notes: lead.notes ?? null,
             customFields: lead.customFields,
+            ...(lead.createdAt ? { createdAt: lead.createdAt } : {}),
             importBatchId: batchId,
           },
           select: { id: true },
         });
         counters.imported++;
-        if (email) {
-          seenEmails.add(email);
-          existingByEmail.set(email, created.id);
-        }
-        if (phone) {
-          seenPhones.add(phone);
-          existingByPhone.set(phone, created.id);
-        }
+        if (email) existingByEmail.set(email, created.id);
+        if (phone) existingByPhone.set(phone, created.id);
+        if (key) existingByContactKey.set(key, created.id);
+        markSeen();
       } catch (err) {
         counters.errors.push({
           row: lead.row,
@@ -943,6 +1194,265 @@ async function writeInteractions(
 }
 
 // ────────────────────────────────────────────────────────────────────
+// COMPANIES — analysis + write (spec IEC-2)
+// ────────────────────────────────────────────────────────────────────
+
+// Company destination fields available for column mapping (spec req 6).
+export const COMPANY_TARGET_FIELDS = [
+  'name',
+  'externalId',
+  'cnpj',
+  'fantasyName',
+  'website',
+  'industry',
+  'notes',
+  'createdAt',
+  'createdAtTime',
+] as const;
+
+interface MappedCompany {
+  row: number;
+  externalId?: string;
+  name?: string;
+  fantasyName?: string;
+  cnpj?: string;
+  website?: string;
+  industry?: string;
+  notes?: string;
+  createdAt?: Date;
+  customFields: Record<string, string | number>;
+}
+
+/** Digits-only CNPJ for matching (formatting tolerated). */
+function normalizeCnpj(value?: string | null): string | undefined {
+  const v = (value || '').replace(/\D/g, '');
+  return v || undefined;
+}
+
+function mapCompanyRow(
+  row: Record<string, string>,
+  mapping: ColumnMapping,
+  rowNum: number,
+  customFieldTypes: Map<string, CustomFieldType>,
+): MappedCompany {
+  const mapped = applyMapping(row, mapping);
+  const customFields: Record<string, string | number> = {};
+  for (const [key, val] of Object.entries(mapped)) {
+    if (customFieldTypes.has(key) && val) {
+      const coerced = coerceCustomFieldValue(customFieldTypes.get(key), val);
+      if (coerced !== undefined) customFields[key] = coerced;
+    }
+  }
+  return {
+    row: rowNum,
+    externalId: mapped.externalId?.trim() || undefined,
+    name: mapped.name?.trim() || undefined,
+    fantasyName: mapped.fantasyName?.trim() || undefined,
+    cnpj: mapped.cnpj?.trim() || undefined,
+    website: mapped.website?.trim() || undefined,
+    industry: mapped.industry?.trim() || undefined,
+    notes: mapped.notes?.trim() || undefined,
+    createdAt: parseBrDate(mapped.createdAt, mapped.createdAtTime),
+    customFields,
+  };
+}
+
+/**
+ * Analyze a parsed companies file. Only `name` is required. Dedup precedence:
+ * externalId (primary) → cnpj → name (spec req 24). Existing rows are reported
+ * as duplicates (they will be updated in place by the writer — upsert).
+ */
+export async function analyzeCompanies(
+  tenantId: string,
+  parsed: ParsedFile,
+  mapping: ColumnMapping,
+): Promise<{ analysis: ImportAnalysis; mappedRows: MappedCompany[] }> {
+  const customFieldDefs = await prisma.customField.findMany({
+    where: { tenantId, active: true },
+    select: { name: true, type: true },
+  });
+  const customFieldTypes = new Map(customFieldDefs.map((c) => [c.name, c.type]));
+
+  const existing = await prisma.company.findMany({
+    where: { tenantId, deletedAt: null },
+    select: { id: true, name: true, cnpj: true, externalId: true },
+  });
+  const byExternalId = new Map<string, string>();
+  const byCnpj = new Map<string, string>();
+  const byName = new Map<string, string>();
+  for (const c of existing) {
+    if (c.externalId && !byExternalId.has(c.externalId)) byExternalId.set(c.externalId, c.id);
+    const cnpj = normalizeCnpj(c.cnpj);
+    if (cnpj && !byCnpj.has(cnpj)) byCnpj.set(cnpj, c.id);
+    const n = normalizeName(c.name);
+    if (n && !byName.has(n)) byName.set(n, c.id);
+  }
+
+  const errors: ValidationError[] = [];
+  const duplicates: DuplicateInfo[] = [];
+  const mappedRows: MappedCompany[] = [];
+  const seenExternalId = new Set<string>();
+  const seenCnpj = new Set<string>();
+  const seenName = new Set<string>();
+
+  let newCount = 0;
+  let duplicateCount = 0;
+  let errorCount = 0;
+
+  parsed.rows.forEach((raw, idx) => {
+    const rowNum = idx + 1;
+    const company = mapCompanyRow(raw, mapping, rowNum, customFieldTypes);
+    mappedRows.push(company);
+
+    if (!company.name) {
+      errors.push({ row: rowNum, field: 'name', message: 'Nome é obrigatório.' });
+      errorCount++;
+      return;
+    }
+
+    const cnpj = normalizeCnpj(company.cnpj);
+    const n = normalizeName(company.name);
+
+    let dup: DuplicateInfo | null = null;
+    if (company.externalId && (byExternalId.has(company.externalId) || seenExternalId.has(company.externalId))) {
+      dup = { row: rowNum, matchedBy: 'externalId', value: company.externalId, name: company.name };
+    } else if (cnpj && (byCnpj.has(cnpj) || seenCnpj.has(cnpj))) {
+      dup = { row: rowNum, matchedBy: 'cnpj', value: cnpj, name: company.name };
+    } else if (n && (byName.has(n) || seenName.has(n))) {
+      dup = { row: rowNum, matchedBy: 'name', value: company.name, name: company.name };
+    }
+
+    if (company.externalId) seenExternalId.add(company.externalId);
+    if (cnpj) seenCnpj.add(cnpj);
+    if (n) seenName.add(n);
+
+    if (dup) {
+      duplicates.push(dup);
+      duplicateCount++;
+    } else {
+      newCount++;
+    }
+  });
+
+  const previewRows = mappedRows.slice(0, 5).map((m) => ({
+    name: m.name ?? '',
+    externalId: m.externalId ?? '',
+    cnpj: m.cnpj ?? '',
+    fantasyName: m.fantasyName ?? '',
+    website: m.website ?? '',
+    industry: m.industry ?? '',
+    notes: m.notes ?? '',
+    ...(m.createdAt ? { createdAt: m.createdAt.toISOString() } : {}),
+    ...m.customFields,
+  }));
+
+  const analysis: ImportAnalysis = {
+    totalRows: parsed.rows.length,
+    newCount,
+    duplicateCount,
+    errorCount,
+    duplicates,
+    errors,
+    previewRows,
+  };
+
+  return { analysis, mappedRows };
+}
+
+/**
+ * Write companies in chunks. Upsert semantics (spec reqs 24, 27): a row matching
+ * an existing company (by externalId → cnpj → name) updates it in place;
+ * otherwise a new company is created. Re-importing the same file is idempotent.
+ */
+async function writeCompanies(
+  tenantId: string,
+  batchId: string,
+  mappedRows: MappedCompany[],
+): Promise<BatchCounters> {
+  const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
+
+  const existing = await prisma.company.findMany({
+    where: { tenantId, deletedAt: null },
+    select: { id: true, name: true, cnpj: true, externalId: true },
+  });
+  const byExternalId = new Map<string, string>();
+  const byCnpj = new Map<string, string>();
+  const byName = new Map<string, string>();
+  for (const c of existing) {
+    if (c.externalId && !byExternalId.has(c.externalId)) byExternalId.set(c.externalId, c.id);
+    const cnpj = normalizeCnpj(c.cnpj);
+    if (cnpj && !byCnpj.has(cnpj)) byCnpj.set(cnpj, c.id);
+    const n = normalizeName(c.name);
+    if (n && !byName.has(n)) byName.set(n, c.id);
+  }
+
+  const matchExistingId = (company: MappedCompany): string | undefined => {
+    if (company.externalId && byExternalId.has(company.externalId)) {
+      return byExternalId.get(company.externalId);
+    }
+    const cnpj = normalizeCnpj(company.cnpj);
+    if (cnpj && byCnpj.has(cnpj)) return byCnpj.get(cnpj);
+    const n = normalizeName(company.name);
+    if (n && byName.has(n)) return byName.get(n);
+    return undefined;
+  };
+
+  await processInChunks(mappedRows, async (chunk) => {
+    for (const company of chunk) {
+      try {
+        if (!company.name) continue;
+
+        const baseData = {
+          name: company.name,
+          fantasyName: company.fantasyName ?? null,
+          cnpj: company.cnpj ?? null,
+          website: company.website ?? null,
+          industry: company.industry ?? null,
+          notes: company.notes ?? null,
+          externalId: company.externalId ?? null,
+          ...(Object.keys(company.customFields).length > 0
+            ? { customFields: company.customFields }
+            : {}),
+          importBatchId: batchId,
+        };
+
+        const existingId = matchExistingId(company);
+        if (existingId) {
+          await prisma.company.update({
+            where: { id: existingId },
+            data: { ...baseData, ...(company.createdAt ? { createdAt: company.createdAt } : {}) },
+          });
+          counters.imported++;
+        } else {
+          const created = await prisma.company.create({
+            data: {
+              tenantId,
+              ...baseData,
+              ...(company.createdAt ? { createdAt: company.createdAt } : {}),
+            },
+            select: { id: true },
+          });
+          counters.imported++;
+          // Register so later rows in the same file dedup against this one.
+          if (company.externalId) byExternalId.set(company.externalId, created.id);
+          const cnpj = normalizeCnpj(company.cnpj);
+          if (cnpj) byCnpj.set(cnpj, created.id);
+          byName.set(normalizeName(company.name), created.id);
+        }
+      } catch (err) {
+        counters.errors.push({
+          row: company.row,
+          field: '_row',
+          message: err instanceof Error ? err.message : 'Erro desconhecido',
+        });
+      }
+    }
+  });
+
+  return counters;
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Batch lifecycle (create, run, status, rollback)
 // ────────────────────────────────────────────────────────────────────
 
@@ -955,6 +1465,8 @@ export interface RunImportInput {
   duplicateStrategy: DuplicateStrategy;
   /** Per-row skip/update decisions for leads (Gap 4). */
   duplicateActions?: DuplicateActionMap;
+  /** Leads/contacts mode options — `contactsMode` drives the IEC-4/5/6 path. */
+  options?: LeadImportOptions;
 }
 
 /** Decide whether to run synchronously (spec reqs 30-31). */
@@ -973,9 +1485,10 @@ export async function executeBatch(
   precomputed?:
     | { type: 'LEADS'; rows: MappedLead[] }
     | { type: 'DEALS'; rows: MappedDeal[] }
-    | { type: 'INTERACTIONS'; rows: MappedInteraction[] },
+    | { type: 'INTERACTIONS'; rows: MappedInteraction[] }
+    | { type: 'COMPANIES'; rows: MappedCompany[] },
 ): Promise<void> {
-  const { tenantId, type, parsed, mapping, duplicateStrategy, duplicateActions } = input;
+  const { tenantId, type, parsed, mapping, duplicateStrategy, duplicateActions, options } = input;
   try {
     await prisma.importBatch.update({
       where: { id: batchId },
@@ -983,12 +1496,18 @@ export async function executeBatch(
     });
 
     let counters: BatchCounters;
-    if (type === ImportType.LEADS) {
+    if (type === ImportType.COMPANIES) {
+      const rows =
+        precomputed?.type === 'COMPANIES'
+          ? precomputed.rows
+          : (await analyzeCompanies(tenantId, parsed, mapping)).mappedRows;
+      counters = await writeCompanies(tenantId, batchId, rows);
+    } else if (type === ImportType.LEADS) {
       const rows =
         precomputed?.type === 'LEADS'
           ? precomputed.rows
-          : (await analyzeLeads(tenantId, parsed, mapping)).mappedRows;
-      counters = await writeLeads(tenantId, batchId, rows, duplicateStrategy, duplicateActions);
+          : (await analyzeLeads(tenantId, parsed, mapping, options)).mappedRows;
+      counters = await writeLeads(tenantId, batchId, rows, duplicateStrategy, duplicateActions, options);
     } else if (type === ImportType.DEALS) {
       const rows =
         precomputed?.type === 'DEALS'
@@ -1117,7 +1636,7 @@ export async function rollbackBatch(tenantId: string, batchId: string) {
   }
 
   const now = new Date();
-  const [leads, deals, interactions] = await prisma.$transaction([
+  const [leads, deals, interactions, companies] = await prisma.$transaction([
     prisma.lead.updateMany({
       where: { tenantId, importBatchId: batchId, deletedAt: null },
       data: { deletedAt: now },
@@ -1127,6 +1646,10 @@ export async function rollbackBatch(tenantId: string, batchId: string) {
       data: { deletedAt: now },
     }),
     prisma.interaction.updateMany({
+      where: { tenantId, importBatchId: batchId, deletedAt: null },
+      data: { deletedAt: now },
+    }),
+    prisma.company.updateMany({
       where: { tenantId, importBatchId: batchId, deletedAt: null },
       data: { deletedAt: now },
     }),
@@ -1142,6 +1665,7 @@ export async function rollbackBatch(tenantId: string, batchId: string) {
       leads: leads.count,
       deals: deals.count,
       interactions: interactions.count,
+      companies: companies.count,
     },
   };
 }

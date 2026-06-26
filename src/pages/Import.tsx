@@ -45,6 +45,7 @@ import {
   apiClient,
   type ImportBatch,
   type ImportBatchStatus,
+  type ImportDuplicate,
   type ImportDuplicateAction,
   type ImportResult,
   type ImportType,
@@ -70,6 +71,31 @@ const LEAD_BASE_TARGETS: MappingTarget[] = [
   { value: "status", label: "Status (status)" },
 ];
 
+/** Target fields for company mapping (spec IEC-2, req 6). */
+const COMPANY_BASE_TARGETS: MappingTarget[] = [
+  { value: "name", label: "Nome / Razão social (name)" },
+  { value: "fantasyName", label: "Nome Fantasia (fantasyName)" },
+  { value: "cnpj", label: "CNPJ (cnpj)" },
+  { value: "externalId", label: "ID externo (externalId)" },
+  { value: "website", label: "Site (website)" },
+  { value: "industry", label: "Segmento (industry)" },
+  { value: "notes", label: "Resumo / Observações (notes)" },
+  { value: "createdAt", label: "Data de criação (createdAt)" },
+  { value: "createdAtTime", label: "Hora de criação (createdAtTime)" },
+];
+
+/** Target fields for contact mapping (spec IEC-4/5; email optional). */
+const CONTACT_BASE_TARGETS: MappingTarget[] = [
+  { value: "name", label: "Nome (name)" },
+  { value: "email", label: "Email (email)" },
+  { value: "phone", label: "Telefone (phone)" },
+  { value: "company", label: "Empresa (company)" },
+  { value: "position", label: "Cargo (position)" },
+  { value: "notes", label: "Observações (notes)" },
+  { value: "createdAt", label: "Data de criação (createdAt)" },
+  { value: "createdAtTime", label: "Hora de criação (createdAtTime)" },
+];
+
 /** Required columns for the Deals CSV (spec req 17). */
 const DEAL_COLUMNS = ["lead_email", "deal_name", "value", "stage", "expected_close_date"];
 
@@ -92,6 +118,16 @@ const TYPE_LABELS: Record<ImportType, string> = {
   LEADS: "Leads",
   DEALS: "Deals",
   INTERACTIONS: "Interações",
+  COMPANIES: "Empresas",
+};
+
+/** How a duplicate was matched, for the dry-run preview wording. */
+const MATCHED_BY_LABELS: Record<ImportDuplicate["matchedBy"], string> = {
+  email: "email",
+  phone: "telefone",
+  externalId: "ID externo",
+  cnpj: "CNPJ",
+  name: "nome",
 };
 
 function StatusBadge({ status }: { status: ImportBatchStatus }) {
@@ -167,11 +203,11 @@ function Dropzone({ file, onFile, onClear, disabled }: DropzoneProps) {
       <p className="text-sm font-medium text-gray-700">
         Arraste e solte o arquivo aqui ou clique para selecionar
       </p>
-      <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .csv (UTF-8) ou .xlsx — até 10 MB, 10.000 linhas</p>
+      <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .csv (UTF-8), .xlsx ou .xls — até 10 MB, 10.000 linhas</p>
       <input
         ref={inputRef}
         type="file"
-        accept=".csv,.xlsx"
+        accept=".csv,.xlsx,.xls"
         className="hidden"
         onChange={(e) => {
           const selected = e.target.files?.[0];
@@ -264,7 +300,7 @@ function DryRunPreview({ result, duplicateActions, onDuplicateAction, showDuplic
                     <span className="font-mono text-xs text-gray-400 mr-2">Linha {dup.row}</span>
                     <span className="font-medium text-gray-900">{dup.name || dup.email || dup.phone || dup.value}</span>
                     <span className="ml-2 text-xs text-gray-500">
-                      (duplicada por {dup.matchedBy === "email" ? "email" : "telefone"})
+                      (duplicada por {MATCHED_BY_LABELS[dup.matchedBy] ?? dup.matchedBy})
                     </span>
                   </div>
                   {showDuplicateActions && (
@@ -298,17 +334,19 @@ function DryRunPreview({ result, duplicateActions, onDuplicateAction, showDuplic
 // ──────────────────────────────────────────────────────────
 
 interface ImportPanelProps {
-  entity: "leads" | "deals" | "interactions";
-  /** Target fields for the column mapper (leads only). */
+  entity: "leads" | "companies" | "contacts" | "deals" | "interactions";
+  /** Target fields for the column mapper (mapper entities only). */
   targets?: MappingTarget[];
   /** Required columns hint (deals/interactions, fixed schema). */
   requiredColumns?: string[];
-  /** Whether to render the visual column mapper (leads only). */
+  /** Whether to render the visual column mapper. */
   withMapper: boolean;
+  /** Optional informational note shown at the top of the panel. */
+  hint?: string;
   onImported: () => void;
 }
 
-function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported }: ImportPanelProps) {
+function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImported }: ImportPanelProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -316,6 +354,12 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
   const [dryRunResult, setDryRunResult] = useState<ImportResult | null>(null);
   const [duplicateActions, setDuplicateActions] = useState<Record<string, ImportDuplicateAction>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Companies/contacts upsert duplicates (update in place) — no per-row choice,
+  // and email is not a required mapping (spec IEC-2/4/6).
+  const upsertMode = entity === "companies" || entity === "contacts";
+  const perRowDuplicateChoice = entity === "leads";
+  const emailRequired = entity === "leads";
 
   const resetAll = useCallback(() => {
     setFile(null);
@@ -362,6 +406,8 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
     mutationFn: async () => {
       if (!file) throw new Error("Nenhum arquivo selecionado.");
       if (entity === "leads") return apiClient.importLeadsFile(file, mapping, true);
+      if (entity === "companies") return apiClient.importCompaniesFile(file, mapping, true);
+      if (entity === "contacts") return apiClient.importContactsFile(file, mapping, true);
       if (entity === "deals") return apiClient.importDealsFile(file, true);
       return apiClient.importInteractionsFile(file, true);
     },
@@ -381,6 +427,8 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
     mutationFn: async () => {
       if (!file) throw new Error("Nenhum arquivo selecionado.");
       if (entity === "leads") return apiClient.importLeadsFile(file, mapping, false, { duplicateActions });
+      if (entity === "companies") return apiClient.importCompaniesFile(file, mapping, false);
+      if (entity === "contacts") return apiClient.importContactsFile(file, mapping, false);
       if (entity === "deals") return apiClient.importDealsFile(file, false);
       return apiClient.importInteractionsFile(file, false);
     },
@@ -402,11 +450,21 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
     },
   });
 
-  // Email is required for every entity; warn if leads mapping lacks it.
+  // Email is required for leads (dedup key); optional for contacts/companies.
   const emailMapped = useMemo(
     () => Object.values(mapping).includes("email"),
     [mapping]
   );
+
+  // How many existing records will be updated by the confirmed import. Leads use
+  // the per-row skip/update choices; upsert entities update every duplicate.
+  const updateCount = useMemo(() => {
+    if (!dryRunResult) return 0;
+    if (perRowDuplicateChoice) {
+      return Object.values(duplicateActions).filter((a) => a === "update").length;
+    }
+    return upsertMode ? dryRunResult.duplicateCount : 0;
+  }, [dryRunResult, duplicateActions, perRowDuplicateChoice, upsertMode]);
 
   const previewRows = parsed?.rows.slice(0, PREVIEW_ROW_COUNT) ?? [];
 
@@ -429,6 +487,14 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
 
   return (
     <div className="space-y-5">
+      {/* Optional informational note (e.g. import order for contacts) */}
+      {hint && (
+        <Alert>
+          <FileSpreadsheet />
+          <AlertDescription>{hint}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Required columns hint for fixed-schema entities */}
       {!withMapper && requiredColumns && (
         <Alert>
@@ -479,7 +545,7 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
                   setMapping((prev) => ({ ...prev, [column]: value }))
                 }
               />
-              {!emailMapped && (
+              {emailRequired && !emailMapped && (
                 <p className="flex items-center gap-1.5 text-xs text-amber-600">
                   <TriangleAlert size={14} />
                   Mapeie uma coluna para o campo <strong>Email</strong> — ele é usado para detectar duplicatas.
@@ -525,7 +591,7 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
           <div className="flex items-center gap-2">
             <Button
               onClick={() => dryRunMutation.mutate()}
-              disabled={dryRunMutation.isPending || (withMapper && !emailMapped)}
+              disabled={dryRunMutation.isPending || (emailRequired && !emailMapped)}
             >
               {dryRunMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
               Analisar importação
@@ -544,7 +610,7 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
                 onDuplicateAction={(key, action) =>
                   setDuplicateActions((prev) => ({ ...prev, [key]: action }))
                 }
-                showDuplicateActions={withMapper}
+                showDuplicateActions={perRowDuplicateChoice}
               />
 
               {/* Explicit confirmation before final import (req 16) */}
@@ -554,7 +620,7 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
                 </Button>
                 <Button
                   onClick={() => setConfirmOpen(true)}
-                  disabled={importMutation.isPending || dryRunResult.newCount + (withMapper ? Object.values(duplicateActions).filter((a) => a === "update").length : 0) === 0}
+                  disabled={importMutation.isPending || dryRunResult.newCount + updateCount === 0}
                 >
                   Confirmar importação
                 </Button>
@@ -573,10 +639,10 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, onImported 
               {dryRunResult && (
                 <>
                   Serão importados <strong>{dryRunResult.newCount}</strong> registro(s) novo(s)
-                  {withMapper && (
+                  {(perRowDuplicateChoice || upsertMode) && (
                     <>
                       {" "}e atualizados{" "}
-                      <strong>{Object.values(duplicateActions).filter((a) => a === "update").length}</strong>{" "}
+                      <strong>{updateCount}</strong>{" "}
                       registro(s) existente(s)
                     </>
                   )}
@@ -772,18 +838,38 @@ export function Import() {
     return [...LEAD_BASE_TARGETS, ...customTargets];
   }, [fields]);
 
+  // Company/contact targets = base fields + tenant custom fields. Custom fields
+  // are global (no entityType), so the same list is offered for every mapper.
+  const companyTargets = useMemo<MappingTarget[]>(() => {
+    const customTargets = fields.map((field) => ({
+      value: field.name,
+      label: `${field.name} (campo customizado)`,
+    }));
+    return [...COMPANY_BASE_TARGETS, ...customTargets];
+  }, [fields]);
+
+  const contactTargets = useMemo<MappingTarget[]>(() => {
+    const customTargets = fields.map((field) => ({
+      value: field.name,
+      label: `${field.name} (campo customizado)`,
+    }));
+    return [...CONTACT_BASE_TARGETS, ...customTargets];
+  }, [fields]);
+
   const refreshHistory = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["import-batches"] });
   }, [queryClient]);
 
   return (
     <div className="min-h-screen">
-      <Header title="Importar Dados" subtitle="Migre leads, deals e interações a partir de CSV ou Excel" />
+      <Header title="Importar Dados" subtitle="Migre empresas, contatos, leads, deals e interações a partir de CSV ou Excel" />
 
       <div className="p-4 md:p-8 space-y-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 md:p-6">
-          <Tabs defaultValue="leads">
+          <Tabs defaultValue="companies">
             <TabsList className="mb-4">
+              <TabsTrigger value="companies">Empresas</TabsTrigger>
+              <TabsTrigger value="contacts">Contatos</TabsTrigger>
               <TabsTrigger value="leads">
                 <Users size={16} className="mr-1.5" />
                 Leads
@@ -792,6 +878,18 @@ export function Import() {
               <TabsTrigger value="interactions">Interações</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="companies">
+              <ImportPanel entity="companies" targets={companyTargets} withMapper onImported={refreshHistory} />
+            </TabsContent>
+            <TabsContent value="contacts">
+              <ImportPanel
+                entity="contacts"
+                targets={contactTargets}
+                withMapper
+                hint="Importe as Empresas antes dos Contatos para que cada contato seja vinculado automaticamente à sua empresa (pelo nome)."
+                onImported={refreshHistory}
+              />
+            </TabsContent>
             <TabsContent value="leads">
               <ImportPanel entity="leads" targets={leadTargets} withMapper onImported={refreshHistory} />
             </TabsContent>
