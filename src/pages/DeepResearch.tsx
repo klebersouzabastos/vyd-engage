@@ -24,9 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { StatusBadge } from '../components/deepResearch/StatusBadge';
 import { ResearchEditor } from '../components/deepResearch/ResearchEditor';
 import { TemplateManager } from '../components/deepResearch/TemplateManager';
+import { DesdobramentosTab } from '../components/comercial/DesdobramentosTab';
 import {
   useDeepResearchList,
   useDeepResearchTemplates,
@@ -76,6 +78,12 @@ export function DeepResearch() {
       />
 
       <div className="space-y-6 p-4 md:p-8">
+        <Tabs defaultValue="pesquisas" className="space-y-6">
+          <TabsList className="w-fit">
+            <TabsTrigger value="pesquisas">Pesquisas</TabsTrigger>
+            <TabsTrigger value="desdobramentos">Desdobramentos</TabsTrigger>
+          </TabsList>
+          <TabsContent value="pesquisas" className="space-y-6">
         {/* Hero — ações principais consolidadas aqui */}
         <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
           <div className="max-w-2xl">
@@ -206,6 +214,11 @@ export function DeepResearch() {
             </ul>
           )}
         </section>
+          </TabsContent>
+          <TabsContent value="desdobramentos">
+            <DesdobramentosTab />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <ResearchEditor

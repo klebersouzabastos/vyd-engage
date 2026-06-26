@@ -1,0 +1,215 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../ui/dialog';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Button } from '../ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import { apiClient } from '../../services/api/client';
+import { useEmpreendimentos, usePlaybooks, useRoadmapActions } from '../../hooks/useComercial';
+import type { CommercialRoadmap } from '../../types/comercial';
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated?: (roadmap: CommercialRoadmap) => void;
+  /** Semeia o desdobramento a partir de uma pesquisa (opcional). */
+  deepResearchId?: string;
+  /** Empresa pré-selecionada (opcional). */
+  defaultCompanyId?: string;
+}
+
+const NONE = '__none__';
+
+export function RoadmapCreateDialog({
+  open,
+  onOpenChange,
+  onCreated,
+  deepResearchId,
+  defaultCompanyId,
+}: Props) {
+  const { createRoadmap } = useRoadmapActions();
+  const [title, setTitle] = useState('');
+  const [companyId, setCompanyId] = useState(defaultCompanyId ?? '');
+  const [empreendimentoId, setEmpreendimentoId] = useState<string>(NONE);
+  const [playbookTemplateId, setPlaybookTemplateId] = useState<string>(NONE);
+  const [researchId, setResearchId] = useState<string>(deepResearchId ?? NONE);
+  const [submitting, setSubmitting] = useState(false);
+
+  const companiesQuery = useQuery({
+    queryKey: ['companies', 'roadmap-picker'],
+    queryFn: () => apiClient.getCompanies({ limit: 100 }),
+    enabled: open,
+  });
+  const companies = (companiesQuery.data?.companies ?? []) as Array<{ id: string; name: string }>;
+
+  const empreendimentosQuery = useEmpreendimentos(companyId ? { companyId } : undefined);
+  const empreendimentos = companyId ? empreendimentosQuery.data?.items ?? [] : [];
+
+  const playbooksQuery = usePlaybooks();
+  const playbooks = playbooksQuery.data?.items ?? [];
+
+  const researchesQuery = useQuery({
+    queryKey: ['deep-research', 'roadmap-seed'],
+    queryFn: () => apiClient.getDeepResearches({ limit: 100 }),
+    enabled: open,
+  });
+  const researches = (researchesQuery.data?.items ?? []) as Array<{ id: string; title: string }>;
+
+  const reset = () => {
+    setTitle('');
+    setCompanyId(defaultCompanyId ?? '');
+    setEmpreendimentoId(NONE);
+    setPlaybookTemplateId(NONE);
+    setResearchId(deepResearchId ?? NONE);
+  };
+
+  const submit = async () => {
+    if (!title.trim() || !companyId) return;
+    setSubmitting(true);
+    try {
+      const roadmap = await createRoadmap({
+        title: title.trim(),
+        companyId,
+        empreendimentoId: empreendimentoId === NONE ? undefined : empreendimentoId,
+        playbookTemplateId: playbookTemplateId === NONE ? undefined : playbookTemplateId,
+        deepResearchId: researchId === NONE ? undefined : researchId,
+      });
+      reset();
+      onOpenChange(false);
+      onCreated?.(roadmap);
+    } catch {
+      /* toast já exibido pelo hook */
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>Novo desdobramento</DialogTitle>
+          <DialogDescription>
+            Escolha a empresa e, opcionalmente, um empreendimento e um playbook. O playbook gera as
+            ações de acesso na agenda.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="rm-title">Título</Label>
+            <Input
+              id="rm-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex.: Acesso à Construtora Acme"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Empresa</Label>
+            <Select
+              value={companyId}
+              onValueChange={(v) => {
+                setCompanyId(v);
+                setEmpreendimentoId(NONE);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={companiesQuery.isLoading ? 'Carregando…' : 'Selecione a empresa'} />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Empreendimento (opcional)</Label>
+            <Select
+              value={empreendimentoId}
+              onValueChange={setEmpreendimentoId}
+              disabled={!companyId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Nenhum" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>Nenhum</SelectItem>
+                {empreendimentos.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Playbook (opcional — gera as ações)</Label>
+            <Select value={playbookTemplateId} onValueChange={setPlaybookTemplateId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sem playbook" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>Sem playbook (adiciono manualmente)</SelectItem>
+                {playbooks.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                    {p.isBuiltin ? ' · padrão' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Pesquisa de origem (opcional)</Label>
+            <Select value={researchId} onValueChange={setResearchId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sem pesquisa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>Sem pesquisa</SelectItem>
+                {researches.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={submit} disabled={submitting || !title.trim() || !companyId}>
+            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Criar desdobramento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
