@@ -56,13 +56,17 @@ async function pollPending() {
       }
     }
 
-    // 2) Limpeza de travados: RESEARCHING há muito tempo, sem job assíncrono
-    //    (run síncrono interrompido por restart) → FAILED.
+    // 2) Limpeza de travados: RESEARCHING há muito tempo sem job assíncrono — run
+    //    síncrono interrompido por restart, OU disparo que nunca ocorreu (provider
+    //    indisponível quando foi solicitada). Cobre requestedAt antigo OU nulo
+    //    (nunca disparou). Só roda com provider ativo, então não afeta o fluxo
+    //    manual (API desligada, em que RESEARCHING aguarda o admin).
+    const cutoff = new Date(Date.now() - STALE_AFTER_MS);
     const stale = await prisma.deepResearch.updateMany({
       where: {
         status: DeepResearchStatus.RESEARCHING,
         providerResponseId: null,
-        requestedAt: { lt: new Date(Date.now() - STALE_AFTER_MS) },
+        OR: [{ requestedAt: { lt: cutoff } }, { requestedAt: null, createdAt: { lt: cutoff } }],
       },
       data: {
         status: DeepResearchStatus.FAILED,

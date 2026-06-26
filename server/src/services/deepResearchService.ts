@@ -199,7 +199,25 @@ export const deepResearchService = {
    */
   async maybeTrigger(tenantId: string, id: string) {
     const provider = getProvider();
-    if (!provider) return;
+    if (!provider) {
+      // API ligada mas sem provider utilizável (ex.: falta a chave no servidor) →
+      // não deixa a pesquisa presa em "Pesquisando": marca FAILED com mensagem
+      // clara, permitindo re-solicitar. Se a API está desligada (fluxo manual do
+      // admin), não mexe no status — RESEARCHING aguarda o processamento manual.
+      if (process.env.ENABLE_DEEP_RESEARCH_API === 'true') {
+        await prisma.deepResearch
+          .updateMany({
+            where: { id, tenantId, status: DeepResearchStatus.RESEARCHING },
+            data: {
+              status: DeepResearchStatus.FAILED,
+              providerError:
+                'Motor de pesquisa não configurado no servidor (verifique a chave do provedor, ex.: OPENROUTER_API_KEY).',
+            },
+          })
+          .catch(() => {});
+      }
+      return;
+    }
     try {
       const r = await prisma.deepResearch.findFirst({
         where: { id, tenantId },
