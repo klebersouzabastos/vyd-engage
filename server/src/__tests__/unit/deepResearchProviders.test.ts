@@ -50,4 +50,18 @@ describe('applyChunk (stream OpenRouter)', () => {
     expect(acc.markdown).toBe('');
     expect(acc.citations).toEqual(['https://y.com']);
   });
+
+  it('acumula annotations url_citation incrementais e deduplica (formato real do stream)', () => {
+    const acc = { markdown: '', citations: [] as string[], searchResults: [] as any[] };
+    const chunk = (url: string, title: string) => ({
+      choices: [{ delta: { annotations: [{ type: 'url_citation', url_citation: { url, title } }] } }],
+    });
+    applyChunk(chunk('https://a.com', 'A'), acc);
+    applyChunk(chunk('https://b.com', 'B'), acc);
+    applyChunk(chunk('https://a.com', 'A'), acc); // duplicada → ignorada
+    expect(acc.searchResults).toEqual([
+      { title: 'A', url: 'https://a.com', date: undefined },
+      { title: 'B', url: 'https://b.com', date: undefined },
+    ]);
+  });
 });
