@@ -1,0 +1,191 @@
+/* Visualizador de relatório — CSS dedicado. O Tailwind do projeto é
+   pré-compilado (sem JIT): classes utilitárias novas não geram CSS. Este arquivo
+   garante a identidade visual do relatório (idêntica entre todos), independente de
+   quais utilitários existem no bundle. Tudo escopado sob .report-viewer. */
+
+.report-viewer {
+  --rv-primary: #2563eb;
+  --rv-primary-dark: #1e40af;
+  --rv-ink: #0f172a;
+  --rv-ink-soft: #1e293b;
+  --rv-body: #334155;
+  --rv-muted: #64748b;
+  --rv-faint: #94a3b8;
+  --rv-line: #e2e8f0;
+  --rv-line-soft: #eef2f6;
+  --rv-bg-soft: #f8fafc;
+  color: var(--rv-body);
+  scroll-margin-top: 16px;
+}
+
+/* ---------- top bar + progresso ---------- */
+.report-viewer__topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.report-viewer__progress {
+  height: 4px; border-radius: 999px; background: var(--rv-line);
+  overflow: hidden; margin-bottom: 18px;
+  position: sticky; top: 0; z-index: 6;
+}
+.report-viewer__progress > div {
+  height: 100%; background: var(--rv-primary); border-radius: 999px;
+  transition: width .25s ease;
+}
+.report-viewer__page-region { outline: none; }
+
+/* foco visível por teclado */
+.report-viewer__toggle button:focus-visible,
+.report-viewer__index button:focus-visible,
+.report-viewer__nav button:focus-visible,
+.report-cover__cta:focus-visible {
+  outline: 2px solid var(--rv-primary); outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-viewer__progress > div,
+  .report-viewer__toggle button,
+  .report-viewer__index button,
+  .report-viewer__nav button,
+  .report-cover__cta { transition: none; }
+}
+.report-viewer__pos { font-size: 13px; color: var(--rv-muted); font-weight: 500; }
+
+/* ---------- layout responsivo ---------- */
+.report-viewer__layout { display: block; }
+.report-viewer__rail { display: none; }
+.report-viewer__mobile-index { margin-bottom: 14px; }
+.report-viewer__main { min-width: 0; }
+
+@media (min-width: 768px) {
+  .report-viewer__layout:not(.report-viewer__layout--full) {
+    display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; align-items: start;
+  }
+  .report-viewer__rail {
+    display: block; position: sticky; top: 24px;
+    max-height: calc(100vh - 7rem); overflow-y: auto;
+  }
+  .report-viewer__mobile-index { display: none; }
+}
+
+/* ---------- toggle de modo (segmentado) ---------- */
+.report-viewer__toggle {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--rv-bg-soft); border: 1px solid var(--rv-line); border-radius: 10px;
+}
+.report-viewer__toggle button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 0;
+  background: transparent; cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--rv-muted); border-radius: 8px; transition: background .15s, color .15s;
+}
+.report-viewer__toggle button:hover { color: var(--rv-ink); }
+.report-viewer__toggle button[aria-pressed="true"] {
+  background: #fff; color: var(--rv-primary); box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+/* ---------- índice (modo paginado) ---------- */
+.report-viewer__index { font-size: 13px; }
+.report-viewer__index-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--rv-faint); padding: 0 8px 8px; font-weight: 600;
+}
+.report-viewer__index button {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  cursor: pointer; padding: 7px 10px; border-radius: 8px; color: var(--rv-muted);
+  border-left: 2px solid transparent; font-size: 13px; line-height: 1.35;
+  transition: background .15s, color .15s;
+}
+.report-viewer__index button:hover { background: var(--rv-bg-soft); color: var(--rv-ink); }
+.report-viewer__index button[aria-current="true"] {
+  background: #eff6ff; color: var(--rv-primary); border-left-color: var(--rv-primary); font-weight: 500;
+}
+
+/* ---------- painel / navegação ---------- */
+.report-viewer__panel { background: #fff; border: 1px solid var(--rv-line); border-radius: 16px; padding: 28px 28px 22px; }
+.report-viewer__nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 14px; padding: 12px 16px; border: 1px solid var(--rv-line);
+  border-radius: 12px; background: #fff;
+  position: sticky; bottom: 12px; z-index: 5; box-shadow: 0 4px 16px rgba(15, 23, 42, .08);
+}
+.report-viewer__nav button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border: 1px solid var(--rv-line); background: #fff; border-radius: 9px;
+  font-size: 14px; font-weight: 500; color: var(--rv-ink-soft); cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.report-viewer__nav button:hover:not(:disabled) { background: var(--rv-bg-soft); border-color: #cbd5e1; }
+.report-viewer__nav button:disabled { opacity: .45; cursor: default; }
+.report-viewer__nav-pos { font-size: 12px; color: var(--rv-faint); text-align: center; }
+
+/* ---------- tipografia do corpo do relatório ---------- */
+.report-viewer__body { max-width: 760px; }
+.report-viewer__body > article { max-width: none; }
+.report-viewer__body > * > :first-child, .report-viewer__body > :first-child { margin-top: 0; }
+.report-viewer__body h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; color: var(--rv-ink); margin: 0 0 18px; }
+.report-viewer__body h2 {
+  display: flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 700;
+  letter-spacing: -.01em; color: var(--rv-ink); margin: 44px 0 16px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--rv-line); scroll-margin-top: 90px;
+}
+.report-viewer__body h2::before { content: ""; width: 6px; height: 24px; border-radius: 999px; background: var(--rv-primary); flex: none; }
+.report-viewer__body h3 { font-size: 1.15rem; font-weight: 600; color: var(--rv-ink-soft); margin: 30px 0 8px; scroll-margin-top: 90px; }
+.report-viewer__body h4 { font-size: 1rem; font-weight: 600; color: var(--rv-ink-soft); margin: 20px 0 6px; }
+.report-viewer__body h5 { font-size: .9rem; font-weight: 600; color: var(--rv-ink-soft); margin: 16px 0 4px; }
+.report-viewer__body h6 { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--rv-muted); margin: 14px 0 4px; }
+.report-viewer__body p { font-size: .97rem; line-height: 1.75; margin: 14px 0; color: var(--rv-body); }
+.report-viewer__body a { color: var(--rv-primary); font-weight: 500; text-decoration: underline; text-decoration-color: rgba(37, 99, 235, .3); text-underline-offset: 2px; }
+.report-viewer__body a:hover { text-decoration-color: var(--rv-primary); }
+.report-viewer__body ul, .report-viewer__body ol { margin: 14px 0; padding-left: 24px; font-size: .97rem; line-height: 1.75; color: var(--rv-body); }
+.report-viewer__body ul { list-style: disc; }
+.report-viewer__body ol { list-style: decimal; }
+.report-viewer__body li { margin: 5px 0; }
+.report-viewer__body ul > li::marker { color: rgba(37, 99, 235, .7); }
+.report-viewer__body ol > li::marker { color: var(--rv-primary); font-weight: 600; }
+.report-viewer__body strong { color: var(--rv-ink); font-weight: 600; }
+.report-viewer__body em { font-style: italic; }
+.report-viewer__body blockquote { margin: 20px 0; padding: 12px 18px; border-left: 4px solid var(--rv-primary); background: #eff6ff; border-radius: 0 8px 8px 0; color: var(--rv-body); font-style: italic; }
+.report-viewer__body hr { margin: 36px 0; border: 0; border-top: 1px solid var(--rv-line); }
+.report-viewer__body img { max-width: 100%; border-radius: 10px; border: 1px solid var(--rv-line); margin: 18px 0; }
+.report-viewer__body code { background: #f1f5f9; color: var(--rv-ink-soft); padding: 2px 6px; border-radius: 6px; font-size: .85em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.report-viewer__body pre { background: #0f172a; color: #e2e8f0; padding: 16px; border-radius: 12px; overflow-x: auto; margin: 18px 0; }
+.report-viewer__body pre code { background: transparent; color: inherit; padding: 0; }
+.report-viewer__body table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.report-viewer__body thead { background: #1e293b; }
+.report-viewer__body th { text-align: left; padding: 11px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #e2e8f0; white-space: nowrap; }
+.report-viewer__body td { padding: 10px 16px; border-top: 1px solid var(--rv-line-soft); color: var(--rv-body); vertical-align: top; }
+.report-viewer__body tbody tr:nth-child(even) { background: #f8fafc; }
+
+/* ---------- capa ---------- */
+.report-cover--full { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border: 1px solid var(--rv-line); border-radius: 16px; padding: 40px 36px; }
+.report-cover__brand { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.report-cover__logo { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 1px solid var(--rv-line); background: #fff; }
+.report-cover__monogram { width: 44px; height: 44px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--rv-primary); color: #fff; font-weight: 600; font-size: 16px; flex: none; }
+.report-cover__company { font-size: 15px; font-weight: 600; color: var(--rv-ink); line-height: 1.3; }
+.report-cover__company small { display: block; font-size: 12px; font-weight: 400; color: var(--rv-muted); }
+.report-cover__badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: #dbeafe; color: var(--rv-primary-dark); }
+.report-cover__title { font-size: 2.1rem; line-height: 1.15; font-weight: 700; letter-spacing: -.02em; color: var(--rv-ink); margin: 16px 0 6px; }
+.report-cover__meta { font-size: 13px; color: var(--rv-muted); }
+.report-cover__toc-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--rv-faint); font-weight: 600; margin: 28px 0 12px; }
+.report-cover__toc { display: grid; gap: 9px; }
+.report-cover__toc-item { display: flex; align-items: baseline; gap: 10px; font-size: 14px; color: var(--rv-body); }
+.report-cover__toc-num { font-size: 12px; font-weight: 600; color: var(--rv-primary); min-width: 18px; }
+.report-cover__cta { margin-top: 30px; display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border: 0; border-radius: 10px; background: var(--rv-primary); color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; transition: background .15s; }
+.report-cover__cta:hover { background: var(--rv-primary-dark); }
+
+.report-cover--compact { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border: 1px solid var(--rv-line); border-radius: 14px; padding: 18px 22px; margin-bottom: 22px; }
+.report-cover--compact .report-cover__title { font-size: 1.4rem; margin: 0; }
+.report-cover--compact .report-cover__brand { margin-bottom: 0; }
+
+/* ---------- fontes ---------- */
+.report-sources--page { margin-top: 4px; }
+.report-sources--inline { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--rv-line); }
+.report-sources__title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--rv-muted); font-weight: 600; margin-bottom: 14px; }
+.report-sources__list { display: grid; gap: 9px; }
+.report-sources__item { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
+.report-sources__num { font-size: 12px; color: var(--rv-faint); min-width: 20px; font-variant-numeric: tabular-nums; }
+.report-sources__link { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; color: var(--rv-body); text-decoration: none; }
+.report-sources__link > span { text-decoration: underline; text-decoration-color: #cbd5e1; text-underline-offset: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.report-sources__link:hover { color: var(--rv-primary); }
+.report-sources__link:hover > span { text-decoration-color: var(--rv-primary); }
+.report-sources__date { margin-left: auto; font-size: 12px; color: var(--rv-faint); white-space: nowrap; }
