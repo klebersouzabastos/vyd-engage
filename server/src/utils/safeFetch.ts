@@ -20,7 +20,7 @@ function inRange(ipLong: number, cidr: string): boolean {
   const [range, bitsStr] = cidr.split('/');
   const bits = Number(bitsStr);
   const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
-  return ((ipLong & mask) >>> 0) === ((ipv4ToLong(range) & mask) >>> 0);
+  return (ipLong & mask) >>> 0 === (ipv4ToLong(range) & mask) >>> 0;
 }
 
 // Faixas IPv4 não-roteáveis / sensíveis.

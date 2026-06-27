@@ -4,8 +4,8 @@ import {
   PaymentMethod,
   CardTokenData,
   PaymentStatus,
-} from "../types/payment";
-import { apiClient } from "./api/client";
+} from '../types/payment';
+import { apiClient } from './api/client';
 
 /**
  * Criar intenção de pagamento via backend API.
@@ -19,10 +19,10 @@ export async function createPaymentIntent(
 ): Promise<PaymentIntent> {
   const result = await apiClient.createPaymentIntent({
     planId,
-    planType: metadata?.planType || "PRO",
+    planType: metadata?.planType || 'PRO',
     amount,
     method: mapMethodToBackend(method),
-    billingCycle: metadata?.billingCycle || "MONTHLY",
+    billingCycle: metadata?.billingCycle || 'MONTHLY',
   });
 
   const data = result?.data || result;
@@ -32,7 +32,7 @@ export async function createPaymentIntent(
     planId,
     amount,
     method,
-    status: "pending",
+    status: 'pending',
     createdAt: data.payment?.createdAt || new Date().toISOString(),
     updatedAt: data.payment?.updatedAt || new Date().toISOString(),
     metadata: {
@@ -57,9 +57,9 @@ export async function processCreditCardPayment(
     return {
       success: false,
       paymentIntentId,
-      status: "failed",
-      message: "Token de pagamento não recebido",
-      error: "MISSING_TOKEN",
+      status: 'failed',
+      message: 'Token de pagamento não recebido',
+      error: 'MISSING_TOKEN',
     };
   }
 
@@ -73,32 +73,32 @@ export async function processCreditCardPayment(
     });
 
     const data = result?.data || result;
-    const mpStatus = data.mercadoPagoStatus || data.payment?.status || "pending";
+    const mpStatus = data.mercadoPagoStatus || data.payment?.status || 'pending';
 
     // Map MP status to our result
-    if (mpStatus === "approved") {
+    if (mpStatus === 'approved') {
       return {
         success: true,
         paymentIntentId,
-        status: "paid",
-        message: "Pagamento aprovado com sucesso!",
+        status: 'paid',
+        message: 'Pagamento aprovado com sucesso!',
       };
-    } else if (mpStatus === "rejected") {
+    } else if (mpStatus === 'rejected') {
       return {
         success: false,
         paymentIntentId,
-        status: "failed",
+        status: 'failed',
         message: data.mercadoPagoStatusDetail
           ? `Pagamento recusado: ${mapStatusDetail(data.mercadoPagoStatusDetail)}`
-          : "Pagamento recusado. Verifique os dados do cartão.",
-        error: "PAYMENT_REJECTED",
+          : 'Pagamento recusado. Verifique os dados do cartão.',
+        error: 'PAYMENT_REJECTED',
       };
     } else {
       return {
         success: true,
         paymentIntentId,
-        status: "pending",
-        message: "Pagamento em processamento. Você será notificado quando for aprovado.",
+        status: 'pending',
+        message: 'Pagamento em processamento. Você será notificado quando for aprovado.',
         requiresAction: true,
       };
     }
@@ -106,9 +106,9 @@ export async function processCreditCardPayment(
     return {
       success: false,
       paymentIntentId,
-      status: "failed",
-      message: "Erro ao processar pagamento. Tente novamente.",
-      error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+      status: 'failed',
+      message: 'Erro ao processar pagamento. Tente novamente.',
+      error: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
     };
   }
 }
@@ -118,36 +118,34 @@ export async function processCreditCardPayment(
  */
 function mapStatusDetail(detail: string): string {
   const map: Record<string, string> = {
-    cc_rejected_insufficient_amount: "Saldo insuficiente",
-    cc_rejected_bad_filled_card_number: "Número do cartão incorreto",
-    cc_rejected_bad_filled_date: "Data de validade incorreta",
-    cc_rejected_bad_filled_other: "Dados do cartão incorretos",
-    cc_rejected_bad_filled_security_code: "Código de segurança incorreto",
-    cc_rejected_blacklist: "Cartão bloqueado por segurança",
-    cc_rejected_call_for_authorize: "Ligue para a operadora para autorizar",
-    cc_rejected_card_disabled: "Cartão desabilitado para compras online",
-    cc_rejected_duplicated_payment: "Pagamento duplicado",
-    cc_rejected_high_risk: "Pagamento recusado por risco elevado",
-    cc_rejected_max_attempts: "Número máximo de tentativas excedido",
-    cc_rejected_other_reason: "Cartão recusado",
+    cc_rejected_insufficient_amount: 'Saldo insuficiente',
+    cc_rejected_bad_filled_card_number: 'Número do cartão incorreto',
+    cc_rejected_bad_filled_date: 'Data de validade incorreta',
+    cc_rejected_bad_filled_other: 'Dados do cartão incorretos',
+    cc_rejected_bad_filled_security_code: 'Código de segurança incorreto',
+    cc_rejected_blacklist: 'Cartão bloqueado por segurança',
+    cc_rejected_call_for_authorize: 'Ligue para a operadora para autorizar',
+    cc_rejected_card_disabled: 'Cartão desabilitado para compras online',
+    cc_rejected_duplicated_payment: 'Pagamento duplicado',
+    cc_rejected_high_risk: 'Pagamento recusado por risco elevado',
+    cc_rejected_max_attempts: 'Número máximo de tentativas excedido',
+    cc_rejected_other_reason: 'Cartão recusado',
   };
-  return map[detail] || "Verifique os dados do cartão e tente novamente";
+  return map[detail] || 'Verifique os dados do cartão e tente novamente';
 }
 
 /**
  * Processar pagamento via PIX.
  * Retorna dados para gerar QR Code (virão do backend via Mercado Pago).
  */
-export async function processPixPayment(
-  paymentIntentId: string
-): Promise<PaymentResult> {
+export async function processPixPayment(paymentIntentId: string): Promise<PaymentResult> {
   // O PIX é gerado pelo Mercado Pago durante a criação da preferência.
   // O initPoint/sandboxInitPoint já contém o link para pagamento.
   return {
     success: true,
     paymentIntentId,
-    status: "pending",
-    message: "Redirecionando para pagamento PIX via Mercado Pago.",
+    status: 'pending',
+    message: 'Redirecionando para pagamento PIX via Mercado Pago.',
     requiresAction: true,
   };
 }
@@ -155,14 +153,12 @@ export async function processPixPayment(
 /**
  * Processar pagamento via Boleto.
  */
-export async function processBoletoPayment(
-  paymentIntentId: string
-): Promise<PaymentResult> {
+export async function processBoletoPayment(paymentIntentId: string): Promise<PaymentResult> {
   return {
     success: true,
     paymentIntentId,
-    status: "pending",
-    message: "Redirecionando para pagamento via Boleto.",
+    status: 'pending',
+    message: 'Redirecionando para pagamento via Boleto.',
     requiresAction: true,
   };
 }
@@ -170,26 +166,24 @@ export async function processBoletoPayment(
 /**
  * Verificar status de pagamento via backend.
  */
-export async function checkPaymentStatus(
-  paymentIntentId: string
-): Promise<PaymentStatus> {
+export async function checkPaymentStatus(paymentIntentId: string): Promise<PaymentStatus> {
   try {
     const history = await apiClient.getPaymentHistory();
     const payments = history?.data || history || [];
     const payment = payments.find((p: { id: string; status: string }) => p.id === paymentIntentId);
-    if (!payment) return "failed";
+    if (!payment) return 'failed';
 
     const statusMap: Record<string, PaymentStatus> = {
-      PENDING: "pending",
-      PROCESSING: "processing",
-      PAID: "paid",
-      FAILED: "failed",
-      REFUNDED: "refunded",
-      CANCELLED: "failed",
+      PENDING: 'pending',
+      PROCESSING: 'processing',
+      PAID: 'paid',
+      FAILED: 'failed',
+      REFUNDED: 'refunded',
+      CANCELLED: 'failed',
     };
-    return statusMap[payment.status] || "pending";
+    return statusMap[payment.status] || 'pending';
   } catch {
-    return "failed";
+    return 'failed';
   }
 }
 
@@ -204,13 +198,13 @@ export async function validatePaymentForUpgrade(
     const payments = history?.data || history || [];
 
     const pendingPayment = payments.find(
-      (p: { status: string }) => p.status === "PENDING" || p.status === "PROCESSING"
+      (p: { status: string }) => p.status === 'PENDING' || p.status === 'PROCESSING'
     );
 
     if (pendingPayment) {
       return {
         isValid: false,
-        reason: "Há um pagamento pendente. Aguarde a confirmação.",
+        reason: 'Há um pagamento pendente. Aguarde a confirmação.',
       };
     }
 
@@ -230,11 +224,11 @@ export async function getPaymentHistory() {
 
 function mapMethodToBackend(method: PaymentMethod): string {
   const map: Record<string, string> = {
-    credit_card: "CREDIT_CARD",
-    pix: "PIX",
-    boleto: "BOLETO",
+    credit_card: 'CREDIT_CARD',
+    pix: 'PIX',
+    boleto: 'BOLETO',
   };
-  return map[method] || "CREDIT_CARD";
+  return map[method] || 'CREDIT_CARD';
 }
 
 /**

@@ -21,7 +21,7 @@ describe('Automation Service', () => {
     });
     if (automations.length > 0) {
       await prisma.automationLog.deleteMany({
-        where: { automationId: { in: automations.map(a => a.id) } },
+        where: { automationId: { in: automations.map((a) => a.id) } },
       });
     }
     await prisma.automation.deleteMany({ where: { tenantId: testTenantId } });
@@ -71,9 +71,9 @@ describe('Automation Service', () => {
     });
 
     it('should throw 404 for non-existent automation', async () => {
-      await expect(
-        automationService.findById(testTenantId, 'non-existent-id')
-      ).rejects.toThrow('Automation not found');
+      await expect(automationService.findById(testTenantId, 'non-existent-id')).rejects.toThrow(
+        'Automation not found'
+      );
     });
 
     it('should enforce tenant isolation', async () => {
@@ -88,9 +88,9 @@ describe('Automation Service', () => {
       });
 
       try {
-        await expect(
-          automationService.findById(otherTenant.id, automation.id)
-        ).rejects.toThrow('Automation not found');
+        await expect(automationService.findById(otherTenant.id, automation.id)).rejects.toThrow(
+          'Automation not found'
+        );
       } finally {
         await prisma.tenant.delete({ where: { id: otherTenant.id } });
       }
@@ -193,15 +193,15 @@ describe('Automation Service', () => {
 
       await automationService.delete(testTenantId, automation.id);
 
-      await expect(
-        automationService.findById(testTenantId, automation.id)
-      ).rejects.toThrow('Automation not found');
+      await expect(automationService.findById(testTenantId, automation.id)).rejects.toThrow(
+        'Automation not found'
+      );
     });
 
     it('should throw 404 for non-existent automation', async () => {
-      await expect(
-        automationService.delete(testTenantId, 'non-existent')
-      ).rejects.toThrow('Automation not found');
+      await expect(automationService.delete(testTenantId, 'non-existent')).rejects.toThrow(
+        'Automation not found'
+      );
     });
   });
 
@@ -231,12 +231,9 @@ describe('Automation Service', () => {
         steps: [],
       });
 
-      const log = await automationService.addLog(
-        automation.id,
-        'SUCCESS',
-        'Email sent',
-        { recipient: 'test@test.com' }
-      );
+      const log = await automationService.addLog(automation.id, 'SUCCESS', 'Email sent', {
+        recipient: 'test@test.com',
+      });
 
       expect(log.automationId).toBe(automation.id);
       expect(log.status).toBe('SUCCESS');

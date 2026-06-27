@@ -49,9 +49,17 @@ export function evaluateCondition({ operator, leadValue, value, tags }: Conditio
     case 'less_than':
       return Number(leadValue) < Number(value);
     case 'is_empty':
-      return leadValue == null || str(leadValue) === '' || (Array.isArray(leadValue) && leadValue.length === 0);
+      return (
+        leadValue == null ||
+        str(leadValue) === '' ||
+        (Array.isArray(leadValue) && leadValue.length === 0)
+      );
     case 'is_not_empty':
-      return !(leadValue == null || str(leadValue) === '' || (Array.isArray(leadValue) && leadValue.length === 0));
+      return !(
+        leadValue == null ||
+        str(leadValue) === '' ||
+        (Array.isArray(leadValue) && leadValue.length === 0)
+      );
     case 'has_tag':
       return (tags || []).map((t) => String(t)).includes(str(value));
     default:

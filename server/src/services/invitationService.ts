@@ -53,10 +53,14 @@ export const invitationService = {
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'production' ? 'https://engage.vydhub.com' : 'http://localhost:5173');
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://engage.vydhub.com'
+        : 'http://localhost:5173');
     const invitationLink = `${frontendUrl}/accept-invitation?token=${token}`;
-    const roleLabel = data.role === 'ADMIN' ? 'Administrador' : data.role === 'USER' ? 'Usuário' : 'Visualizador';
+    const roleLabel =
+      data.role === 'ADMIN' ? 'Administrador' : data.role === 'USER' ? 'Usuário' : 'Visualizador';
 
     let emailSent = false;
     try {
@@ -187,10 +191,18 @@ export const invitationService = {
       data: { token: tokenHash, expiresAt },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'production' ? 'https://engage.vydhub.com' : 'http://localhost:5173');
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://engage.vydhub.com'
+        : 'http://localhost:5173');
     const invitationLink = `${frontendUrl}/accept-invitation?token=${token}`;
-    const roleLabel = invitation.role === 'ADMIN' ? 'Administrador' : invitation.role === 'USER' ? 'Usuário' : 'Visualizador';
+    const roleLabel =
+      invitation.role === 'ADMIN'
+        ? 'Administrador'
+        : invitation.role === 'USER'
+          ? 'Usuário'
+          : 'Visualizador';
 
     let emailSent = false;
     try {
@@ -239,5 +251,3 @@ export const invitationService = {
     });
   },
 };
-
-

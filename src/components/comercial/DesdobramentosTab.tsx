@@ -19,7 +19,10 @@ import { ROADMAP_STATUS_LABELS, type CommercialRoadmapStatus } from '../../types
 import { RoadmapCreateDialog } from './RoadmapCreateDialog';
 import { PlaybooksManager } from './PlaybooksManager';
 
-const STATUS_VARIANT: Record<CommercialRoadmapStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+const STATUS_VARIANT: Record<
+  CommercialRoadmapStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   PLANEJAMENTO: 'secondary',
   EM_ANDAMENTO: 'default',
   PROPOSTA: 'default',

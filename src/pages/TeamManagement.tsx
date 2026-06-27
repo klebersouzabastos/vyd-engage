@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { LoadingButton } from "../components/ui/loading-button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Switch } from "../components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { LoadingButton } from '../components/ui/loading-button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Switch } from '../components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import {
   Table,
   TableHeader,
@@ -14,7 +14,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from "../components/ui/table";
+} from '../components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "../components/ui/dialog";
+} from '../components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,18 +32,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { Skeleton } from "../components/ui/skeleton";
-import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert, RefreshCw } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { apiClient } from "../services/api/client";
+} from '../components/ui/select';
+import { Skeleton } from '../components/ui/skeleton';
+import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert, RefreshCw } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../services/api/client';
 
 interface TeamUser {
   id: string;
@@ -66,27 +66,29 @@ interface Invitation {
 
 function RoleBadge({ role }: { role: string }) {
   const config: Record<string, { bg: string; text: string; label: string }> = {
-    ADMIN: { bg: "bg-blue-100", text: "text-blue-700", label: "Admin" },
-    USER: { bg: "bg-gray-100", text: "text-gray-700", label: "Usuário" },
-    VIEWER: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Visualizador" },
+    ADMIN: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Admin' },
+    USER: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Usuário' },
+    VIEWER: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Visualizador' },
   };
   const c = config[role] || config.USER;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${c.bg} ${c.text}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${c.bg} ${c.text}`}
+    >
       {c.label}
     </span>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const isActive = status === "ACTIVE";
+  const isActive = status === 'ACTIVE';
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-        isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
       }`}
     >
-      {isActive ? "Ativo" : "Inativo"}
+      {isActive ? 'Ativo' : 'Inativo'}
     </span>
   );
 }
@@ -117,14 +119,14 @@ export function TeamManagement() {
 
   // Edit user modal
   const [editingUser, setEditingUser] = useState<TeamUser | null>(null);
-  const [editRole, setEditRole] = useState("");
+  const [editRole, setEditRole] = useState('');
   const [editStatus, setEditStatus] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
 
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("USER");
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('USER');
   const [sendingInvite, setSendingInvite] = useState(false);
 
   // Cancel invitation confirmation
@@ -133,7 +135,7 @@ export function TeamManagement() {
   // Resend invitation
   const [resendingId, setResendingId] = useState<string | null>(null);
 
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === 'ADMIN';
 
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
@@ -141,7 +143,7 @@ export function TeamManagement() {
       const data = await apiClient.getUsers();
       setUsers(data);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao carregar membros da equipe");
+      toast.error(error.message || 'Erro ao carregar membros da equipe');
     } finally {
       setLoadingUsers(false);
     }
@@ -153,7 +155,7 @@ export function TeamManagement() {
       const data = await apiClient.getInvitations();
       setInvitations(data);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao carregar convites");
+      toast.error(error.message || 'Erro ao carregar convites');
     } finally {
       setLoadingInvitations(false);
     }
@@ -169,23 +171,23 @@ export function TeamManagement() {
   const handleOpenEditModal = (teamUser: TeamUser) => {
     setEditingUser(teamUser);
     setEditRole(teamUser.role);
-    setEditStatus(teamUser.status === "ACTIVE");
+    setEditStatus(teamUser.status === 'ACTIVE');
   };
 
   const handleSaveUser = async () => {
     if (!editingUser) return;
     setSavingUser(true);
     try {
-      const newStatus = editStatus ? "ACTIVE" : "INACTIVE";
+      const newStatus = editStatus ? 'ACTIVE' : 'INACTIVE';
       await apiClient.updateUser(editingUser.id, {
         role: editRole,
         status: newStatus,
       });
-      toast.success("Membro atualizado com sucesso");
+      toast.success('Membro atualizado com sucesso');
       setEditingUser(null);
       fetchUsers();
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar membro");
+      toast.error(error.message || 'Erro ao atualizar membro');
     } finally {
       setSavingUser(false);
     }
@@ -193,29 +195,35 @@ export function TeamManagement() {
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) {
-      toast.error("Informe o email do convidado");
+      toast.error('Informe o email do convidado');
       return;
     }
     setSendingInvite(true);
     try {
-      const result = await apiClient.createInvitation({ email: inviteEmail.trim(), role: inviteRole });
+      const result = await apiClient.createInvitation({
+        email: inviteEmail.trim(),
+        role: inviteRole,
+      });
       setShowInviteModal(false);
-      setInviteEmail("");
-      setInviteRole("USER");
+      setInviteEmail('');
+      setInviteRole('USER');
       fetchInvitations();
       if (result.emailSent === false) {
-        toast.warning("Convite criado, mas o email não foi enviado", {
-          description: "O serviço de email não está configurado. Copie o link e envie manualmente.",
+        toast.warning('Convite criado, mas o email não foi enviado', {
+          description: 'O serviço de email não está configurado. Copie o link e envie manualmente.',
           action: result.invitationLink
-            ? { label: "Copiar link", onClick: () => navigator.clipboard.writeText(result.invitationLink!) }
+            ? {
+                label: 'Copiar link',
+                onClick: () => navigator.clipboard.writeText(result.invitationLink!),
+              }
             : undefined,
           duration: 15000,
         });
       } else {
-        toast.success("Convite enviado com sucesso");
+        toast.success('Convite enviado com sucesso');
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar convite");
+      toast.error(error.message || 'Erro ao enviar convite');
     } finally {
       setSendingInvite(false);
     }
@@ -226,18 +234,21 @@ export function TeamManagement() {
     try {
       const result = await apiClient.resendInvitation(id);
       if (result.emailSent) {
-        toast.success("Convite reenviado com sucesso");
+        toast.success('Convite reenviado com sucesso');
       } else {
-        toast.warning("Email não pôde ser enviado", {
-          description: "O serviço de email não está configurado. Copie o link e envie manualmente.",
+        toast.warning('Email não pôde ser enviado', {
+          description: 'O serviço de email não está configurado. Copie o link e envie manualmente.',
           action: result.invitationLink
-            ? { label: "Copiar link", onClick: () => navigator.clipboard.writeText(result.invitationLink!) }
+            ? {
+                label: 'Copiar link',
+                onClick: () => navigator.clipboard.writeText(result.invitationLink!),
+              }
             : undefined,
           duration: 15000,
         });
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao reenviar convite");
+      toast.error(error.message || 'Erro ao reenviar convite');
     } finally {
       setResendingId(null);
     }
@@ -247,19 +258,19 @@ export function TeamManagement() {
     if (!cancellingInvitation) return;
     try {
       await apiClient.cancelInvitation(cancellingInvitation.id);
-      toast.success("Convite cancelado com sucesso");
+      toast.success('Convite cancelado com sucesso');
       setCancellingInvitation(null);
       fetchInvitations();
     } catch (error: any) {
-      toast.error(error.message || "Erro ao cancelar convite");
+      toast.error(error.message || 'Erro ao cancelar convite');
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   };
 
@@ -293,9 +304,7 @@ export function TeamManagement() {
           <div className="p-6 border-b border-gray-300">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Gerenciamento de Equipe
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900">Gerenciamento de Equipe</h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Gerencie os membros da sua equipe e envie convites para novos colaboradores
                 </p>
@@ -427,7 +436,7 @@ export function TeamManagement() {
                               >
                                 <RefreshCw
                                   size={16}
-                                  className={`text-blue-600 ${resendingId === invitation.id ? "animate-spin" : ""}`}
+                                  className={`text-blue-600 ${resendingId === invitation.id ? 'animate-spin' : ''}`}
                                 />
                               </button>
                               <button
@@ -456,9 +465,7 @@ export function TeamManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Membro</DialogTitle>
-            <DialogDescription>
-              Altere o papel e o status de {editingUser?.name}
-            </DialogDescription>
+            <DialogDescription>Altere o papel e o status de {editingUser?.name}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -479,9 +486,7 @@ export function TeamManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Status</Label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {editStatus ? "Ativo" : "Inativo"}
-                </p>
+                <p className="text-sm text-gray-500 mt-0.5">{editStatus ? 'Ativo' : 'Inativo'}</p>
               </div>
               <Switch checked={editStatus} onCheckedChange={setEditStatus} />
             </div>
@@ -566,7 +571,7 @@ export function TeamManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar convite</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar o convite para{" "}
+              Tem certeza que deseja cancelar o convite para{' '}
               <strong>{cancellingInvitation?.email}</strong>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

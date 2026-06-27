@@ -28,12 +28,16 @@ describe('analyzeLeads — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeLeads(
       tenantId,
       file([{ name: 'Maria', email: 'MARIA@acme.com', phone: '' }]), // case-insensitive match
-      mapping,
+      mapping
     );
 
     expect(analysis.duplicateCount).toBe(1);
     expect(analysis.newCount).toBe(0);
-    expect(analysis.duplicates[0]).toMatchObject({ row: 1, matchedBy: 'email', value: 'maria@acme.com' });
+    expect(analysis.duplicates[0]).toMatchObject({
+      row: 1,
+      matchedBy: 'email',
+      value: 'maria@acme.com',
+    });
   });
 
   it('classifies a row matching an existing phone (no email match) as duplicate via phone', async () => {
@@ -45,7 +49,7 @@ describe('analyzeLeads — dedup decision (unit, mocked Prisma)', () => {
       tenantId,
       // Same digits (11999990000) after stripping non-digits, different formatting.
       file([{ name: 'Bob', email: 'bob@new.com', phone: '11 99999 0000' }]),
-      mapping,
+      mapping
     );
 
     expect(analysis.duplicateCount).toBe(1);
@@ -58,7 +62,7 @@ describe('analyzeLeads — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeLeads(
       tenantId,
       file([{ name: 'New Guy', email: 'new@guy.com', phone: '11888887777' }]),
-      mapping,
+      mapping
     );
 
     expect(analysis.newCount).toBe(1);
@@ -74,7 +78,7 @@ describe('analyzeLeads — dedup decision (unit, mocked Prisma)', () => {
         { name: 'A', email: 'dup@x.com', phone: '' },
         { name: 'B', email: 'dup@x.com', phone: '' },
       ]),
-      mapping,
+      mapping
     );
 
     expect(analysis.newCount).toBe(1);
@@ -91,7 +95,7 @@ describe('analyzeLeads — dedup decision (unit, mocked Prisma)', () => {
         { name: 'No Email', email: '', phone: '' },
         { name: 'Bad Email', email: 'not-an-email', phone: '' },
       ]),
-      mapping,
+      mapping
     );
 
     expect(analysis.errorCount).toBe(2);
@@ -106,7 +110,7 @@ describe('analyzeLeads — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeLeads(
       tenantId,
       file([{ name: '', email: 'x@y.com', phone: '' }]),
-      mapping,
+      mapping
     );
 
     expect(analysis.errorCount).toBe(1);

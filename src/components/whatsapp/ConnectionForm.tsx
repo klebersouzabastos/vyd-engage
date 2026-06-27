@@ -1,47 +1,43 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { WhatsAppConnection, WhatsAppProvider, ProviderConfig } from "../../types/whatsapp";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { validateConnectionConfig } from "../../utils/whatsapp/connectionValidator";
-import { Alert, AlertDescription } from "../ui/alert";
-import { AlertCircle, Info } from "lucide-react";
-import { useAutoFocus } from "../../hooks/useFocusManagement";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { WhatsAppConnection, WhatsAppProvider, ProviderConfig } from '../../types/whatsapp';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { validateConnectionConfig } from '../../utils/whatsapp/connectionValidator';
+import { Alert, AlertDescription } from '../ui/alert';
+import { AlertCircle, Info } from 'lucide-react';
+import { useAutoFocus } from '../../hooks/useFocusManagement';
 
 interface ConnectionFormProps {
   connection?: WhatsAppConnection;
-  onSubmit: (data: Omit<WhatsAppConnection, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  onSubmit: (data: Omit<WhatsAppConnection, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onCancel?: () => void;
 }
 
 const PROVIDER_OPTIONS = [
-  { value: "official", label: "WhatsApp Business API (Oficial)" },
-  { value: "evolution", label: "Evolution API" },
-  { value: "baileys", label: "Baileys/WPPConnect" },
-  { value: "chatapi", label: "ChatAPI" },
+  { value: 'official', label: 'WhatsApp Business API (Oficial)' },
+  { value: 'evolution', label: 'Evolution API' },
+  { value: 'baileys', label: 'Baileys/WPPConnect' },
+  { value: 'chatapi', label: 'ChatAPI' },
 ];
 
 export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFormProps) {
-  const [provider, setProvider] = useState<WhatsAppProvider>(
-    connection?.provider || "official"
-  );
-  const [name, setName] = useState(connection?.name || "");
+  const [provider, setProvider] = useState<WhatsAppProvider>(connection?.provider || 'official');
+  const [name, setName] = useState(connection?.name || '');
   const [isDefault, setIsDefault] = useState(connection?.isDefault || false);
   const [config, setConfig] = useState<ProviderConfig>(
     connection?.config || {
-      accessToken: "",
-      phoneNumberId: "",
+      accessToken: '',
+      phoneNumberId: '',
     }
   );
-  const [validation, setValidation] = useState<{ isValid: boolean; errors: string[]; warnings: string[] } | null>(null);
+  const [validation, setValidation] = useState<{
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
@@ -56,17 +52,17 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
     setProvider(newProvider);
     // Reset config based on provider
     switch (newProvider) {
-      case "official":
-        setConfig({ accessToken: "", phoneNumberId: "" });
+      case 'official':
+        setConfig({ accessToken: '', phoneNumberId: '' });
         break;
-      case "evolution":
-        setConfig({ instanceName: "", apiUrl: "", apiKey: "" });
+      case 'evolution':
+        setConfig({ instanceName: '', apiUrl: '', apiKey: '' });
         break;
-      case "baileys":
-        setConfig({ instanceName: "", apiUrl: "", apiKey: "" });
+      case 'baileys':
+        setConfig({ instanceName: '', apiUrl: '', apiKey: '' });
         break;
-      case "chatapi":
-        setConfig({ apiUrl: "", apiToken: "", instanceId: "" });
+      case 'chatapi':
+        setConfig({ apiUrl: '', apiToken: '', instanceId: '' });
         break;
     }
   };
@@ -77,7 +73,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validation?.isValid) {
       return;
     }
@@ -89,14 +85,14 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         provider,
         config,
         status: connection?.status || {
-          status: "disconnected",
+          status: 'disconnected',
         },
         isDefault,
-        phoneNumber: "phoneNumber" in config ? (config as any).phoneNumber : undefined,
+        phoneNumber: 'phoneNumber' in config ? (config as any).phoneNumber : undefined,
       });
     } catch (error) {
-      console.error("Erro ao salvar conexão:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao salvar conexão");
+      console.error('Erro ao salvar conexão:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao salvar conexão');
     } finally {
       setIsSubmitting(false);
     }
@@ -108,22 +104,20 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="accessToken">Access Token *</Label>
         <Input
           id="accessToken"
-          value={(config as any).accessToken || ""}
-          onChange={(e) => handleConfigChange("accessToken", e.target.value)}
+          value={(config as any).accessToken || ''}
+          onChange={(e) => handleConfigChange('accessToken', e.target.value)}
           placeholder="EAAey..."
           className="mt-1.5"
           type="password"
         />
-        <p className="text-xs text-gray-600 mt-1">
-          Token de acesso da API do WhatsApp Business
-        </p>
+        <p className="text-xs text-gray-600 mt-1">Token de acesso da API do WhatsApp Business</p>
       </div>
       <div>
         <Label htmlFor="phoneNumberId">Phone Number ID *</Label>
         <Input
           id="phoneNumberId"
-          value={(config as any).phoneNumberId || ""}
-          onChange={(e) => handleConfigChange("phoneNumberId", e.target.value)}
+          value={(config as any).phoneNumberId || ''}
+          onChange={(e) => handleConfigChange('phoneNumberId', e.target.value)}
           placeholder="123456789"
           className="mt-1.5"
         />
@@ -132,8 +126,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="businessAccountId">Business Account ID (Opcional)</Label>
         <Input
           id="businessAccountId"
-          value={(config as any).businessAccountId || ""}
-          onChange={(e) => handleConfigChange("businessAccountId", e.target.value)}
+          value={(config as any).businessAccountId || ''}
+          onChange={(e) => handleConfigChange('businessAccountId', e.target.value)}
           placeholder="123456789"
           className="mt-1.5"
         />
@@ -142,8 +136,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="webhookVerifyToken">Webhook Verify Token (Opcional)</Label>
         <Input
           id="webhookVerifyToken"
-          value={(config as any).webhookVerifyToken || ""}
-          onChange={(e) => handleConfigChange("webhookVerifyToken", e.target.value)}
+          value={(config as any).webhookVerifyToken || ''}
+          onChange={(e) => handleConfigChange('webhookVerifyToken', e.target.value)}
           placeholder="seu_token_secreto"
           className="mt-1.5"
         />
@@ -157,8 +151,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="instanceName">Nome da Instância *</Label>
         <Input
           id="instanceName"
-          value={(config as any).instanceName || ""}
-          onChange={(e) => handleConfigChange("instanceName", e.target.value)}
+          value={(config as any).instanceName || ''}
+          onChange={(e) => handleConfigChange('instanceName', e.target.value)}
           placeholder="minha-instancia"
           className="mt-1.5"
         />
@@ -167,8 +161,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="apiUrl">URL da API *</Label>
         <Input
           id="apiUrl"
-          value={(config as any).apiUrl || ""}
-          onChange={(e) => handleConfigChange("apiUrl", e.target.value)}
+          value={(config as any).apiUrl || ''}
+          onChange={(e) => handleConfigChange('apiUrl', e.target.value)}
           placeholder="https://api.evolution.com"
           className="mt-1.5"
         />
@@ -177,8 +171,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="apiKey">API Key *</Label>
         <Input
           id="apiKey"
-          value={(config as any).apiKey || ""}
-          onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+          value={(config as any).apiKey || ''}
+          onChange={(e) => handleConfigChange('apiKey', e.target.value)}
           placeholder="sua_api_key"
           className="mt-1.5"
           type="password"
@@ -188,8 +182,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="webhookUrl">Webhook URL (Opcional)</Label>
         <Input
           id="webhookUrl"
-          value={(config as any).webhookUrl || ""}
-          onChange={(e) => handleConfigChange("webhookUrl", e.target.value)}
+          value={(config as any).webhookUrl || ''}
+          onChange={(e) => handleConfigChange('webhookUrl', e.target.value)}
           placeholder="https://seu-webhook.com"
           className="mt-1.5"
         />
@@ -203,8 +197,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="baileys-instanceName">Nome da Instância *</Label>
         <Input
           id="baileys-instanceName"
-          value={(config as any).instanceName || ""}
-          onChange={(e) => handleConfigChange("instanceName", e.target.value)}
+          value={(config as any).instanceName || ''}
+          onChange={(e) => handleConfigChange('instanceName', e.target.value)}
           placeholder="minha-instancia"
           className="mt-1.5"
         />
@@ -213,8 +207,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="baileys-apiUrl">URL da API *</Label>
         <Input
           id="baileys-apiUrl"
-          value={(config as any).apiUrl || ""}
-          onChange={(e) => handleConfigChange("apiUrl", e.target.value)}
+          value={(config as any).apiUrl || ''}
+          onChange={(e) => handleConfigChange('apiUrl', e.target.value)}
           placeholder="https://api.wppconnect.io"
           className="mt-1.5"
         />
@@ -223,8 +217,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="baileys-apiKey">API Key *</Label>
         <Input
           id="baileys-apiKey"
-          value={(config as any).apiKey || ""}
-          onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+          value={(config as any).apiKey || ''}
+          onChange={(e) => handleConfigChange('apiKey', e.target.value)}
           placeholder="sua_api_key"
           className="mt-1.5"
           type="password"
@@ -245,8 +239,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="chatapi-apiUrl">URL da API *</Label>
         <Input
           id="chatapi-apiUrl"
-          value={(config as any).apiUrl || ""}
-          onChange={(e) => handleConfigChange("apiUrl", e.target.value)}
+          value={(config as any).apiUrl || ''}
+          onChange={(e) => handleConfigChange('apiUrl', e.target.value)}
           placeholder="https://api.chatapi.com"
           className="mt-1.5"
         />
@@ -255,8 +249,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="chatapi-apiToken">API Token *</Label>
         <Input
           id="chatapi-apiToken"
-          value={(config as any).apiToken || ""}
-          onChange={(e) => handleConfigChange("apiToken", e.target.value)}
+          value={(config as any).apiToken || ''}
+          onChange={(e) => handleConfigChange('apiToken', e.target.value)}
           placeholder="seu_token"
           className="mt-1.5"
           type="password"
@@ -266,8 +260,8 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
         <Label htmlFor="chatapi-instanceId">Instance ID *</Label>
         <Input
           id="chatapi-instanceId"
-          value={(config as any).instanceId || ""}
-          onChange={(e) => handleConfigChange("instanceId", e.target.value)}
+          value={(config as any).instanceId || ''}
+          onChange={(e) => handleConfigChange('instanceId', e.target.value)}
           placeholder="123456789"
           className="mt-1.5"
         />
@@ -277,13 +271,13 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
 
   const renderProviderFields = () => {
     switch (provider) {
-      case "official":
+      case 'official':
         return renderOfficialFields();
-      case "evolution":
+      case 'evolution':
         return renderEvolutionFields();
-      case "baileys":
+      case 'baileys':
         return renderBaileysFields();
-      case "chatapi":
+      case 'chatapi':
         return renderChatAPIFields();
       default:
         return null;
@@ -373,7 +367,7 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
           disabled={!validation?.isValid || isSubmitting}
           className="bg-primary hover:bg-primary-dark"
         >
-          {isSubmitting ? "Salvando..." : connection ? "Atualizar" : "Criar Conexão"}
+          {isSubmitting ? 'Salvando...' : connection ? 'Atualizar' : 'Criar Conexão'}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -384,11 +378,3 @@ export function ConnectionForm({ connection, onSubmit, onCancel }: ConnectionFor
     </form>
   );
 }
-
-
-
-
-
-
-
-

@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { MessageSquare, Send, Loader2 } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { MessageSquare, Send, Loader2 } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { toast } from 'sonner';
 
 interface WhatsAppSendPanelProps {
   leadId: string;
@@ -16,11 +16,11 @@ interface WhatsAppSendPanelProps {
 
 export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendPanelProps) {
   const [connections, setConnections] = useState<any[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState("");
-  const [messageType, setMessageType] = useState<"text" | "template">("text");
-  const [content, setContent] = useState("");
+  const [selectedConnection, setSelectedConnection] = useState('');
+  const [messageType, setMessageType] = useState<'text' | 'template'>('text');
+  const [content, setContent] = useState('');
   const [templates, setTemplates] = useState<any[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState('');
   const [templateParams, setTemplateParams] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,7 +30,7 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
   }, []);
 
   useEffect(() => {
-    if (selectedConnection && messageType === "template") {
+    if (selectedConnection && messageType === 'template') {
       loadTemplates(selectedConnection);
     }
   }, [selectedConnection, messageType]);
@@ -38,13 +38,13 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
   const loadConnections = async () => {
     try {
       const data = await apiClient.getWhatsAppConnections();
-      const connected = (data || []).filter((c: any) => c.status === "CONNECTED");
+      const connected = (data || []).filter((c: any) => c.status === 'CONNECTED');
       setConnections(connected);
       if (connected.length > 0) {
         setSelectedConnection(connected[0].id);
       }
     } catch (error) {
-      console.error("Erro ao carregar conexões:", error);
+      console.error('Erro ao carregar conexões:', error);
     } finally {
       setLoading(false);
     }
@@ -55,19 +55,19 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
       const result = await apiClient.getWhatsAppTemplates(connectionId);
       setTemplates(result?.data || []);
     } catch (error) {
-      console.error("Erro ao carregar templates:", error);
+      console.error('Erro ao carregar templates:', error);
       setTemplates([]);
     }
   };
 
   const handleSend = async () => {
     if (!selectedConnection || !leadPhone) {
-      toast.error("Selecione uma conexão e verifique o telefone do lead");
+      toast.error('Selecione uma conexão e verifique o telefone do lead');
       return;
     }
 
-    if (messageType === "text" && !content.trim()) {
-      toast.error("Digite uma mensagem");
+    if (messageType === 'text' && !content.trim()) {
+      toast.error('Digite uma mensagem');
       return;
     }
 
@@ -78,15 +78,15 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
         to: leadPhone,
         type: messageType,
         content: content,
-        templateName: messageType === "template" ? selectedTemplate : undefined,
-        templateParams: messageType === "template" ? templateParams : undefined,
+        templateName: messageType === 'template' ? selectedTemplate : undefined,
+        templateParams: messageType === 'template' ? templateParams : undefined,
         leadId,
       });
-      toast.success("Mensagem WhatsApp enviada!");
-      setContent("");
+      toast.success('Mensagem WhatsApp enviada!');
+      setContent('');
       setTemplateParams([]);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar mensagem");
+      toast.error(error.message || 'Erro ao enviar mensagem');
     } finally {
       setSending(false);
     }
@@ -147,18 +147,22 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
 
       <div>
         <Label className="text-xs">Tipo</Label>
-        <Select value={messageType} onValueChange={(v) => setMessageType(v as "text" | "template")}>
+        <Select value={messageType} onValueChange={(v) => setMessageType(v as 'text' | 'template')}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="text" className="text-xs">Texto Livre</SelectItem>
-            <SelectItem value="template" className="text-xs">Template</SelectItem>
+            <SelectItem value="text" className="text-xs">
+              Texto Livre
+            </SelectItem>
+            <SelectItem value="template" className="text-xs">
+              Template
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {messageType === "text" ? (
+      {messageType === 'text' ? (
         <div>
           <Textarea
             value={content}
@@ -199,7 +203,7 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
             variant="outline"
             size="sm"
             className="text-xs h-7"
-            onClick={() => setTemplateParams([...templateParams, ""])}
+            onClick={() => setTemplateParams([...templateParams, ''])}
           >
             + Parâmetro
           </Button>
@@ -212,7 +216,11 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
         size="sm"
         className="w-full bg-green-600 hover:bg-green-700"
       >
-        {sending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+        {sending ? (
+          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+        ) : (
+          <Send className="h-4 w-4 mr-1" />
+        )}
         Enviar
       </Button>
     </div>

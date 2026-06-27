@@ -18,18 +18,8 @@ export function FieldSuccess({ isValid = false, touched = false, className }: Fi
       className={cn('flex items-center gap-1.5 mt-1 text-sm text-green-600', className)}
       aria-hidden="true"
     >
-      <CheckCircle2
-        size={16}
-        className="flex-shrink-0"
-      />
+      <CheckCircle2 size={16} className="flex-shrink-0" />
       <span className="sr-only">Campo válido</span>
     </div>
   );
 }
-
-
-
-
-
-
-

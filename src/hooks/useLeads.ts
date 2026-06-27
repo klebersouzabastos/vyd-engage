@@ -3,7 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Lead } from '../types';
-import { mapStatusToBackend, mapSourceToBackend, mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
+import {
+  mapStatusToBackend,
+  mapSourceToBackend,
+  mapStatusFromBackend,
+  mapSourceFromBackend,
+} from '../utils/leadEnums';
 import { useSocket } from './useSocket';
 
 export interface LeadsFilters {
@@ -57,7 +62,8 @@ function buildServerParams(filters?: LeadsFilters): Record<string, string | numb
   if (filters.search) serverParams.search = filters.search;
   if (filters.tagId) serverParams.tagId = filters.tagId;
   if (filters.assignedTo) serverParams.assignedTo = filters.assignedTo;
-  if (filters.isContact !== undefined && filters.isContact !== '') serverParams.isContact = String(filters.isContact);
+  if (filters.isContact !== undefined && filters.isContact !== '')
+    serverParams.isContact = String(filters.isContact);
   return serverParams;
 }
 
@@ -77,7 +83,8 @@ function transformLead(lead: ApiLead): Lead {
     customFields: lead.customFields || {},
     notes: lead.notes || '',
     assignedTo: lead.assignedTo || '',
-    tags: lead.tags?.map((lt) => (typeof lt === 'string' ? lt : lt.tag?.id || lt.tagId || '')) || [],
+    tags:
+      lead.tags?.map((lt) => (typeof lt === 'string' ? lt : lt.tag?.id || lt.tagId || '')) || [],
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt,
   } as Lead;
@@ -116,13 +123,15 @@ export function useLeads() {
         if (!old || typeof old !== 'object') return old;
         const prev = old as Record<string, unknown>;
         if (Array.isArray(prev)) {
-          return prev.map((l: Record<string, unknown>) => l.id === payload.lead?.id ? payload.lead : l);
+          return prev.map((l: Record<string, unknown>) =>
+            l.id === payload.lead?.id ? payload.lead : l
+          );
         }
         if (Array.isArray((prev as { leads?: unknown[] }).leads)) {
           return {
             ...prev,
-            leads: (prev as { leads: Record<string, unknown>[] }).leads.map(
-              (l) => l.id === payload.lead?.id ? payload.lead : l
+            leads: (prev as { leads: Record<string, unknown>[] }).leads.map((l) =>
+              l.id === payload.lead?.id ? payload.lead : l
             ),
           };
         }
@@ -165,68 +174,77 @@ export function useLeads() {
     setFilters(next);
   }, []);
 
-  const createLead = useCallback(async (data: Partial<Lead>) => {
-    try {
-      const result = await apiClient.createLead({
-        name: data.name || '',
-        email: data.email,
-        phone: data.phone,
-        company: data.company,
-        position: data.position,
-        status: data.status ? mapStatusToBackend(data.status) : undefined,
-        source: data.source ? mapSourceToBackend(data.source) : undefined,
-        score: data.score || 0,
-        customFields: data.customFields || {},
-        notes: data.notes,
-        assignedTo: data.assignedTo,
-        tagIds: data.tags || [],
-      });
-      const newLead = transformLead(result as unknown as ApiLead);
-      toast.success('Lead criado com sucesso!');
-      await queryClient.invalidateQueries({ queryKey: ['leads'] });
-      return newLead;
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao criar lead');
-      throw err;
-    }
-  }, [queryClient]);
+  const createLead = useCallback(
+    async (data: Partial<Lead>) => {
+      try {
+        const result = await apiClient.createLead({
+          name: data.name || '',
+          email: data.email,
+          phone: data.phone,
+          company: data.company,
+          position: data.position,
+          status: data.status ? mapStatusToBackend(data.status) : undefined,
+          source: data.source ? mapSourceToBackend(data.source) : undefined,
+          score: data.score || 0,
+          customFields: data.customFields || {},
+          notes: data.notes,
+          assignedTo: data.assignedTo,
+          tagIds: data.tags || [],
+        });
+        const newLead = transformLead(result as unknown as ApiLead);
+        toast.success('Lead criado com sucesso!');
+        await queryClient.invalidateQueries({ queryKey: ['leads'] });
+        return newLead;
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao criar lead');
+        throw err;
+      }
+    },
+    [queryClient]
+  );
 
-  const updateLead = useCallback(async (id: string, data: Partial<Lead>) => {
-    try {
-      const result = await apiClient.updateLead(id, {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        company: data.company,
-        position: data.position,
-        status: data.status ? mapStatusToBackend(data.status) : undefined,
-        source: data.source ? mapSourceToBackend(data.source) : undefined,
-        score: data.score,
-        customFields: data.customFields,
-        notes: data.notes,
-        assignedTo: data.assignedTo,
-        tagIds: data.tags || [],
-      });
-      const updatedLead = transformLead(result as unknown as ApiLead);
-      toast.success('Lead atualizado com sucesso!');
-      await queryClient.invalidateQueries({ queryKey: ['leads'] });
-      return updatedLead;
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar lead');
-      throw err;
-    }
-  }, [queryClient]);
+  const updateLead = useCallback(
+    async (id: string, data: Partial<Lead>) => {
+      try {
+        const result = await apiClient.updateLead(id, {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          company: data.company,
+          position: data.position,
+          status: data.status ? mapStatusToBackend(data.status) : undefined,
+          source: data.source ? mapSourceToBackend(data.source) : undefined,
+          score: data.score,
+          customFields: data.customFields,
+          notes: data.notes,
+          assignedTo: data.assignedTo,
+          tagIds: data.tags || [],
+        });
+        const updatedLead = transformLead(result as unknown as ApiLead);
+        toast.success('Lead atualizado com sucesso!');
+        await queryClient.invalidateQueries({ queryKey: ['leads'] });
+        return updatedLead;
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao atualizar lead');
+        throw err;
+      }
+    },
+    [queryClient]
+  );
 
-  const deleteLead = useCallback(async (id: string) => {
-    try {
-      await apiClient.deleteLead(id);
-      toast.success('Lead deletado com sucesso!');
-      await queryClient.invalidateQueries({ queryKey: ['leads'] });
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao deletar lead');
-      throw err;
-    }
-  }, [queryClient]);
+  const deleteLead = useCallback(
+    async (id: string) => {
+      try {
+        await apiClient.deleteLead(id);
+        toast.success('Lead deletado com sucesso!');
+        await queryClient.invalidateQueries({ queryKey: ['leads'] });
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao deletar lead');
+        throw err;
+      }
+    },
+    [queryClient]
+  );
 
   return {
     leads: query.data?.leads ?? [],

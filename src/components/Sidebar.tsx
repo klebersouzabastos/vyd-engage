@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
   Users,
@@ -24,35 +24,51 @@ import {
   Upload,
   Mail,
   ScanSearch,
-} from "lucide-react";
-import { useCompany } from "../contexts/CompanyContext";
-import { useAuth } from "../contexts/AuthContext";
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
-import { useTasks } from "../hooks/useTasks";
+} from 'lucide-react';
+import { useCompany } from '../contexts/CompanyContext';
+import { useAuth } from '../contexts/AuthContext';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { useTasks } from '../hooks/useTasks';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/app", tourId: "sidebar-dashboard" },
-  { icon: Users, label: "Leads", path: "/app/leads", tourId: "sidebar-leads" },
-  { icon: Building2, label: "Empresas", path: "/app/companies", tourId: "sidebar-companies" },
-  { icon: UsersRound, label: "Equipe", path: "/app/team", tourId: "sidebar-team", adminOnly: true },
-  { icon: Handshake, label: "Deals", path: "/app/deals", tourId: "sidebar-deals" },
-  { icon: TrendingUp, label: "Previsão", path: "/app/forecast", tourId: "sidebar-forecast" },
-  { icon: Filter, label: "Funil Conv.", path: "/app/funnel", tourId: "sidebar-funnel" },
-  { icon: GitBranch, label: "Pipeline", path: "/app/pipeline", tourId: "sidebar-pipeline" },
-  { icon: Inbox, label: "Inbox", path: "/app/inbox", tourId: "sidebar-inbox" },
-  { icon: Zap, label: "Automações", path: "/app/automations", tourId: "sidebar-automations" },
-  { icon: Mail, label: "Campanhas", path: "/app/campaigns", tourId: "sidebar-campaigns" },
-  { icon: CheckSquare, label: "Tarefas", path: "/app/tasks", tourId: "sidebar-tasks" },
-  { icon: BarChart3, label: "Relatórios", path: "/app/reports", tourId: "sidebar-reports" },
-  { icon: ScanSearch, label: "Inteligência de Mercado", path: "/app/deep-research", tourId: "sidebar-deep-research" },
-  { icon: TrendingUp, label: "Performance", path: "/app/performance", tourId: "sidebar-performance" },
-  { icon: CreditCard, label: "Billing", path: "/app/billing", tourId: "sidebar-billing" },
-  { icon: Webhook, label: "Webhooks", path: "/app/settings/webhooks", tourId: "sidebar-webhooks" },
-  { icon: KeyRound, label: "API Keys", path: "/app/settings/api-keys", tourId: "sidebar-api-keys" },
-  { icon: Package, label: "Produtos", path: "/app/settings/products", tourId: "sidebar-products" },
-  { icon: Upload, label: "Importar", path: "/app/settings/import", tourId: "sidebar-import" },
-  { icon: Settings, label: "Configurações", path: "/app/settings", tourId: "sidebar-settings" },
-  { icon: Shield, label: "Plataforma", path: "/app/admin", tourId: "sidebar-platform-admin", platformAdminOnly: true },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/app', tourId: 'sidebar-dashboard' },
+  { icon: Users, label: 'Leads', path: '/app/leads', tourId: 'sidebar-leads' },
+  { icon: Building2, label: 'Empresas', path: '/app/companies', tourId: 'sidebar-companies' },
+  { icon: UsersRound, label: 'Equipe', path: '/app/team', tourId: 'sidebar-team', adminOnly: true },
+  { icon: Handshake, label: 'Deals', path: '/app/deals', tourId: 'sidebar-deals' },
+  { icon: TrendingUp, label: 'Previsão', path: '/app/forecast', tourId: 'sidebar-forecast' },
+  { icon: Filter, label: 'Funil Conv.', path: '/app/funnel', tourId: 'sidebar-funnel' },
+  { icon: GitBranch, label: 'Pipeline', path: '/app/pipeline', tourId: 'sidebar-pipeline' },
+  { icon: Inbox, label: 'Inbox', path: '/app/inbox', tourId: 'sidebar-inbox' },
+  { icon: Zap, label: 'Automações', path: '/app/automations', tourId: 'sidebar-automations' },
+  { icon: Mail, label: 'Campanhas', path: '/app/campaigns', tourId: 'sidebar-campaigns' },
+  { icon: CheckSquare, label: 'Tarefas', path: '/app/tasks', tourId: 'sidebar-tasks' },
+  { icon: BarChart3, label: 'Relatórios', path: '/app/reports', tourId: 'sidebar-reports' },
+  {
+    icon: ScanSearch,
+    label: 'Inteligência de Mercado',
+    path: '/app/deep-research',
+    tourId: 'sidebar-deep-research',
+  },
+  {
+    icon: TrendingUp,
+    label: 'Performance',
+    path: '/app/performance',
+    tourId: 'sidebar-performance',
+  },
+  { icon: CreditCard, label: 'Billing', path: '/app/billing', tourId: 'sidebar-billing' },
+  { icon: Webhook, label: 'Webhooks', path: '/app/settings/webhooks', tourId: 'sidebar-webhooks' },
+  { icon: KeyRound, label: 'API Keys', path: '/app/settings/api-keys', tourId: 'sidebar-api-keys' },
+  { icon: Package, label: 'Produtos', path: '/app/settings/products', tourId: 'sidebar-products' },
+  { icon: Upload, label: 'Importar', path: '/app/settings/import', tourId: 'sidebar-import' },
+  { icon: Settings, label: 'Configurações', path: '/app/settings', tourId: 'sidebar-settings' },
+  {
+    icon: Shield,
+    label: 'Plataforma',
+    path: '/app/admin',
+    tourId: 'sidebar-platform-admin',
+    platformAdminOnly: true,
+  },
 ];
 
 interface SidebarProps {
@@ -62,17 +78,22 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-export function Sidebar({ open = false, onClose, collapsed = false, onToggleCollapse }: SidebarProps) {
+export function Sidebar({
+  open = false,
+  onClose,
+  collapsed = false,
+  onToggleCollapse,
+}: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logo, companyName } = useCompany();
   const { tasks } = useTasks();
-  
+
   const { user } = useAuth();
 
   const userProfile = {
-    name: user?.name || "Usuário",
-    email: user?.email || "",
+    name: user?.name || 'Usuário',
+    email: user?.email || '',
     avatar: user?.avatar || null,
   };
 
@@ -100,9 +121,9 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
 
   const getInitials = (name: string) => {
     return name
-      .split(" ")
+      .split(' ')
       .map((n) => n[0])
-      .join("")
+      .join('')
       .toUpperCase()
       .slice(0, 2);
   };
@@ -111,7 +132,7 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate('/login');
   };
 
   const handleNavClick = () => {
@@ -122,13 +143,14 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
   return (
     <aside
       aria-label="Menu principal"
-      data-sidebar={collapsed ? "collapsed" : "expanded"}
+      data-sidebar={collapsed ? 'collapsed' : 'expanded'}
       className={`
       w-64 bg-gray-50 border-r border-gray-300 h-screen fixed left-0 top-0 flex flex-col
       z-50 transition-all duration-300 ease-in-out overflow-hidden
       ${open ? 'translate-x-0' : '-translate-x-full'}
       md:translate-x-0
-    `}>
+    `}
+    >
       {/* Logo + Collapse toggle */}
       <div className="h-16 flex items-center border-b border-gray-300 justify-between">
         <Link
@@ -153,61 +175,73 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
                 <span className="text-white font-bold text-sm">F</span>
               </div>
             )}
-            {!collapsed && <span className="font-semibold text-gray-900 text-sm truncate">{companyName}</span>}
+            {!collapsed && (
+              <span className="font-semibold text-gray-900 text-sm truncate">{companyName}</span>
+            )}
           </div>
         </Link>
         {/* Collapse toggle — desktop only */}
         <button
           onClick={onToggleCollapse}
           className="hidden md:flex items-center justify-center p-2 mr-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-          title={collapsed ? "Expandir menu" : "Recolher menu"}
+          aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          title={collapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
       </div>
 
       {/* Menu Items */}
-      <nav aria-label="Navegação do aplicativo" className={`flex-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
-        {menuItems.filter(item => (!item.adminOnly || user?.role === 'ADMIN') && (!item.platformAdminOnly || user?.isPlatformAdmin)).map((item) => {
-          const isActive = item.path.includes('?')
-            ? `${location.pathname}${location.search}` === item.path
-            : location.pathname === item.path;
-          const Icon = item.icon;
+      <nav
+        aria-label="Navegação do aplicativo"
+        className={`flex-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}
+      >
+        {menuItems
+          .filter(
+            (item) =>
+              (!item.adminOnly || user?.role === 'ADMIN') &&
+              (!item.platformAdminOnly || user?.isPlatformAdmin)
+          )
+          .map((item) => {
+            const isActive = item.path.includes('?')
+              ? `${location.pathname}${location.search}` === item.path
+              : location.pathname === item.path;
+            const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={handleNavClick}
-              aria-current={isActive ? 'page' : undefined}
-              data-tour={item.tourId}
-              title={collapsed ? item.label : undefined}
-              className={`
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={handleNavClick}
+                aria-current={isActive ? 'page' : undefined}
+                data-tour={item.tourId}
+                title={collapsed ? item.label : undefined}
+                className={`
                 flex items-center rounded-lg mb-1 transition-colors relative
                 ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'}
-                ${isActive
-                  ? 'bg-primary text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                ${
+                  isActive
+                    ? 'bg-primary text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }
               `}
-            >
-              <Icon size={20} className="flex-shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-              {item.path === "/app/tasks" && pendingTasksCount > 0 && (
-                collapsed ? (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                    {pendingTasksCount}
-                  </span>
-                ) : (
-                  <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                    {pendingTasksCount}
-                  </span>
-                )
-              )}
-            </Link>
-          );
-        })}
+              >
+                <Icon size={20} className="flex-shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+                {item.path === '/app/tasks' &&
+                  pendingTasksCount > 0 &&
+                  (collapsed ? (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      {pendingTasksCount}
+                    </span>
+                  ) : (
+                    <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                      {pendingTasksCount}
+                    </span>
+                  ))}
+              </Link>
+            );
+          })}
       </nav>
 
       {/* User Profile */}
@@ -218,19 +252,13 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
           className={`
             transition-colors block
             ${collapsed ? 'p-2 flex justify-center' : 'p-4'}
-            ${location.pathname === "/app/profile"
-              ? "bg-primary-50"
-              : "hover:bg-gray-100"
-            }
+            ${location.pathname === '/app/profile' ? 'bg-primary-50' : 'hover:bg-gray-100'}
           `}
         >
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
             <Avatar className={`flex-shrink-0 ${collapsed ? 'w-8 h-8' : 'w-10 h-10'}`}>
               {userProfile.avatar ? (
-                <AvatarImage
-                  src={userProfile.avatar}
-                  alt={userProfile.name}
-                />
+                <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
               ) : null}
               <AvatarFallback className="bg-primary text-white text-sm font-medium">
                 {getInitials(userProfile.name)}
@@ -249,7 +277,7 @@ export function Sidebar({ open = false, onClose, collapsed = false, onToggleColl
         <button
           onClick={handleLogout}
           aria-label="Sair da conta"
-          title={collapsed ? "Sair" : undefined}
+          title={collapsed ? 'Sair' : undefined}
           className={`
             w-full border-t border-gray-300 flex items-center text-gray-600 hover:bg-gray-200 hover:text-error transition-colors
             ${collapsed ? 'justify-center p-3' : 'gap-3 p-4'}

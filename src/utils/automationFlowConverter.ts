@@ -1,7 +1,7 @@
 // Types for the visual builder
 export interface FlowNode {
   id: string;
-  type: "trigger" | "action" | "condition";
+  type: 'trigger' | 'action' | 'condition';
   position: { x: number; y: number };
   data: {
     nodeType: string; // e.g., "lead_created", "send_email", "condition"
@@ -25,37 +25,37 @@ export interface FlowData {
 
 // Trigger types and their labels
 export const TRIGGER_TYPES = [
-  { value: "lead_created", label: "Lead Criado" },
-  { value: "lead_updated", label: "Lead Atualizado" },
-  { value: "status_changed", label: "Status Alterado" },
-  { value: "tag_added", label: "Tag Adicionada" },
-  { value: "deal_created", label: "Deal Criado" },
-  { value: "deal_stage_changed", label: "Estágio do Deal Alterado" },
-  { value: "task_completed", label: "Tarefa Concluída" },
-  { value: "form_submitted", label: "Formulário Preenchido" },
+  { value: 'lead_created', label: 'Lead Criado' },
+  { value: 'lead_updated', label: 'Lead Atualizado' },
+  { value: 'status_changed', label: 'Status Alterado' },
+  { value: 'tag_added', label: 'Tag Adicionada' },
+  { value: 'deal_created', label: 'Deal Criado' },
+  { value: 'deal_stage_changed', label: 'Estágio do Deal Alterado' },
+  { value: 'task_completed', label: 'Tarefa Concluída' },
+  { value: 'form_submitted', label: 'Formulário Preenchido' },
 ] as const;
 
 // Action types and their labels
 export const ACTION_TYPES = [
-  { value: "send_email", label: "Enviar E-mail", icon: "email" },
-  { value: "create_task", label: "Criar Tarefa", icon: "task" },
-  { value: "update_field", label: "Atualizar Campo", icon: "update" },
-  { value: "add_tag", label: "Adicionar Tag", icon: "tag" },
-  { value: "remove_tag", label: "Remover Tag", icon: "untag" },
-  { value: "send_webhook", label: "Enviar Webhook", icon: "webhook" },
-  { value: "wait_delay", label: "Aguardar", icon: "delay" },
-  { value: "send_whatsapp", label: "Enviar WhatsApp", icon: "whatsapp" },
+  { value: 'send_email', label: 'Enviar E-mail', icon: 'email' },
+  { value: 'create_task', label: 'Criar Tarefa', icon: 'task' },
+  { value: 'update_field', label: 'Atualizar Campo', icon: 'update' },
+  { value: 'add_tag', label: 'Adicionar Tag', icon: 'tag' },
+  { value: 'remove_tag', label: 'Remover Tag', icon: 'untag' },
+  { value: 'send_webhook', label: 'Enviar Webhook', icon: 'webhook' },
+  { value: 'wait_delay', label: 'Aguardar', icon: 'delay' },
+  { value: 'send_whatsapp', label: 'Enviar WhatsApp', icon: 'whatsapp' },
 ] as const;
 
 // Condition operators
 export const CONDITION_OPERATORS = [
-  { value: "equals", label: "igual a" },
-  { value: "not_equals", label: "diferente de" },
-  { value: "contains", label: "contém" },
-  { value: "greater_than", label: "maior que" },
-  { value: "less_than", label: "menor que" },
-  { value: "is_empty", label: "está vazio" },
-  { value: "is_not_empty", label: "não está vazio" },
+  { value: 'equals', label: 'igual a' },
+  { value: 'not_equals', label: 'diferente de' },
+  { value: 'contains', label: 'contém' },
+  { value: 'greater_than', label: 'maior que' },
+  { value: 'less_than', label: 'menor que' },
+  { value: 'is_empty', label: 'está vazio' },
+  { value: 'is_not_empty', label: 'não está vazio' },
 ] as const;
 
 let _nodeIdCounter = 0;
@@ -88,9 +88,9 @@ export function flowToAutomation(flowData: FlowData): {
 } {
   const { nodes, edges } = flowData;
 
-  const triggerNode = nodes.find((n) => n.type === "trigger");
+  const triggerNode = nodes.find((n) => n.type === 'trigger');
   if (!triggerNode) {
-    return { trigger: { type: "lead_created", entry: [] }, steps: [], conditions: null };
+    return { trigger: { type: 'lead_created', entry: [] }, steps: [], conditions: null };
   }
 
   // Ids dos alvos das arestas que saem de `nodeId` (opcionalmente filtrando por handle).
@@ -98,8 +98,7 @@ export function flowToAutomation(flowData: FlowData): {
     edges
       .filter(
         (e) =>
-          e.source === nodeId &&
-          (handle === undefined || (e.sourceHandle || undefined) === handle),
+          e.source === nodeId && (handle === undefined || (e.sourceHandle || undefined) === handle)
       )
       .map((e) => e.target);
 
@@ -117,21 +116,21 @@ export function flowToAutomation(flowData: FlowData): {
     visited.add(nodeId);
 
     const node = nodes.find((n) => n.id === nodeId);
-    if (!node || node.type === "trigger") return;
+    if (!node || node.type === 'trigger') return;
 
-    if (node.type === "condition") {
-      const trueNext = outIds(nodeId, "true");
-      const falseNext = outIds(nodeId, "false");
+    if (node.type === 'condition') {
+      const trueNext = outIds(nodeId, 'true');
+      const falseNext = outIds(nodeId, 'false');
 
       steps.push({
         id: nodeId,
         order: steps.length,
-        type: "condition",
+        type: 'condition',
         config: {
-          field: node.data.config.field || "status",
-          operator: node.data.config.operator || "equals",
-          value: node.data.config.value ?? "",
-          logic: node.data.config.logic || "AND",
+          field: node.data.config.field || 'status',
+          operator: node.data.config.operator || 'equals',
+          value: node.data.config.value ?? '',
+          logic: node.data.config.logic || 'AND',
           conditions: node.data.config.conditions || [],
         },
         trueNext,
@@ -146,26 +145,26 @@ export function flowToAutomation(flowData: FlowData): {
     const actionType = node.data.nodeType;
     const next = outIds(nodeId);
 
-    if (actionType === "wait_delay") {
+    if (actionType === 'wait_delay') {
       steps.push({
         id: nodeId,
         order: steps.length,
-        type: "delay",
+        type: 'delay',
         delay:
           node.data.config.delay ||
-          `${node.data.config.duration || 1}${node.data.config.unit || "d"}`,
+          `${node.data.config.duration || 1}${node.data.config.unit || 'd'}`,
         config: { ...node.data.config },
         next,
       });
-    } else if (actionType === "update_field") {
+    } else if (actionType === 'update_field') {
       // Remapeia o par genérico {field,value} para a chave tipada do engine.
-      const field = node.data.config.field || "status";
+      const field = node.data.config.field || 'status';
       const raw = node.data.config.value;
-      const value = field === "score" ? Number(raw) : raw;
+      const value = field === 'score' ? Number(raw) : raw;
       steps.push({
         id: nodeId,
         order: steps.length,
-        type: "update_lead",
+        type: 'update_lead',
         config: { [field]: value },
         next,
       });
@@ -209,18 +208,17 @@ export function automationToFlow(automation: {
 
   // Create trigger node
   const triggerData =
-    typeof automation.trigger === "string"
+    typeof automation.trigger === 'string'
       ? { type: automation.trigger }
-      : automation.trigger || { type: "lead_created" };
+      : automation.trigger || { type: 'lead_created' };
 
   const triggerNodeId = generateNodeId();
   const triggerLabel =
-    TRIGGER_TYPES.find((t) => t.value === triggerData.type)?.label ||
-    triggerData.type;
+    TRIGGER_TYPES.find((t) => t.value === triggerData.type)?.label || triggerData.type;
 
   nodes.push({
     id: triggerNodeId,
-    type: "trigger",
+    type: 'trigger',
     position: { x: centerX, y: currentY },
     data: {
       nodeType: triggerData.type,
@@ -240,12 +238,12 @@ export function automationToFlow(automation: {
     let nodeType = step.type;
     let config: Record<string, any> = { ...step.config, delay: step.delay };
 
-    if (nodeType === "update_lead") {
-      const key = Object.keys(step.config || {})[0] || "status";
-      nodeType = "update_field";
+    if (nodeType === 'update_lead') {
+      const key = Object.keys(step.config || {})[0] || 'status';
+      nodeType = 'update_field';
       config = { field: key, value: step.config?.[key] };
-    } else if (nodeType === "delay") {
-      nodeType = "wait_delay";
+    } else if (nodeType === 'delay') {
+      nodeType = 'wait_delay';
       if (config.duration === undefined && step.delay) {
         const m = String(step.delay).match(/^(\d+)\s*([nhdw])$/);
         if (m) {
@@ -255,14 +253,14 @@ export function automationToFlow(automation: {
       }
     }
 
-    const isCondition = step.type === "condition";
+    const isCondition = step.type === 'condition';
     const label = isCondition
-      ? "Condição"
+      ? 'Condição'
       : ACTION_TYPES.find((a) => a.value === nodeType)?.label || nodeType;
 
     return {
       id: stepNodeId(step, i),
-      type: isCondition ? "condition" : "action",
+      type: isCondition ? 'condition' : 'action',
       position: { x: centerX, y: currentY + i * ySpacing },
       data: { nodeType, label, config },
     };
@@ -272,7 +270,7 @@ export function automationToFlow(automation: {
   const isGraph = apiSteps.some(
     (s: any) =>
       s &&
-      (s.id || Array.isArray(s.next) || Array.isArray(s.trueNext) || Array.isArray(s.falseNext)),
+      (s.id || Array.isArray(s.next) || Array.isArray(s.trueNext) || Array.isArray(s.falseNext))
   );
 
   if (isGraph) {
@@ -286,22 +284,32 @@ export function automationToFlow(automation: {
           ? [stepNodeId(apiSteps[0], 0)]
           : [];
     entry.forEach((target) =>
-      edges.push({ id: generateEdgeId(triggerNodeId, target), source: triggerNodeId, target }),
+      edges.push({ id: generateEdgeId(triggerNodeId, target), source: triggerNodeId, target })
     );
 
     // Arestas de cada step (condição usa handles true/false).
     apiSteps.forEach((step: any, i: number) => {
       const source = stepNodeId(step, i);
-      if (step.type === "condition") {
+      if (step.type === 'condition') {
         (step.trueNext || []).forEach((target: string) =>
-          edges.push({ id: `${generateEdgeId(source, target)}_true`, source, target, sourceHandle: "true" }),
+          edges.push({
+            id: `${generateEdgeId(source, target)}_true`,
+            source,
+            target,
+            sourceHandle: 'true',
+          })
         );
         (step.falseNext || []).forEach((target: string) =>
-          edges.push({ id: `${generateEdgeId(source, target)}_false`, source, target, sourceHandle: "false" }),
+          edges.push({
+            id: `${generateEdgeId(source, target)}_false`,
+            source,
+            target,
+            sourceHandle: 'false',
+          })
         );
       } else {
         (step.next || []).forEach((target: string) =>
-          edges.push({ id: generateEdgeId(source, target), source, target }),
+          edges.push({ id: generateEdgeId(source, target), source, target })
         );
       }
     });
@@ -330,11 +338,11 @@ export function createDefaultFlow(): FlowData {
     nodes: [
       {
         id: triggerNodeId,
-        type: "trigger",
+        type: 'trigger',
         position: { x: 300, y: 60 },
         data: {
-          nodeType: "lead_created",
-          label: "Lead Criado",
+          nodeType: 'lead_created',
+          label: 'Lead Criado',
           config: {},
         },
       },

@@ -1,17 +1,13 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { Building2, Target, Zap, Check, ArrowLeft, MessageSquare, ArrowRight } from "lucide-react";
-import { useWhatsApp } from "../contexts/WhatsAppContext";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "../components/ui/dialog";
-import { WhatsAppConnectionsModal } from "../components/whatsapp/WhatsAppConnectionsModal";
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { Building2, Target, Zap, Check, ArrowLeft, MessageSquare, ArrowRight } from 'lucide-react';
+import { useWhatsApp } from '../contexts/WhatsAppContext';
+import { Dialog, DialogContent, DialogTrigger } from '../components/ui/dialog';
+import { WhatsAppConnectionsModal } from '../components/whatsapp/WhatsAppConnectionsModal';
 
 export function Onboarding() {
   const navigate = useNavigate();
@@ -19,17 +15,17 @@ export function Onboarding() {
   const [step, setStep] = useState(1);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    companyName: "",
-    companySize: "",
-    objective: "",
-    email: "",
+    companyName: '',
+    companySize: '',
+    objective: '',
+    email: '',
   });
 
   const handleNext = () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
-      navigate("/app");
+      navigate('/app');
     }
   };
 
@@ -43,11 +39,11 @@ export function Onboarding() {
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-8">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
-      
+
       <div className="w-full max-w-2xl">
         {/* Back Button */}
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
         >
           <ArrowLeft size={20} />
@@ -66,10 +62,12 @@ export function Onboarding() {
         <div className="flex items-center justify-between mb-12">
           {[1, 2, 3].map((num) => (
             <div key={num} className="flex items-center flex-1">
-              <div className={`
+              <div
+                className={`
                 w-10 h-10 rounded-full flex items-center justify-center
                 ${step >= num ? 'bg-primary text-white' : 'bg-white text-gray-600 border-2 border-gray-300'}
-              `}>
+              `}
+              >
                 {step > num ? <Check size={20} /> : num}
               </div>
               {num < 3 && (
@@ -129,21 +127,37 @@ export function Onboarding() {
 
               <div className="space-y-3">
                 {[
-                  { value: "capturar", label: "Capturar mais leads", desc: "Formulários e integrações" },
-                  { value: "organizar", label: "Organizar vendas", desc: "Pipeline e CRM completo" },
-                  { value: "automatizar", label: "Automatizar follow-ups", desc: "WhatsApp e e-mail" },
+                  {
+                    value: 'capturar',
+                    label: 'Capturar mais leads',
+                    desc: 'Formulários e integrações',
+                  },
+                  {
+                    value: 'organizar',
+                    label: 'Organizar vendas',
+                    desc: 'Pipeline e CRM completo',
+                  },
+                  {
+                    value: 'automatizar',
+                    label: 'Automatizar follow-ups',
+                    desc: 'WhatsApp e e-mail',
+                  },
                 ].map((option) => (
                   <label
                     key={option.value}
+                    htmlFor={`objective-${option.value}`}
+                    aria-label={option.label}
                     className={`
                       flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all
-                      ${formData.objective === option.value 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-gray-300 hover:border-primary/50'
+                      ${
+                        formData.objective === option.value
+                          ? 'border-primary bg-primary/5'
+                          : 'border-gray-300 hover:border-primary/50'
                       }
                     `}
                   >
                     <input
+                      id={`objective-${option.value}`}
                       type="radio"
                       name="objective"
                       value={option.value}
@@ -173,7 +187,8 @@ export function Onboarding() {
                 <div>
                   <Label>Conexões WhatsApp</Label>
                   <p className="text-sm text-gray-600 mb-3">
-                    Configure suas integrações com WhatsApp (opcional). Você pode configurar depois nas Configurações.
+                    Configure suas integrações com WhatsApp (opcional). Você pode configurar depois
+                    nas Configurações.
                   </p>
                   {connections.length > 0 ? (
                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -203,7 +218,8 @@ export function Onboarding() {
                     </div>
                   )}
                   <p className="text-xs text-gray-600 mt-2">
-                    Suportamos WhatsApp Business API oficial, Evolution API, Baileys/WPPConnect e ChatAPI
+                    Suportamos WhatsApp Business API oficial, Evolution API, Baileys/WPPConnect e
+                    ChatAPI
                   </p>
                 </div>
                 <div>
@@ -236,17 +252,14 @@ export function Onboarding() {
               {step === 3 && (
                 <Button
                   variant="outline"
-                  onClick={() => navigate("/app")}
+                  onClick={() => navigate('/app')}
                   className="text-gray-600 border-gray-300 hover:bg-gray-100"
                 >
                   Configurar depois
                 </Button>
               )}
-              <Button
-                onClick={handleNext}
-                className="bg-primary hover:bg-primary-dark"
-              >
-                {step === 3 ? "Começar a usar" : "Continuar"}
+              <Button onClick={handleNext} className="bg-primary hover:bg-primary-dark">
+                {step === 3 ? 'Começar a usar' : 'Continuar'}
               </Button>
             </div>
           </div>

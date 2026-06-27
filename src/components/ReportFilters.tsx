@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Input } from "./ui/input";
-import { Checkbox } from "./ui/checkbox";
-import { Button } from "./ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Calendar } from "./ui/calendar";
-import { X, Calendar as CalendarIcon, Filter } from "lucide-react";
-import { ReportFilter } from "../types";
-import { useTags } from "../contexts/TagsContext";
-import { getAllAutomations } from "../utils/automations";
+import { useState } from 'react';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Input } from './ui/input';
+import { Checkbox } from './ui/checkbox';
+import { Button } from './ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
+import { X, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { ReportFilter } from '../types';
+import { useTags } from '../contexts/TagsContext';
+import { getAllAutomations } from '../utils/automations';
 // Função auxiliar para formatar data
 const formatDate = (date: Date): string => {
   const day = date.getDate().toString().padStart(2, '0');
@@ -21,47 +21,47 @@ const formatDate = (date: Date): string => {
 interface ReportFiltersProps {
   filters: ReportFilter | undefined;
   onChange: (filters: ReportFilter) => void;
-  dataSource?: "leads" | "pipeline" | "automations" | "tasks" | "interactions";
+  dataSource?: 'leads' | 'pipeline' | 'automations' | 'tasks' | 'interactions';
 }
 
 const PERIOD_OPTIONS = [
-  { value: "today", label: "Hoje" },
-  { value: "week", label: "Últimos 7 dias" },
-  { value: "month", label: "Último mês" },
-  { value: "quarter", label: "Último trimestre" },
-  { value: "year", label: "Último ano" },
-  { value: "all", label: "Todo o período" },
-  { value: "custom", label: "Período customizado" },
+  { value: 'today', label: 'Hoje' },
+  { value: 'week', label: 'Últimos 7 dias' },
+  { value: 'month', label: 'Último mês' },
+  { value: 'quarter', label: 'Último trimestre' },
+  { value: 'year', label: 'Último ano' },
+  { value: 'all', label: 'Todo o período' },
+  { value: 'custom', label: 'Período customizado' },
 ];
 
 const STATUS_OPTIONS = [
-  { value: "novo", label: "Novo" },
-  { value: "contato", label: "Em Contato" },
-  { value: "fechado", label: "Fechado" },
-  { value: "perdido", label: "Perdido" },
+  { value: 'novo', label: 'Novo' },
+  { value: 'contato', label: 'Em Contato' },
+  { value: 'fechado', label: 'Fechado' },
+  { value: 'perdido', label: 'Perdido' },
 ];
 
 const SOURCE_OPTIONS = [
-  { value: "meta", label: "Meta Ads" },
-  { value: "google", label: "Google Ads" },
-  { value: "organico", label: "Orgânico" },
-  { value: "manual", label: "Manual" },
+  { value: 'meta', label: 'Meta Ads' },
+  { value: 'google', label: 'Google Ads' },
+  { value: 'organico', label: 'Orgânico' },
+  { value: 'manual', label: 'Manual' },
 ];
 
 const PRIORITY_OPTIONS = [
-  { value: "LOW", label: "Baixa" },
-  { value: "MEDIUM", label: "Média" },
-  { value: "HIGH", label: "Alta" },
-  { value: "URGENT", label: "Urgente" },
+  { value: 'LOW', label: 'Baixa' },
+  { value: 'MEDIUM', label: 'Média' },
+  { value: 'HIGH', label: 'Alta' },
+  { value: 'URGENT', label: 'Urgente' },
 ];
 
-export function ReportFilters({ filters, onChange, dataSource = "leads" }: ReportFiltersProps) {
+export function ReportFilters({ filters, onChange, dataSource = 'leads' }: ReportFiltersProps) {
   const { tags } = useTags();
   const automations = getAllAutomations();
-  
-  const [dateRangeType, setDateRangeType] = useState<"today" | "week" | "month" | "quarter" | "year" | "all" | "custom">(
-    filters?.dateRange?.type || "month"
-  );
+
+  const [dateRangeType, setDateRangeType] = useState<
+    'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'
+  >(filters?.dateRange?.type || 'month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(
     filters?.dateRange?.start ? new Date(filters.dateRange.start) : undefined
   );
@@ -72,12 +72,12 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
   const handlePeriodChange = (value: string) => {
     const newType = value as typeof dateRangeType;
     setDateRangeType(newType);
-    
+
     onChange({
       ...filters,
       dateRange: {
         type: newType,
-        ...(newType === "custom" && customStartDate && customEndDate
+        ...(newType === 'custom' && customStartDate && customEndDate
           ? {
               start: customStartDate.toISOString(),
               end: customEndDate.toISOString(),
@@ -90,12 +90,12 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
   const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
     setCustomStartDate(start);
     setCustomEndDate(end);
-    
-    if (start && end && dateRangeType === "custom") {
+
+    if (start && end && dateRangeType === 'custom') {
       onChange({
         ...filters,
         dateRange: {
-          type: "custom",
+          type: 'custom',
           start: start.toISOString(),
           end: end.toISOString(),
         },
@@ -107,8 +107,8 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
     const currentStatuses = filters?.status || [];
     const newStatuses = checked
       ? [...currentStatuses, status]
-      : currentStatuses.filter(s => s !== status);
-    
+      : currentStatuses.filter((s) => s !== status);
+
     onChange({
       ...filters,
       status: newStatuses.length > 0 ? newStatuses : undefined,
@@ -119,8 +119,8 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
     const currentSources = filters?.source || [];
     const newSources = checked
       ? [...currentSources, source]
-      : currentSources.filter(s => s !== source);
-    
+      : currentSources.filter((s) => s !== source);
+
     onChange({
       ...filters,
       source: newSources.length > 0 ? newSources : undefined,
@@ -129,10 +129,8 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
 
   const handleTagChange = (tagId: string, checked: boolean) => {
     const currentTags = filters?.tags || [];
-    const newTags = checked
-      ? [...currentTags, tagId]
-      : currentTags.filter(t => t !== tagId);
-    
+    const newTags = checked ? [...currentTags, tagId] : currentTags.filter((t) => t !== tagId);
+
     onChange({
       ...filters,
       tags: newTags.length > 0 ? newTags : undefined,
@@ -143,8 +141,8 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
     const currentAutomations = filters?.automationIds || [];
     const newAutomations = checked
       ? [...currentAutomations, automationId]
-      : currentAutomations.filter(id => id !== automationId);
-    
+      : currentAutomations.filter((id) => id !== automationId);
+
     onChange({
       ...filters,
       automationIds: newAutomations.length > 0 ? newAutomations : undefined,
@@ -155,8 +153,8 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
     const currentPriorities = filters?.priority || [];
     const newPriorities = checked
       ? [...currentPriorities, priority]
-      : currentPriorities.filter(p => p !== priority);
-    
+      : currentPriorities.filter((p) => p !== priority);
+
     onChange({
       ...filters,
       priority: newPriorities.length > 0 ? newPriorities : undefined,
@@ -165,18 +163,18 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
 
   const clearFilters = () => {
     onChange({});
-    setDateRangeType("month");
+    setDateRangeType('month');
     setCustomStartDate(undefined);
     setCustomEndDate(undefined);
   };
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     (filters?.status && filters.status.length > 0) ||
     (filters?.source && filters.source.length > 0) ||
     (filters?.tags && filters.tags.length > 0) ||
     (filters?.automationIds && filters.automationIds.length > 0) ||
     (filters?.priority && filters.priority.length > 0) ||
-    (filters?.dateRange && filters.dateRange.type !== "month");
+    (filters?.dateRange && filters.dateRange.type !== 'month');
 
   return (
     <div className="space-y-6">
@@ -188,7 +186,7 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIOD_OPTIONS.map(option => (
+            {PERIOD_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -196,7 +194,7 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
           </SelectContent>
         </Select>
 
-        {dateRangeType === "custom" && (
+        {dateRangeType === 'custom' && (
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
               <Label>Data Inicial</Label>
@@ -207,7 +205,7 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
                     className="w-full mt-1.5 justify-start text-left font-normal"
                   >
                     <CalendarIcon size={16} className="mr-2" />
-                    {customStartDate ? formatDate(customStartDate) : "Selecione"}
+                    {customStartDate ? formatDate(customStartDate) : 'Selecione'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -229,7 +227,7 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
                     className="w-full mt-1.5 justify-start text-left font-normal"
                   >
                     <CalendarIcon size={16} className="mr-2" />
-                    {customEndDate ? formatDate(customEndDate) : "Selecione"}
+                    {customEndDate ? formatDate(customEndDate) : 'Selecione'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -247,18 +245,20 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
       </div>
 
       {/* Filtros específicos por fonte de dados */}
-      {(dataSource === "leads" || dataSource === "pipeline") && (
+      {(dataSource === 'leads' || dataSource === 'pipeline') && (
         <>
           {/* Status */}
           <div>
             <Label>Status</Label>
             <div className="mt-2 space-y-2">
-              {STATUS_OPTIONS.map(option => (
+              {STATUS_OPTIONS.map((option) => (
                 <div key={option.value} className="flex items-center space-x-2">
                   <Checkbox
                     id={`status-${option.value}`}
                     checked={filters?.status?.includes(option.value) || false}
-                    onCheckedChange={(checked) => handleStatusChange(option.value, checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      handleStatusChange(option.value, checked as boolean)
+                    }
                   />
                   <Label
                     htmlFor={`status-${option.value}`}
@@ -275,12 +275,14 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
           <div>
             <Label>Origem</Label>
             <div className="mt-2 space-y-2">
-              {SOURCE_OPTIONS.map(option => (
+              {SOURCE_OPTIONS.map((option) => (
                 <div key={option.value} className="flex items-center space-x-2">
                   <Checkbox
                     id={`source-${option.value}`}
                     checked={filters?.source?.includes(option.value) || false}
-                    onCheckedChange={(checked) => handleSourceChange(option.value, checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      handleSourceChange(option.value, checked as boolean)
+                    }
                   />
                   <Label
                     htmlFor={`source-${option.value}`}
@@ -298,7 +300,7 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
             <div>
               <Label>Tags</Label>
               <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                {tags.map(tag => (
+                {tags.map((tag) => (
                   <div key={tag.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`tag-${tag.id}`}
@@ -326,12 +328,14 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
             <div>
               <Label>Automações</Label>
               <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                {automations.map(auto => (
+                {automations.map((auto) => (
                   <div key={auto.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`automation-${auto.id}`}
                       checked={filters?.automationIds?.includes(auto.id) || false}
-                      onCheckedChange={(checked) => handleAutomationChange(auto.id, checked as boolean)}
+                      onCheckedChange={(checked) =>
+                        handleAutomationChange(auto.id, checked as boolean)
+                      }
                     />
                     <Label
                       htmlFor={`automation-${auto.id}`}
@@ -348,16 +352,18 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
       )}
 
       {/* Filtros para tarefas */}
-      {dataSource === "tasks" && (
+      {dataSource === 'tasks' && (
         <div>
           <Label>Prioridade</Label>
           <div className="mt-2 space-y-2">
-            {PRIORITY_OPTIONS.map(option => (
+            {PRIORITY_OPTIONS.map((option) => (
               <div key={option.value} className="flex items-center space-x-2">
                 <Checkbox
                   id={`priority-${option.value}`}
                   checked={filters?.priority?.includes(option.value) || false}
-                  onCheckedChange={(checked) => handlePriorityChange(option.value, checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    handlePriorityChange(option.value, checked as boolean)
+                  }
                 />
                 <Label
                   htmlFor={`priority-${option.value}`}
@@ -373,11 +379,7 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
 
       {/* Botão Limpar Filtros */}
       {hasActiveFilters && (
-        <Button
-          variant="outline"
-          onClick={clearFilters}
-          className="w-full gap-2"
-        >
+        <Button variant="outline" onClick={clearFilters} className="w-full gap-2">
           <X size={16} />
           Limpar Filtros
         </Button>
@@ -385,4 +387,3 @@ export function ReportFilters({ filters, onChange, dataSource = "leads" }: Repor
     </div>
   );
 }
-

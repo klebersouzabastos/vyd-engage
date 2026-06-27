@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Mail, Send, Loader2 } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Mail, Send, Loader2 } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { toast } from 'sonner';
 
 interface EmailSendPanelProps {
   leadId: string;
@@ -16,9 +16,9 @@ interface EmailSendPanelProps {
 
 export function EmailSendPanel({ leadId, leadEmail, leadName }: EmailSendPanelProps) {
   const [configs, setConfigs] = useState<any[]>([]);
-  const [selectedConfig, setSelectedConfig] = useState("");
-  const [subject, setSubject] = useState("");
-  const [content, setContent] = useState("");
+  const [selectedConfig, setSelectedConfig] = useState('');
+  const [subject, setSubject] = useState('');
+  const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +35,7 @@ export function EmailSendPanel({ leadId, leadEmail, leadName }: EmailSendPanelPr
         setSelectedConfig(verified[0].id);
       }
     } catch (error) {
-      console.error("Erro ao carregar configs:", error);
+      console.error('Erro ao carregar configs:', error);
     } finally {
       setLoading(false);
     }
@@ -43,12 +43,12 @@ export function EmailSendPanel({ leadId, leadEmail, leadName }: EmailSendPanelPr
 
   const handleSend = async () => {
     if (!selectedConfig || !leadEmail) {
-      toast.error("Selecione uma configuração e verifique o email do lead");
+      toast.error('Selecione uma configuração e verifique o email do lead');
       return;
     }
 
     if (!subject.trim() || !content.trim()) {
-      toast.error("Preencha o assunto e a mensagem");
+      toast.error('Preencha o assunto e a mensagem');
       return;
     }
 
@@ -58,14 +58,14 @@ export function EmailSendPanel({ leadId, leadEmail, leadName }: EmailSendPanelPr
         configId: selectedConfig,
         to: leadEmail,
         subject,
-        html: `<div style="font-family: Arial, sans-serif; line-height: 1.6;">${content.replace(/\n/g, "<br/>")}</div>`,
+        html: `<div style="font-family: Arial, sans-serif; line-height: 1.6;">${content.replace(/\n/g, '<br/>')}</div>`,
         leadId,
       });
-      toast.success("Email enviado!");
-      setSubject("");
-      setContent("");
+      toast.success('Email enviado!');
+      setSubject('');
+      setContent('');
     } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar email");
+      toast.error(error.message || 'Erro ao enviar email');
     } finally {
       setSending(false);
     }
@@ -144,13 +144,12 @@ export function EmailSendPanel({ leadId, leadEmail, leadName }: EmailSendPanelPr
         />
       </div>
 
-      <Button
-        onClick={handleSend}
-        disabled={sending}
-        size="sm"
-        className="w-full"
-      >
-        {sending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+      <Button onClick={handleSend} disabled={sending} size="sm" className="w-full">
+        {sending ? (
+          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+        ) : (
+          <Send className="h-4 w-4 mr-1" />
+        )}
         Enviar Email
       </Button>
     </div>

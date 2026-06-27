@@ -1,24 +1,37 @@
-import { useSearchParams } from "react-router";
-import { Header } from "../components/Header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Bell, Building2, Plug, CreditCard, Tag, Target, Shield, Webhook, Key, Calendar, Sparkles, TrendingUp } from "lucide-react";
-import { TagManager } from "../components/TagManager";
-import { CompanyTab } from "../components/settings/CompanyTab";
-import { NotificationsTab } from "../components/settings/NotificationsTab";
-import { IntegrationsTab } from "../components/settings/IntegrationsTab";
-import { BillingTab } from "../components/settings/BillingTab";
-import { CustomFieldsTab } from "../components/settings/CustomFieldsTab";
-import { LeadScoringTab } from "../components/settings/LeadScoringTab";
-import { TwoFactorSetup } from "../components/settings/TwoFactorSetup";
-import { WebhooksTab } from "../components/settings/WebhooksTab";
-import { ApiKeysTab } from "../components/settings/ApiKeysTab";
-import { CalendarTab } from "../components/settings/CalendarTab";
-import { AISettingsTab } from "../components/settings/AISettingsTab";
-import { GoalsTab } from "../components/settings/GoalsTab";
+import { useSearchParams } from 'react-router';
+import { Header } from '../components/Header';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+  Bell,
+  Building2,
+  Plug,
+  CreditCard,
+  Tag,
+  Target,
+  Shield,
+  Webhook,
+  Key,
+  Calendar,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
+import { TagManager } from '../components/TagManager';
+import { CompanyTab } from '../components/settings/CompanyTab';
+import { NotificationsTab } from '../components/settings/NotificationsTab';
+import { IntegrationsTab } from '../components/settings/IntegrationsTab';
+import { BillingTab } from '../components/settings/BillingTab';
+import { CustomFieldsTab } from '../components/settings/CustomFieldsTab';
+import { LeadScoringTab } from '../components/settings/LeadScoringTab';
+import { TwoFactorSetup } from '../components/settings/TwoFactorSetup';
+import { WebhooksTab } from '../components/settings/WebhooksTab';
+import { ApiKeysTab } from '../components/settings/ApiKeysTab';
+import { CalendarTab } from '../components/settings/CalendarTab';
+import { AISettingsTab } from '../components/settings/AISettingsTab';
+import { GoalsTab } from '../components/settings/GoalsTab';
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "company";
+  const activeTab = searchParams.get('tab') || 'company';
 
   return (
     <div className="min-h-screen">

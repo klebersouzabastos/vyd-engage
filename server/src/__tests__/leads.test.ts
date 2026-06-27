@@ -80,14 +80,7 @@ describe('Lead Service', () => {
       const result = await leadService.findAll(testTenantId, {
         status: 'NEW',
       });
-      expect(result.leads.every(lead => lead.status === 'NEW')).toBe(true);
+      expect(result.leads.every((lead) => lead.status === 'NEW')).toBe(true);
     });
   });
 });
-
-
-
-
-
-
-

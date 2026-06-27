@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { useNotifications } from "../contexts/NotificationContext";
-import { useTasks } from "../hooks/useTasks";
+import { useEffect } from 'react';
+import { useNotifications } from '../contexts/NotificationContext';
+import { useTasks } from '../hooks/useTasks';
 
 export function TaskNotificationChecker() {
   const { addNotification, notifications } = useNotifications();
@@ -29,15 +29,15 @@ export function TaskNotificationChecker() {
       overdue.forEach((task: any) => {
         const alreadyNotified = notifications.some(
           (n) =>
-            n.type === "task_overdue" &&
+            n.type === 'task_overdue' &&
             n.metadata?.taskId === task.id &&
             new Date(n.timestamp).toDateString() === new Date().toDateString()
         );
 
         if (!alreadyNotified) {
           addNotification({
-            type: "task_overdue",
-            title: "Tarefa Vencida",
+            type: 'task_overdue',
+            title: 'Tarefa Vencida',
             message: `A tarefa "${task.title}" está vencida`,
             link: `/app/tasks`,
             metadata: { taskId: task.id },
@@ -49,15 +49,15 @@ export function TaskNotificationChecker() {
       todayTasks.forEach((task: any) => {
         const alreadyNotified = notifications.some(
           (n) =>
-            n.type === "task_due" &&
+            n.type === 'task_due' &&
             n.metadata?.taskId === task.id &&
             new Date(n.timestamp).toDateString() === new Date().toDateString()
         );
 
         if (!alreadyNotified) {
           addNotification({
-            type: "task_due",
-            title: "Tarefa Vence Hoje",
+            type: 'task_due',
+            title: 'Tarefa Vence Hoje',
             message: `A tarefa "${task.title}" vence hoje`,
             link: `/app/tasks`,
             metadata: { taskId: task.id },
@@ -77,5 +77,3 @@ export function TaskNotificationChecker() {
 
   return null;
 }
-
-

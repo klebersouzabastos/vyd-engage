@@ -35,8 +35,20 @@ interface LeadContext {
     score: number;
     createdAt: Date;
   };
-  interactions: { createdAt: Date; type: string; direction: string; subject: string | null; content: string }[];
-  deals: { name: string; value: unknown; stage: DealStage; probability: number; expectedCloseDate: Date | null }[];
+  interactions: {
+    createdAt: Date;
+    type: string;
+    direction: string;
+    subject: string | null;
+    content: string;
+  }[];
+  deals: {
+    name: string;
+    value: unknown;
+    stage: DealStage;
+    probability: number;
+    expectedCloseDate: Date | null;
+  }[];
   pendingTasks: { title: string; dueDate: Date | null }[];
 }
 
@@ -64,7 +76,12 @@ async function buildLeadContext(tenantId: string, leadId: string): Promise<LeadC
       select: { createdAt: true, type: true, direction: true, subject: true, content: true },
     }),
     prisma.deal.findMany({
-      where: { leadId, tenantId, deletedAt: null, stage: { notIn: [DealStage.WON, DealStage.LOST] } },
+      where: {
+        leadId,
+        tenantId,
+        deletedAt: null,
+        stage: { notIn: [DealStage.WON, DealStage.LOST] },
+      },
       orderBy: { updatedAt: 'desc' },
       select: { name: true, value: true, stage: true, probability: true, expectedCloseDate: true },
     }),
@@ -114,7 +131,9 @@ function renderTrendFact(interactions: LeadContext['interactions']): string {
 }
 
 function fmtBRL(value: unknown): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+    Number(value)
+  );
 }
 
 /** Render the aggregated context into a compact, grounded text block. */
@@ -191,7 +210,10 @@ export const aiAssistantService = {
     const ctx = await buildLeadContext(tenantId, leadId);
     if (!ctx) {
       // Lead not found is a 404-style condition handled by the route via null check.
-      throw Object.assign(new Error('Lead não encontrado'), { statusCode: 404, isOperational: true });
+      throw Object.assign(new Error('Lead não encontrado'), {
+        statusCode: 404,
+        isOperational: true,
+      });
     }
 
     const facts = renderContextFacts(ctx);
@@ -249,17 +271,15 @@ export const aiAssistantService = {
    * Returns the Vercel AI SDK streamText result so the route can pipe tokens.
    * Throws 404 if the lead is missing, 503 if AI is not configured.
    */
-  async streamLeadChat(
-    tenantId: string,
-    leadId: string,
-    message: string,
-    history: ChatMessage[]
-  ) {
+  async streamLeadChat(tenantId: string, leadId: string, message: string, history: ChatMessage[]) {
     if (!isAIEnabled()) throw aiUnavailableError();
 
     const ctx = await buildLeadContext(tenantId, leadId);
     if (!ctx) {
-      throw Object.assign(new Error('Lead não encontrado'), { statusCode: 404, isOperational: true });
+      throw Object.assign(new Error('Lead não encontrado'), {
+        statusCode: 404,
+        isOperational: true,
+      });
     }
 
     const model = getActiveModel();
@@ -293,7 +313,9 @@ ${facts}`;
       temperature: 0.4,
       maxOutputTokens: 700,
       // Log metadata only (tokens, latency, lead_id) — never the content (reqs 34, 36).
-      onFinish: (event: { usage?: { totalTokens?: number; inputTokens?: number; outputTokens?: number } }) => {
+      onFinish: (event: {
+        usage?: { totalTokens?: number; inputTokens?: number; outputTokens?: number };
+      }) => {
         logAiUsage({
           feature: 'lead-chat',
           tenantId,

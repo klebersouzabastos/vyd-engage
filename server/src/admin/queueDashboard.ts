@@ -48,7 +48,9 @@ export async function mountQueueDashboard(app: Express): Promise<void> {
   const user = process.env.QUEUE_DASHBOARD_USER;
   const pass = process.env.QUEUE_DASHBOARD_PASS;
   if (!user || !pass) {
-    logger.warn('Queue dashboard disabled: set QUEUE_DASHBOARD_USER and QUEUE_DASHBOARD_PASS to enable');
+    logger.warn(
+      'Queue dashboard disabled: set QUEUE_DASHBOARD_USER and QUEUE_DASHBOARD_PASS to enable'
+    );
     return;
   }
 

@@ -13,13 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { apiClient } from '../../services/api/client';
 import { useEmpreendimentos, useEmpreendimentoActions } from '../../hooks/useComercial';
 import type { Empreendimento } from '../../types/comercial';
@@ -56,7 +50,9 @@ export function EmpreendimentosManager({ companyId }: { companyId: string }) {
       ) : items.length === 0 ? (
         <div className="py-12 text-center">
           <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500 text-sm">Nenhum empreendimento cadastrado para esta empresa.</p>
+          <p className="text-gray-500 text-sm">
+            Nenhum empreendimento cadastrado para esta empresa.
+          </p>
         </div>
       ) : (
         <ul className="divide-y divide-gray-100">
@@ -95,7 +91,11 @@ export function EmpreendimentosManager({ companyId }: { companyId: string }) {
         </ul>
       )}
 
-      <CreateEmpreendimentoDialog open={createOpen} onOpenChange={setCreateOpen} companyId={companyId} />
+      <CreateEmpreendimentoDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        companyId={companyId}
+      />
       {contactsTarget && (
         <LinkContactsDialog
           open={!!contactsTarget}
@@ -161,21 +161,38 @@ function CreateEmpreendimentoDialog({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Novo empreendimento</DialogTitle>
-          <DialogDescription>Obra/projeto do cliente, sempre vinculado a esta empresa.</DialogDescription>
+          <DialogDescription>
+            Obra/projeto do cliente, sempre vinculado a esta empresa.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
             <Label htmlFor="emp-name">Nome</Label>
-            <Input id="emp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Obra Torre Norte" />
+            <Input
+              id="emp-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex.: Obra Torre Norte"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="emp-type">Tipo</Label>
-              <Input id="emp-type" value={type} onChange={(e) => setType(e.target.value)} placeholder="obra, planta…" />
+              <Input
+                id="emp-type"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                placeholder="obra, planta…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="emp-phase">Fase</Label>
-              <Input id="emp-phase" value={phase} onChange={(e) => setPhase(e.target.value)} placeholder="projeto, execução…" />
+              <Input
+                id="emp-phase"
+                value={phase}
+                onChange={(e) => setPhase(e.target.value)}
+                placeholder="projeto, execução…"
+              />
             </div>
           </div>
           <div className="space-y-1.5">
@@ -185,27 +202,44 @@ function CreateEmpreendimentoDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="emp-value">Valor estimado (R$)</Label>
-              <Input id="emp-value" type="number" min={0} value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} />
+              <Input
+                id="emp-value"
+                type="number"
+                min={0}
+                value={estimatedValue}
+                onChange={(e) => setEstimatedValue(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="emp-date">Decisão prevista</Label>
-              <Input id="emp-date" type="date" value={expectedDecisionDate} onChange={(e) => setExpectedDecisionDate(e.target.value)} />
+              <Input
+                id="emp-date"
+                type="date"
+                value={expectedDecisionDate}
+                onChange={(e) => setExpectedDecisionDate(e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit} disabled={!name.trim() || saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Criar
@@ -256,7 +290,9 @@ function LinkContactsDialog({
       <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
           <DialogTitle>Contatos · {empreendimento.name}</DialogTitle>
-          <DialogDescription>Marque os contatos da empresa que pertencem a este empreendimento.</DialogDescription>
+          <DialogDescription>
+            Marque os contatos da empresa que pertencem a este empreendimento.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-1 overflow-y-auto py-2" style={{ maxHeight: '50vh' }}>
           {leadsQuery.isLoading ? (

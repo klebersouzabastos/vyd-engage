@@ -58,7 +58,13 @@ export const empreendimentoService = {
 
   async findAll(
     tenantId: string,
-    filters?: { companyId?: string; status?: string; search?: string; page?: number; limit?: number },
+    filters?: {
+      companyId?: string;
+      status?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    }
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;

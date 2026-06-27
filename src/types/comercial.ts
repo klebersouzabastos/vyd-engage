@@ -22,12 +22,7 @@ export type CommercialRoadmapStatus =
   | 'PERDIDO'
   | 'ARQUIVADO';
 
-export type StakeholderRole =
-  | 'DECISOR'
-  | 'INFLUENCIADOR'
-  | 'TECNICO'
-  | 'APROVADOR'
-  | 'USUARIO';
+export type StakeholderRole = 'DECISOR' | 'INFLUENCIADOR' | 'TECNICO' | 'APROVADOR' | 'USUARIO';
 
 export type StakeholderPosture = 'FAVORAVEL' | 'NEUTRO' | 'CONTRARIO' | 'DESCONHECIDO';
 

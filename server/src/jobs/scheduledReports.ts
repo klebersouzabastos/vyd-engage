@@ -5,9 +5,9 @@ import { sendEmail } from '../services/emailService.js';
 interface ReportSchedule {
   enabled: boolean;
   frequency: 'daily' | 'weekly' | 'monthly';
-  dayOfWeek?: number;    // 0-6 (0 = Sunday)
-  dayOfMonth?: number;   // 1-28
-  time: string;          // "HH:MM"
+  dayOfWeek?: number; // 0-6 (0 = Sunday)
+  dayOfMonth?: number; // 1-28
+  time: string; // "HH:MM"
   recipients: string[];
   format: 'pdf' | 'excel' | 'both';
   lastSentAt?: string;
@@ -27,29 +27,34 @@ function shouldSendNow(schedule: ReportSchedule): boolean {
   // Dedup: skip if already sent recently for this frequency
   if (schedule.lastSentAt) {
     const msSinceLast = now.getTime() - new Date(schedule.lastSentAt).getTime();
-    if (schedule.frequency === 'daily'   && msSinceLast < 23 * HOUR_MS)        return false;
-    if (schedule.frequency === 'weekly'  && msSinceLast < 6.9 * 24 * HOUR_MS)  return false;
-    if (schedule.frequency === 'monthly' && msSinceLast < 27 * 24 * HOUR_MS)   return false;
+    if (schedule.frequency === 'daily' && msSinceLast < 23 * HOUR_MS) return false;
+    if (schedule.frequency === 'weekly' && msSinceLast < 6.9 * 24 * HOUR_MS) return false;
+    if (schedule.frequency === 'monthly' && msSinceLast < 27 * 24 * HOUR_MS) return false;
   }
 
   // Check day constraint
-  if (schedule.frequency === 'weekly'  && now.getDay()  !== (schedule.dayOfWeek  ?? 1)) return false;
-  if (schedule.frequency === 'monthly' && now.getDate() !== (schedule.dayOfMonth ?? 1)) return false;
+  if (schedule.frequency === 'weekly' && now.getDay() !== (schedule.dayOfWeek ?? 1)) return false;
+  if (schedule.frequency === 'monthly' && now.getDate() !== (schedule.dayOfMonth ?? 1))
+    return false;
 
   return true;
 }
 
 const FREQ_LABEL: Record<string, string> = {
-  daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal',
+  daily: 'Diário',
+  weekly: 'Semanal',
+  monthly: 'Mensal',
 };
 const FORMAT_LABEL: Record<string, string> = {
-  pdf: 'PDF', excel: 'Excel', both: 'PDF e Excel',
+  pdf: 'PDF',
+  excel: 'Excel',
+  both: 'PDF e Excel',
 };
 
 function buildEmailBody(name: string, type: string, schedule: ReportSchedule): string {
   const frontendUrl = process.env.FRONTEND_URL ?? 'https://engage.vydhub.com';
-  const freqLabel   = FREQ_LABEL[schedule.frequency]  ?? schedule.frequency;
-  const fmtLabel    = FORMAT_LABEL[schedule.format ?? 'pdf'] ?? schedule.format;
+  const freqLabel = FREQ_LABEL[schedule.frequency] ?? schedule.frequency;
+  const fmtLabel = FORMAT_LABEL[schedule.format ?? 'pdf'] ?? schedule.format;
 
   return `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937;">
@@ -94,7 +99,7 @@ async function runScheduledReports(): Promise<void> {
   let sent = 0;
 
   for (const report of reports) {
-    const config   = report.config as Record<string, unknown>;
+    const config = report.config as Record<string, unknown>;
     const schedule = config?.schedule as ReportSchedule | undefined;
 
     if (!schedule || !shouldSendNow(schedule)) continue;
@@ -144,14 +149,10 @@ export function initializeScheduledReports(): void {
 
   // First run 30s after startup (let the server settle)
   setTimeout(() => {
-    runScheduledReports().catch(err =>
-      logger.error('Scheduled reports error on startup', err)
-    );
+    runScheduledReports().catch((err) => logger.error('Scheduled reports error on startup', err));
   }, 30_000);
 
   setInterval(() => {
-    runScheduledReports().catch(err =>
-      logger.error('Scheduled reports error', err)
-    );
+    runScheduledReports().catch((err) => logger.error('Scheduled reports error', err));
   }, CHECK_INTERVAL);
 }

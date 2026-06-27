@@ -1,5 +1,5 @@
-import { ReportWidget } from "../types";
-import { StatCard } from "./StatCard";
+import { ReportWidget } from '../types';
+import { StatCard } from './StatCard';
 import {
   PieChart,
   Pie,
@@ -14,8 +14,8 @@ import {
   Line,
   AreaChart,
   Area,
-} from "recharts";
-import { Users, TrendingUp, Clock, Target, CheckSquare, Zap, Mail } from "lucide-react";
+} from 'recharts';
+import { Users, TrendingUp, Clock, Target, CheckSquare, Zap, Mail } from 'lucide-react';
 import {
   getLeadsData,
   getPipelineData,
@@ -24,14 +24,14 @@ import {
   getInteractionsData,
   getDefaultDateRange,
   ReportFilters,
-} from "../utils/reportData";
+} from '../utils/reportData';
 import {
   CHART_COLORS,
   SOURCE_COLORS,
   AUTOMATION_TYPE_COLORS,
   PRIORITY_CHART_COLORS,
   PRIMARY_COLOR,
-} from "../utils/designTokens";
+} from '../utils/designTokens';
 
 interface ReportWidgetRendererProps {
   widget: ReportWidget;
@@ -47,48 +47,48 @@ export function ReportWidgetRenderer({ widget, globalFilters }: ReportWidgetRend
 
   // Converter dateRange do widget para o formato esperado
   if (widget.dateRange) {
-    if (widget.dateRange.type === "custom" && widget.dateRange.start && widget.dateRange.end) {
+    if (widget.dateRange.type === 'custom' && widget.dateRange.start && widget.dateRange.end) {
       filters.dateRange = {
         start: new Date(widget.dateRange.start),
         end: new Date(widget.dateRange.end),
       };
-    } else if (widget.dateRange.type !== "all") {
+    } else if (widget.dateRange.type !== 'all') {
       const dateRange = getDefaultDateRange(widget.dateRange.type);
       filters.dateRange = dateRange;
     }
   }
 
   // Buscar dados baseado na fonte de dados do widget
-  const dataSource = widget.dataSource || "leads";
+  const dataSource = widget.dataSource || 'leads';
   let data: any = {};
 
   switch (dataSource) {
-    case "leads":
+    case 'leads':
       data = getLeadsData(filters);
       break;
-    case "pipeline":
+    case 'pipeline':
       data = getPipelineData(filters);
       break;
-    case "automations":
+    case 'automations':
       data = getAutomationsData(filters);
       break;
-    case "tasks":
+    case 'tasks':
       data = getTasksData(filters);
       break;
-    case "interactions":
+    case 'interactions':
       data = getInteractionsData(filters);
       break;
   }
 
   // Renderizar widget baseado no tipo
   switch (widget.type) {
-    case "metric":
+    case 'metric':
       return renderMetric(widget, data);
-    case "chart":
+    case 'chart':
       return renderChart(widget, data);
-    case "table":
+    case 'table':
       return renderTable(widget, data);
-    case "funnel":
+    case 'funnel':
       return renderFunnel(widget, data);
     default:
       return (
@@ -101,152 +101,176 @@ export function ReportWidgetRenderer({ widget, globalFilters }: ReportWidgetRend
 }
 
 function renderMetric(widget: ReportWidget, data: any) {
-  const metric = widget.metric || "total";
+  const metric = widget.metric || 'total';
   let value: string | number = 0;
   let icon = Users;
-  let trend: any = undefined;
+  const trend: any = undefined;
 
-  if (widget.dataSource === "leads") {
+  if (widget.dataSource === 'leads') {
     switch (metric) {
-      case "total":
+      case 'total':
         value = data.total || 0;
         icon = Users;
         break;
-      case "conversionRate":
+      case 'conversionRate':
         value = `${data.conversionRate || 0}%`;
         icon = TrendingUp;
         break;
-      case "avgResponseTime":
+      case 'avgResponseTime':
         value = `${data.avgResponseTime || 0}h`;
         icon = Clock;
         break;
-      case "newLeads":
+      case 'newLeads':
         value = data.newLeads || 0;
         icon = Users;
         break;
-      case "closedLeads":
+      case 'closedLeads':
         value = data.closedLeads || 0;
         icon = Target;
         break;
     }
-  } else if (widget.dataSource === "pipeline") {
+  } else if (widget.dataSource === 'pipeline') {
     switch (metric) {
-      case "conversionRate":
+      case 'conversionRate':
         value = `${data.conversionRate || 0}%`;
         icon = TrendingUp;
         break;
-      case "totalLeads":
+      case 'totalLeads':
         value = data.totalLeads || 0;
         icon = Users;
         break;
     }
-  } else if (widget.dataSource === "automations") {
+  } else if (widget.dataSource === 'automations') {
     switch (metric) {
-      case "total":
+      case 'total':
         value = data.total || 0;
         icon = Zap;
         break;
-      case "active":
+      case 'active':
         value = data.active || 0;
         icon = Zap;
         break;
-      case "successRate":
+      case 'successRate':
         value = `${data.successRate || 0}%`;
         icon = TrendingUp;
         break;
-      case "totalSentMessages":
+      case 'totalSentMessages':
         value = data.totalSentMessages || 0;
         icon = Mail;
         break;
     }
-  } else if (widget.dataSource === "tasks") {
+  } else if (widget.dataSource === 'tasks') {
     switch (metric) {
-      case "total":
+      case 'total':
         value = data.total || 0;
         icon = CheckSquare;
         break;
-      case "completionRate":
+      case 'completionRate':
         value = `${data.completionRate || 0}%`;
         icon = TrendingUp;
         break;
-      case "overdue":
+      case 'overdue':
         value = data.overdue || 0;
         icon = Clock;
         break;
-      case "dueToday":
+      case 'dueToday':
         value = data.dueToday || 0;
         icon = Clock;
         break;
     }
-  } else if (widget.dataSource === "interactions") {
+  } else if (widget.dataSource === 'interactions') {
     switch (metric) {
-      case "total":
+      case 'total':
         value = data.total || 0;
         icon = Users;
         break;
-      case "avgPerLead":
+      case 'avgPerLead':
         value = data.avgPerLead || 0;
         icon = TrendingUp;
         break;
     }
   }
 
-  return (
-    <StatCard
-      key={widget.id}
-      title={widget.title}
-      value={value}
-      icon={icon}
-      trend={trend}
-    />
-  );
+  return <StatCard key={widget.id} title={widget.title} value={value} icon={icon} trend={trend} />;
 }
 
 function renderChart(widget: ReportWidget, data: any) {
-  const chartType = widget.chartType || "bar";
+  const chartType = widget.chartType || 'bar';
   let chartData: any[] = [];
 
-  if (widget.dataSource === "leads") {
-    if (widget.config?.dataSource === "bySource" || chartType === "pie") {
+  if (widget.dataSource === 'leads') {
+    if (widget.config?.dataSource === 'bySource' || chartType === 'pie') {
       chartData = Object.entries(data.bySource || {}).map(([name, value]) => ({
-        name: name === "meta" ? "Meta Ads" : name === "google" ? "Google Ads" : name === "organico" ? "Orgânico" : "Manual",
+        name:
+          name === 'meta'
+            ? 'Meta Ads'
+            : name === 'google'
+              ? 'Google Ads'
+              : name === 'organico'
+                ? 'Orgânico'
+                : 'Manual',
         value: value as number,
         color: SOURCE_COLORS[name] || CHART_COLORS.gray,
       }));
     } else {
       chartData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
-        name: name === "novo" ? "Novo" : name === "contato" ? "Em Contato" : name === "fechado" ? "Fechado" : "Perdido",
+        name:
+          name === 'novo'
+            ? 'Novo'
+            : name === 'contato'
+              ? 'Em Contato'
+              : name === 'fechado'
+                ? 'Fechado'
+                : 'Perdido',
         value: value as number,
       }));
     }
-  } else if (widget.dataSource === "pipeline") {
+  } else if (widget.dataSource === 'pipeline') {
     chartData = (data.stages || []).map((stage: any) => ({
       name: stage.name,
       value: stage.count,
       color: stage.color,
     }));
-  } else if (widget.dataSource === "automations") {
-    if (widget.config?.dataSource === "byType") {
+  } else if (widget.dataSource === 'automations') {
+    if (widget.config?.dataSource === 'byType') {
       chartData = Object.entries(data.byType || {}).map(([name, value]) => ({
-        name: name === "whatsapp" ? "WhatsApp" : "E-mail",
+        name: name === 'whatsapp' ? 'WhatsApp' : 'E-mail',
         value: value as number,
         color: AUTOMATION_TYPE_COLORS[name] || CHART_COLORS.blue,
       }));
     } else {
       chartData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
-        name: name === "active" ? "Ativo" : "Pausado",
+        name: name === 'active' ? 'Ativo' : 'Pausado',
         value: value as number,
       }));
     }
-  } else if (widget.dataSource === "tasks") {
+  } else if (widget.dataSource === 'tasks') {
     chartData = Object.entries(data.byPriority || {}).map(([name, value]) => ({
-      name: name === "LOW" ? "Baixa" : name === "MEDIUM" ? "Média" : name === "HIGH" ? "Alta" : name === "URGENT" ? "Urgente" : name,
+      name:
+        name === 'LOW'
+          ? 'Baixa'
+          : name === 'MEDIUM'
+            ? 'Média'
+            : name === 'HIGH'
+              ? 'Alta'
+              : name === 'URGENT'
+                ? 'Urgente'
+                : name,
       value: value as number,
       color: PRIORITY_CHART_COLORS[name] || CHART_COLORS.red,
     }));
-  } else if (widget.dataSource === "interactions") {
+  } else if (widget.dataSource === 'interactions') {
     chartData = Object.entries(data.byType || {}).map(([name, value]) => ({
-      name: name === "note" ? "Nota" : name === "call" ? "Chamada" : name === "email" ? "E-mail" : name === "whatsapp" ? "WhatsApp" : name,
+      name:
+        name === 'note'
+          ? 'Nota'
+          : name === 'call'
+            ? 'Chamada'
+            : name === 'email'
+              ? 'E-mail'
+              : name === 'whatsapp'
+                ? 'WhatsApp'
+                : name,
       value: value as number,
     }));
   }
@@ -260,7 +284,7 @@ function renderChart(widget: ReportWidget, data: any) {
     );
   }
 
-  if (chartType === "pie") {
+  if (chartType === 'pie') {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
@@ -297,7 +321,7 @@ function renderChart(widget: ReportWidget, data: any) {
     );
   }
 
-  if (chartType === "line") {
+  if (chartType === 'line') {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
@@ -313,7 +337,7 @@ function renderChart(widget: ReportWidget, data: any) {
     );
   }
 
-  if (chartType === "area") {
+  if (chartType === 'area') {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
@@ -322,7 +346,13 @@ function renderChart(widget: ReportWidget, data: any) {
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Area type="monotone" dataKey="value" stroke={PRIMARY_COLOR} fill={PRIMARY_COLOR} fillOpacity={0.3} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={PRIMARY_COLOR}
+              fill={PRIMARY_COLOR}
+              fillOpacity={0.3}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -352,25 +382,39 @@ function renderChart(widget: ReportWidget, data: any) {
 function renderTable(widget: ReportWidget, data: any) {
   let tableData: any[] = [];
 
-  if (widget.dataSource === "leads") {
-    if (widget.config?.dataSource === "bySource") {
+  if (widget.dataSource === 'leads') {
+    if (widget.config?.dataSource === 'bySource') {
       tableData = Object.entries(data.bySource || {}).map(([name, value]) => ({
-        name: name === "meta" ? "Meta Ads" : name === "google" ? "Google Ads" : name === "organico" ? "Orgânico" : "Manual",
+        name:
+          name === 'meta'
+            ? 'Meta Ads'
+            : name === 'google'
+              ? 'Google Ads'
+              : name === 'organico'
+                ? 'Orgânico'
+                : 'Manual',
         value,
-        status: "Ativo",
+        status: 'Ativo',
       }));
     } else {
       tableData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
-        name: name === "novo" ? "Novo" : name === "contato" ? "Em Contato" : name === "fechado" ? "Fechado" : "Perdido",
+        name:
+          name === 'novo'
+            ? 'Novo'
+            : name === 'contato'
+              ? 'Em Contato'
+              : name === 'fechado'
+                ? 'Fechado'
+                : 'Perdido',
         value,
-        status: "Ativo",
+        status: 'Ativo',
       }));
     }
-  } else if (widget.dataSource === "automations") {
+  } else if (widget.dataSource === 'automations') {
     tableData = Object.entries(data.byType || {}).map(([name, value]) => ({
-      name: name === "whatsapp" ? "WhatsApp" : "E-mail",
+      name: name === 'whatsapp' ? 'WhatsApp' : 'E-mail',
       value,
-      status: "Ativo",
+      status: 'Ativo',
     }));
   }
 
@@ -381,9 +425,15 @@ function renderTable(widget: ReportWidget, data: any) {
         <table className="w-full">
           <thead className="bg-gray-100 border-b border-gray-300">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Nome</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Valor</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                Nome
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                Valor
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-300">
@@ -436,4 +486,3 @@ function renderFunnel(widget: ReportWidget, data: any) {
     </div>
   );
 }
-

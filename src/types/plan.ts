@@ -1,6 +1,6 @@
 // Tipos para gerenciamento de planos
 
-export type PlanType = "starter" | "pro" | "enterprise";
+export type PlanType = 'starter' | 'pro' | 'enterprise';
 
 // Limites completos por plano
 export interface PlanLimits {
@@ -67,7 +67,7 @@ export interface PaymentHistory {
   id: string;
   date: string;
   amount: number;
-  status: "paid" | "pending" | "failed" | "refunded";
+  status: 'paid' | 'pending' | 'failed' | 'refunded';
   plan: PlanType;
   invoiceUrl?: string;
 }
@@ -75,21 +75,13 @@ export interface PaymentHistory {
 // Informações da assinatura atual
 export interface Subscription {
   plan: PlanType;
-  status: "active" | "cancelled" | "expired" | "trial";
+  status: 'active' | 'cancelled' | 'expired' | 'trial';
   startDate: string;
   renewalDate: string;
-  billingCycle: "monthly" | "yearly";
+  billingCycle: 'monthly' | 'yearly';
   paymentMethod?: {
-    type: "credit_card" | "pix" | "boleto";
+    type: 'credit_card' | 'pix' | 'boleto';
     last4?: string;
     brand?: string;
   };
 }
-
-
-
-
-
-
-
-

@@ -63,7 +63,10 @@ import {
   type StakeholderPosture,
 } from '../types/comercial';
 
-const STATUS_VARIANT: Record<CommercialRoadmapStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+const STATUS_VARIANT: Record<
+  CommercialRoadmapStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   PLANEJAMENTO: 'secondary',
   EM_ANDAMENTO: 'default',
   PROPOSTA: 'default',
@@ -84,7 +87,8 @@ export function RoadmapView() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const roadmapQuery = useRoadmap(id);
-  const { advanceToProposal, upsertStakeholder, removeStakeholder, invalidate } = useRoadmapActions();
+  const { advanceToProposal, upsertStakeholder, removeStakeholder, invalidate } =
+    useRoadmapActions();
   const roadmap = roadmapQuery.data;
 
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: () => apiClient.getUsers() });
@@ -268,7 +272,9 @@ export function RoadmapView() {
                 <CardContent>
                   <Organograma
                     stakeholders={roadmap.stakeholders}
-                    onUpdate={(leadId, patch) => upsertStakeholder(roadmap.id, { leadId, ...patch })}
+                    onUpdate={(leadId, patch) =>
+                      upsertStakeholder(roadmap.id, { leadId, ...patch })
+                    }
                     onRemove={(leadId) => removeStakeholder(roadmap.id, leadId)}
                   />
                 </CardContent>
@@ -329,7 +335,11 @@ export function RoadmapView() {
                                     {TASK_TYPE_LABELS[t.type]}
                                   </Badge>
                                 )}
-                                <span className={overdue ? 'font-medium text-red-600' : 'text-slate-500'}>
+                                <span
+                                  className={
+                                    overdue ? 'font-medium text-red-600' : 'text-slate-500'
+                                  }
+                                >
                                   {fmtDate(t.dueDate)}
                                 </span>
                                 {t.lead && <span className="text-slate-500">· {t.lead.name}</span>}
@@ -338,7 +348,9 @@ export function RoadmapView() {
                                     className="rounded border border-slate-200 px-1 py-0.5 text-xs text-slate-500"
                                     style={{ maxWidth: 120 }}
                                     value={t.assignedTo ?? ''}
-                                    onChange={(e) => e.target.value && reassignTask(t.id, e.target.value)}
+                                    onChange={(e) =>
+                                      e.target.value && reassignTask(t.id, e.target.value)
+                                    }
                                     aria-label="Responsável"
                                   >
                                     <option value="">Atribuir…</option>
@@ -351,7 +363,11 @@ export function RoadmapView() {
                                   <input
                                     type="date"
                                     className="rounded border border-slate-200 px-1 py-0.5 text-xs text-slate-500"
-                                    value={t.dueDate ? new Date(t.dueDate).toISOString().slice(0, 10) : ''}
+                                    value={
+                                      t.dueDate
+                                        ? new Date(t.dueDate).toISOString().slice(0, 10)
+                                        : ''
+                                    }
                                     onChange={(e) => rescheduleTask(t, e.target.value)}
                                     aria-label="Reagendar"
                                   />
@@ -384,7 +400,10 @@ export function RoadmapView() {
               }
               await upsertStakeholder(roadmap.id, { leadId, roleInDecision: role, posture });
             }}
-            stakeholders={roadmap.stakeholders.map((s) => ({ leadId: s.leadId, name: s.lead.name }))}
+            stakeholders={roadmap.stakeholders.map((s) => ({
+              leadId: s.leadId,
+              name: s.lead.name,
+            }))}
           />
           <AddActionDialog
             open={addActionOpen}
@@ -422,7 +441,7 @@ function AddContactDialog({
     leadId: string,
     role: StakeholderRole,
     posture: StakeholderPosture,
-    reportsToId?: string,
+    reportsToId?: string
   ) => Promise<void>;
 }) {
   const [leadId, setLeadId] = useState('');
@@ -437,7 +456,7 @@ function AddContactDialog({
     enabled: open,
   });
   const leads = ((leadsQuery.data?.leads ?? []) as Array<{ id: string; name: string }>).filter(
-    (l) => !existingLeadIds.includes(l.id),
+    (l) => !existingLeadIds.includes(l.id)
   );
 
   const submit = async () => {
@@ -479,7 +498,8 @@ function AddContactDialog({
             </Select>
             {!leadsQuery.isLoading && leads.length === 0 && (
               <p className="text-xs text-slate-500">
-                Nenhum contato disponível desta empresa. Cadastre contatos vinculados à empresa primeiro.
+                Nenhum contato disponível desta empresa. Cadastre contatos vinculados à empresa
+                primeiro.
               </p>
             )}
           </div>

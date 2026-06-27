@@ -1,12 +1,25 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import { Header } from "../components/Header";
-import { Input } from "../components/ui/input";
-import { CheckCircle, XCircle, Clock, ArrowLeft, Loader2, BarChart3, TrendingUp, AlertTriangle, ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { apiClient } from "../services/api/client";
-import { useSocket } from "../hooks/useSocket";
-import { toast } from "sonner";
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Header } from '../components/Header';
+import { Input } from '../components/ui/input';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  ArrowLeft,
+  Loader2,
+  BarChart3,
+  TrendingUp,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  X,
+} from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { apiClient } from '../services/api/client';
+import { useSocket } from '../hooks/useSocket';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 50;
 
@@ -48,11 +61,11 @@ function normalizeLog(raw: any): LogEntry {
   return {
     id: raw.id,
     automationId: raw.automationId,
-    automationName: raw.automation?.name || raw.automationName || "—",
+    automationName: raw.automation?.name || raw.automationName || '—',
     leadId: raw.leadId,
-    leadName: raw.lead?.name || raw.leadName || "—",
+    leadName: raw.lead?.name || raw.leadName || '—',
     stepOrder: raw.stepOrder ?? 0,
-    stepType: raw.stepType || "—",
+    stepType: raw.stepType || '—',
     status: raw.status,
     message: raw.message,
     errorMessage: raw.error || raw.errorMessage,
@@ -70,13 +83,18 @@ export function AutomationLogs() {
   const { on } = useSocket();
 
   // Pre-apply filters from URL query params (e.g., from notification links)
-  const urlAutomationId = searchParams.get("automationId") || "";
-  const urlStatus = searchParams.get("status") || "";
+  const urlAutomationId = searchParams.get('automationId') || '';
+  const urlStatus = searchParams.get('status') || '';
 
   // Data state
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
+  });
   const [automations, setAutomations] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -84,11 +102,11 @@ export function AutomationLogs() {
   // Filter state (initialized from URL params)
   const [filterStatus, setFilterStatus] = useState(urlStatus);
   const [filterAutomation, setFilterAutomation] = useState(urlAutomationId);
-  const [filterLead, setFilterLead] = useState("");
+  const [filterLead, setFilterLead] = useState('');
   const [page, setPage] = useState(1);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"logs" | "metrics">("logs");
+  const [activeTab, setActiveTab] = useState<'logs' | 'metrics'>('logs');
 
   // Execution view
   const [executionLogs, setExecutionLogs] = useState<LogEntry[] | null>(null);
@@ -97,24 +115,31 @@ export function AutomationLogs() {
 
   // Load automations list for filter dropdown (once)
   useEffect(() => {
-    apiClient.getAutomations().then((result: any) => {
-      const rawData = result?.data || result;
-      const list = Array.isArray(rawData) ? rawData : rawData?.automations || [];
-      setAutomations(list.map((a: any) => ({ id: a.id, name: a.name })));
-    }).catch(() => {});
+    apiClient
+      .getAutomations()
+      .then((result: any) => {
+        const rawData = result?.data || result;
+        const list = Array.isArray(rawData) ? rawData : rawData?.automations || [];
+        setAutomations(list.map((a: any) => ({ id: a.id, name: a.name })));
+      })
+      .catch(() => {});
   }, []);
 
   // Load stats (once, lightweight)
   useEffect(() => {
     setStatsLoading(true);
-    apiClient.getAutomationLogStats().then((result: any) => {
-      setStats(result?.data || result);
-    }).catch(() => {}).finally(() => setStatsLoading(false));
+    apiClient
+      .getAutomationLogStats()
+      .then((result: any) => {
+        setStats(result?.data || result);
+      })
+      .catch(() => {})
+      .finally(() => setStatsLoading(false));
   }, []);
 
   // WebSocket: listen for new automation logs in real-time
   useEffect(() => {
-    const cleanup = on("automation:log:new", (raw: any) => {
+    const cleanup = on('automation:log:new', (raw: any) => {
       const log = normalizeLog(raw);
 
       // Only prepend if compatible with current filters
@@ -129,8 +154,8 @@ export function AutomationLogs() {
         });
       }
 
-      toast.info("Nova execução registrada", {
-        description: `${log.automationName} — ${log.status === "ERROR" ? "Erro" : "Sucesso"}`,
+      toast.info('Nova execução registrada', {
+        description: `${log.automationName} — ${log.status === 'ERROR' ? 'Erro' : 'Sucesso'}`,
         duration: 4000,
       });
     });
@@ -142,7 +167,7 @@ export function AutomationLogs() {
   const loadLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const filters: any = { page, limit: PAGE_SIZE, sort: "desc" };
+      const filters: any = { page, limit: PAGE_SIZE, sort: 'desc' };
       if (filterStatus) filters.status = filterStatus;
       if (filterAutomation) filters.automationId = filterAutomation;
 
@@ -151,7 +176,7 @@ export function AutomationLogs() {
       setLogs(data.map(normalizeLog));
       setPagination(result?.pagination || { page, limit: PAGE_SIZE, total: 0, totalPages: 0 });
     } catch (error) {
-      console.error("Erro ao carregar logs:", error);
+      console.error('Erro ao carregar logs:', error);
     } finally {
       setLoading(false);
     }
@@ -169,9 +194,7 @@ export function AutomationLogs() {
   // Client-side lead name filter (applied on already-fetched page)
   const filteredLogs = useMemo(() => {
     if (!filterLead) return logs;
-    return logs.filter((log) =>
-      log.leadName?.toLowerCase().includes(filterLead.toLowerCase())
-    );
+    return logs.filter((log) => log.leadName?.toLowerCase().includes(filterLead.toLowerCase()));
   }, [logs, filterLead]);
 
   // Open execution view
@@ -197,26 +220,27 @@ export function AutomationLogs() {
   // Daily execution chart data (last 14 days) — derived from fetched logs
   // Note: for accurate chart, we'd need a dedicated endpoint; using stats perAutomation for metrics tab
   const dailyData = useMemo(() => {
-    const days: { date: string; label: string; success: number; error: number; total: number }[] = [];
+    const days: { date: string; label: string; success: number; error: number; total: number }[] =
+      [];
     for (let i = 13; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
+      const dateStr = d.toISOString().split('T')[0];
       days.push({
         date: dateStr,
-        label: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
         success: 0,
         error: 0,
         total: 0,
       });
     }
     for (const log of logs) {
-      const dateStr = new Date(log.executedAt).toISOString().split("T")[0];
+      const dateStr = new Date(log.executedAt).toISOString().split('T')[0];
       const day = days.find((d) => d.date === dateStr);
       if (day) {
         day.total++;
-        if (log.status === "SUCCESS") day.success++;
-        else if (log.status === "ERROR") day.error++;
+        if (log.status === 'SUCCESS') day.success++;
+        else if (log.status === 'ERROR') day.error++;
       }
     }
     return days;
@@ -225,32 +249,40 @@ export function AutomationLogs() {
   const maxDailyTotal = Math.max(1, ...dailyData.map((d) => d.total));
 
   const getStatusIcon = (status: string) => {
-    if (status === "SUCCESS") return <CheckCircle size={16} className="text-success" />;
-    if (status === "ERROR") return <XCircle size={16} className="text-error" />;
-    if (status === "SKIPPED") return <AlertTriangle size={16} className="text-yellow-500" />;
-    if (status === "WAITING") return <Clock size={16} className="text-amber-500" />;
-    if (status === "CANCELLED") return <XCircle size={16} className="text-gray-400" />;
+    if (status === 'SUCCESS') return <CheckCircle size={16} className="text-success" />;
+    if (status === 'ERROR') return <XCircle size={16} className="text-error" />;
+    if (status === 'SKIPPED') return <AlertTriangle size={16} className="text-yellow-500" />;
+    if (status === 'WAITING') return <Clock size={16} className="text-amber-500" />;
+    if (status === 'CANCELLED') return <XCircle size={16} className="text-gray-400" />;
     return <Clock size={16} className="text-warning" />;
   };
 
   const getStatusBadge = (status: string, executeAt?: string | null) => {
     const config: Record<string, { label: string; className: string }> = {
-      SUCCESS: { label: "Sucesso", className: "bg-green-100 text-green-700" },
-      ERROR: { label: "Erro", className: "bg-red-100 text-red-700" },
-      SKIPPED: { label: "Pulado", className: "bg-yellow-100 text-yellow-700" },
-      PENDING: { label: "Pendente", className: "bg-yellow-100 text-yellow-700" },
-      RUNNING: { label: "Executando", className: "bg-blue-100 text-blue-700" },
-      WAITING: { label: "Aguardando", className: "bg-amber-100 text-amber-700" },
-      CANCELLED: { label: "Cancelado", className: "bg-gray-100 text-gray-500" },
+      SUCCESS: { label: 'Sucesso', className: 'bg-green-100 text-green-700' },
+      ERROR: { label: 'Erro', className: 'bg-red-100 text-red-700' },
+      SKIPPED: { label: 'Pulado', className: 'bg-yellow-100 text-yellow-700' },
+      PENDING: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700' },
+      RUNNING: { label: 'Executando', className: 'bg-blue-100 text-blue-700' },
+      WAITING: { label: 'Aguardando', className: 'bg-amber-100 text-amber-700' },
+      CANCELLED: { label: 'Cancelado', className: 'bg-gray-100 text-gray-500' },
     };
-    const c = config[status] || { label: status, className: "bg-gray-100 text-gray-700" };
+    const c = config[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
     return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${c.className}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${c.className}`}
+      >
         {getStatusIcon(status)}
         {c.label}
-        {status === "WAITING" && executeAt && (
+        {status === 'WAITING' && executeAt && (
           <span className="ml-1 font-normal opacity-80">
-            — executa em {new Date(executeAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+            — executa em{' '}
+            {new Date(executeAt).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </span>
         )}
       </span>
@@ -269,19 +301,19 @@ export function AutomationLogs() {
 
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
-          <Button variant="outline" className="gap-2" onClick={() => navigate("/app/automations")}>
+          <Button variant="outline" className="gap-2" onClick={() => navigate('/app/automations')}>
             <ArrowLeft size={16} /> Voltar para Automações
           </Button>
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
-              onClick={() => setActiveTab("logs")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === "logs" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setActiveTab('logs')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'logs' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Logs
             </button>
             <button
-              onClick={() => setActiveTab("metrics")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === "metrics" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setActiveTab('metrics')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <BarChart3 size={14} className="inline mr-1" />
               Métricas
@@ -293,27 +325,37 @@ export function AutomationLogs() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Total</p>
-            <p className="text-2xl font-semibold text-gray-900">{statsLoading ? "…" : stats?.total ?? 0}</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {statsLoading ? '…' : (stats?.total ?? 0)}
+            </p>
           </div>
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Sucesso</p>
-            <p className="text-2xl font-semibold text-success">{statsLoading ? "…" : stats?.successCount ?? 0}</p>
+            <p className="text-2xl font-semibold text-success">
+              {statsLoading ? '…' : (stats?.successCount ?? 0)}
+            </p>
           </div>
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Erros</p>
-            <p className="text-2xl font-semibold text-error">{statsLoading ? "…" : stats?.errorCount ?? 0}</p>
+            <p className="text-2xl font-semibold text-error">
+              {statsLoading ? '…' : (stats?.errorCount ?? 0)}
+            </p>
           </div>
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Pulados</p>
-            <p className="text-2xl font-semibold text-warning">{statsLoading ? "…" : stats?.skippedCount ?? 0}</p>
+            <p className="text-2xl font-semibold text-warning">
+              {statsLoading ? '…' : (stats?.skippedCount ?? 0)}
+            </p>
           </div>
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
             <div className="flex items-center gap-1 mb-1">
               <TrendingUp size={14} className="text-gray-500" />
               <p className="text-sm text-gray-600">Taxa de Sucesso</p>
             </div>
-            <p className={`text-2xl font-semibold ${(stats?.successRate ?? 0) >= 80 ? "text-success" : (stats?.successRate ?? 0) >= 50 ? "text-warning" : "text-error"}`}>
-              {statsLoading ? "…" : `${stats?.successRate ?? 0}%`}
+            <p
+              className={`text-2xl font-semibold ${(stats?.successRate ?? 0) >= 80 ? 'text-success' : (stats?.successRate ?? 0) >= 50 ? 'text-warning' : 'text-error'}`}
+            >
+              {statsLoading ? '…' : `${stats?.successRate ?? 0}%`}
             </p>
           </div>
         </div>
@@ -343,19 +385,31 @@ export function AutomationLogs() {
                     {executionLogs.map((log, i) => (
                       <div key={log.id} className="flex gap-3 items-start">
                         <div className="flex flex-col items-center">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${log.status === "SUCCESS" ? "bg-green-100 text-green-700" : log.status === "ERROR" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${log.status === 'SUCCESS' ? 'bg-green-100 text-green-700' : log.status === 'ERROR' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}
+                          >
                             {i + 1}
                           </div>
-                          {i < executionLogs.length - 1 && <div className="w-px h-6 bg-gray-200 mt-1" />}
+                          {i < executionLogs.length - 1 && (
+                            <div className="w-px h-6 bg-gray-200 mt-1" />
+                          )}
                         </div>
                         <div className="flex-1 pb-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-gray-900">{log.stepType || "Step"}</span>
+                            <span className="font-medium text-sm text-gray-900">
+                              {log.stepType || 'Step'}
+                            </span>
                             {getStatusBadge(log.status, log.executeAt)}
                           </div>
-                          {log.message && <p className="text-sm text-gray-600 mt-1">{log.message}</p>}
-                          {log.errorMessage && <p className="text-sm text-red-600 mt-1">{log.errorMessage}</p>}
-                          <p className="text-xs text-gray-400 mt-1">{new Date(log.executedAt).toLocaleString("pt-BR")}</p>
+                          {log.message && (
+                            <p className="text-sm text-gray-600 mt-1">{log.message}</p>
+                          )}
+                          {log.errorMessage && (
+                            <p className="text-sm text-red-600 mt-1">{log.errorMessage}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(log.executedAt).toLocaleString('pt-BR')}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -370,11 +424,13 @@ export function AutomationLogs() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
-        ) : activeTab === "metrics" ? (
+        ) : activeTab === 'metrics' ? (
           <div className="space-y-6">
             {/* Daily Chart */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
-              <h3 className="text-gray-900 font-medium mb-4">Execuções por Dia (últimos 14 dias)</h3>
+              <h3 className="text-gray-900 font-medium mb-4">
+                Execuções por Dia (últimos 14 dias)
+              </h3>
               <div className="flex items-end gap-1.5 h-40">
                 {dailyData.map((day) => (
                   <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
@@ -420,12 +476,17 @@ export function AutomationLogs() {
               </div>
               <div className="divide-y divide-gray-200">
                 {automationMetrics.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-gray-500">Nenhuma automação com logs.</div>
+                  <div className="px-6 py-8 text-center text-gray-500">
+                    Nenhuma automação com logs.
+                  </div>
                 ) : (
                   automationMetrics.map((m) => {
                     const rate = stats!.total > 0 ? Math.round((m.count / stats!.total) * 100) : 0;
                     return (
-                      <div key={m.automationId} className="px-6 py-4 flex items-center justify-between">
+                      <div
+                        key={m.automationId}
+                        className="px-6 py-4 flex items-center justify-between"
+                      >
                         <div className="flex-1">
                           <p className="font-medium text-gray-900">{m.automationName}</p>
                           <p className="text-sm text-gray-500">{m.count} execuções</p>
@@ -456,26 +517,57 @@ export function AutomationLogs() {
                 <table className="w-full" aria-label="Logs de automação">
                   <thead className="bg-gray-100 border-b border-gray-300">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase"
+                      >
                         <div className="flex flex-col gap-2">
                           <span>Lead</span>
-                          <Input placeholder="Filtrar lead..." value={filterLead} onChange={(e) => setFilterLead(e.target.value)} className="h-8 text-xs" />
+                          <Input
+                            placeholder="Filtrar lead..."
+                            value={filterLead}
+                            onChange={(e) => setFilterLead(e.target.value)}
+                            className="h-8 text-xs"
+                          />
                         </div>
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase"
+                      >
                         <div className="flex flex-col gap-2">
                           <span>Automação</span>
-                          <select value={filterAutomation} onChange={(e) => setFilterAutomation(e.target.value)} className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full">
+                          <select
+                            value={filterAutomation}
+                            onChange={(e) => setFilterAutomation(e.target.value)}
+                            className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
+                          >
                             <option value="">Todas</option>
-                            {automations.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            {automations.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.name}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase hidden md:table-cell">Detalhes</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase hidden md:table-cell"
+                      >
+                        Detalhes
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase"
+                      >
                         <div className="flex flex-col gap-2">
                           <span>Status</span>
-                          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full">
+                          <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
+                          >
                             <option value="">Todos</option>
                             <option value="SUCCESS">Sucesso</option>
                             <option value="ERROR">Erro</option>
@@ -486,8 +578,18 @@ export function AutomationLogs() {
                           </select>
                         </div>
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase hidden lg:table-cell">Data/Hora</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase hidden lg:table-cell">Execução</th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase hidden lg:table-cell"
+                      >
+                        Data/Hora
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase hidden lg:table-cell"
+                      >
+                        Execução
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-300">
@@ -511,12 +613,18 @@ export function AutomationLogs() {
                           </td>
                           <td className="px-6 py-4 text-gray-600">{log.automationName}</td>
                           <td className="px-6 py-4 hidden md:table-cell">
-                            <p className="text-sm text-gray-600 truncate max-w-xs">{log.message || "—"}</p>
-                            {log.errorMessage && <p className="text-xs text-error mt-1 truncate max-w-xs">{log.errorMessage}</p>}
+                            <p className="text-sm text-gray-600 truncate max-w-xs">
+                              {log.message || '—'}
+                            </p>
+                            {log.errorMessage && (
+                              <p className="text-xs text-error mt-1 truncate max-w-xs">
+                                {log.errorMessage}
+                              </p>
+                            )}
                           </td>
                           <td className="px-6 py-4">{getStatusBadge(log.status, log.executeAt)}</td>
                           <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">
-                            {new Date(log.executedAt).toLocaleString("pt-BR")}
+                            {new Date(log.executedAt).toLocaleString('pt-BR')}
                           </td>
                           <td className="px-6 py-4 hidden lg:table-cell">
                             {log.executionId ? (

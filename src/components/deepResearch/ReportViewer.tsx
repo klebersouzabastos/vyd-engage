@@ -77,7 +77,7 @@ export function ReportViewer({
   const tocIds = useMemo(() => toc.map((t) => t.id), [toc]);
   const observedIds = useMemo(
     () => (effectiveMode === 'leitura' ? tocIds : EMPTY_IDS),
-    [effectiveMode, tocIds],
+    [effectiveMode, tocIds]
   );
   const activeId = useActiveHeading(observedIds);
 
@@ -85,6 +85,7 @@ export function ReportViewer({
 
   // Reinicia na primeira página quando o relatório muda.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado a partir da prop markdown (reset de página quando o relatório muda)
     setPageIndex(0);
   }, [markdown]);
 
@@ -147,7 +148,11 @@ export function ReportViewer({
   const current = pages[safeIndex];
 
   const progressPct =
-    effectiveMode === 'apresentacao' ? (lastIndex > 0 ? (safeIndex / lastIndex) * 100 : 100) : scrollPct;
+    effectiveMode === 'apresentacao'
+      ? lastIndex > 0
+        ? (safeIndex / lastIndex) * 100
+        : 100
+      : scrollPct;
 
   const positionLabel = (): string => {
     const page = current;
@@ -271,7 +276,11 @@ export function ReportViewer({
                 {renderPage(current)}
               </div>
               <div className="report-viewer__nav">
-                <button type="button" onClick={() => goTo(safeIndex - 1)} disabled={safeIndex === 0}>
+                <button
+                  type="button"
+                  onClick={() => goTo(safeIndex - 1)}
+                  disabled={safeIndex === 0}
+                >
                   <ChevronLeft size={16} aria-hidden /> Anterior
                 </button>
                 <span className="report-viewer__nav-pos">{positionLabel()}</span>

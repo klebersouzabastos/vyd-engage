@@ -23,9 +23,7 @@ export function useDeepResearchList(filters?: DeepResearchFilters) {
   return useQuery({
     queryKey: [...LIST_KEY, filters ?? {}],
     queryFn: () =>
-      apiClient.getDeepResearches(
-        filters as Record<string, string | undefined> | undefined,
-      ),
+      apiClient.getDeepResearches(filters as Record<string, string | undefined> | undefined),
     // Atualiza enquanto houver pesquisa em andamento (poller publica o resultado).
     refetchInterval: (query) => {
       const data = query.state.data as { items?: DeepResearchListItem[] } | undefined;
@@ -61,13 +59,10 @@ export function useDeepResearchTemplates() {
 export function useDeepResearchActions() {
   const qc = useQueryClient();
 
-  const invalidateList = useCallback(
-    () => qc.invalidateQueries({ queryKey: LIST_KEY }),
-    [qc],
-  );
+  const invalidateList = useCallback(() => qc.invalidateQueries({ queryKey: LIST_KEY }), [qc]);
   const invalidateTemplates = useCallback(
     () => qc.invalidateQueries({ queryKey: TEMPLATES_KEY }),
-    [qc],
+    [qc]
   );
 
   const createResearch = useCallback(
@@ -81,7 +76,7 @@ export function useDeepResearchActions() {
         throw err;
       }
     },
-    [invalidateList],
+    [invalidateList]
   );
 
   const updateResearch = useCallback(
@@ -97,7 +92,7 @@ export function useDeepResearchActions() {
         throw err;
       }
     },
-    [invalidateList, qc],
+    [invalidateList, qc]
   );
 
   const deleteResearch = useCallback(
@@ -111,7 +106,7 @@ export function useDeepResearchActions() {
         throw err;
       }
     },
-    [invalidateList],
+    [invalidateList]
   );
 
   const createTemplate = useCallback(
@@ -126,7 +121,7 @@ export function useDeepResearchActions() {
         throw err;
       }
     },
-    [invalidateTemplates],
+    [invalidateTemplates]
   );
 
   const updateTemplate = useCallback(
@@ -141,7 +136,7 @@ export function useDeepResearchActions() {
         throw err;
       }
     },
-    [invalidateTemplates],
+    [invalidateTemplates]
   );
 
   const deleteTemplate = useCallback(
@@ -155,7 +150,7 @@ export function useDeepResearchActions() {
         throw err;
       }
     },
-    [invalidateTemplates],
+    [invalidateTemplates]
   );
 
   return {

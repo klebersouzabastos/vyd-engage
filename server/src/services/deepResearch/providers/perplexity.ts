@@ -83,7 +83,10 @@ export const perplexityProvider: ResearchProvider = {
       return { status: 'completed', markdown, sources, searchResults };
     }
     if (['FAILED', 'ERROR', 'CANCELLED', 'EXPIRED'].includes(st)) {
-      return { status: 'failed', error: String(data?.error_message || data?.error || `status ${st}`) };
+      return {
+        status: 'failed',
+        error: String(data?.error_message || data?.error || `status ${st}`),
+      };
     }
     return { status: 'pending' };
   },

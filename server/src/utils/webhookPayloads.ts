@@ -24,10 +24,7 @@ export interface WebhookPayload {
 /**
  * Build a Zapier-compatible webhook payload for a business event.
  */
-export function buildWebhookPayload(
-  event: string,
-  data: Record<string, unknown>,
-): WebhookPayload {
+export function buildWebhookPayload(event: string, data: Record<string, unknown>): WebhookPayload {
   return {
     id: `evt_${crypto.randomUUID()}`,
     event,
@@ -92,7 +89,7 @@ export function flattenLeadData(lead: Record<string, any>): Record<string, unkno
  */
 export function flattenDealData(
   deal: Record<string, any>,
-  extra?: Record<string, unknown>,
+  extra?: Record<string, unknown>
 ): Record<string, unknown> {
   return {
     id: deal.id,

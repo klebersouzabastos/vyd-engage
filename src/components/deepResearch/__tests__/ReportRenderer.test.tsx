@@ -34,23 +34,19 @@ describe('ReportRenderer', () => {
 
   it('não cria elemento <script> a partir de HTML inline (XSS)', () => {
     const { container } = render(
-      <ReportRenderer markdown={'Texto seguro.\n\n<script>alert(1)</script>'} />,
+      <ReportRenderer markdown={'Texto seguro.\n\n<script>alert(1)</script>'} />
     );
     expect(container.querySelector('script')).toBeNull();
   });
 
   it('não mantém href javascript: em links', () => {
-    const { container } = render(
-      <ReportRenderer markdown={'[clique](javascript:alert(1))'} />,
-    );
+    const { container } = render(<ReportRenderer markdown={'[clique](javascript:alert(1))'} />);
     const href = container.querySelector('a')?.getAttribute('href') ?? '';
     expect(href).not.toContain('javascript:');
   });
 
   it('abre links externos com rel de segurança', () => {
-    const { container } = render(
-      <ReportRenderer markdown={'[site](https://exemplo.com)'} />,
-    );
+    const { container } = render(<ReportRenderer markdown={'[site](https://exemplo.com)'} />);
     const a = container.querySelector('a');
     expect(a?.getAttribute('target')).toBe('_blank');
     expect(a?.getAttribute('rel') ?? '').toContain('noopener');

@@ -74,7 +74,8 @@ export function AdminProcessPanel({ research, onSaved }: AdminProcessPanelProps)
           Erro no processamento automático: {research.providerError}. Você pode colar o resultado
           manualmente abaixo.
         </div>
-      ) : research.status === 'RESEARCHING' && (research.requestedAt || research.providerResponseId) ? (
+      ) : research.status === 'RESEARCHING' &&
+        (research.requestedAt || research.providerResponseId) ? (
         <div className="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
           Processando automaticamente… esta página atualiza sozinha quando concluir.
         </div>

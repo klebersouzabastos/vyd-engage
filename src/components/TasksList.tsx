@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { Task } from "../types";
-import { TaskCard } from "./TaskCard";
-import { Button } from "./ui/button";
-import { Plus } from "lucide-react";
-import { useNotifications } from "../contexts/NotificationContext";
-import { useTasks } from "../hooks/useTasks";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { Task } from '../types';
+import { TaskCard } from './TaskCard';
+import { Button } from './ui/button';
+import { Plus } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
+import { useTasks } from '../hooks/useTasks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
+} from './ui/alert-dialog';
 
 interface TasksListProps {
   leadId: number | string;
@@ -26,7 +26,7 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   const { tasks: allTasks, completeTask, uncompleteTask, deleteTask, refetch } = useTasks();
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [deletingTask, setDeletingTask] = useState<Task | undefined>();
 
   // Filtrar tarefas do lead específico
@@ -40,8 +40,8 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
   }, [leadId]);
 
   const filteredTasks = tasks.filter((task) => {
-    if (filter === "pending") return task.status !== 'COMPLETED';
-    if (filter === "completed") return task.status === 'COMPLETED';
+    if (filter === 'pending') return task.status !== 'COMPLETED';
+    if (filter === 'completed') return task.status === 'COMPLETED';
     return true;
   });
 
@@ -69,7 +69,7 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
       await refetch();
       onTaskUpdate?.();
     } catch (error) {
-      console.error("Erro ao atualizar tarefa:", error);
+      console.error('Erro ao atualizar tarefa:', error);
     }
   };
 
@@ -85,33 +85,32 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
       onTaskUpdate?.();
       setDeletingTask(undefined);
     } catch (error) {
-      console.error("Erro ao deletar tarefa:", error);
+      console.error('Erro ao deletar tarefa:', error);
     }
   };
-
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <Button
-            variant={filter === "all" ? "default" : "outline"}
+            variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter("all")}
+            onClick={() => setFilter('all')}
           >
             Todas ({tasks.length})
           </Button>
           <Button
-            variant={filter === "pending" ? "default" : "outline"}
+            variant={filter === 'pending' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter("pending")}
+            onClick={() => setFilter('pending')}
           >
             Pendentes ({tasks.filter((t) => t.status !== 'COMPLETED').length})
           </Button>
           <Button
-            variant={filter === "completed" ? "default" : "outline"}
+            variant={filter === 'completed' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter("completed")}
+            onClick={() => setFilter('completed')}
           >
             Concluídas ({tasks.filter((t) => t.status === 'COMPLETED').length})
           </Button>
@@ -129,11 +128,11 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
       {sortedTasks.length === 0 ? (
         <div className="text-center py-12 border border-gray-300 rounded-lg bg-gray-100">
           <p className="text-gray-600">
-            {filter === "completed"
-              ? "Nenhuma tarefa concluída"
-              : filter === "pending"
-              ? "Nenhuma tarefa pendente"
-              : "Nenhuma tarefa criada"}
+            {filter === 'completed'
+              ? 'Nenhuma tarefa concluída'
+              : filter === 'pending'
+                ? 'Nenhuma tarefa pendente'
+                : 'Nenhuma tarefa criada'}
           </p>
         </div>
       ) : (
@@ -163,10 +162,7 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -175,4 +171,3 @@ export function TasksList({ leadId, onTaskUpdate }: TasksListProps) {
     </div>
   );
 }
-

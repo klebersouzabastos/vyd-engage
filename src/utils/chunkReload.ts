@@ -8,21 +8,16 @@
 // prevents an infinite reload loop when the failure is NOT deploy-related
 // (e.g. the user is genuinely offline).
 
-const LAST_RELOAD_KEY = "vyd:last-chunk-reload";
+const LAST_RELOAD_KEY = 'vyd:last-chunk-reload';
 const RELOAD_COOLDOWN_MS = 10_000;
 
 export function isChunkLoadError(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : "";
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
   return (
     /failed to fetch dynamically imported module/i.test(message) ||
     /error loading dynamically imported module/i.test(message) ||
     /importing a module script failed/i.test(message) || // Safari wording
-    message.includes("ChunkLoadError")
+    message.includes('ChunkLoadError')
   );
 }
 

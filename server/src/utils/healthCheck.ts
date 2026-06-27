@@ -38,11 +38,3 @@ export async function getHealthStatus(): Promise<HealthStatus> {
 
   return status;
 }
-
-
-
-
-
-
-
-

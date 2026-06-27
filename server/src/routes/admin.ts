@@ -67,7 +67,12 @@ router.post('/tenants', async (req, res, next) => {
       planType: d.planType,
       subscriptionStatus: d.subscriptionStatus,
       // Admin de um tenant criado pela API NUNCA recebe super-admin (anti-escalada).
-      admin: { email: d.adminEmail, name: d.adminName, password: d.adminPassword, isPlatformAdmin: false },
+      admin: {
+        email: d.adminEmail,
+        name: d.adminName,
+        password: d.adminPassword,
+        isPlatformAdmin: false,
+      },
     });
 
     res.status(201).json({

@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Plus, Edit2, Trash2, GripVertical } from "lucide-react";
-import { useCustomFields } from "../contexts/CustomFieldsContext";
-import { CustomField } from "../types";
-import { CustomFieldEditor } from "../components/CustomFieldEditor";
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
+import { useCustomFields } from '../contexts/CustomFieldsContext';
+import { CustomField } from '../types';
+import { CustomFieldEditor } from '../components/CustomFieldEditor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,11 +15,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 
 export function CustomFields() {
-  const { fields, createField, updateField, deleteField, reorderFields } =
-    useCustomFields();
+  const { fields, createField, updateField, deleteField, reorderFields } = useCustomFields();
   const [editingField, setEditingField] = useState<CustomField | undefined>();
   const [deletingField, setDeletingField] = useState<CustomField | undefined>();
   const [isCreating, setIsCreating] = useState(false);
@@ -34,7 +33,7 @@ export function CustomFields() {
     setIsCreating(false);
   };
 
-  const handleSave = (fieldData: Omit<CustomField, "id">) => {
+  const handleSave = (fieldData: Omit<CustomField, 'id'>) => {
     try {
       if (editingField) {
         updateField(editingField.id, fieldData);
@@ -44,7 +43,7 @@ export function CustomFields() {
         setIsCreating(false);
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar campo");
+      toast.error(error.message || 'Erro ao salvar campo');
     }
   };
 
@@ -59,14 +58,14 @@ export function CustomFields() {
     setDeletingField(undefined);
   };
 
-  const getTypeLabel = (type: CustomField["type"]) => {
-    const labels: Record<CustomField["type"], string> = {
-      text: "Texto",
-      number: "Número",
-      date: "Data",
-      textarea: "Texto Longo",
-      select: "Seleção",
-      checkbox: "Checkbox",
+  const getTypeLabel = (type: CustomField['type']) => {
+    const labels: Record<CustomField['type'], string> = {
+      text: 'Texto',
+      number: 'Número',
+      date: 'Data',
+      textarea: 'Texto Longo',
+      select: 'Seleção',
+      checkbox: 'Checkbox',
     };
     return labels[type];
   };
@@ -74,23 +73,19 @@ export function CustomFields() {
   return (
     <div className="min-h-screen">
       <Header title="Campos Customizados" subtitle="Crie campos personalizados para seus leads" />
-      
+
       <div className="p-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-300">
           <div className="p-6 border-b border-gray-300">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Campos Customizados
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900">Campos Customizados</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Adicione campos personalizados para capturar informações específicas dos seus leads
+                  Adicione campos personalizados para capturar informações específicas dos seus
+                  leads
                 </p>
               </div>
-              <Button
-                onClick={handleCreate}
-                className="bg-primary hover:bg-primary-dark"
-              >
+              <Button onClick={handleCreate} className="bg-primary hover:bg-primary-dark">
                 <Plus size={16} className="mr-2" />
                 Novo Campo
               </Button>
@@ -114,8 +109,8 @@ export function CustomFields() {
                       key={field.id}
                       className={`flex items-center gap-4 p-4 border rounded-lg bg-white hover:shadow-md transition-shadow ${
                         editingField?.id === field.id
-                          ? "border-primary border-2"
-                          : "border-gray-300"
+                          ? 'border-primary border-2'
+                          : 'border-gray-300'
                       }`}
                     >
                       <div className="text-gray-400 cursor-move">
@@ -124,16 +119,14 @@ export function CustomFields() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium text-gray-900">{field.name}</h4>
-                          {field.required && (
-                            <span className="text-xs text-red-500">*</span>
-                          )}
+                          {field.required && <span className="text-xs text-red-500">*</span>}
                           <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                             {getTypeLabel(field.type)}
                           </span>
                         </div>
-                        {field.type === "select" && field.options && (
+                        {field.type === 'select' && field.options && (
                           <p className="text-sm text-gray-600 mt-1">
-                            Opções: {field.options.join(", ")}
+                            Opções: {field.options.join(', ')}
                           </p>
                         )}
                       </div>
@@ -187,16 +180,13 @@ export function CustomFields() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja deletar o campo "{deletingField?.name}"?
-              Todos os valores deste campo serão removidos dos leads.
+              Tem certeza que deseja deletar o campo "{deletingField?.name}"? Todos os valores deste
+              campo serão removidos dos leads.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -205,4 +195,3 @@ export function CustomFields() {
     </div>
   );
 }
-

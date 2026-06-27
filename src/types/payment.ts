@@ -1,8 +1,8 @@
 // Tipos para sistema de pagamentos
 
-export type PaymentMethod = "credit_card" | "pix" | "boleto";
+export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 
-export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "refunded" | "cancelled";
+export type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed' | 'refunded' | 'cancelled';
 
 // Token de cartão retornado pelo Mercado Pago SDK (dados sensíveis nunca tocam nosso código)
 export interface CardTokenData {
@@ -84,7 +84,7 @@ export interface PaymentResult {
 export interface MercadoPagoConfig {
   publicKey: string;
   accessToken: string;
-  environment: "sandbox" | "production";
+  environment: 'sandbox' | 'production';
   webhookSecret?: string;
 }
 
@@ -110,7 +110,7 @@ export interface MercadoPagoPreference {
     failure?: string;
     pending?: string;
   };
-  auto_return?: "approved" | "all";
+  auto_return?: 'approved' | 'all';
   notification_url?: string;
   statement_descriptor?: string;
 }
@@ -138,11 +138,3 @@ export interface PaymentValidation {
   reason?: string;
   pendingPayment?: PaymentIntent;
 }
-
-
-
-
-
-
-
-

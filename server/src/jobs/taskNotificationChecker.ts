@@ -61,10 +61,7 @@ async function checkTaskNotifications() {
     });
 
     // Deduplication: find notifications already sent today for these task IDs
-    const allTaskIds = [
-      ...overdueTasks.map((t) => t.id),
-      ...dueTodayTasks.map((t) => t.id),
-    ];
+    const allTaskIds = [...overdueTasks.map((t) => t.id), ...dueTodayTasks.map((t) => t.id)];
 
     if (allTaskIds.length === 0) return;
 
@@ -96,16 +93,18 @@ async function checkTaskNotifications() {
       const key = `${NotificationType.TASK_OVERDUE}:${task.id}`;
       if (alreadyNotified.has(key)) continue;
 
-      await notificationService.create(task.tenantId, {
-        userId: task.assignedTo!,
-        type: NotificationType.TASK_OVERDUE,
-        title: 'Tarefa vencida',
-        message: `A tarefa "${task.title}" está vencida desde ${new Date(task.dueDate!).toLocaleDateString('pt-BR')}.`,
-        link: '/app/tasks',
-        metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
-      }).catch((err) => {
-        logger.error(`Failed to create TASK_OVERDUE notification for task ${task.id}`, err);
-      });
+      await notificationService
+        .create(task.tenantId, {
+          userId: task.assignedTo!,
+          type: NotificationType.TASK_OVERDUE,
+          title: 'Tarefa vencida',
+          message: `A tarefa "${task.title}" está vencida desde ${new Date(task.dueDate!).toLocaleDateString('pt-BR')}.`,
+          link: '/app/tasks',
+          metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+        })
+        .catch((err) => {
+          logger.error(`Failed to create TASK_OVERDUE notification for task ${task.id}`, err);
+        });
       notifyTaskOverdue(task.tenantId, task).catch(() => {});
       created++;
     }
@@ -115,21 +114,25 @@ async function checkTaskNotifications() {
       const key = `${NotificationType.TASK_DUE}:${task.id}`;
       if (alreadyNotified.has(key)) continue;
 
-      await notificationService.create(task.tenantId, {
-        userId: task.assignedTo!,
-        type: NotificationType.TASK_DUE,
-        title: 'Tarefa vence hoje',
-        message: `A tarefa "${task.title}" vence hoje.`,
-        link: '/app/tasks',
-        metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
-      }).catch((err) => {
-        logger.error(`Failed to create TASK_DUE notification for task ${task.id}`, err);
-      });
+      await notificationService
+        .create(task.tenantId, {
+          userId: task.assignedTo!,
+          type: NotificationType.TASK_DUE,
+          title: 'Tarefa vence hoje',
+          message: `A tarefa "${task.title}" vence hoje.`,
+          link: '/app/tasks',
+          metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+        })
+        .catch((err) => {
+          logger.error(`Failed to create TASK_DUE notification for task ${task.id}`, err);
+        });
       created++;
     }
 
     if (created > 0) {
-      logger.info(`Task notification checker: created ${created} notifications (${overdueTasks.length} overdue, ${dueTodayTasks.length} due today)`);
+      logger.info(
+        `Task notification checker: created ${created} notifications (${overdueTasks.length} overdue, ${dueTodayTasks.length} due today)`
+      );
     }
   } catch (error) {
     logger.error('Task notification checker failed', error);
@@ -150,7 +153,10 @@ async function cleanupStaleWaitingSteps() {
         status: AutomationLogStatus.WAITING,
         executeAt: { lte: staleThreshold },
       },
-      data: { status: AutomationLogStatus.ERROR, error: 'Step aguardando expirou sem execução (verifique ENABLE_AUTOMATION_ENGINE)' },
+      data: {
+        status: AutomationLogStatus.ERROR,
+        error: 'Step aguardando expirou sem execução (verifique ENABLE_AUTOMATION_ENGINE)',
+      },
     });
 
     if (result.count > 0) {
@@ -174,7 +180,9 @@ export function initializeTaskNotificationChecker() {
   // Cleanup stale waiting automation steps every 5 minutes
   waitingStepsIntervalId = setInterval(cleanupStaleWaitingSteps, WAITING_STEPS_CHECK_INTERVAL_MS);
 
-  logger.info('Task notification checker initialized (interval: 30min, automation waiting cleanup: 5min)');
+  logger.info(
+    'Task notification checker initialized (interval: 30min, automation waiting cleanup: 5min)'
+  );
 }
 
 export function stopTaskNotificationChecker() {

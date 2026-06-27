@@ -1,5 +1,5 @@
-import { CustomField } from "../types";
-import { formatCustomFieldValue } from "../utils/customFields";
+import { CustomField } from '../types';
+import { formatCustomFieldValue } from '../utils/customFields';
 
 interface CustomFieldDisplayProps {
   field: CustomField;
@@ -15,7 +15,7 @@ export function CustomFieldDisplay({
   showLabel = true,
 }: CustomFieldDisplayProps) {
   const formattedValue = formatCustomFieldValue(field, value);
-  const isEmpty = formattedValue === null || formattedValue === undefined || formattedValue === "";
+  const isEmpty = formattedValue === null || formattedValue === undefined || formattedValue === '';
 
   if (isEmpty && mode === 'compact') {
     return null;
@@ -24,9 +24,7 @@ export function CustomFieldDisplay({
   if (mode === 'inline') {
     return (
       <span className="text-sm text-gray-600">
-        {showLabel && (
-          <span className="font-medium text-gray-900">{field.name}: </span>
-        )}
+        {showLabel && <span className="font-medium text-gray-900">{field.name}: </span>}
         {isEmpty ? (
           <span className="text-gray-400 italic">Não informado</span>
         ) : (
@@ -39,11 +37,9 @@ export function CustomFieldDisplay({
   if (mode === 'compact') {
     return (
       <div className="flex items-center gap-1 text-xs">
-        {showLabel && (
-          <span className="text-gray-600 font-medium">{field.name}:</span>
-        )}
-        <span className={isEmpty ? "text-gray-400 italic" : "text-gray-900"}>
-          {isEmpty ? "—" : formattedValue}
+        {showLabel && <span className="text-gray-600 font-medium">{field.name}:</span>}
+        <span className={isEmpty ? 'text-gray-400 italic' : 'text-gray-900'}>
+          {isEmpty ? '—' : formattedValue}
         </span>
       </div>
     );
@@ -58,17 +54,9 @@ export function CustomFieldDisplay({
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </div>
       )}
-      <div className={`text-sm ${isEmpty ? "text-gray-400 italic" : "text-gray-900"}`}>
-        {isEmpty ? "Não informado" : formattedValue}
+      <div className={`text-sm ${isEmpty ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+        {isEmpty ? 'Não informado' : formattedValue}
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-

@@ -1,70 +1,64 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Loader2,
-  Send,
-  Mail,
-  Users,
-  Eye,
-  Clock,
-} from "lucide-react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { ArrowLeft, ArrowRight, Check, Loader2, Send, Mail, Users, Eye, Clock } from 'lucide-react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { BlockEditor } from "../components/campaigns/BlockEditor";
-import { CampaignPreview, substituteMergeTags, SAMPLE_LEAD } from "../components/campaigns/CampaignPreview";
-import { useAuth } from "../contexts/AuthContext";
+} from '../components/ui/select';
+import { BlockEditor } from '../components/campaigns/BlockEditor';
+import {
+  CampaignPreview,
+  substituteMergeTags,
+  SAMPLE_LEAD,
+} from '../components/campaigns/CampaignPreview';
+import { useAuth } from '../contexts/AuthContext';
 import {
   apiClient,
   type Block,
   type CampaignAudienceFilters,
   type CampaignAudiencePreview,
-} from "../services/api/client";
+} from '../services/api/client';
 
-type StepId = "name" | "sender" | "subject" | "editor" | "audience" | "schedule";
+type StepId = 'name' | 'sender' | 'subject' | 'editor' | 'audience' | 'schedule';
 
 const STEPS: { id: StepId; label: string }[] = [
-  { id: "name", label: "Nome" },
-  { id: "sender", label: "Remetente" },
-  { id: "subject", label: "Assunto" },
-  { id: "editor", label: "Editor" },
-  { id: "audience", label: "Audiência" },
-  { id: "schedule", label: "Agendar" },
+  { id: 'name', label: 'Nome' },
+  { id: 'sender', label: 'Remetente' },
+  { id: 'subject', label: 'Assunto' },
+  { id: 'editor', label: 'Editor' },
+  { id: 'audience', label: 'Audiência' },
+  { id: 'schedule', label: 'Agendar' },
 ];
 
 const LEAD_STATUS_OPTIONS = [
-  { value: "NEW", label: "Novo" },
-  { value: "CONTACTED", label: "Contatado" },
-  { value: "QUALIFIED", label: "Qualificado" },
-  { value: "PROPOSAL", label: "Proposta" },
-  { value: "NEGOTIATION", label: "Negociação" },
-  { value: "WON", label: "Ganho" },
-  { value: "LOST", label: "Perdido" },
+  { value: 'NEW', label: 'Novo' },
+  { value: 'CONTACTED', label: 'Contatado' },
+  { value: 'QUALIFIED', label: 'Qualificado' },
+  { value: 'PROPOSAL', label: 'Proposta' },
+  { value: 'NEGOTIATION', label: 'Negociação' },
+  { value: 'WON', label: 'Ganho' },
+  { value: 'LOST', label: 'Perdido' },
 ];
 
 const LEAD_SOURCE_OPTIONS = [
-  { value: "WEBSITE", label: "Website" },
-  { value: "SOCIAL_MEDIA", label: "Redes Sociais" },
-  { value: "REFERRAL", label: "Indicação" },
-  { value: "EMAIL", label: "E-mail" },
-  { value: "PHONE", label: "Telefone" },
-  { value: "OTHER", label: "Outro" },
+  { value: 'WEBSITE', label: 'Website' },
+  { value: 'SOCIAL_MEDIA', label: 'Redes Sociais' },
+  { value: 'REFERRAL', label: 'Indicação' },
+  { value: 'EMAIL', label: 'E-mail' },
+  { value: 'PHONE', label: 'Telefone' },
+  { value: 'OTHER', label: 'Outro' },
 ];
 
-const ANY = "__any__";
+const ANY = '__any__';
 
 export function CampaignWizard() {
   const navigate = useNavigate();
@@ -79,10 +73,10 @@ export function CampaignWizard() {
   const [saving, setSaving] = useState(false);
 
   // Campaign fields
-  const [name, setName] = useState("");
-  const [fromName, setFromName] = useState("");
-  const [fromEmail, setFromEmail] = useState("");
-  const [subject, setSubject] = useState("");
+  const [name, setName] = useState('');
+  const [fromName, setFromName] = useState('');
+  const [fromEmail, setFromEmail] = useState('');
+  const [subject, setSubject] = useState('');
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [filters, setFilters] = useState<CampaignAudienceFilters>({});
 
@@ -91,19 +85,19 @@ export function CampaignWizard() {
   const [loadingAudience, setLoadingAudience] = useState(false);
 
   // Scheduling (req 15)
-  const [sendMode, setSendMode] = useState<"now" | "schedule">("now");
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
+  const [sendMode, setSendMode] = useState<'now' | 'schedule'>('now');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
 
   // Tags + users for audience filters (req 12)
   const { data: tags = [] } = useQuery({
-    queryKey: ["tags"],
+    queryKey: ['tags'],
     queryFn: () => apiClient.getTags(),
     staleTime: 5 * 60 * 1000,
   });
   const { data: users = [] } = useQuery({
-    queryKey: ["users"],
+    queryKey: ['users'],
     queryFn: () => apiClient.getUsers(),
     staleTime: 5 * 60 * 1000,
   });
@@ -140,7 +134,7 @@ export function CampaignWizard() {
       const preview = await apiClient.previewCampaignAudience(id);
       setAudience(preview);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao calcular audiência");
+      toast.error(err instanceof Error ? err.message : 'Erro ao calcular audiência');
     } finally {
       setLoadingAudience(false);
     }
@@ -149,28 +143,28 @@ export function CampaignWizard() {
   /** Per-step validation gate for advancing. */
   const canAdvance = (): boolean => {
     switch (step.id) {
-      case "name":
+      case 'name':
         if (!name.trim()) {
-          toast.error("Informe um nome para a campanha");
+          toast.error('Informe um nome para a campanha');
           return false;
         }
         return true;
-      case "subject":
+      case 'subject':
         if (!subject.trim()) {
-          toast.error("Informe o assunto do email");
+          toast.error('Informe o assunto do email');
           return false;
         }
         return true;
-      case "editor":
+      case 'editor':
         if (blocks.length === 0) {
-          toast.error("Adicione ao menos um bloco ao corpo do email");
+          toast.error('Adicione ao menos um bloco ao corpo do email');
           return false;
         }
         return true;
-      case "audience":
+      case 'audience':
         // Empty audience blocks advancing (edge case).
         if (!audience || audience.count === 0) {
-          toast.error("A audiência está vazia. Ajuste os filtros para continuar.");
+          toast.error('A audiência está vazia. Ajuste os filtros para continuar.');
           return false;
         }
         return true;
@@ -187,11 +181,11 @@ export function CampaignWizard() {
       const next = stepIndex + 1;
       setStepIndex(next);
       // Auto-load the audience preview when entering the Audiência step.
-      if (STEPS[next]?.id === "audience") {
+      if (STEPS[next]?.id === 'audience') {
         await loadAudiencePreview();
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar a campanha");
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar a campanha');
     } finally {
       setSaving(false);
     }
@@ -199,7 +193,7 @@ export function CampaignWizard() {
 
   const goBack = () => {
     if (stepIndex === 0) {
-      navigate("/app/campaigns");
+      navigate('/app/campaigns');
       return;
     }
     setStepIndex((i) => i - 1);
@@ -210,9 +204,9 @@ export function CampaignWizard() {
     try {
       const id = await persist();
       await apiClient.sendCampaignTestEmail(id);
-      toast.success(`Email de teste enviado para ${user?.email ?? "seu email"}`);
+      toast.success(`Email de teste enviado para ${user?.email ?? 'seu email'}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao enviar email de teste");
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar email de teste');
     } finally {
       setSendingTest(false);
     }
@@ -220,15 +214,15 @@ export function CampaignWizard() {
 
   const handleFinish = async () => {
     let sendAt: string | null = null;
-    if (sendMode === "schedule") {
+    if (sendMode === 'schedule') {
       if (!scheduleDate || !scheduleTime) {
-        toast.error("Selecione a data e a hora do agendamento");
+        toast.error('Selecione a data e a hora do agendamento');
         return;
       }
       const when = new Date(`${scheduleDate}T${scheduleTime}`);
       // Campaign scheduled in the past (edge case).
       if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
-        toast.error("O horário agendado deve ser no futuro");
+        toast.error('O horário agendado deve ser no futuro');
         return;
       }
       sendAt = when.toISOString();
@@ -238,11 +232,11 @@ export function CampaignWizard() {
     try {
       const id = await persist();
       await apiClient.scheduleCampaign(id, sendAt);
-      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-      toast.success(sendAt ? "Campanha agendada" : "Campanha enviada");
-      navigate("/app/campaigns");
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success(sendAt ? 'Campanha agendada' : 'Campanha enviada');
+      navigate('/app/campaigns');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao finalizar a campanha");
+      toast.error(err instanceof Error ? err.message : 'Erro ao finalizar a campanha');
     } finally {
       setSaving(false);
     }
@@ -268,16 +262,16 @@ export function CampaignWizard() {
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${
                     active
-                      ? "bg-primary text-white"
+                      ? 'bg-primary text-white'
                       : done
-                        ? "bg-primary/20 text-primary"
-                        : "bg-gray-100 text-gray-400"
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-gray-100 text-gray-400'
                   }`}
                 >
                   {done ? <Check size={14} /> : i + 1}
                 </div>
                 <span
-                  className={`text-sm ${active ? "font-medium text-gray-900" : "text-gray-500"}`}
+                  className={`text-sm ${active ? 'font-medium text-gray-900' : 'text-gray-500'}`}
                 >
                   {s.label}
                 </span>
@@ -289,7 +283,7 @@ export function CampaignWizard() {
 
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           {/* Step: Nome */}
-          {step.id === "name" && (
+          {step.id === 'name' && (
             <div className="space-y-3">
               <Label htmlFor="campaign-name">Nome da campanha</Label>
               <Input
@@ -305,7 +299,7 @@ export function CampaignWizard() {
           )}
 
           {/* Step: Remetente */}
-          {step.id === "sender" && (
+          {step.id === 'sender' && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="from-name">Nome do remetente</Label>
@@ -330,7 +324,7 @@ export function CampaignWizard() {
           )}
 
           {/* Step: Assunto */}
-          {step.id === "subject" && (
+          {step.id === 'subject' && (
             <div className="space-y-3">
               <Label htmlFor="subject">Assunto</Label>
               <Input
@@ -340,7 +334,7 @@ export function CampaignWizard() {
                 placeholder="Assunto do email — use {{lead.name}} para personalizar"
               />
               <div className="flex flex-wrap gap-1.5">
-                {["{{lead.name}}", "{{lead.company}}", "{{lead.email}}"].map((tag) => (
+                {['{{lead.name}}', '{{lead.company}}', '{{lead.email}}'].map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -360,7 +354,7 @@ export function CampaignWizard() {
           )}
 
           {/* Step: Editor */}
-          {step.id === "editor" && (
+          {step.id === 'editor' && (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div>
                 <h3 className="mb-3 text-sm font-medium text-gray-900">Blocos</h3>
@@ -372,7 +366,7 @@ export function CampaignWizard() {
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <p className="mb-3 border-b border-gray-200 pb-2 text-sm font-medium">
-                    Assunto: {substituteMergeTags(subject, SAMPLE_LEAD) || "(sem assunto)"}
+                    Assunto: {substituteMergeTags(subject, SAMPLE_LEAD) || '(sem assunto)'}
                   </p>
                   <CampaignPreview blocks={blocks} />
                 </div>
@@ -385,9 +379,13 @@ export function CampaignWizard() {
                   disabled={sendingTest || blocks.length === 0}
                 >
                   {sendingTest ? (
-                    <><Loader2 size={14} className="animate-spin" /> Enviando...</>
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Enviando...
+                    </>
                   ) : (
-                    <><Mail size={14} /> Enviar email de teste</>
+                    <>
+                      <Mail size={14} /> Enviar email de teste
+                    </>
                   )}
                 </Button>
               </div>
@@ -395,7 +393,7 @@ export function CampaignWizard() {
           )}
 
           {/* Step: Audiência */}
-          {step.id === "audience" && (
+          {step.id === 'audience' && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -404,11 +402,15 @@ export function CampaignWizard() {
                     value={filters.status ?? ANY}
                     onValueChange={(v) => updateFilter({ status: v === ANY ? undefined : v })}
                   >
-                    <SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ANY}>Qualquer</SelectItem>
                       {LEAD_STATUS_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -420,11 +422,15 @@ export function CampaignWizard() {
                     value={filters.tagId ?? ANY}
                     onValueChange={(v) => updateFilter({ tagId: v === ANY ? undefined : v })}
                   >
-                    <SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ANY}>Qualquer</SelectItem>
                       {tags.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -436,11 +442,15 @@ export function CampaignWizard() {
                     value={filters.assignedTo ?? ANY}
                     onValueChange={(v) => updateFilter({ assignedTo: v === ANY ? undefined : v })}
                   >
-                    <SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ANY}>Qualquer</SelectItem>
                       {users.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -452,11 +462,15 @@ export function CampaignWizard() {
                     value={filters.source ?? ANY}
                     onValueChange={(v) => updateFilter({ source: v === ANY ? undefined : v })}
                   >
-                    <SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ANY}>Qualquer</SelectItem>
                       {LEAD_SOURCE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -467,9 +481,11 @@ export function CampaignWizard() {
                   <Input
                     id="min-score"
                     type="number"
-                    value={filters.minScore ?? ""}
+                    value={filters.minScore ?? ''}
                     onChange={(e) =>
-                      updateFilter({ minScore: e.target.value === "" ? undefined : Number(e.target.value) })
+                      updateFilter({
+                        minScore: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
                     }
                     placeholder="Ex.: 50"
                   />
@@ -480,9 +496,11 @@ export function CampaignWizard() {
                   <Input
                     id="max-score"
                     type="number"
-                    value={filters.maxScore ?? ""}
+                    value={filters.maxScore ?? ''}
                     onChange={(e) =>
-                      updateFilter({ maxScore: e.target.value === "" ? undefined : Number(e.target.value) })
+                      updateFilter({
+                        maxScore: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
                     }
                     placeholder="Ex.: 100"
                   />
@@ -493,7 +511,7 @@ export function CampaignWizard() {
                   <Input
                     id="last-after"
                     type="date"
-                    value={filters.lastInteractionAfter ?? ""}
+                    value={filters.lastInteractionAfter ?? ''}
                     onChange={(e) =>
                       updateFilter({ lastInteractionAfter: e.target.value || undefined })
                     }
@@ -505,7 +523,7 @@ export function CampaignWizard() {
                   <Input
                     id="last-before"
                     type="date"
-                    value={filters.lastInteractionBefore ?? ""}
+                    value={filters.lastInteractionBefore ?? ''}
                     onChange={(e) =>
                       updateFilter({ lastInteractionBefore: e.target.value || undefined })
                     }
@@ -517,9 +535,12 @@ export function CampaignWizard() {
                   <Input
                     id="no-interaction"
                     type="number"
-                    value={filters.noInteractionDays ?? ""}
+                    value={filters.noInteractionDays ?? ''}
                     onChange={(e) =>
-                      updateFilter({ noInteractionDays: e.target.value === "" ? undefined : Number(e.target.value) })
+                      updateFilter({
+                        noInteractionDays:
+                          e.target.value === '' ? undefined : Number(e.target.value),
+                      })
                     }
                     placeholder="Ex.: 30"
                   />
@@ -535,9 +556,13 @@ export function CampaignWizard() {
                 disabled={loadingAudience}
               >
                 {loadingAudience ? (
-                  <><Loader2 size={14} className="animate-spin" /> Calculando...</>
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Calculando...
+                  </>
                 ) : (
-                  <><Users size={14} /> Atualizar audiência</>
+                  <>
+                    <Users size={14} /> Atualizar audiência
+                  </>
                 )}
               </Button>
 
@@ -549,8 +574,8 @@ export function CampaignWizard() {
               ) : audience ? (
                 audience.count === 0 ? (
                   <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-                    Nenhum lead corresponde aos filtros selecionados (descadastrados são
-                    excluídos automaticamente). Ajuste os filtros para continuar.
+                    Nenhum lead corresponde aos filtros selecionados (descadastrados são excluídos
+                    automaticamente). Ajuste os filtros para continuar.
                   </div>
                 ) : (
                   <div className="rounded-md border border-green-200 bg-green-50 p-4">
@@ -573,39 +598,39 @@ export function CampaignWizard() {
           )}
 
           {/* Step: Agendar */}
-          {step.id === "schedule" && (
+          {step.id === 'schedule' && (
             <div className="space-y-5">
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setSendMode("now")}
+                  onClick={() => setSendMode('now')}
                   className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
-                    sendMode === "now"
-                      ? "bg-primary text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    sendMode === 'now'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   <Send size={14} /> Enviar agora
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSendMode("schedule")}
+                  onClick={() => setSendMode('schedule')}
                   className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
-                    sendMode === "schedule"
-                      ? "bg-primary text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    sendMode === 'schedule'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   <Clock size={14} /> Agendar para
                 </button>
               </div>
 
-              {sendMode === "schedule" && (
+              {sendMode === 'schedule' && (
                 <div className="flex flex-wrap items-center gap-3 rounded-md border border-blue-200 bg-blue-50 p-3">
                   <Input
                     type="date"
                     value={scheduleDate}
-                    min={new Date().toISOString().split("T")[0]}
+                    min={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setScheduleDate(e.target.value)}
                     className="w-auto"
                   />
@@ -620,8 +645,8 @@ export function CampaignWizard() {
 
               {audience && (
                 <p className="text-sm text-gray-600">
-                  Esta campanha será enviada para <strong>{audience.count}</strong>{" "}
-                  {audience.count === 1 ? "lead" : "leads"}.
+                  Esta campanha será enviada para <strong>{audience.count}</strong>{' '}
+                  {audience.count === 1 ? 'lead' : 'leads'}.
                 </p>
               )}
             </div>
@@ -630,26 +655,42 @@ export function CampaignWizard() {
 
         {/* Footer nav */}
         <div className="mt-6 flex items-center justify-between">
-          <Button type="button" variant="outline" onClick={goBack} className="gap-2" disabled={saving}>
-            <ArrowLeft size={16} /> {stepIndex === 0 ? "Cancelar" : "Voltar"}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={goBack}
+            className="gap-2"
+            disabled={saving}
+          >
+            <ArrowLeft size={16} /> {stepIndex === 0 ? 'Cancelar' : 'Voltar'}
           </Button>
 
-          {step.id === "schedule" ? (
+          {step.id === 'schedule' ? (
             <Button type="button" onClick={handleFinish} disabled={saving} className="gap-2">
               {saving ? (
-                <><Loader2 size={16} className="animate-spin" /> Processando...</>
-              ) : sendMode === "schedule" ? (
-                <><Clock size={16} /> Agendar campanha</>
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Processando...
+                </>
+              ) : sendMode === 'schedule' ? (
+                <>
+                  <Clock size={16} /> Agendar campanha
+                </>
               ) : (
-                <><Send size={16} /> Enviar campanha</>
+                <>
+                  <Send size={16} /> Enviar campanha
+                </>
               )}
             </Button>
           ) : (
             <Button type="button" onClick={goNext} disabled={saving} className="gap-2">
               {saving ? (
-                <><Loader2 size={16} className="animate-spin" /> Salvando...</>
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Salvando...
+                </>
               ) : (
-                <>Próximo <ArrowRight size={16} /></>
+                <>
+                  Próximo <ArrowRight size={16} />
+                </>
               )}
             </Button>
           )}

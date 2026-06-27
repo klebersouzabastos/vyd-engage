@@ -1,9 +1,20 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Plus, Mail, MessageSquare, Play, Pause, Eye, Trash2, Loader2, Zap, Pencil } from "lucide-react";
-import { Switch } from "../components/ui/switch";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import {
+  Plus,
+  Mail,
+  MessageSquare,
+  Play,
+  Pause,
+  Eye,
+  Trash2,
+  Loader2,
+  Zap,
+  Pencil,
+} from 'lucide-react';
+import { Switch } from '../components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,15 +24,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
+} from '../components/ui/alert-dialog';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
 
 interface AutomationItem {
   id: string;
   name: string;
   description?: string;
-  status: "ACTIVE" | "PAUSED" | "DRAFT";
+  status: 'ACTIVE' | 'PAUSED' | 'DRAFT';
   trigger: any;
   steps: any[];
   runsCount: number;
@@ -50,23 +61,23 @@ export function Automations() {
       const list = Array.isArray(rawData) ? rawData : rawData?.automations || [];
       setAutomationsList(list);
     } catch (error) {
-      console.error("Erro ao carregar automações:", error);
-      toast.error("Erro ao carregar automações");
+      console.error('Erro ao carregar automações:', error);
+      toast.error('Erro ao carregar automações');
     } finally {
       setLoading(false);
     }
   };
 
   const toggleStatus = async (automation: AutomationItem) => {
-    const newStatus = automation.status === "ACTIVE" ? "PAUSED" : "ACTIVE";
+    const newStatus = automation.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
     try {
       await apiClient.updateAutomation(automation.id, { status: newStatus });
       setAutomationsList((prev) =>
         prev.map((a) => (a.id === automation.id ? { ...a, status: newStatus } : a))
       );
-      toast.success(`Automação ${newStatus === "ACTIVE" ? "ativada" : "pausada"}`);
+      toast.success(`Automação ${newStatus === 'ACTIVE' ? 'ativada' : 'pausada'}`);
     } catch (error) {
-      toast.error("Erro ao alterar status");
+      toast.error('Erro ao alterar status');
     }
   };
 
@@ -80,23 +91,23 @@ export function Automations() {
     try {
       await apiClient.deleteAutomation(automationToDelete);
       setAutomationsList((prev) => prev.filter((a) => a.id !== automationToDelete));
-      toast.success("Automação deletada");
+      toast.success('Automação deletada');
     } catch (error) {
-      toast.error("Erro ao deletar automação");
+      toast.error('Erro ao deletar automação');
     } finally {
       setDeleteDialogOpen(false);
       setAutomationToDelete(null);
     }
   };
 
-  const getStepType = (automation: AutomationItem): "whatsapp" | "email" | "mixed" => {
+  const getStepType = (automation: AutomationItem): 'whatsapp' | 'email' | 'mixed' => {
     const types = new Set((automation.steps || []).map((s: any) => s.type));
-    if (types.has("send_whatsapp") && !types.has("send_email")) return "whatsapp";
-    if (types.has("send_email") && !types.has("send_whatsapp")) return "email";
-    return "mixed";
+    if (types.has('send_whatsapp') && !types.has('send_email')) return 'whatsapp';
+    if (types.has('send_email') && !types.has('send_whatsapp')) return 'email';
+    return 'mixed';
   };
 
-  const activeCount = automationsList.filter((a) => a.status === "ACTIVE").length;
+  const activeCount = automationsList.filter((a) => a.status === 'ACTIVE').length;
   const totalRuns = automationsList.reduce((sum, a) => sum + (a.runsCount || 0), 0);
   const totalSuccess = automationsList.reduce((sum, a) => sum + (a.successCount || 0), 0);
 
@@ -118,13 +129,17 @@ export function Automations() {
       <div className="p-8">
         {/* Actions */}
         <div className="flex items-center justify-between mb-6">
-          <Button variant="outline" className="gap-2" onClick={() => navigate("/app/automations/logs")}>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => navigate('/app/automations/logs')}
+          >
             <Eye size={16} /> Ver Logs
           </Button>
           <div className="flex items-center gap-2">
             <Button
               className="bg-primary hover:bg-primary-dark gap-2"
-              onClick={() => navigate("/app/automations/new/builder")}
+              onClick={() => navigate('/app/automations/new/builder')}
             >
               <Plus size={16} />
               Nova automação
@@ -137,9 +152,11 @@ export function Automations() {
           <div className="text-center py-16">
             <Zap className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma automação criada</h3>
-            <p className="text-gray-500 mb-4">Crie sua primeira automação para automatizar tarefas</p>
+            <p className="text-gray-500 mb-4">
+              Crie sua primeira automação para automatizar tarefas
+            </p>
             <div className="flex items-center gap-3 justify-center">
-              <Button onClick={() => navigate("/app/automations/new/builder")}>
+              <Button onClick={() => navigate('/app/automations/new/builder')}>
                 <Plus size={16} className="mr-1" />
                 Nova automação
               </Button>
@@ -151,9 +168,10 @@ export function Automations() {
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {automationsList.map((automation) => {
                 const type = getStepType(automation);
-                const successRate = automation.runsCount > 0
-                  ? Math.round((automation.successCount / automation.runsCount) * 100)
-                  : 0;
+                const successRate =
+                  automation.runsCount > 0
+                    ? Math.round((automation.successCount / automation.runsCount) * 100)
+                    : 0;
 
                 return (
                   <div
@@ -163,18 +181,21 @@ export function Automations() {
                     <div className="p-6 border-b border-gray-300">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className={`
+                          <div
+                            className={`
                             w-10 h-10 rounded-lg flex items-center justify-center
-                            ${type === "whatsapp"
-                              ? "bg-green-100 text-green-600"
-                              : type === "email"
-                              ? "bg-blue-100 text-blue-600"
-                              : "bg-purple-100 text-purple-600"
+                            ${
+                              type === 'whatsapp'
+                                ? 'bg-green-100 text-green-600'
+                                : type === 'email'
+                                  ? 'bg-blue-100 text-blue-600'
+                                  : 'bg-purple-100 text-purple-600'
                             }
-                          `}>
-                            {type === "whatsapp" ? (
+                          `}
+                          >
+                            {type === 'whatsapp' ? (
                               <MessageSquare size={20} />
-                            ) : type === "email" ? (
+                            ) : type === 'email' ? (
                               <Mail size={20} />
                             ) : (
                               <Zap size={20} />
@@ -189,19 +210,22 @@ export function Automations() {
                           </div>
                         </div>
                         <Switch
-                          checked={automation.status === "ACTIVE"}
+                          checked={automation.status === 'ACTIVE'}
                           onCheckedChange={() => toggleStatus(automation)}
                         />
                       </div>
 
-                      <span className={`
+                      <span
+                        className={`
                         inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
-                        ${automation.status === "ACTIVE"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
+                        ${
+                          automation.status === 'ACTIVE'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
                         }
-                      `}>
-                        {automation.status === "ACTIVE" ? (
+                      `}
+                      >
+                        {automation.status === 'ACTIVE' ? (
                           <>
                             <Play size={12} />
                             Ativo
@@ -209,7 +233,7 @@ export function Automations() {
                         ) : (
                           <>
                             <Pause size={12} />
-                            {automation.status === "DRAFT" ? "Rascunho" : "Pausado"}
+                            {automation.status === 'DRAFT' ? 'Rascunho' : 'Pausado'}
                           </>
                         )}
                       </span>
@@ -225,9 +249,7 @@ export function Automations() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Sucesso</p>
-                          <p className="text-xl font-semibold text-green-600">
-                            {successRate}%
-                          </p>
+                          <p className="text-xl font-semibold text-green-600">{successRate}%</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Erros</p>

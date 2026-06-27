@@ -4,7 +4,7 @@ import {
   SendMessageResult,
   ConnectionTestResult,
   ConnectionStatusInfo,
-} from "../../types/whatsapp";
+} from '../../types/whatsapp';
 
 /**
  * Valida credenciais da Evolution API
@@ -14,7 +14,7 @@ export async function validateEvolutionCredentials(
 ): Promise<ConnectionTestResult> {
   try {
     const response = await fetch(`${config.apiUrl}/instance/fetchInstances`, {
-      method: "GET",
+      method: 'GET',
       headers: {
         apikey: config.apiKey,
       },
@@ -23,8 +23,8 @@ export async function validateEvolutionCredentials(
     if (!response.ok) {
       return {
         success: false,
-        message: "Erro ao validar credenciais da Evolution API",
-        error: "Credenciais inválidas",
+        message: 'Erro ao validar credenciais da Evolution API',
+        error: 'Credenciais inválidas',
       };
     }
 
@@ -35,16 +35,14 @@ export async function validateEvolutionCredentials(
 
     return {
       success: !!instanceExists,
-      message: instanceExists
-        ? "Instância encontrada"
-        : "Instância não encontrada",
+      message: instanceExists ? 'Instância encontrada' : 'Instância não encontrada',
       responseTime: Date.now(),
     };
   } catch (error) {
     return {
       success: false,
-      message: `Erro de conexão: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -73,24 +71,21 @@ export async function sendEvolutionMessage(
       };
     }
 
-    const response = await fetch(
-      `${config.apiUrl}/message/sendText/${config.instanceName}`,
-      {
-        method: "POST",
-        headers: {
-          apikey: config.apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/message/sendText/${config.instanceName}`, {
+      method: 'POST',
+      headers: {
+        apikey: config.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
     const data = await response.json();
 
     if (!response.ok || data.error) {
       return {
         success: false,
-        error: data.error?.message || "Erro ao enviar mensagem",
+        error: data.error?.message || 'Erro ao enviar mensagem',
         providerResponse: data,
       };
     }
@@ -103,7 +98,7 @@ export async function sendEvolutionMessage(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -111,40 +106,33 @@ export async function sendEvolutionMessage(
 /**
  * Obtém status da conexão Evolution
  */
-export async function getEvolutionStatus(
-  config: EvolutionConfig
-): Promise<ConnectionStatusInfo> {
+export async function getEvolutionStatus(config: EvolutionConfig): Promise<ConnectionStatusInfo> {
   try {
-    const response = await fetch(
-      `${config.apiUrl}/instance/fetchInstances`,
-      {
-        method: "GET",
-        headers: {
-          apikey: config.apiKey,
-        },
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/instance/fetchInstances`, {
+      method: 'GET',
+      headers: {
+        apikey: config.apiKey,
+      },
+    });
 
     if (!response.ok) {
       return {
-        status: "error",
-        errorMessage: "Não foi possível verificar o status",
+        status: 'error',
+        errorMessage: 'Não foi possível verificar o status',
       };
     }
 
     const data = await response.json();
-    const instance = data.find(
-      (inst: any) => inst.instance.instanceName === config.instanceName
-    );
+    const instance = data.find((inst: any) => inst.instance.instanceName === config.instanceName);
 
     if (!instance) {
       return {
-        status: "disconnected",
-        errorMessage: "Instância não encontrada",
+        status: 'disconnected',
+        errorMessage: 'Instância não encontrada',
       };
     }
 
-    const status = instance.instance.status === "open" ? "connected" : "disconnected";
+    const status = instance.instance.status === 'open' ? 'connected' : 'disconnected';
 
     return {
       status,
@@ -153,8 +141,8 @@ export async function getEvolutionStatus(
     };
   } catch (error) {
     return {
-      status: "error",
-      errorMessage: error instanceof Error ? error.message : "Erro desconhecido",
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -166,15 +154,12 @@ export async function getEvolutionQRCode(
   config: EvolutionConfig
 ): Promise<{ qrCode: string; expiresAt: string } | null> {
   try {
-    const response = await fetch(
-      `${config.apiUrl}/instance/connect/${config.instanceName}`,
-      {
-        method: "GET",
-        headers: {
-          apikey: config.apiKey,
-        },
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/instance/connect/${config.instanceName}`, {
+      method: 'GET',
+      headers: {
+        apikey: config.apiKey,
+      },
+    });
 
     if (!response.ok) {
       return null;
@@ -190,15 +175,7 @@ export async function getEvolutionQRCode(
 
     return null;
   } catch (error) {
-    console.error("Erro ao obter QR Code:", error);
+    console.error('Erro ao obter QR Code:', error);
     return null;
   }
 }
-
-
-
-
-
-
-
-

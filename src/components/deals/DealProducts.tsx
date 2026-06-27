@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Trash2, Plus } from "lucide-react";
-import { Skeleton } from "../ui/skeleton";
-import { formatCurrency } from "../../utils/format";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Trash2, Plus } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
+import { formatCurrency } from '../../utils/format';
 
 interface DealProduct {
   id: string;
@@ -37,22 +37,19 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
 
   // ── Editing state for inline add row ──
   const [addingRow, setAddingRow] = useState(false);
-  const [newProductId, setNewProductId] = useState("");
+  const [newProductId, setNewProductId] = useState('');
   const [newQty, setNewQty] = useState(1);
   const [newUnitPrice, setNewUnitPrice] = useState(0);
   const [newDiscount, setNewDiscount] = useState(0);
 
   // ── Fetch existing line items ──
-  const {
-    data: items = [],
-    isLoading: loadingItems,
-  } = useQuery<DealProduct[]>({
-    queryKey: ["deal-products", dealId],
+  const { data: items = [], isLoading: loadingItems } = useQuery<DealProduct[]>({
+    queryKey: ['deal-products', dealId],
     queryFn: async () => {
       const res = await fetch(`/api/v1/deals/${dealId}/products`, {
-        credentials: "include",
+        credentials: 'include',
       });
-      if (!res.ok) throw new Error("Falha ao carregar produtos do negócio");
+      if (!res.ok) throw new Error('Falha ao carregar produtos do negócio');
       const json = await res.json();
       return json.data ?? json;
     },
@@ -60,12 +57,12 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
 
   // ── Fetch product catalog ──
   const { data: catalog = [] } = useQuery<Product[]>({
-    queryKey: ["products-catalog"],
+    queryKey: ['products-catalog'],
     queryFn: async () => {
-      const res = await fetch("/api/v1/products?active=true", {
-        credentials: "include",
+      const res = await fetch('/api/v1/products?active=true', {
+        credentials: 'include',
       });
-      if (!res.ok) throw new Error("Falha ao carregar catálogo");
+      if (!res.ok) throw new Error('Falha ao carregar catálogo');
       const json = await res.json();
       return json.data ?? json;
     },
@@ -73,7 +70,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
 
   // ── Helpers ──
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ["deal-products", dealId] });
+    queryClient.invalidateQueries({ queryKey: ['deal-products', dealId] });
   }
 
   function recalcTotal(updatedItems: DealProduct[]) {
@@ -89,7 +86,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
 
   function csrfHeaders(): Record<string, string> {
     const token = getCsrfToken();
-    return token ? { "x-csrf-token": token } : {};
+    return token ? { 'x-csrf-token': token } : {};
   }
 
   // ── Add item ──
@@ -98,9 +95,9 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
 
     const lineTotal = computeLineTotal(newQty, newUnitPrice, newDiscount);
     const res = await fetch(`/api/v1/deals/${dealId}/products`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", ...csrfHeaders() },
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({
         productId: newProductId,
         quantity: newQty,
@@ -112,10 +109,11 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
 
     if (res.ok) {
       await invalidate();
-      const updated = (await queryClient.getQueryData<DealProduct[]>(["deal-products", dealId])) ?? [];
+      const updated =
+        (await queryClient.getQueryData<DealProduct[]>(['deal-products', dealId])) ?? [];
       recalcTotal(updated);
       setAddingRow(false);
-      setNewProductId("");
+      setNewProductId('');
       setNewQty(1);
       setNewUnitPrice(0);
       setNewDiscount(0);
@@ -125,13 +123,14 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
   // ── Delete item ──
   async function handleDelete(itemId: string) {
     const res = await fetch(`/api/v1/deals/${dealId}/products/${itemId}`, {
-      method: "DELETE",
-      credentials: "include",
+      method: 'DELETE',
+      credentials: 'include',
       headers: csrfHeaders(),
     });
     if (res.ok) {
       await invalidate();
-      const updated = (await queryClient.getQueryData<DealProduct[]>(["deal-products", dealId])) ?? [];
+      const updated =
+        (await queryClient.getQueryData<DealProduct[]>(['deal-products', dealId])) ?? [];
       recalcTotal(updated);
     }
   }
@@ -139,7 +138,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
   // ── Update item field ──
   async function handleUpdateItem(
     item: DealProduct,
-    patch: Partial<Pick<DealProduct, "quantity" | "unitPrice" | "discount">>
+    patch: Partial<Pick<DealProduct, 'quantity' | 'unitPrice' | 'discount'>>
   ) {
     const qty = patch.quantity ?? item.quantity;
     const unitPrice = patch.unitPrice ?? item.unitPrice;
@@ -147,15 +146,16 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
     const lineTotal = computeLineTotal(qty, unitPrice, discount);
 
     const res = await fetch(`/api/v1/deals/${dealId}/products/${item.id}`, {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", ...csrfHeaders() },
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ quantity: qty, unitPrice, discount, lineTotal }),
     });
 
     if (res.ok) {
       await invalidate();
-      const updated = (await queryClient.getQueryData<DealProduct[]>(["deal-products", dealId])) ?? [];
+      const updated =
+        (await queryClient.getQueryData<DealProduct[]>(['deal-products', dealId])) ?? [];
       recalcTotal(updated);
     }
   }
@@ -197,9 +197,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
                     type="number"
                     min={1}
                     value={item.quantity}
-                    onChange={(e) =>
-                      handleUpdateItem(item, { quantity: Number(e.target.value) })
-                    }
+                    onChange={(e) => handleUpdateItem(item, { quantity: Number(e.target.value) })}
                     className="w-16 rounded border border-gray-200 px-1 py-0.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                 </td>
@@ -211,9 +209,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
                     min={0}
                     step={0.01}
                     value={item.unitPrice}
-                    onChange={(e) =>
-                      handleUpdateItem(item, { unitPrice: Number(e.target.value) })
-                    }
+                    onChange={(e) => handleUpdateItem(item, { unitPrice: Number(e.target.value) })}
                     className="w-24 rounded border border-gray-200 px-1 py-0.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                 </td>
@@ -225,9 +221,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
                     min={0}
                     max={100}
                     value={item.discount}
-                    onChange={(e) =>
-                      handleUpdateItem(item, { discount: Number(e.target.value) })
-                    }
+                    onChange={(e) => handleUpdateItem(item, { discount: Number(e.target.value) })}
                     className="w-16 rounded border border-gray-200 px-1 py-0.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                 </td>
@@ -325,7 +319,7 @@ export function DealProducts({ dealId, onValueChange }: DealProductsProps) {
                     <button
                       onClick={() => {
                         setAddingRow(false);
-                        setNewProductId("");
+                        setNewProductId('');
                         setNewQty(1);
                         setNewUnitPrice(0);
                         setNewDiscount(0);

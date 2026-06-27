@@ -1,16 +1,10 @@
-import { useMemo } from "react";
-import type { Task } from "../../types";
-import {
-  getMonthGridDays,
-  groupTasksByDate,
-  isToday,
-  isSameMonth,
-  format,
-} from "./calendarUtils";
-import { CalendarTaskChip, CalendarTaskDot } from "./CalendarTaskChip";
-import { useIsMobile } from "../ui/use-mobile";
+import { useMemo } from 'react';
+import type { Task } from '../../types';
+import { getMonthGridDays, groupTasksByDate, isToday, isSameMonth, format } from './calendarUtils';
+import { CalendarTaskChip, CalendarTaskDot } from './CalendarTaskChip';
+import { useIsMobile } from '../ui/use-mobile';
 
-const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 interface CalendarMonthViewProps {
   currentDate: Date;
@@ -32,18 +26,18 @@ export function CalendarMonthView({
   const tasksByDate = useMemo(() => groupTasksByDate(tasks), [tasks]);
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
-    e.dataTransfer.setData("taskId", task.id);
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent, date: Date) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData("taskId");
+    const taskId = e.dataTransfer.getData('taskId');
     if (taskId) {
       onTaskDrop(taskId, date);
     }
@@ -52,7 +46,11 @@ export function CalendarMonthView({
   const MAX_VISIBLE = isMobile ? 0 : 3;
 
   return (
-    <div role="grid" aria-label="Calendário mensal" className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+    <div
+      role="grid"
+      aria-label="Calendário mensal"
+      className="bg-white rounded-lg border border-gray-300 overflow-hidden"
+    >
       {/* Header */}
       <div role="row" className="grid grid-cols-7 border-b border-gray-200">
         {WEEKDAY_LABELS.map((label) => (
@@ -69,7 +67,7 @@ export function CalendarMonthView({
       {/* Grid */}
       <div role="row" className="grid grid-cols-7">
         {days.map((day, idx) => {
-          const dateKey = format(day, "yyyy-MM-dd");
+          const dateKey = format(day, 'yyyy-MM-dd');
           const dayTasks = tasksByDate.get(dateKey) || [];
           const isCurrentMonth = isSameMonth(day, currentDate);
           const today = isToday(day);
@@ -79,14 +77,21 @@ export function CalendarMonthView({
             <div
               key={idx}
               role="gridcell"
+              tabIndex={0}
               aria-label={format(day, "d 'de' MMMM 'de' yyyy")}
-              {...(today ? { "aria-current": "date" as const } : {})}
+              {...(today ? { 'aria-current': 'date' as const } : {})}
               className={`
                 min-h-[90px] border-b border-r border-gray-100 p-1 cursor-pointer
                 transition-colors hover:bg-gray-50
-                ${!isCurrentMonth ? "bg-gray-50" : ""}
+                ${!isCurrentMonth ? 'bg-gray-50' : ''}
               `}
               onClick={() => onDateClick(day)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === ' ') e.preventDefault();
+                  onDateClick(day);
+                }
+              }}
               onDragOver={!isMobile ? handleDragOver : undefined}
               onDrop={!isMobile ? (e) => handleDrop(e, day) : undefined}
             >
@@ -94,11 +99,11 @@ export function CalendarMonthView({
                 <span
                   className={`
                     text-sm w-7 h-7 flex items-center justify-center rounded-full
-                    ${today ? "bg-primary text-white font-bold" : ""}
-                    ${!isCurrentMonth ? "text-gray-400" : "text-gray-700"}
+                    ${today ? 'bg-primary text-white font-bold' : ''}
+                    ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-700'}
                   `}
                 >
-                  {format(day, "d")}
+                  {format(day, 'd')}
                 </span>
               </div>
 
@@ -110,9 +115,7 @@ export function CalendarMonthView({
                       <CalendarTaskDot key={task.id} task={task} />
                     ))}
                     {dayTasks.length > 4 && (
-                      <span className="text-[9px] text-gray-400">
-                        +{dayTasks.length - 4}
-                      </span>
+                      <span className="text-[9px] text-gray-400">+{dayTasks.length - 4}</span>
                     )}
                   </div>
                 )

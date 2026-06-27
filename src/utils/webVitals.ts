@@ -104,7 +104,11 @@ function logVital(metric: WebVitalMetric) {
 
   if (import.meta.env.DEV) {
     const color =
-      metric.rating === 'good' ? '#16A34A' : metric.rating === 'needs-improvement' ? '#F59E0B' : '#DC2626';
+      metric.rating === 'good'
+        ? '#16A34A'
+        : metric.rating === 'needs-improvement'
+          ? '#F59E0B'
+          : '#DC2626';
     console.log(
       `%c[Web Vital] ${metric.name}: ${Math.round(metric.value)}ms (${metric.rating})`,
       `color: ${color}; font-weight: bold;`

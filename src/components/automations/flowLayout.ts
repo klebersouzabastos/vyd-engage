@@ -1,5 +1,5 @@
-import dagre from "@dagrejs/dagre";
-import type { Node, Edge } from "@xyflow/react";
+import dagre from '@dagrejs/dagre';
+import type { Node, Edge } from '@xyflow/react';
 
 const NODE_W = 288;
 const NODE_H = 110;
@@ -11,7 +11,7 @@ const NODE_H = 110;
 export function layoutFlow(nodes: Node[], edges: Edge[]): Node[] {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 80 });
+  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80 });
 
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
   edges.forEach((e) => g.setEdge(e.source, e.target));

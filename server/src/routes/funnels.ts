@@ -16,11 +16,15 @@ router.use(tenantScope);
 const createFunnelSchema = z.object({
   name: z.string().min(1).max(100),
   type: z.nativeEnum(FunnelType).optional(),
-  columns: z.array(z.object({
-    title: z.string().min(1).max(100),
-    color: z.string().optional(),
-    mappedStatus: z.nativeEnum(LeadStatus).optional(),
-  })).optional(),
+  columns: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(100),
+        color: z.string().optional(),
+        mappedStatus: z.nativeEnum(LeadStatus).optional(),
+      })
+    )
+    .optional(),
 });
 
 const updateFunnelSchema = z.object({
@@ -65,9 +69,10 @@ router.get('/', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const typeParam = req.query.type as string | undefined;
-    const type = typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
-      ? (typeParam as FunnelType)
-      : undefined;
+    const type =
+      typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
+        ? (typeParam as FunnelType)
+        : undefined;
     const funnels = await funnelService.findAll(req.user.tenantId, type);
     res.json({ status: 200, data: funnels });
   } catch (error) {
@@ -80,9 +85,10 @@ router.get('/default', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const typeParam = req.query.type as string | undefined;
-    const type = typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
-      ? (typeParam as FunnelType)
-      : undefined;
+    const type =
+      typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
+        ? (typeParam as FunnelType)
+        : undefined;
     const funnel = await funnelService.ensureDefaultFunnel(req.user.tenantId, type);
     res.json({ status: 200, data: funnel });
   } catch (error) {
@@ -181,7 +187,11 @@ router.put('/:id/columns/reorder', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const data = reorderColumnsSchema.parse(req.body);
-    const funnel = await funnelService.reorderColumns(req.user.tenantId, req.params.id, data.columnIds);
+    const funnel = await funnelService.reorderColumns(
+      req.user.tenantId,
+      req.params.id,
+      data.columnIds
+    );
     res.json({ status: 200, data: funnel });
   } catch (error) {
     if (error instanceof z.ZodError) {

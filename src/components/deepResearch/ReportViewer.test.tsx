@@ -34,7 +34,7 @@ const renderViewer = () =>
       updatedAt="2026-06-26T00:00:00.000Z"
       searchResults={[]}
       sourceCount={0}
-    />,
+    />
   );
 
 describe('ReportViewer', () => {
@@ -43,7 +43,7 @@ describe('ReportViewer', () => {
   it('abre na capa (Apresentação) com identidade do tenant e CTA', () => {
     const { container } = renderViewer();
     expect(container.querySelector('.report-cover__company')?.textContent).toContain(
-      'K2+ Engenharia',
+      'K2+ Engenharia'
     );
     expect(screen.getByText('O que este relatório aborda')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Começar a leitura/ })).toBeInTheDocument();

@@ -7,7 +7,17 @@ interface AuditChange {
   newValue: unknown;
 }
 
-const AUDIT_FIELDS_LEAD = ['name', 'email', 'phone', 'status', 'score', 'company', 'position', 'notes', 'assignedTo'];
+const AUDIT_FIELDS_LEAD = [
+  'name',
+  'email',
+  'phone',
+  'status',
+  'score',
+  'company',
+  'position',
+  'notes',
+  'assignedTo',
+];
 const AUDIT_FIELDS_DEAL = ['name', 'value', 'stage', 'notes', 'expectedCloseDate', 'probability'];
 
 export async function createAuditLog(params: {
@@ -33,14 +43,16 @@ export async function createAuditLog(params: {
     if (changes.length === 0) return; // skip no-op updates
   }
 
-  await prisma.auditLog.create({
-    data: {
-      tenantId: params.tenantId,
-      entityType: params.entityType,
-      entityId: params.entityId,
-      userId: params.userId,
-      action: params.action,
-      changes: changes as unknown as Prisma.InputJsonValue,
-    },
-  }).catch(() => {}); // silent fail — audit must never block the main flow
+  await prisma.auditLog
+    .create({
+      data: {
+        tenantId: params.tenantId,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        userId: params.userId,
+        action: params.action,
+        changes: changes as unknown as Prisma.InputJsonValue,
+      },
+    })
+    .catch(() => {}); // silent fail — audit must never block the main flow
 }

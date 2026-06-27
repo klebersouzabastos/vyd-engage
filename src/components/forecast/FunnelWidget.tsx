@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router";
-import { Filter, Percent } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { FunnelConversionData } from "../../types";
-import { FunnelChart } from "./FunnelChart";
+import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router';
+import { Filter, Percent } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { FunnelConversionData } from '../../types';
+import { FunnelChart } from './FunnelChart';
 
 export function FunnelWidget() {
   const [data, setData] = useState<FunnelConversionData | null>(null);
@@ -19,8 +19,8 @@ export function FunnelWidget() {
 
   const overallConversion = useMemo(() => {
     if (!data) return 0;
-    const newStage = data.stages.find((s) => s.stage === "NEW");
-    const wonStage = data.stages.find((s) => s.stage === "WON");
+    const newStage = data.stages.find((s) => s.stage === 'NEW');
+    const wonStage = data.stages.find((s) => s.stage === 'WON');
     const newCount = newStage?.count || 0;
     const wonCount = wonStage?.count || 0;
     return newCount > 0 ? Math.round((wonCount / newCount) * 1000) / 10 : 0;
@@ -53,10 +53,7 @@ export function FunnelWidget() {
             <Filter size={18} className="text-blue-600" />
             Funil de Conversão
           </h3>
-          <Link
-            to="/app/funnel"
-            className="text-sm text-primary hover:underline"
-          >
+          <Link to="/app/funnel" className="text-sm text-primary hover:underline">
             Ver detalhes
           </Link>
         </div>
@@ -66,9 +63,7 @@ export function FunnelWidget() {
         <div className="flex items-center gap-2 mb-4">
           <Percent size={14} className="text-green-500" />
           <span className="text-xs text-gray-500">Conversão geral:</span>
-          <span className="text-sm font-bold text-gray-900">
-            {overallConversion}%
-          </span>
+          <span className="text-sm font-bold text-gray-900">{overallConversion}%</span>
         </div>
 
         {/* Compact funnel */}

@@ -1,6 +1,6 @@
-import { getScoreLabel } from "../utils/leadScoring";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { Info } from "lucide-react";
+import { getScoreLabel } from '../utils/leadScoring';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Info } from 'lucide-react';
 
 interface LeadScoreBadgeProps {
   score: number;
@@ -16,7 +16,9 @@ export function LeadScoreBadge({ score, showDetails = false, factors }: LeadScor
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-help ${color}`}>
+            <div
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-help ${color}`}
+            >
               <span>{label}</span>
               <span className="font-bold">({score})</span>
               <Info size={12} />
@@ -28,9 +30,10 @@ export function LeadScoreBadge({ score, showDetails = false, factors }: LeadScor
               <div className="space-y-1">
                 {factors.map((factor, index) => (
                   <div key={index} className="text-xs">
-                    <span className="font-medium">{factor.description}:</span>{" "}
-                    <span className={factor.points > 0 ? "text-green-600" : "text-red-600"}>
-                      {factor.points > 0 ? "+" : ""}{factor.points}
+                    <span className="font-medium">{factor.description}:</span>{' '}
+                    <span className={factor.points > 0 ? 'text-green-600' : 'text-red-600'}>
+                      {factor.points > 0 ? '+' : ''}
+                      {factor.points}
                     </span>
                   </div>
                 ))}
@@ -43,18 +46,13 @@ export function LeadScoreBadge({ score, showDetails = false, factors }: LeadScor
   }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`} role="status">
+    <div
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}
+      role="status"
+    >
       <span className="sr-only">Score do lead: </span>
       <span>{label}</span>
       <span className="font-bold">({score})</span>
     </div>
   );
 }
-
-
-
-
-
-
-
-

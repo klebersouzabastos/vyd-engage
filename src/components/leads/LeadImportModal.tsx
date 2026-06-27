@@ -1,8 +1,18 @@
-import { useState, useRef } from "react";
-import { Button } from "../ui/button";
-import { Upload, X, Loader2, CheckCircle, AlertTriangle, FileSpreadsheet, Download, CheckCircle2, XCircle } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { toast } from "sonner";
+import { useState, useRef } from 'react';
+import { Button } from '../ui/button';
+import {
+  Upload,
+  X,
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  FileSpreadsheet,
+  Download,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { toast } from 'sonner';
 
 interface LeadImportModalProps {
   open: boolean;
@@ -31,33 +41,33 @@ interface ColumnMapping {
 }
 
 const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
-  name: "Nome *",
-  email: "Email",
-  phone: "Telefone",
-  company: "Empresa",
-  position: "Cargo",
-  source: "Origem",
-  notes: "Notas",
+  name: 'Nome *',
+  email: 'Email',
+  phone: 'Telefone',
+  company: 'Empresa',
+  position: 'Cargo',
+  source: 'Origem',
+  notes: 'Notas',
 };
 
 const SOURCE_MAP: Record<string, string> = {
-  website: "WEBSITE",
-  "redes sociais": "SOCIAL_MEDIA",
-  "social media": "SOCIAL_MEDIA",
-  indicacao: "REFERRAL",
-  referral: "REFERRAL",
-  email: "EMAIL",
-  telefone: "PHONE",
-  phone: "PHONE",
-  outro: "OTHER",
-  other: "OTHER",
+  website: 'WEBSITE',
+  'redes sociais': 'SOCIAL_MEDIA',
+  'social media': 'SOCIAL_MEDIA',
+  indicacao: 'REFERRAL',
+  referral: 'REFERRAL',
+  email: 'EMAIL',
+  telefone: 'PHONE',
+  phone: 'PHONE',
+  outro: 'OTHER',
+  other: 'OTHER',
 };
 
 function parseCSV(text: string): string[][] {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  return lines.map(line => {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  return lines.map((line) => {
     const result: string[] = [];
-    let current = "";
+    let current = '';
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
@@ -68,9 +78,9 @@ function parseCSV(text: string): string[][] {
         } else {
           inQuotes = !inQuotes;
         }
-      } else if ((ch === "," || ch === ";") && !inQuotes) {
+      } else if ((ch === ',' || ch === ';') && !inQuotes) {
         result.push(current.trim());
-        current = "";
+        current = '';
       } else {
         current += ch;
       }
@@ -81,18 +91,41 @@ function parseCSV(text: string): string[][] {
 }
 
 function autoDetectMapping(headers: string[]): ColumnMapping {
-  const mapping: ColumnMapping = { name: -1, email: -1, phone: -1, company: -1, position: -1, source: -1, notes: -1 };
-  const lower = headers.map(h => h.toLowerCase().trim());
+  const mapping: ColumnMapping = {
+    name: -1,
+    email: -1,
+    phone: -1,
+    company: -1,
+    position: -1,
+    source: -1,
+    notes: -1,
+  };
+  const lower = headers.map((h) => h.toLowerCase().trim());
 
   for (let i = 0; i < lower.length; i++) {
     const h = lower[i];
-    if (h.includes("nome") || h === "name" || h === "full name") mapping.name = i;
-    else if (h.includes("email") || h.includes("e-mail")) mapping.email = i;
-    else if (h.includes("telefone") || h.includes("phone") || h.includes("celular") || h.includes("whatsapp")) mapping.phone = i;
-    else if (h.includes("empresa") || h.includes("company") || h.includes("organizacao")) mapping.company = i;
-    else if (h.includes("cargo") || h.includes("position") || h.includes("titulo") || h.includes("job")) mapping.position = i;
-    else if (h.includes("origem") || h.includes("source") || h.includes("canal")) mapping.source = i;
-    else if (h.includes("nota") || h.includes("notes") || h.includes("observacao")) mapping.notes = i;
+    if (h.includes('nome') || h === 'name' || h === 'full name') mapping.name = i;
+    else if (h.includes('email') || h.includes('e-mail')) mapping.email = i;
+    else if (
+      h.includes('telefone') ||
+      h.includes('phone') ||
+      h.includes('celular') ||
+      h.includes('whatsapp')
+    )
+      mapping.phone = i;
+    else if (h.includes('empresa') || h.includes('company') || h.includes('organizacao'))
+      mapping.company = i;
+    else if (
+      h.includes('cargo') ||
+      h.includes('position') ||
+      h.includes('titulo') ||
+      h.includes('job')
+    )
+      mapping.position = i;
+    else if (h.includes('origem') || h.includes('source') || h.includes('canal'))
+      mapping.source = i;
+    else if (h.includes('nota') || h.includes('notes') || h.includes('observacao'))
+      mapping.notes = i;
   }
 
   // If name wasn't detected, use first column
@@ -102,14 +135,14 @@ function autoDetectMapping(headers: string[]): ColumnMapping {
 }
 
 function downloadTemplate() {
-  const headers = "name,email,phone,company,source,status";
-  const example = "Maria Silva,maria@email.com,(11)99999-0000,ABC Ltda,WEBSITE,NEW";
+  const headers = 'name,email,phone,company,source,status';
+  const example = 'Maria Silva,maria@email.com,(11)99999-0000,ABC Ltda,WEBSITE,NEW';
   const csvContent = `${headers}\n${example}\n`;
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
-  link.download = "template-leads.csv";
+  link.download = 'template-leads.csv';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -118,13 +151,27 @@ function downloadTemplate() {
 
 export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<"upload" | "mapping" | "preview" | "importing" | "done">("upload");
+  const [step, setStep] = useState<'upload' | 'mapping' | 'preview' | 'importing' | 'done'>(
+    'upload'
+  );
   const [rawData, setRawData] = useState<string[][]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
-  const [mapping, setMapping] = useState<ColumnMapping>({ name: -1, email: -1, phone: -1, company: -1, position: -1, source: -1, notes: -1 });
+  const [mapping, setMapping] = useState<ColumnMapping>({
+    name: -1,
+    email: -1,
+    phone: -1,
+    company: -1,
+    position: -1,
+    source: -1,
+    notes: -1,
+  });
   const [skipDuplicates, setSkipDuplicates] = useState(true);
-  const [result, setResult] = useState<{ imported: number; skipped: number; failed: number } | null>(null);
-  const [fileName, setFileName] = useState("");
+  const [result, setResult] = useState<{
+    imported: number;
+    skipped: number;
+    failed: number;
+  } | null>(null);
+  const [fileName, setFileName] = useState('');
 
   if (!open) return null;
 
@@ -138,24 +185,24 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
       const text = event.target?.result as string;
       const rows = parseCSV(text);
       if (rows.length < 2) {
-        toast.error("Arquivo deve ter pelo menos um cabecalho e uma linha de dados");
+        toast.error('Arquivo deve ter pelo menos um cabecalho e uma linha de dados');
         return;
       }
       setHeaders(rows[0]);
       setRawData(rows.slice(1));
       setMapping(autoDetectMapping(rows[0]));
-      setStep("mapping");
+      setStep('mapping');
     };
-    reader.readAsText(file, "utf-8");
+    reader.readAsText(file, 'utf-8');
   };
 
   const handleMappingChange = (field: keyof ColumnMapping, colIndex: number) => {
-    setMapping(prev => ({ ...prev, [field]: colIndex }));
+    setMapping((prev) => ({ ...prev, [field]: colIndex }));
   };
 
-  const parsedLeads: ParsedLead[] = rawData.map(row => {
+  const parsedLeads: ParsedLead[] = rawData.map((row) => {
     const lead: ParsedLead = {
-      name: mapping.name >= 0 ? row[mapping.name] || "" : "",
+      name: mapping.name >= 0 ? row[mapping.name] || '' : '',
     };
     if (mapping.email >= 0 && row[mapping.email]) lead.email = row[mapping.email];
     if (mapping.phone >= 0 && row[mapping.phone]) lead.phone = row[mapping.phone];
@@ -163,23 +210,23 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
     if (mapping.position >= 0 && row[mapping.position]) lead.position = row[mapping.position];
     if (mapping.source >= 0 && row[mapping.source]) {
       const src = row[mapping.source].toLowerCase().trim();
-      lead.source = SOURCE_MAP[src] || "OTHER";
+      lead.source = SOURCE_MAP[src] || 'OTHER';
     }
     if (mapping.notes >= 0 && row[mapping.notes]) lead.notes = row[mapping.notes];
     return lead;
   });
 
   // Separate valid and invalid leads for display
-  const validLeads = parsedLeads.filter(l => l.name.trim());
+  const validLeads = parsedLeads.filter((l) => l.name.trim());
   const invalidCount = parsedLeads.length - validLeads.length;
 
   const handleImport = async () => {
     if (validLeads.length === 0) {
-      toast.error("Nenhum lead valido para importar");
+      toast.error('Nenhum lead valido para importar');
       return;
     }
 
-    setStep("importing");
+    setStep('importing');
     try {
       const response = await apiClient.importLeads({
         leads: validLeads,
@@ -191,22 +238,24 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
         skipped: data.skipped || 0,
         failed: data.failed || 0,
       });
-      setStep("done");
+      setStep('done');
       if (data.imported > 0) {
-        toast.success(`${data.imported} lead${data.imported !== 1 ? "s" : ""} importado${data.imported !== 1 ? "s" : ""}`);
+        toast.success(
+          `${data.imported} lead${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''}`
+        );
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro na importacao");
-      setStep("preview");
+      toast.error(error.message || 'Erro na importacao');
+      setStep('preview');
     }
   };
 
   const handleClose = () => {
-    setStep("upload");
+    setStep('upload');
     setRawData([]);
     setHeaders([]);
     setResult(null);
-    setFileName("");
+    setFileName('');
     if (result && result.imported > 0) onImportComplete();
     onClose();
   };
@@ -226,13 +275,13 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {step === "upload" && (
+          {step === 'upload' && (
             <div className="text-center py-12">
               <FileSpreadsheet className="h-16 w-16 mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Selecione um arquivo CSV</h3>
               <p className="text-sm text-gray-500 mb-6">
-                Formatos aceitos: CSV (separado por virgula ou ponto-e-virgula).<br />
-                A primeira linha deve conter os cabecalhos das colunas.
+                Formatos aceitos: CSV (separado por virgula ou ponto-e-virgula).
+                <br />A primeira linha deve conter os cabecalhos das colunas.
               </p>
               <input
                 ref={fileRef}
@@ -252,31 +301,36 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
               <div className="bg-blue-50 rounded-lg p-4 text-left">
                 <p className="text-sm text-blue-800 font-medium mb-2">Exemplo de formato:</p>
                 <code className="text-xs text-blue-700 block">
-                  name,email,phone,company,source,status<br />
+                  name,email,phone,company,source,status
+                  <br />
                   Maria Silva,maria@email.com,(11)99999-0000,ABC Ltda,WEBSITE,NEW
                 </code>
               </div>
             </div>
           )}
 
-          {step === "mapping" && (
+          {step === 'mapping' && (
             <div>
               <p className="text-sm text-gray-600 mb-4">
                 Arquivo: <strong>{fileName}</strong> ({rawData.length} linhas)
               </p>
               <h3 className="font-medium text-gray-900 mb-3">Mapeamento de colunas</h3>
               <div className="space-y-3">
-                {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map(field => (
+                {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map((field) => (
                   <div key={field} className="flex items-center gap-3">
-                    <label className="w-28 text-sm font-medium text-gray-700">{FIELD_LABELS[field]}</label>
+                    <label className="w-28 text-sm font-medium text-gray-700">
+                      {FIELD_LABELS[field]}
+                    </label>
                     <select
                       className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                       value={mapping[field]}
-                      onChange={e => handleMappingChange(field, parseInt(e.target.value))}
+                      onChange={(e) => handleMappingChange(field, parseInt(e.target.value))}
                     >
                       <option value={-1}>-- Ignorar --</option>
                       {headers.map((h, i) => (
-                        <option key={i} value={i}>{h}</option>
+                        <option key={i} value={i}>
+                          {h}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -288,7 +342,7 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                   <input
                     type="checkbox"
                     checked={skipDuplicates}
-                    onChange={e => setSkipDuplicates(e.target.checked)}
+                    onChange={(e) => setSkipDuplicates(e.target.checked)}
                     className="rounded border-gray-300"
                   />
                   Pular leads com email ja existente (deduplicacao)
@@ -296,18 +350,17 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
               </div>
 
               <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setStep("upload")}>Voltar</Button>
-                <Button
-                  onClick={() => setStep("preview")}
-                  disabled={mapping.name === -1}
-                >
+                <Button variant="outline" onClick={() => setStep('upload')}>
+                  Voltar
+                </Button>
+                <Button onClick={() => setStep('preview')} disabled={mapping.name === -1}>
                   Continuar
                 </Button>
               </div>
             </div>
           )}
 
-          {step === "preview" && (
+          {step === 'preview' && (
             <div>
               <h3 className="font-medium text-gray-900 mb-1">
                 Preview - {validLeads.length} leads validos
@@ -323,17 +376,28 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-8"></th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">#</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Nome</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Email</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Telefone</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Empresa</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                        Nome
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                        Email
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                        Telefone
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                        Empresa
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {parsedLeads.slice(0, 50).map((lead, i) => {
                       const isValid = lead.name.trim().length > 0;
                       return (
-                        <tr key={i} className={`border-t border-gray-100 ${!isValid ? "bg-red-50" : ""}`}>
+                        <tr
+                          key={i}
+                          className={`border-t border-gray-100 ${!isValid ? 'bg-red-50' : ''}`}
+                        >
                           <td className="px-3 py-1.5">
                             {isValid ? (
                               <CheckCircle2 size={16} className="text-green-500" />
@@ -342,12 +406,14 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                             )}
                           </td>
                           <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
-                          <td className={`px-3 py-1.5 font-medium ${!isValid ? "text-red-600" : ""}`}>
+                          <td
+                            className={`px-3 py-1.5 font-medium ${!isValid ? 'text-red-600' : ''}`}
+                          >
                             {lead.name || <span className="italic text-red-400">Nome vazio</span>}
                           </td>
-                          <td className="px-3 py-1.5 text-gray-600">{lead.email || "--"}</td>
-                          <td className="px-3 py-1.5 text-gray-600">{lead.phone || "--"}</td>
-                          <td className="px-3 py-1.5 text-gray-600">{lead.company || "--"}</td>
+                          <td className="px-3 py-1.5 text-gray-600">{lead.email || '--'}</td>
+                          <td className="px-3 py-1.5 text-gray-600">{lead.phone || '--'}</td>
+                          <td className="px-3 py-1.5 text-gray-600">{lead.company || '--'}</td>
                         </tr>
                       );
                     })}
@@ -360,7 +426,9 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
                 )}
               </div>
               <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setStep("mapping")}>Voltar</Button>
+                <Button variant="outline" onClick={() => setStep('mapping')}>
+                  Voltar
+                </Button>
                 <Button onClick={handleImport} disabled={validLeads.length === 0} className="gap-2">
                   <Upload size={16} /> Confirmar Importacao ({validLeads.length})
                 </Button>
@@ -368,7 +436,7 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
             </div>
           )}
 
-          {step === "importing" && (
+          {step === 'importing' && (
             <div className="text-center py-12">
               <Loader2 className="h-12 w-12 mx-auto mb-4 text-primary animate-spin" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Importando leads...</h3>
@@ -376,7 +444,7 @@ export function LeadImportModal({ open, onClose, onImportComplete }: LeadImportM
             </div>
           )}
 
-          {step === "done" && result && (
+          {step === 'done' && result && (
             <div className="text-center py-8">
               {result.imported > 0 ? (
                 <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />

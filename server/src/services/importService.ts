@@ -121,7 +121,7 @@ function detectCsvDelimiter(firstLine: string): ',' | ';' {
     if (/\t/.test(firstLine)) {
       throw new ImportError(
         'Separador de colunas não reconhecido. Salve o arquivo com separador vírgula (,) ou ponto-e-vírgula (;).',
-        'AMBIGUOUS_SEPARATOR',
+        'AMBIGUOUS_SEPARATOR'
       );
     }
     return ',';
@@ -137,12 +137,11 @@ function assertUtf8(buffer: Buffer): void {
   // UTF-16 LE / BE BOMs
   if (
     buffer.length >= 2 &&
-    ((buffer[0] === 0xff && buffer[1] === 0xfe) ||
-      (buffer[0] === 0xfe && buffer[1] === 0xff))
+    ((buffer[0] === 0xff && buffer[1] === 0xfe) || (buffer[0] === 0xfe && buffer[1] === 0xff))
   ) {
     throw new ImportError(
       'Arquivo não está em UTF-8. Salve o CSV com codificação UTF-8 e tente novamente.',
-      'NON_UTF8',
+      'NON_UTF8'
     );
   }
   const decoded = buffer.toString('utf-8');
@@ -150,7 +149,7 @@ function assertUtf8(buffer: Buffer): void {
   if (decoded.includes('�')) {
     throw new ImportError(
       'Arquivo não está em UTF-8. Salve o CSV com codificação UTF-8 e tente novamente.',
-      'NON_UTF8',
+      'NON_UTF8'
     );
   }
 }
@@ -179,14 +178,12 @@ export function parseCsvBuffer(buffer: Buffer): ParsedFile {
   } catch (err) {
     throw new ImportError(
       'Não foi possível ler o arquivo CSV. Verifique o separador (vírgula ou ponto-e-vírgula) e a codificação UTF-8.',
-      'CSV_PARSE_FAILED',
+      'CSV_PARSE_FAILED'
     );
   }
 
   const headers =
-    records.length > 0
-      ? Object.keys(records[0])
-      : firstLine.split(delimiter).map((h) => h.trim());
+    records.length > 0 ? Object.keys(records[0]) : firstLine.split(delimiter).map((h) => h.trim());
 
   return { headers, rows: records };
 }
@@ -204,7 +201,7 @@ export async function parseXlsxBuffer(buffer: Buffer): Promise<ParsedFile> {
     // OLE compound file, not a zip) — surface a specific message (spec edge case).
     throw new ImportError(
       'Arquivo XLSX protegido por senha ou inválido. Remova a proteção por senha e tente novamente.',
-      'XLSX_PROTECTED',
+      'XLSX_PROTECTED'
     );
   }
 
@@ -264,7 +261,7 @@ export function parseXlsBuffer(buffer: Buffer): ParsedFile {
   } catch {
     throw new ImportError(
       'Arquivo .xls inválido, corrompido ou protegido por senha. Remova a proteção e tente novamente.',
-      'XLS_INVALID',
+      'XLS_INVALID'
     );
   }
 
@@ -307,7 +304,7 @@ export function parseXlsBuffer(buffer: Buffer): ParsedFile {
 export async function parseImportFile(
   buffer: Buffer,
   filename: string,
-  mimetype?: string,
+  mimetype?: string
 ): Promise<ParsedFile> {
   const lower = (filename || '').toLowerCase();
   const isXlsx =
@@ -315,8 +312,7 @@ export async function parseImportFile(
     mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   // Legacy .xls (BIFF8). Checked after .xlsx so "...xlsx" never matches here.
   const isXls =
-    (lower.endsWith('.xls') && !lower.endsWith('.xlsx')) ||
-    mimetype === 'application/vnd.ms-excel';
+    (lower.endsWith('.xls') && !lower.endsWith('.xlsx')) || mimetype === 'application/vnd.ms-excel';
   const isCsv = lower.endsWith('.csv') || mimetype === 'text/csv';
 
   let parsed: ParsedFile;
@@ -329,14 +325,14 @@ export async function parseImportFile(
   } else {
     throw new ImportError(
       'Formato de arquivo não suportado. Envie um arquivo .csv (UTF-8), .xlsx ou .xls.',
-      'UNSUPPORTED_FORMAT',
+      'UNSUPPORTED_FORMAT'
     );
   }
 
   if (parsed.rows.length > MAX_IMPORT_ROWS) {
     throw new ImportError(
       `A importação excede o máximo de ${MAX_IMPORT_ROWS.toLocaleString('pt-BR')} linhas.`,
-      'TOO_MANY_ROWS',
+      'TOO_MANY_ROWS'
     );
   }
 
@@ -347,10 +343,7 @@ export async function parseImportFile(
 // Mapping & validation helpers
 // ────────────────────────────────────────────────────────────────────
 
-function applyMapping(
-  row: Record<string, string>,
-  mapping: ColumnMapping,
-): Record<string, string> {
+function applyMapping(row: Record<string, string>, mapping: ColumnMapping): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [fileCol, target] of Object.entries(mapping)) {
     if (!target) continue;
@@ -374,13 +367,11 @@ function normalizePhone(phone?: string): string | undefined {
 
 function parseEnum<T extends Record<string, string>>(
   value: string | undefined,
-  enumObj: T,
+  enumObj: T
 ): T[keyof T] | undefined {
   if (!value) return undefined;
   const upper = value.trim().toUpperCase();
-  return (Object.values(enumObj) as string[]).includes(upper)
-    ? (upper as T[keyof T])
-    : undefined;
+  return (Object.values(enumObj) as string[]).includes(upper) ? (upper as T[keyof T]) : undefined;
 }
 
 function parseDate(value: string | undefined): Date | undefined {
@@ -455,7 +446,7 @@ export function parseBrNumber(value?: string): number | undefined {
  */
 function coerceCustomFieldValue(
   type: CustomFieldType | undefined,
-  raw: string,
+  raw: string
 ): string | number | undefined {
   const v = (raw || '').trim();
   if (!v) return undefined;
@@ -518,7 +509,7 @@ function mapLeadRow(
   row: Record<string, string>,
   mapping: ColumnMapping,
   rowNum: number,
-  customFieldTypes: Map<string, CustomFieldType>,
+  customFieldTypes: Map<string, CustomFieldType>
 ): MappedLead {
   const mapped = applyMapping(row, mapping);
   const customFields: Record<string, string | number> = {};
@@ -555,7 +546,7 @@ export async function analyzeLeads(
   tenantId: string,
   parsed: ParsedFile,
   mapping: ColumnMapping,
-  options: LeadImportOptions = {},
+  options: LeadImportOptions = {}
 ): Promise<{ analysis: ImportAnalysis; mappedRows: MappedLead[] }> {
   const contactsMode = options.contactsMode === true;
 
@@ -724,7 +715,7 @@ interface MappedDeal {
 
 export async function analyzeDeals(
   tenantId: string,
-  parsed: ParsedFile,
+  parsed: ParsedFile
 ): Promise<{ analysis: ImportAnalysis; mappedRows: MappedDeal[] }> {
   // Build a lookup of lead email -> id for association (spec reqs 18, 20).
   const leads = await prisma.lead.findMany({
@@ -842,7 +833,7 @@ interface MappedInteraction {
 
 export async function analyzeInteractions(
   tenantId: string,
-  parsed: ParsedFile,
+  parsed: ParsedFile
 ): Promise<{ analysis: ImportAnalysis; mappedRows: MappedInteraction[] }> {
   const leads = await prisma.lead.findMany({
     where: { tenantId, deletedAt: null, email: { not: null } },
@@ -931,7 +922,7 @@ export async function analyzeInteractions(
 
 async function processInChunks<T>(
   items: T[],
-  worker: (chunk: T[]) => Promise<void>,
+  worker: (chunk: T[]) => Promise<void>
 ): Promise<void> {
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const chunk = items.slice(i, i + BATCH_SIZE);
@@ -953,7 +944,7 @@ async function writeLeads(
   mappedRows: MappedLead[],
   duplicateStrategy: DuplicateStrategy,
   duplicateActions: DuplicateActionMap = {},
-  options: LeadImportOptions = {},
+  options: LeadImportOptions = {}
 ): Promise<BatchCounters> {
   const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
   const contactsMode = options.contactsMode === true;
@@ -1015,9 +1006,7 @@ async function writeLeads(
         const email = normalizeEmail(lead.email);
         const phone = normalizePhone(lead.phone);
         const companyId =
-          contactsMode && lead.company
-            ? companyByName.get(normalizeName(lead.company))
-            : undefined;
+          contactsMode && lead.company ? companyByName.get(normalizeName(lead.company)) : undefined;
 
         let existingId: string | undefined;
         let matched = false;
@@ -1121,7 +1110,7 @@ async function writeLeads(
 async function writeDeals(
   tenantId: string,
   batchId: string,
-  mappedRows: MappedDeal[],
+  mappedRows: MappedDeal[]
 ): Promise<BatchCounters> {
   const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
 
@@ -1159,7 +1148,7 @@ async function writeDeals(
 async function writeInteractions(
   tenantId: string,
   batchId: string,
-  mappedRows: MappedInteraction[],
+  mappedRows: MappedInteraction[]
 ): Promise<BatchCounters> {
   const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
 
@@ -1233,7 +1222,7 @@ function mapCompanyRow(
   row: Record<string, string>,
   mapping: ColumnMapping,
   rowNum: number,
-  customFieldTypes: Map<string, CustomFieldType>,
+  customFieldTypes: Map<string, CustomFieldType>
 ): MappedCompany {
   const mapped = applyMapping(row, mapping);
   const customFields: Record<string, string | number> = {};
@@ -1265,7 +1254,7 @@ function mapCompanyRow(
 export async function analyzeCompanies(
   tenantId: string,
   parsed: ParsedFile,
-  mapping: ColumnMapping,
+  mapping: ColumnMapping
 ): Promise<{ analysis: ImportAnalysis; mappedRows: MappedCompany[] }> {
   const customFieldDefs = await prisma.customField.findMany({
     where: { tenantId, active: true },
@@ -1314,7 +1303,10 @@ export async function analyzeCompanies(
     const n = normalizeName(company.name);
 
     let dup: DuplicateInfo | null = null;
-    if (company.externalId && (byExternalId.has(company.externalId) || seenExternalId.has(company.externalId))) {
+    if (
+      company.externalId &&
+      (byExternalId.has(company.externalId) || seenExternalId.has(company.externalId))
+    ) {
       dup = { row: rowNum, matchedBy: 'externalId', value: company.externalId, name: company.name };
     } else if (cnpj && (byCnpj.has(cnpj) || seenCnpj.has(cnpj))) {
       dup = { row: rowNum, matchedBy: 'cnpj', value: cnpj, name: company.name };
@@ -1367,7 +1359,7 @@ export async function analyzeCompanies(
 async function writeCompanies(
   tenantId: string,
   batchId: string,
-  mappedRows: MappedCompany[],
+  mappedRows: MappedCompany[]
 ): Promise<BatchCounters> {
   const counters: BatchCounters = { imported: 0, skipped: 0, errors: [] };
 
@@ -1486,7 +1478,7 @@ export async function executeBatch(
     | { type: 'LEADS'; rows: MappedLead[] }
     | { type: 'DEALS'; rows: MappedDeal[] }
     | { type: 'INTERACTIONS'; rows: MappedInteraction[] }
-    | { type: 'COMPANIES'; rows: MappedCompany[] },
+    | { type: 'COMPANIES'; rows: MappedCompany[] }
 ): Promise<void> {
   const { tenantId, type, parsed, mapping, duplicateStrategy, duplicateActions, options } = input;
   try {
@@ -1507,7 +1499,14 @@ export async function executeBatch(
         precomputed?.type === 'LEADS'
           ? precomputed.rows
           : (await analyzeLeads(tenantId, parsed, mapping, options)).mappedRows;
-      counters = await writeLeads(tenantId, batchId, rows, duplicateStrategy, duplicateActions, options);
+      counters = await writeLeads(
+        tenantId,
+        batchId,
+        rows,
+        duplicateStrategy,
+        duplicateActions,
+        options
+      );
     } else if (type === ImportType.DEALS) {
       const rows =
         precomputed?.type === 'DEALS'
@@ -1530,7 +1529,10 @@ export async function executeBatch(
         importedRows: counters.imported,
         skippedRows: counters.skipped,
         errorRows: errorRows < 0 ? 0 : errorRows,
-        errorLog: counters.errors.length > 0 ? (counters.errors.slice(0, 100) as unknown as object) : undefined,
+        errorLog:
+          counters.errors.length > 0
+            ? (counters.errors.slice(0, 100) as unknown as object)
+            : undefined,
       },
     });
   } catch (err) {
@@ -1558,7 +1560,7 @@ export async function createBatch(
   tenantId: string,
   userId: string,
   type: ImportType,
-  totalRows: number,
+  totalRows: number
 ): Promise<{ id: string }> {
   return prisma.importBatch.create({
     data: { tenantId, userId, type, status: ImportStatus.PENDING, totalRows },
@@ -1624,14 +1626,14 @@ export async function rollbackBatch(tenantId: string, batchId: string) {
     throw new ImportError(
       'A importação ainda está em andamento. Aguarde a conclusão para desfazer.',
       'BATCH_IN_PROGRESS',
-      400,
+      400
     );
   }
   if (Date.now() - batch.createdAt.getTime() > ROLLBACK_WINDOW_MS) {
     throw new ImportError(
       'O prazo de 24h para desfazer esta importação expirou.',
       'ROLLBACK_WINDOW_EXPIRED',
-      400,
+      400
     );
   }
 

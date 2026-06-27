@@ -1,61 +1,43 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { Task } from "../types";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./ui/dialog";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { Task } from '../types';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 
 interface TaskModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (task: Omit<Task, "id" | "createdAt" | "completedAt" | "updatedAt">) => void;
+  onSave: (task: Omit<Task, 'id' | 'createdAt' | 'completedAt' | 'updatedAt'>) => void;
   task?: Task;
   leadId?: string;
 }
 
-export function TaskModal({
-  open,
-  onClose,
-  onSave,
-  task,
-  leadId,
-}: TaskModalProps) {
+export function TaskModal({ open, onClose, onSave, task, leadId }: TaskModalProps) {
   const [formData, setFormData] = useState({
-    leadId: task?.leadId || leadId || "",
-    title: task?.title || "",
-    description: task?.description || "",
-    dueDate: task && task.dueDate
-      ? new Date(task.dueDate).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0],
-    dueTime: task && task.dueDate
-      ? new Date(task.dueDate).toTimeString().slice(0, 5)
-      : "09:00",
-    priority: task?.priority || "MEDIUM" as Task["priority"],
+    leadId: task?.leadId || leadId || '',
+    title: task?.title || '',
+    description: task?.description || '',
+    dueDate:
+      task && task.dueDate
+        ? new Date(task.dueDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+    dueTime: task && task.dueDate ? new Date(task.dueDate).toTimeString().slice(0, 5) : '09:00',
+    priority: task?.priority || ('MEDIUM' as Task['priority']),
   });
 
   useEffect(() => {
     if (task) {
       const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado a partir das props task/leadId quando elas mudam
       setFormData({
-        leadId: task.leadId || "",
+        leadId: task.leadId || '',
         title: task.title,
-        description: task.description || "",
-        dueDate: dueDate.toISOString().split("T")[0],
+        description: task.description || '',
+        dueDate: dueDate.toISOString().split('T')[0],
         dueTime: dueDate.toTimeString().slice(0, 5),
         priority: task.priority,
       });
@@ -66,17 +48,17 @@ export function TaskModal({
 
   const handleSave = () => {
     if (!formData.title.trim()) {
-      toast.error("O título da tarefa é obrigatório");
+      toast.error('O título da tarefa é obrigatório');
       return;
     }
 
     if (!formData.leadId) {
-      toast.error("É necessário vincular a tarefa a um lead");
+      toast.error('É necessário vincular a tarefa a um lead');
       return;
     }
 
     const dueDateTime = new Date(`${formData.dueDate}T${formData.dueTime}`);
-    
+
     onSave({
       leadId: formData.leadId,
       title: formData.title.trim(),
@@ -91,12 +73,12 @@ export function TaskModal({
 
   const handleClose = () => {
     setFormData({
-      leadId: leadId || "",
-      title: "",
-      description: "",
-      dueDate: new Date().toISOString().split("T")[0],
-      dueTime: "09:00",
-      priority: "MEDIUM",
+      leadId: leadId || '',
+      title: '',
+      description: '',
+      dueDate: new Date().toISOString().split('T')[0],
+      dueTime: '09:00',
+      priority: 'MEDIUM',
     });
     onClose();
   };
@@ -105,7 +87,7 @@ export function TaskModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-h-[75vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
+          <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
@@ -125,9 +107,7 @@ export function TaskModal({
             <Textarea
               id="task-description"
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Detalhes adicionais sobre a tarefa..."
               rows={3}
               className="mt-1.5"
@@ -162,7 +142,7 @@ export function TaskModal({
             <Select
               value={formData.priority}
               onValueChange={(value) =>
-                setFormData({ ...formData, priority: value as Task["priority"] })
+                setFormData({ ...formData, priority: value as Task['priority'] })
               }
             >
               <SelectTrigger className="mt-1.5">
@@ -183,11 +163,10 @@ export function TaskModal({
             Cancelar
           </Button>
           <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark">
-            {task ? "Salvar" : "Criar"}
+            {task ? 'Salvar' : 'Criar'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

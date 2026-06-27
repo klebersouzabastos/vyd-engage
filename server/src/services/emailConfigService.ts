@@ -62,7 +62,7 @@ export const emailConfigService = {
       orderBy: { createdAt: 'desc' },
     });
 
-    return configs.map(cfg => ({
+    return configs.map((cfg) => ({
       ...cfg,
       config: safeDecryptConfig(cfg.config),
     }));
@@ -104,7 +104,7 @@ export const emailConfigService = {
     // In a real implementation, this would send a test email
     // For now, we'll just mark it as verified
     const config = await this.findById(tenantId, id);
-    
+
     return prisma.emailConfig.update({
       where: { id },
       data: {
@@ -114,11 +114,3 @@ export const emailConfigService = {
     });
   },
 };
-
-
-
-
-
-
-
-

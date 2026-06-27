@@ -58,12 +58,16 @@ export const notificationService = {
     return notification;
   },
 
-  async findAll(tenantId: string, userId: string, filters?: {
-    status?: NotificationStatus;
-    type?: NotificationType;
-    page?: number;
-    limit?: number;
-  }) {
+  async findAll(
+    tenantId: string,
+    userId: string,
+    filters?: {
+      status?: NotificationStatus;
+      type?: NotificationType;
+      page?: number;
+      limit?: number;
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
     const skip = (page - 1) * limit;
@@ -166,11 +170,3 @@ export const notificationService = {
     });
   },
 };
-
-
-
-
-
-
-
-

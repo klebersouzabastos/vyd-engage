@@ -64,7 +64,12 @@ router.put('/:id', async (req, res, next) => {
     }
 
     const data = updateSchema.parse(req.body);
-    const view = await savedViewService.update(req.user.tenantId, req.user.userId, req.params.id, data);
+    const view = await savedViewService.update(
+      req.user.tenantId,
+      req.user.userId,
+      req.params.id,
+      data
+    );
     res.json({ status: 200, data: view });
   } catch (error: any) {
     if (error?.name === 'ZodError') {

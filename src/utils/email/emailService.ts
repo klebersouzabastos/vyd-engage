@@ -1,4 +1,4 @@
-import { EmailConfig, EmailMessage, SendEmailResult, EmailTestResult } from "../../types/email";
+import { EmailConfig, EmailMessage, SendEmailResult, EmailTestResult } from '../../types/email';
 
 /**
  * Simula o envio de email usando a configuração especificada
@@ -16,28 +16,28 @@ export async function sendEmail(
     if (!message.to || (Array.isArray(message.to) && message.to.length === 0)) {
       return {
         success: false,
-        error: "Destinatário não especificado",
+        error: 'Destinatário não especificado',
       };
     }
 
-    if (!message.subject || message.subject.trim() === "") {
+    if (!message.subject || message.subject.trim() === '') {
       return {
         success: false,
-        error: "Assunto não especificado",
+        error: 'Assunto não especificado',
       };
     }
 
-    if (!message.body || message.body.trim() === "") {
+    if (!message.body || message.body.trim() === '') {
       return {
         success: false,
-        error: "Corpo do email não especificado",
+        error: 'Corpo do email não especificado',
       };
     }
 
     // Simulação de envio bem-sucedido
     const messageId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log("Email enviado (simulação):", {
+    console.log('Email enviado (simulação):', {
       to: message.to,
       subject: message.subject,
       configId: config?.id,
@@ -48,14 +48,14 @@ export async function sendEmail(
       success: true,
       messageId,
       providerResponse: {
-        provider: config?.provider || "unknown",
+        provider: config?.provider || 'unknown',
         timestamp: new Date().toISOString(),
       },
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro desconhecido ao enviar email",
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao enviar email',
     };
   }
 }
@@ -72,8 +72,8 @@ export async function testEmailConfig(
   try {
     const testMessage: EmailMessage = {
       to: testEmail,
-      subject: "Teste de Configuração - VYD Engage",
-      body: "Este é um email de teste para verificar se sua configuração de email está funcionando corretamente.",
+      subject: 'Teste de Configuração - VYD Engage',
+      body: 'Este é um email de teste para verificar se sua configuração de email está funcionando corretamente.',
       html: false,
     };
 
@@ -83,7 +83,7 @@ export async function testEmailConfig(
     if (result.success) {
       return {
         success: true,
-        message: "Email de teste enviado com sucesso!",
+        message: 'Email de teste enviado com sucesso!',
         responseTime,
         details: {
           messageId: result.messageId,
@@ -93,7 +93,7 @@ export async function testEmailConfig(
     } else {
       return {
         success: false,
-        message: "Falha ao enviar email de teste",
+        message: 'Falha ao enviar email de teste',
         error: result.error,
         responseTime,
       };
@@ -102,17 +102,9 @@ export async function testEmailConfig(
     const responseTime = Date.now() - startTime;
     return {
       success: false,
-      message: "Erro ao testar configuração",
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      message: 'Erro ao testar configuração',
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
       responseTime,
     };
   }
 }
-
-
-
-
-
-
-
-

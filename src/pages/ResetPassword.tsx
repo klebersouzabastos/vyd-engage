@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { ArrowLeft, Eye, EyeOff, CheckCircle } from "lucide-react";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
-import { getErrorMessage } from "../utils/errors";
-import { PasswordStrengthIndicator } from "../components/register/PasswordStrengthIndicator";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { ArrowLeft, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
+import { getErrorMessage } from '../utils/errors';
+import { PasswordStrengthIndicator } from '../components/register/PasswordStrengthIndicator';
 
 export function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams.get('token');
 
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,8 +25,8 @@ export function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      toast.error("Token de recuperação inválido ou ausente");
-      navigate("/forgot-password");
+      toast.error('Token de recuperação inválido ou ausente');
+      navigate('/forgot-password');
     }
   }, [token, navigate]);
 
@@ -34,17 +34,17 @@ export function ResetPassword() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast.error("As senhas não coincidem");
+      toast.error('As senhas não coincidem');
       return;
     }
 
     if (password.length < 8) {
-      toast.error("A senha deve ter pelo menos 8 caracteres");
+      toast.error('A senha deve ter pelo menos 8 caracteres');
       return;
     }
 
     if (!token) {
-      toast.error("Token inválido");
+      toast.error('Token inválido');
       return;
     }
 
@@ -52,16 +52,16 @@ export function ResetPassword() {
     try {
       await apiClient.resetPassword(token, password);
       setSuccess(true);
-      toast.success("Senha redefinida com sucesso!");
-      
+      toast.success('Senha redefinida com sucesso!');
+
       // Redirecionar para login após 3 segundos
       setTimeout(() => {
-        navigate("/login");
+        navigate('/login');
       }, 3000);
     } catch (error: unknown) {
       const message = getErrorMessage(error);
-      toast.error(message || "Erro ao redefinir senha. O token pode ter expirado.");
-      console.error("Erro ao redefinir senha:", error);
+      toast.error(message || 'Erro ao redefinir senha. O token pode ter expirado.');
+      console.error('Erro ao redefinir senha:', error);
     } finally {
       setLoading(false);
     }
@@ -75,13 +75,13 @@ export function ResetPassword() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
-      
+
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
           {/* Back Button */}
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 sm:mb-8"
           >
             <ArrowLeft size={20} />
@@ -102,10 +102,7 @@ export function ResetPassword() {
               Redefinir senha
             </h1>
             <p className="text-gray-600 text-base sm:text-lg md:text-xl mt-2">
-              {success 
-                ? "Sua senha foi redefinida com sucesso!"
-                : "Digite sua nova senha abaixo"
-              }
+              {success ? 'Sua senha foi redefinida com sucesso!' : 'Digite sua nova senha abaixo'}
             </p>
           </div>
 
@@ -116,11 +113,12 @@ export function ResetPassword() {
               </div>
               <div className="text-center space-y-4">
                 <p className="text-gray-600 text-base sm:text-lg">
-                  Sua senha foi alterada com sucesso. Você será redirecionado para a página de login em instantes.
+                  Sua senha foi alterada com sucesso. Você será redirecionado para a página de login
+                  em instantes.
                 </p>
               </div>
               <Button
-                onClick={() => navigate("/login")}
+                onClick={() => navigate('/login')}
                 className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg"
               >
                 Ir para login
@@ -129,13 +127,16 @@ export function ResetPassword() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               <div className="space-y-2.5">
-                <Label htmlFor="password" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="password"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   Nova senha
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -151,7 +152,7 @@ export function ResetPassword() {
                       setShowPassword(!showPassword);
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     tabIndex={0}
                   >
                     {showPassword ? (
@@ -165,13 +166,16 @@ export function ResetPassword() {
               </div>
 
               <div className="space-y-2.5">
-                <Label htmlFor="confirmPassword" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   Confirmar nova senha
                 </Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -187,7 +191,7 @@ export function ResetPassword() {
                       setShowConfirmPassword(!showConfirmPassword);
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
-                    aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     tabIndex={0}
                   >
                     {showConfirmPassword ? (
@@ -202,21 +206,21 @@ export function ResetPassword() {
                 )}
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading || password !== confirmPassword || password.length < 8}
                 className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Redefinindo..." : "Redefinir senha"}
+                {loading ? 'Redefinindo...' : 'Redefinir senha'}
               </Button>
             </form>
           )}
 
           {/* Sign up link */}
           <p className="mt-8 sm:mt-10 text-center text-gray-600 text-base sm:text-lg">
-            Lembrou sua senha?{" "}
-            <Link 
-              to="/login" 
+            Lembrou sua senha?{' '}
+            <Link
+              to="/login"
               className="text-primary hover:text-primary-dark font-medium transition-colors"
             >
               Fazer login
@@ -248,5 +252,3 @@ export function ResetPassword() {
     </div>
   );
 }
-
-

@@ -129,7 +129,7 @@ export const deepResearchTemplateService = {
       throw createError(
         'Templates padrão não podem ser excluídos',
         403,
-        'BUILTIN_TEMPLATE_PROTECTED',
+        'BUILTIN_TEMPLATE_PROTECTED'
       );
     }
     await prisma.deepResearchTemplate.delete({ where: { id } });

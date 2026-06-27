@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from "react";
-import { toast } from "sonner";
-import { X, Plus } from "lucide-react";
-import { Tag } from "../types";
-import { useTags } from "../contexts/TagsContext";
-import { TAG_COLORS } from "../utils/tags";
-import { TagBadge } from "./TagBadge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
+import { X, Plus } from 'lucide-react';
+import { Tag } from '../types';
+import { useTags } from '../contexts/TagsContext';
+import { TAG_COLORS } from '../utils/tags';
+import { TagBadge } from './TagBadge';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface TagSelectorProps {
   selectedTagIds: string[];
@@ -17,12 +17,12 @@ interface TagSelectorProps {
 export function TagSelector({
   selectedTagIds,
   onChange,
-  placeholder = "Selecione ou crie tags...",
+  placeholder = 'Selecione ou crie tags...',
 }: TagSelectorProps) {
   const { tags, createTag } = useTags();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [newTagName, setNewTagName] = useState("");
+  const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,8 +30,7 @@ export function TagSelector({
   const selectedTags = tags.filter((tag) => selectedTagIds.includes(tag.id));
   const filteredTags = tags.filter(
     (tag) =>
-      !selectedTagIds.includes(tag.id) &&
-      tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+      !selectedTagIds.includes(tag.id) && tag.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleTagToggle = (tagId: string) => {
@@ -40,7 +39,7 @@ export function TagSelector({
     } else {
       onChange([...selectedTagIds, tagId]);
     }
-    setSearchQuery("");
+    setSearchQuery('');
   };
 
   const handleCreateTag = () => {
@@ -52,10 +51,10 @@ export function TagSelector({
         color: newTagColor,
       });
       onChange([...selectedTagIds, newTag.id]);
-      setNewTagName("");
-      setSearchQuery("");
+      setNewTagName('');
+      setSearchQuery('');
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar tag");
+      toast.error(error.message || 'Erro ao criar tag');
     }
   };
 
@@ -74,11 +73,11 @@ export function TagSelector({
     };
 
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
 
@@ -110,7 +109,7 @@ export function TagSelector({
           <Plus size={16} className="mr-2" />
           {placeholder}
         </Button>
-        
+
         {isOpen && (
           <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50">
             <div className="p-3 border-b border-gray-300">
@@ -150,7 +149,7 @@ export function TagSelector({
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === 'Enter') {
                       e.preventDefault();
                       handleCreateTag();
                       setIsOpen(false);
@@ -178,7 +177,7 @@ export function TagSelector({
                     onClick={() => setNewTagColor(color)}
                     className={`
                       w-6 h-6 rounded-full border-2 transition-all
-                      ${newTagColor === color ? "border-gray-900 scale-110" : "border-gray-300"}
+                      ${newTagColor === color ? 'border-gray-900 scale-110' : 'border-gray-300'}
                     `}
                     style={{ backgroundColor: color }}
                     aria-label={`Selecionar cor ${color}`}
@@ -192,4 +191,3 @@ export function TagSelector({
     </div>
   );
 }
-

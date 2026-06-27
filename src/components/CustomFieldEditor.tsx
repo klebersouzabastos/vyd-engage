@@ -1,33 +1,21 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { CustomField } from "../types";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Checkbox } from "./ui/checkbox";
-import { X } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./ui/dialog";
-import { CustomFieldInput } from "./CustomFieldInput";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { CustomField } from '../types';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Checkbox } from './ui/checkbox';
+import { X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { CustomFieldInput } from './CustomFieldInput';
 
 interface CustomFieldEditorProps {
   field?: CustomField;
   open?: boolean;
   onClose?: () => void;
-  onSave: (field: Omit<CustomField, "id">) => void;
+  onSave: (field: Omit<CustomField, 'id'>) => void;
   inline?: boolean;
 }
 
@@ -39,24 +27,25 @@ export function CustomFieldEditor({
   inline = false,
 }: CustomFieldEditorProps) {
   const [formData, setFormData] = useState({
-    name: field?.name || "",
-    type: field?.type || "text" as CustomField["type"],
+    name: field?.name || '',
+    type: field?.type || ('text' as CustomField['type']),
     required: field?.required || false,
-    options: field?.options || [] as string[],
-    defaultValue: field?.defaultValue || "",
+    options: field?.options || ([] as string[]),
+    defaultValue: field?.defaultValue || '',
   });
-  const [newOption, setNewOption] = useState("");
+  const [newOption, setNewOption] = useState('');
 
   // Reset form when field changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado do formulário a partir da prop `field`
     setFormData({
-      name: field?.name || "",
-      type: field?.type || "text",
+      name: field?.name || '',
+      type: field?.type || 'text',
       required: field?.required || false,
       options: field?.options || [],
-      defaultValue: field?.defaultValue || "",
+      defaultValue: field?.defaultValue || '',
     });
-    setNewOption("");
+    setNewOption('');
   }, [field]);
 
   const handleAddOption = () => {
@@ -65,7 +54,7 @@ export function CustomFieldEditor({
         ...formData,
         options: [...formData.options, newOption.trim()],
       });
-      setNewOption("");
+      setNewOption('');
     }
   };
 
@@ -78,15 +67,15 @@ export function CustomFieldEditor({
 
   const handleSave = () => {
     if (!formData.name.trim()) {
-      toast.error("O nome do campo é obrigatório");
+      toast.error('O nome do campo é obrigatório');
       return;
     }
 
-    const fieldData: Omit<CustomField, "id"> = {
+    const fieldData: Omit<CustomField, 'id'> = {
       name: formData.name.trim(),
       type: formData.type,
       required: formData.required,
-      options: formData.type === "select" ? formData.options : undefined,
+      options: formData.type === 'select' ? formData.options : undefined,
       defaultValue: formData.defaultValue || undefined,
     };
 
@@ -96,13 +85,13 @@ export function CustomFieldEditor({
 
   const handleClose = () => {
     setFormData({
-      name: field?.name || "",
-      type: field?.type || "text",
+      name: field?.name || '',
+      type: field?.type || 'text',
       required: field?.required || false,
       options: field?.options || [],
-      defaultValue: field?.defaultValue || "",
+      defaultValue: field?.defaultValue || '',
     });
-    setNewOption("");
+    setNewOption('');
     onClose?.();
   };
 
@@ -126,8 +115,8 @@ export function CustomFieldEditor({
           onValueChange={(value) =>
             setFormData({
               ...formData,
-              type: value as CustomField["type"],
-              options: value === "select" ? formData.options : [],
+              type: value as CustomField['type'],
+              options: value === 'select' ? formData.options : [],
             })
           }
         >
@@ -145,7 +134,7 @@ export function CustomFieldEditor({
         </Select>
       </div>
 
-      {formData.type === "select" && (
+      {formData.type === 'select' && (
         <div>
           <Label>Opções</Label>
           <div className="mt-1.5 space-y-2">
@@ -155,7 +144,7 @@ export function CustomFieldEditor({
                 onChange={(e) => setNewOption(e.target.value)}
                 placeholder="Adicionar opção..."
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === 'Enter') {
                     e.preventDefault();
                     handleAddOption();
                   }
@@ -192,9 +181,7 @@ export function CustomFieldEditor({
         <Checkbox
           id="field-required"
           checked={formData.required}
-          onCheckedChange={(checked) =>
-            setFormData({ ...formData, required: !!checked })
-          }
+          onCheckedChange={(checked) => setFormData({ ...formData, required: !!checked })}
         />
         <Label htmlFor="field-required" className="font-normal cursor-pointer">
           Campo obrigatório
@@ -207,11 +194,11 @@ export function CustomFieldEditor({
         <div className="mt-2 p-4 bg-gray-100 rounded-lg border border-gray-300">
           <CustomFieldInput
             field={{
-              id: "preview",
-              name: formData.name || "Nome do Campo",
+              id: 'preview',
+              name: formData.name || 'Nome do Campo',
               type: formData.type,
               required: formData.required,
-              options: formData.type === "select" ? formData.options : undefined,
+              options: formData.type === 'select' ? formData.options : undefined,
             }}
             value={formData.defaultValue}
             onChange={() => {}}
@@ -226,7 +213,7 @@ export function CustomFieldEditor({
           </Button>
         )}
         <Button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary-dark">
-          {field ? "Salvar" : "Criar"}
+          {field ? 'Salvar' : 'Criar'}
         </Button>
       </div>
     </div>
@@ -237,15 +224,10 @@ export function CustomFieldEditor({
       <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-medium text-gray-900">
-            {field ? "Editar Campo Customizado" : "Novo Campo Customizado"}
+            {field ? 'Editar Campo Customizado' : 'Novo Campo Customizado'}
           </h3>
           {onClose && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-8 w-8 p-0"
-            >
+            <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
               <X className="h-4 w-4" />
             </Button>
           )}
@@ -259,16 +241,11 @@ export function CustomFieldEditor({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>
-            {field ? "Editar Campo Customizado" : "Novo Campo Customizado"}
-          </DialogTitle>
+          <DialogTitle>{field ? 'Editar Campo Customizado' : 'Novo Campo Customizado'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
-          {formContent}
-        </div>
+        <div className="space-y-4 flex-1 overflow-y-auto min-h-0">{formContent}</div>
       </DialogContent>
     </Dialog>
   );
 }
-

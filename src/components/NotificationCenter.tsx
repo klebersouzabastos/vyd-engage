@@ -1,55 +1,49 @@
-import { useState, useEffect, useRef } from "react";
-import { Bell } from "lucide-react";
-import { Button } from "./ui/button";
-import { useNotifications } from "../contexts/NotificationContext";
-import { NotificationItem } from "./NotificationItem";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./ui/popover";
-import { Link } from "react-router";
+import { useState, useEffect, useRef } from 'react';
+import { Bell } from 'lucide-react';
+import { Button } from './ui/button';
+import { useNotifications } from '../contexts/NotificationContext';
+import { NotificationItem } from './NotificationItem';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Link } from 'react-router';
 
 export function NotificationCenter() {
-  const {
-    notifications,
-    unreadCount,
-    markAllAsRead,
-    refreshNotifications,
-  } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, refreshNotifications } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   // Agrupar notificações por data
-  const groupedNotifications = notifications.reduce((groups, notification) => {
-    const date = new Date(notification.timestamp);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const thisWeek = new Date(today);
-    thisWeek.setDate(thisWeek.getDate() - 7);
+  const groupedNotifications = notifications.reduce(
+    (groups, notification) => {
+      const date = new Date(notification.timestamp);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const thisWeek = new Date(today);
+      thisWeek.setDate(thisWeek.getDate() - 7);
 
-    let groupKey: string;
-    if (date >= today) {
-      groupKey = "Hoje";
-    } else if (date >= yesterday) {
-      groupKey = "Ontem";
-    } else if (date >= thisWeek) {
-      groupKey = "Esta Semana";
-    } else {
-      groupKey = date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-    }
+      let groupKey: string;
+      if (date >= today) {
+        groupKey = 'Hoje';
+      } else if (date >= yesterday) {
+        groupKey = 'Ontem';
+      } else if (date >= thisWeek) {
+        groupKey = 'Esta Semana';
+      } else {
+        groupKey = date.toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        });
+      }
 
-    if (!groups[groupKey]) {
-      groups[groupKey] = [];
-    }
-    groups[groupKey].push(notification);
-    return groups;
-  }, {} as Record<string, typeof notifications>);
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(notification);
+      return groups;
+    },
+    {} as Record<string, typeof notifications>
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -68,7 +62,7 @@ export function NotificationCenter() {
           <Bell size={20} className="text-gray-600" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full min-w-[18px] text-center">
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Button>
@@ -78,12 +72,7 @@ export function NotificationCenter() {
           <h3 className="font-semibold text-gray-900">Notificações</h3>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={markAllAsRead}
-                className="text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs">
                 Marcar todas como lidas
               </Button>
             )}
@@ -127,11 +116,3 @@ export function NotificationCenter() {
     </Popover>
   );
 }
-
-
-
-
-
-
-
-

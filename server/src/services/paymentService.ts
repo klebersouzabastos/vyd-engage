@@ -13,11 +13,7 @@ export interface CreatePaymentIntentData {
 }
 
 export const paymentService = {
-  async createPaymentIntent(
-    tenantId: string,
-    userId: string,
-    data: CreatePaymentIntentData
-  ) {
+  async createPaymentIntent(tenantId: string, userId: string, data: CreatePaymentIntentData) {
     // Get plan
     const plan = await prisma.plan.findUnique({
       where: { id: data.planId },
@@ -145,7 +141,10 @@ export const paymentService = {
 
   async handleWebhook(data: Record<string, unknown>) {
     // Handle Mercado Pago webhook
-    const { type, data: webhookData } = data as { type: string; data: { id: string; status: string } };
+    const { type, data: webhookData } = data as {
+      type: string;
+      data: { id: string; status: string };
+    };
 
     if (type === 'payment') {
       const paymentId = webhookData.id;
@@ -282,5 +281,3 @@ export const paymentService = {
     });
   },
 };
-
-

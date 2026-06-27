@@ -1,9 +1,17 @@
-import { useState, useMemo } from "react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { RefreshCw, AlertTriangle, DollarSign, TrendingUp, Target, Clock, Percent } from "lucide-react";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { useForecast } from "../hooks/useForecast";
+import { useState, useMemo } from 'react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import {
+  RefreshCw,
+  AlertTriangle,
+  DollarSign,
+  TrendingUp,
+  Target,
+  Clock,
+  Percent,
+} from 'lucide-react';
+import { PageSkeleton } from '../components/PageSkeleton';
+import { useForecast } from '../hooks/useForecast';
 import {
   BarChart,
   Bar,
@@ -15,21 +23,31 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
+} from 'recharts';
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
     maximumFractionDigits: 0,
   }).format(value);
 }
 
 function formatMonthLabel(month: string): string {
-  const [year, m] = month.split("-");
+  const [year, m] = month.split('-');
   const monthNames = [
-    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez',
   ];
   return `${monthNames[Number(m) - 1]}/${year.slice(2)}`;
 }
@@ -42,7 +60,9 @@ export function Forecast() {
 
   const hasScenarios = useMemo(() => {
     if (!forecast) return false;
-    return forecast.monthly.some((m: any) => m.conservativeValue != null || m.optimisticValue != null);
+    return forecast.monthly.some(
+      (m: any) => m.conservativeValue != null || m.optimisticValue != null
+    );
   }, [forecast]);
 
   const forecastChartData = useMemo(() => {
@@ -120,9 +140,7 @@ export function Forecast() {
               key={n}
               onClick={() => setMonths(n)}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                months === n
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                months === n ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               {n} meses
@@ -170,44 +188,49 @@ export function Forecast() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Forecast Bar Chart */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">
-              Forecast Ponderado por Mês
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Forecast Ponderado por Mês</h3>
             {/* Scenario summary cards when data available */}
             {hasScenarios && scenarioTotals && (
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="rounded-lg bg-blue-50 p-3 text-center">
                   <p className="text-xs text-blue-600 font-medium mb-0.5">Conservador</p>
-                  <p className="text-sm font-bold text-blue-700">{formatCurrency(scenarioTotals.conservative)}</p>
+                  <p className="text-sm font-bold text-blue-700">
+                    {formatCurrency(scenarioTotals.conservative)}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-purple-50 p-3 text-center">
                   <p className="text-xs text-purple-600 font-medium mb-0.5">Esperado</p>
-                  <p className="text-sm font-bold text-purple-700">{formatCurrency(scenarioTotals.weighted)}</p>
+                  <p className="text-sm font-bold text-purple-700">
+                    {formatCurrency(scenarioTotals.weighted)}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-green-50 p-3 text-center">
                   <p className="text-xs text-green-600 font-medium mb-0.5">Otimista</p>
-                  <p className="text-sm font-bold text-green-700">{formatCurrency(scenarioTotals.optimistic)}</p>
+                  <p className="text-sm font-bold text-green-700">
+                    {formatCurrency(scenarioTotals.optimistic)}
+                  </p>
                 </div>
               </div>
             )}
             {forecastChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={forecastChartData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                <BarChart
+                  data={forecastChartData}
+                  margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
-                    tickFormatter={(v) =>
-                      v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`
-                    }
+                    tickFormatter={(v) => (v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`)}
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => {
                       const labels: Record<string, string> = {
-                        weightedValue: "Esperado",
-                        totalValue: "Valor Total",
-                        conservativeValue: "Conservador",
-                        optimisticValue: "Otimista",
+                        weightedValue: 'Esperado',
+                        totalValue: 'Valor Total',
+                        conservativeValue: 'Conservador',
+                        optimisticValue: 'Otimista',
                       };
                       return [formatCurrency(value), labels[name] || name];
                     }}
@@ -216,24 +239,49 @@ export function Forecast() {
                   <Legend
                     formatter={(value) => {
                       const labels: Record<string, string> = {
-                        weightedValue: "Esperado",
-                        totalValue: "Valor Total",
-                        conservativeValue: "Conservador",
-                        optimisticValue: "Otimista",
+                        weightedValue: 'Esperado',
+                        totalValue: 'Valor Total',
+                        conservativeValue: 'Conservador',
+                        optimisticValue: 'Otimista',
                       };
                       return labels[value] || value;
                     }}
                   />
                   {hasScenarios ? (
                     <>
-                      <Bar dataKey="conservativeValue" fill="#60A5FA" radius={[4, 4, 0, 0]} name="conservativeValue" />
-                      <Bar dataKey="weightedValue" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="weightedValue" />
-                      <Bar dataKey="optimisticValue" fill="#4ADE80" radius={[4, 4, 0, 0]} name="optimisticValue" />
+                      <Bar
+                        dataKey="conservativeValue"
+                        fill="#60A5FA"
+                        radius={[4, 4, 0, 0]}
+                        name="conservativeValue"
+                      />
+                      <Bar
+                        dataKey="weightedValue"
+                        fill="#8B5CF6"
+                        radius={[4, 4, 0, 0]}
+                        name="weightedValue"
+                      />
+                      <Bar
+                        dataKey="optimisticValue"
+                        fill="#4ADE80"
+                        radius={[4, 4, 0, 0]}
+                        name="optimisticValue"
+                      />
                     </>
                   ) : (
                     <>
-                      <Bar dataKey="totalValue" fill="#93C5FD" radius={[4, 4, 0, 0]} name="totalValue" />
-                      <Bar dataKey="weightedValue" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="weightedValue" />
+                      <Bar
+                        dataKey="totalValue"
+                        fill="#93C5FD"
+                        radius={[4, 4, 0, 0]}
+                        name="totalValue"
+                      />
+                      <Bar
+                        dataKey="weightedValue"
+                        fill="#8B5CF6"
+                        radius={[4, 4, 0, 0]}
+                        name="weightedValue"
+                      />
                     </>
                   )}
                 </BarChart>
@@ -252,27 +300,24 @@ export function Forecast() {
             </h3>
             {trendChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendChartData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                <LineChart
+                  data={trendChartData}
+                  margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
-                    tickFormatter={(v) =>
-                      v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`
-                    }
+                    tickFormatter={(v) => (v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`)}
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => {
-                      const label = name === "wonValue" ? "Ganhos" : "Perdidos";
+                      const label = name === 'wonValue' ? 'Ganhos' : 'Perdidos';
                       return [formatCurrency(value), label];
                     }}
                     contentStyle={{ fontSize: 12, borderRadius: 8 }}
                   />
-                  <Legend
-                    formatter={(value) =>
-                      value === "wonValue" ? "Ganhos" : "Perdidos"
-                    }
-                  />
+                  <Legend formatter={(value) => (value === 'wonValue' ? 'Ganhos' : 'Perdidos')} />
                   <Line
                     type="monotone"
                     dataKey="wonValue"
@@ -309,10 +354,18 @@ export function Forecast() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Mês</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Deals</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Valor Total</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Ponderado</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Mês
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Deals
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Valor Total
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Ponderado
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -321,7 +374,9 @@ export function Forecast() {
                       <td className="py-2.5 px-4 text-sm text-gray-900">
                         {formatMonthLabel(row.month)}
                       </td>
-                      <td className="py-2.5 px-4 text-sm text-gray-600 text-right">{row.dealCount}</td>
+                      <td className="py-2.5 px-4 text-sm text-gray-600 text-right">
+                        {row.dealCount}
+                      </td>
                       <td className="py-2.5 px-4 text-sm text-gray-600 text-right">
                         {formatCurrency(row.totalValue)}
                       </td>
@@ -363,11 +418,21 @@ export function Forecast() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Mês</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-green-600 uppercase">Ganhos (qtd)</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-green-600 uppercase">Ganhos (R$)</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-red-600 uppercase">Perdidos (qtd)</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-red-600 uppercase">Perdidos (R$)</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Mês
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-green-600 uppercase">
+                      Ganhos (qtd)
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-green-600 uppercase">
+                      Ganhos (R$)
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-red-600 uppercase">
+                      Perdidos (qtd)
+                    </th>
+                    <th className="text-right py-2.5 px-4 text-xs font-medium text-red-600 uppercase">
+                      Perdidos (R$)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -376,11 +441,15 @@ export function Forecast() {
                       <td className="py-2.5 px-4 text-sm text-gray-900">
                         {formatMonthLabel(row.month)}
                       </td>
-                      <td className="py-2.5 px-4 text-sm text-green-600 text-right">{row.won.count}</td>
+                      <td className="py-2.5 px-4 text-sm text-green-600 text-right">
+                        {row.won.count}
+                      </td>
                       <td className="py-2.5 px-4 text-sm text-green-600 text-right">
                         {formatCurrency(row.won.value)}
                       </td>
-                      <td className="py-2.5 px-4 text-sm text-red-600 text-right">{row.lost.count}</td>
+                      <td className="py-2.5 px-4 text-sm text-red-600 text-right">
+                        {row.lost.count}
+                      </td>
                       <td className="py-2.5 px-4 text-sm text-red-600 text-right">
                         {formatCurrency(row.lost.value)}
                       </td>
@@ -408,19 +477,17 @@ function StatCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
-    green: "bg-green-50 text-green-600",
-    orange: "bg-orange-50 text-orange-600",
-    gray: "bg-gray-100 text-gray-600",
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    green: 'bg-green-50 text-green-600',
+    orange: 'bg-orange-50 text-orange-600',
+    gray: 'bg-gray-100 text-gray-600',
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
-          {icon}
-        </div>
+        <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">
           <p className="text-xs text-gray-500 truncate">{label}</p>
           <p className="text-lg font-bold text-gray-900 truncate">{value}</p>

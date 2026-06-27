@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "./ui/button";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface PaginationProps {
   page: number;
@@ -18,9 +18,9 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
       <p className="text-sm text-gray-600">
-        Mostrando <span className="font-medium">{start}</span> a{" "}
-        <span className="font-medium">{end}</span> de{" "}
-        <span className="font-medium">{total}</span> resultados
+        Mostrando <span className="font-medium">{start}</span> a{' '}
+        <span className="font-medium">{end}</span> de <span className="font-medium">{total}</span>{' '}
+        resultados
       </p>
       <div className="flex items-center gap-2">
         <Button

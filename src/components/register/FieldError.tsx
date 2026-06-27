@@ -21,13 +21,8 @@ export function FieldError({ id, error, touched = true, className }: FieldErrorP
       role="alert"
       aria-live="polite"
     >
-      <AlertCircle
-        size={16}
-        className="flex-shrink-0 mt-0.5"
-        aria-hidden="true"
-      />
+      <AlertCircle size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
       <span>{error}</span>
     </div>
   );
 }
-

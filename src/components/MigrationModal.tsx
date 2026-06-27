@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Alert, AlertDescription } from './ui/alert';
@@ -309,7 +303,13 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
               <Button onClick={() => setClearDialogOpen(true)} variant="outline" className="flex-1">
                 Limpar localStorage
               </Button>
-              <Button onClick={() => { onComplete(); onClose(); }} className="flex-1">
+              <Button
+                onClick={() => {
+                  onComplete();
+                  onClose();
+                }}
+                className="flex-1"
+              >
                 Concluir
               </Button>
             </div>
@@ -328,7 +328,10 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearLocalStorage} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleClearLocalStorage}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Limpar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -337,11 +340,3 @@ export function MigrationModal({ open, onClose, onComplete }: MigrationModalProp
     </Dialog>
   );
 }
-
-
-
-
-
-
-
-

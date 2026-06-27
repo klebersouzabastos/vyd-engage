@@ -1,10 +1,10 @@
 // Tipos para integração WhatsApp
 
-export type WhatsAppProvider = "official" | "evolution" | "baileys" | "chatapi";
+export type WhatsAppProvider = 'official' | 'evolution' | 'baileys' | 'chatapi';
 
-export type ConnectionStatus = "connected" | "disconnected" | "connecting" | "error";
+export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error';
 
-export type PlanType = "starter" | "pro" | "enterprise";
+export type PlanType = 'starter' | 'pro' | 'enterprise';
 
 // Configurações específicas por provedor
 export interface OfficialConfig {
@@ -36,17 +36,13 @@ export interface ChatAPIConfig {
   instanceId: string;
 }
 
-export type ProviderConfig = 
-  | OfficialConfig 
-  | EvolutionConfig 
-  | BaileysConfig 
-  | ChatAPIConfig;
+export type ProviderConfig = OfficialConfig | EvolutionConfig | BaileysConfig | ChatAPIConfig;
 
 // Template do WhatsApp Business API
 export interface WhatsAppTemplate {
   name: string;
   language: string;
-  status: "APPROVED" | "PENDING" | "REJECTED";
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
   category?: string;
 }
 
@@ -122,7 +118,7 @@ export interface WhatsAppMessage {
     parameters?: string[];
   };
   media?: {
-    type: "image" | "video" | "document" | "audio";
+    type: 'image' | 'video' | 'document' | 'audio';
     url: string;
     caption?: string;
   };
@@ -135,7 +131,7 @@ export interface WhatsAppWebhookPayload {
   message: string;
   messageId: string;
   timestamp: string;
-  type: "text" | "image" | "video" | "audio" | "document" | "location" | "contact";
+  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact';
   mediaUrl?: string;
   metadata?: Record<string, unknown>;
 }
@@ -146,11 +142,3 @@ export interface ConnectionValidation {
   errors: string[];
   warnings: string[];
 }
-
-
-
-
-
-
-
-

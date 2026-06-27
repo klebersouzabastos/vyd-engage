@@ -7,9 +7,7 @@ import { sanitizeReportMarkdown } from '../sanitizeReportMarkdown';
  */
 describe('sanitizeReportMarkdown', () => {
   it('remove o token citeturn textual e o captura como fonte', () => {
-    const { markdown, sources } = sanitizeReportMarkdown(
-      'do país. citeturn42search2turn42search4',
-    );
+    const { markdown, sources } = sanitizeReportMarkdown('do país. citeturn42search2turn42search4');
     expect(markdown).toBe('do país.');
     expect(sources).toEqual(['citeturn42search2turn42search4']);
   });

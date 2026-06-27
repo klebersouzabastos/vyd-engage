@@ -8,11 +8,11 @@ const router = Router();
 router.get('/open/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string;
+    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string);
     const userAgent = req.headers['user-agent'];
 
     // Record open asynchronously - don't block the response
-    emailTrackingService.recordOpen(token, ipAddress, userAgent).catch(err => {
+    emailTrackingService.recordOpen(token, ipAddress, userAgent).catch((err) => {
       logger.error('Failed to record email open', { token, err: err.message });
     });
 
@@ -22,8 +22,8 @@ router.get('/open/:token', async (req, res) => {
       'Content-Type': 'image/gif',
       'Content-Length': String(gif.length),
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      Pragma: 'no-cache',
+      Expires: '0',
     });
     res.end(gif);
   } catch {
@@ -54,11 +54,11 @@ router.get('/click/:token', async (req, res) => {
       return res.status(400).send('Invalid URL');
     }
 
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string;
+    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string);
     const userAgent = req.headers['user-agent'];
 
     // Record click asynchronously - don't block the redirect
-    emailTrackingService.recordClick(token, url, ipAddress, userAgent).catch(err => {
+    emailTrackingService.recordClick(token, url, ipAddress, userAgent).catch((err) => {
       logger.error('Failed to record email click', { token, url, err: err.message });
     });
 

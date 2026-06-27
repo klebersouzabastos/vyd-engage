@@ -125,7 +125,7 @@ router.post('/:id/advance-to-proposal', async (req, res, next) => {
     const item = await roadmapService.advanceToProposal(
       req.user.tenantId,
       req.params.id,
-      req.user.userId,
+      req.user.userId
     );
     res.json(item);
   } catch (error) {

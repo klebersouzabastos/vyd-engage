@@ -91,7 +91,7 @@ export const webhookService = {
       throw createError(
         `Webhook limit reached (max ${MAX_WEBHOOKS_PER_TENANT} per tenant)`,
         422,
-        'WEBHOOK_LIMIT_REACHED',
+        'WEBHOOK_LIMIT_REACHED'
       );
     }
 
@@ -151,10 +151,7 @@ export const webhookService = {
 
     const body = JSON.stringify(payload);
 
-    const signature = crypto
-      .createHmac('sha256', webhook.secret)
-      .update(body)
-      .digest('hex');
+    const signature = crypto.createHmac('sha256', webhook.secret).update(body).digest('hex');
 
     const startTime = Date.now();
 

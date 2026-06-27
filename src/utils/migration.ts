@@ -153,7 +153,9 @@ export async function migrateDataToAPI(
       const apiTags = await apiClient.getTags();
       const localTags = data.tags || [];
       localTags.forEach((localTag: any, index: number) => {
-        const apiTag = apiTags.find((t: any) => t.name === localTag.name || t.name === localTag.label);
+        const apiTag = apiTags.find(
+          (t: any) => t.name === localTag.name || t.name === localTag.label
+        );
         if (apiTag) {
           tagsMap.set(localTag.id || index.toString(), apiTag.id);
         }
@@ -309,11 +311,3 @@ export function clearMigratedData(): void {
     localStorage.removeItem(key);
   });
 }
-
-
-
-
-
-
-
-

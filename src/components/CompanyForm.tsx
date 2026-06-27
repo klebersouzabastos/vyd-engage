@@ -1,28 +1,22 @@
-import React, { useState } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Company, CompanySize } from "../types";
-import { Loader2 } from "lucide-react";
-import { FieldError } from "./register/FieldError";
-import { companyFormSchema } from "../utils/validation/formSchemas";
-import { useFormValidation } from "../hooks/useFormValidation";
-import { useAutoFocus } from "../hooks/useFocusManagement";
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Company, CompanySize } from '../types';
+import { Loader2 } from 'lucide-react';
+import { FieldError } from './register/FieldError';
+import { companyFormSchema } from '../utils/validation/formSchemas';
+import { useFormValidation } from '../hooks/useFormValidation';
+import { useAutoFocus } from '../hooks/useFocusManagement';
 
 const SIZE_OPTIONS: { value: CompanySize; label: string }[] = [
-  { value: "MICRO", label: "Micro" },
-  { value: "SMALL", label: "Pequena" },
-  { value: "MEDIUM", label: "Media" },
-  { value: "LARGE", label: "Grande" },
-  { value: "ENTERPRISE", label: "Enterprise" },
+  { value: 'MICRO', label: 'Micro' },
+  { value: 'SMALL', label: 'Pequena' },
+  { value: 'MEDIUM', label: 'Media' },
+  { value: 'LARGE', label: 'Grande' },
+  { value: 'ENTERPRISE', label: 'Enterprise' },
 ];
 
 interface CompanyFormProps {
@@ -32,23 +26,31 @@ interface CompanyFormProps {
 }
 
 export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
-  const [name, setName] = useState(company?.name || "");
-  const [domain, setDomain] = useState(company?.domain || "");
-  const [industry, setIndustry] = useState(company?.industry || "");
-  const [size, setSize] = useState<CompanySize | "">(company?.size || "");
-  const [phone, setPhone] = useState(company?.phone || "");
-  const [address, setAddress] = useState(company?.address || "");
-  const [website, setWebsite] = useState(company?.website || "");
-  const [notes, setNotes] = useState(company?.notes || "");
+  const [name, setName] = useState(company?.name || '');
+  const [domain, setDomain] = useState(company?.domain || '');
+  const [industry, setIndustry] = useState(company?.industry || '');
+  const [size, setSize] = useState<CompanySize | ''>(company?.size || '');
+  const [phone, setPhone] = useState(company?.phone || '');
+  const [address, setAddress] = useState(company?.address || '');
+  const [website, setWebsite] = useState(company?.website || '');
+  const [notes, setNotes] = useState(company?.notes || '');
   const [saving, setSaving] = useState(false);
-  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, formRef } = useFormValidation({ schema: companyFormSchema });
+  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, formRef } =
+    useFormValidation({ schema: companyFormSchema });
   const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const isValid = validateAll({
-      name, domain, industry, size, phone, address, website, notes,
+      name,
+      domain,
+      industry,
+      size,
+      phone,
+      address,
+      website,
+      notes,
     });
     if (!isValid) return;
 
@@ -84,14 +86,23 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         <Input
           id="company-name"
           value={name}
-          onChange={(e) => { setName(e.target.value); handleChange('name', e.target.value); }}
+          onChange={(e) => {
+            setName(e.target.value);
+            handleChange('name', e.target.value);
+          }}
           onBlur={() => handleBlur('name', name)}
           placeholder="Nome da empresa"
           className="mt-1"
           error={touchedFields.name ? fieldErrors.name : undefined}
-          aria-describedby={fieldErrors.name && touchedFields.name ? "company-name-error" : undefined}
+          aria-describedby={
+            fieldErrors.name && touchedFields.name ? 'company-name-error' : undefined
+          }
         />
-        <FieldError id="company-name-error" error={fieldErrors.name as string} touched={touchedFields.name} />
+        <FieldError
+          id="company-name-error"
+          error={fieldErrors.name as string}
+          touched={touchedFields.name}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -100,7 +111,10 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
           <Input
             id="company-domain"
             value={domain}
-            onChange={(e) => { setDomain(e.target.value); handleChange('domain', e.target.value); }}
+            onChange={(e) => {
+              setDomain(e.target.value);
+              handleChange('domain', e.target.value);
+            }}
             onBlur={() => handleBlur('domain', domain)}
             placeholder="exemplo.com.br"
             className="mt-1"
@@ -111,7 +125,10 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
           <Input
             id="company-industry"
             value={industry}
-            onChange={(e) => { setIndustry(e.target.value); handleChange('industry', e.target.value); }}
+            onChange={(e) => {
+              setIndustry(e.target.value);
+              handleChange('industry', e.target.value);
+            }}
             onBlur={() => handleBlur('industry', industry)}
             placeholder="Tecnologia, Saude..."
             className="mt-1"
@@ -127,8 +144,10 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
             <SelectContent>
-              {SIZE_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              {SIZE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -138,7 +157,10 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
           <Input
             id="company-phone"
             value={phone}
-            onChange={(e) => { setPhone(e.target.value); handleChange('phone', e.target.value); }}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              handleChange('phone', e.target.value);
+            }}
             onBlur={() => handleBlur('phone', phone)}
             placeholder="(11) 99999-9999"
             className="mt-1"
@@ -151,14 +173,23 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         <Input
           id="company-website"
           value={website}
-          onChange={(e) => { setWebsite(e.target.value); handleChange('website', e.target.value); }}
+          onChange={(e) => {
+            setWebsite(e.target.value);
+            handleChange('website', e.target.value);
+          }}
           onBlur={() => handleBlur('website', website)}
           placeholder="https://exemplo.com.br"
           className="mt-1"
           error={touchedFields.website ? fieldErrors.website : undefined}
-          aria-describedby={fieldErrors.website && touchedFields.website ? "company-website-error" : undefined}
+          aria-describedby={
+            fieldErrors.website && touchedFields.website ? 'company-website-error' : undefined
+          }
         />
-        <FieldError id="company-website-error" error={fieldErrors.website as string} touched={touchedFields.website} />
+        <FieldError
+          id="company-website-error"
+          error={fieldErrors.website as string}
+          touched={touchedFields.website}
+        />
       </div>
 
       <div>
@@ -166,7 +197,10 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         <Input
           id="company-address"
           value={address}
-          onChange={(e) => { setAddress(e.target.value); handleChange('address', e.target.value); }}
+          onChange={(e) => {
+            setAddress(e.target.value);
+            handleChange('address', e.target.value);
+          }}
           onBlur={() => handleBlur('address', address)}
           placeholder="Rua, Cidade, Estado"
           className="mt-1"
@@ -191,7 +225,7 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         </Button>
         <Button type="submit" disabled={saving}>
           {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
-          {company ? "Salvar" : "Criar"}
+          {company ? 'Salvar' : 'Criar'}
         </Button>
       </div>
     </form>

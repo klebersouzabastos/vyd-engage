@@ -27,12 +27,16 @@ const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
+
   // In production (when not localhost), use relative URLs
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
     return window.location.origin;
   }
-  
+
   // Default to localhost for development
   return 'http://localhost:3001';
 };
@@ -75,10 +79,7 @@ class ApiClient {
     return false;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -101,7 +102,11 @@ class ApiClient {
     });
 
     // If unauthorized, try to refresh token via cookie (only once, skip for auth endpoints)
-    if (response.status === 401 && !endpoint.startsWith('/api/v1/auth/') && !endpoint.startsWith('/api/auth/')) {
+    if (
+      response.status === 401 &&
+      !endpoint.startsWith('/api/v1/auth/') &&
+      !endpoint.startsWith('/api/auth/')
+    ) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
         // Retry request with new cookie
@@ -124,7 +129,7 @@ class ApiClient {
           statusCode: response.status,
         };
       }
-      
+
       // Extrair mensagem de erro mais específica
       const errorMessage = errorData.error || errorData.message || 'Request failed';
       throw new ApiError(errorMessage, response.status, errorData);
@@ -160,7 +165,10 @@ class ApiClient {
     }
 
     // Timeout errors
-    if (error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout'))) {
+    if (
+      error instanceof Error &&
+      (error.name === 'TimeoutError' || error.message.includes('timeout'))
+    ) {
       throw new ApiError(
         'A requisição demorou muito. Tente novamente.',
         408,
@@ -181,15 +189,12 @@ class ApiClient {
   }
 
   // Auth methods
-  async register(data: {
-    email: string;
-    password: string;
-    name: string;
-    companyName: string;
-  }) {
+  async register(data: { email: string; password: string; name: string; companyName: string }) {
     try {
       // Cookies are set by the server (httpOnly) — no localStorage needed
-      return await this.request<{ user: { id: string; email: string; name: string; role: string; tenantId: string } }>('/api/v1/auth/register', {
+      return await this.request<{
+        user: { id: string; email: string; name: string; role: string; tenantId: string };
+      }>('/api/v1/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -201,7 +206,10 @@ class ApiClient {
   async login(data: { email: string; password: string; totpCode?: string }) {
     try {
       // Cookies are set by the server (httpOnly) — no localStorage needed
-      return await this.request<{ user: { id: string; email: string; name: string; role: string; tenantId: string } } | { requiresTwoFactor: true; userId: string }>('/api/v1/auth/login', {
+      return await this.request<
+        | { user: { id: string; email: string; name: string; role: string; tenantId: string } }
+        | { requiresTwoFactor: true; userId: string }
+      >('/api/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -218,16 +226,47 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.request<{ user: { id: string; email: string; name: string; avatar?: string | null; role: string; isPlatformAdmin?: boolean; tenantId: string; tenant?: { id: string; name: string; slug: string; logo?: string | null } } }>('/api/v1/auth/me');
+    return this.request<{
+      user: {
+        id: string;
+        email: string;
+        name: string;
+        avatar?: string | null;
+        role: string;
+        isPlatformAdmin?: boolean;
+        tenantId: string;
+        tenant?: { id: string; name: string; slug: string; logo?: string | null };
+      };
+    }>('/api/v1/auth/me');
   }
 
   // ---- Platform admin (super-admin / cross-tenant) ----
   async getPlatformOverview() {
-    return this.request<{ status: number; data: { tenants: number; users: number; leads: number; deals: number; activeSubscriptions: number; mrr: number } }>('/api/v1/admin/overview');
+    return this.request<{
+      status: number;
+      data: {
+        tenants: number;
+        users: number;
+        leads: number;
+        deals: number;
+        activeSubscriptions: number;
+        mrr: number;
+      };
+    }>('/api/v1/admin/overview');
   }
 
   async getPlatformTenants() {
-    return this.request<{ status: number; data: Array<{ id: string; name: string; slug: string; createdAt: string; _count: { users: number; leads: number }; subscription?: { status: string; plan: { type: string; name: string } } | null }> }>('/api/v1/admin/tenants');
+    return this.request<{
+      status: number;
+      data: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        createdAt: string;
+        _count: { users: number; leads: number };
+        subscription?: { status: string; plan: { type: string; name: string } } | null;
+      }>;
+    }>('/api/v1/admin/tenants');
   }
 
   async createPlatformTenant(data: {
@@ -239,14 +278,27 @@ class ApiClient {
     adminName: string;
     adminPassword?: string;
   }) {
-    return this.request<{ status: number; data: { tenant: { id: string; name: string; slug: string }; admin: { id: string; email: string }; generatedPassword?: string } }>('/api/v1/admin/tenants', {
+    return this.request<{
+      status: number;
+      data: {
+        tenant: { id: string; name: string; slug: string };
+        admin: { id: string; email: string };
+        generatedPassword?: string;
+      };
+    }>('/api/v1/admin/tenants', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateProfile(data: { name?: string; phone?: string; avatar?: string | null }) {
-    return this.request<{ id: string; name: string; email: string; phone?: string; avatar?: string | null }>('/api/v1/auth/profile', {
+    return this.request<{
+      id: string;
+      name: string;
+      email: string;
+      phone?: string;
+      avatar?: string | null;
+    }>('/api/v1/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -261,9 +313,12 @@ class ApiClient {
 
   // 2FA endpoints
   async setup2FA() {
-    return this.request<{ secret: string; qrCode: string; otpauthUrl: string }>('/api/v1/auth/2fa/setup', {
-      method: 'POST',
-    });
+    return this.request<{ secret: string; qrCode: string; otpauthUrl: string }>(
+      '/api/v1/auth/2fa/setup',
+      {
+        method: 'POST',
+      }
+    );
   }
 
   async verify2FA(code: string) {
@@ -284,15 +339,33 @@ class ApiClient {
     return this.request<{ enabled: boolean }>('/api/v1/auth/2fa/status');
   }
 
-  async updateTenant(data: { name?: string; logo?: string | null; settings?: { slackWebhookUrl?: string | null; teamsWebhookUrl?: string | null } }) {
-    return this.request<{ id: string; name: string; slug: string; logo?: string | null; settings?: Record<string, unknown> }>('/api/v1/auth/tenant', {
+  async updateTenant(data: {
+    name?: string;
+    logo?: string | null;
+    settings?: { slackWebhookUrl?: string | null; teamsWebhookUrl?: string | null };
+  }) {
+    return this.request<{
+      id: string;
+      name: string;
+      slug: string;
+      logo?: string | null;
+      settings?: Record<string, unknown>;
+    }>('/api/v1/auth/tenant', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async getTenant() {
-    return this.request<{ tenant: { id: string; name: string; slug: string; logo?: string | null; settings: Record<string, unknown> } }>('/api/v1/auth/tenant');
+    return this.request<{
+      tenant: {
+        id: string;
+        name: string;
+        slug: string;
+        logo?: string | null;
+        settings: Record<string, unknown>;
+      };
+    }>('/api/v1/auth/tenant');
   }
 
   async getProfileStats() {
@@ -365,7 +438,10 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<{ leads: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/v1/leads${query ? `?${query}` : ''}`);
+    return this.request<{
+      leads: Record<string, unknown>[];
+      pagination?: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/leads${query ? `?${query}` : ''}`);
   }
 
   async getLead(id: string) {
@@ -399,7 +475,12 @@ class ApiClient {
     });
   }
 
-  async exportLeads(filters?: { status?: string; source?: string; search?: string; tagId?: string }) {
+  async exportLeads(filters?: {
+    status?: string;
+    source?: string;
+    search?: string;
+    tagId?: string;
+  }) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -422,22 +503,31 @@ class ApiClient {
   }
 
   async convertToContact(id: string) {
-    return this.request<{ status: number; data: Record<string, unknown> }>(`/api/v1/leads/${id}/convert`, {
-      method: 'POST',
-    });
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/leads/${id}/convert`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   async revertToLead(id: string) {
-    return this.request<{ status: number; data: Record<string, unknown> }>(`/api/v1/leads/${id}/revert`, {
-      method: 'POST',
-    });
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/leads/${id}/revert`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   async bulkUpdateLeads(ids: string[], action: string, payload?: Record<string, unknown>) {
-    return this.request<{ status: number; data: { affected: number; action: string } }>('/api/v1/leads/bulk', {
-      method: 'PATCH',
-      body: JSON.stringify({ ids, action, payload }),
-    });
+    return this.request<{ status: number; data: { affected: number; action: string } }>(
+      '/api/v1/leads/bulk',
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ ids, action, payload }),
+      }
+    );
   }
 
   // Tasks
@@ -451,7 +541,10 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<{ tasks: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/v1/tasks${query ? `?${query}` : ''}`);
+    return this.request<{
+      tasks: Record<string, unknown>[];
+      pagination?: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/tasks${query ? `?${query}` : ''}`);
   }
 
   async getTask(id: string) {
@@ -480,25 +573,35 @@ class ApiClient {
 
   // Tags
   async getTags() {
-    return this.request<Array<{ id: string; name: string; color: string; createdAt: string }>>('/api/v1/tags');
+    return this.request<Array<{ id: string; name: string; color: string; createdAt: string }>>(
+      '/api/v1/tags'
+    );
   }
 
   async getTag(id: string) {
-    return this.request<{ id: string; name: string; color: string; createdAt: string }>(`/api/v1/tags/${id}`);
+    return this.request<{ id: string; name: string; color: string; createdAt: string }>(
+      `/api/v1/tags/${id}`
+    );
   }
 
   async createTag(data: { name: string; color?: string }) {
-    return this.request<{ id: string; name: string; color: string; createdAt: string }>('/api/v1/tags', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ id: string; name: string; color: string; createdAt: string }>(
+      '/api/v1/tags',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   async updateTag(id: string, data: { name?: string; color?: string }) {
-    return this.request<{ id: string; name: string; color: string; createdAt: string }>(`/api/v1/tags/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ id: string; name: string; color: string; createdAt: string }>(
+      `/api/v1/tags/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   async deleteTag(id: string) {
@@ -587,7 +690,9 @@ class ApiClient {
   }
 
   async getLogsByExecution(executionId: string) {
-    return this.request<Record<string, unknown>>(`/api/v1/automation-logs/execution/${executionId}`);
+    return this.request<Record<string, unknown>>(
+      `/api/v1/automation-logs/execution/${executionId}`
+    );
   }
 
   async getAutomationLogStats(filters?: { from?: string; to?: string }) {
@@ -651,7 +756,9 @@ class ApiClient {
   }
 
   async getWhatsAppTemplates(connectionId: string) {
-    return this.request<Array<Record<string, unknown>>>(`/api/v1/whatsapp/${connectionId}/templates`);
+    return this.request<Array<Record<string, unknown>>>(
+      `/api/v1/whatsapp/${connectionId}/templates`
+    );
   }
 
   // Email Configs
@@ -718,27 +825,40 @@ class ApiClient {
     text?: string;
     scheduledAt: string;
   }) {
-    return this.request<{ campaignId: string; scheduledAt: string; recipientCount: number; status: string }>('/api/v1/email/schedule', {
+    return this.request<{
+      campaignId: string;
+      scheduledAt: string;
+      recipientCount: number;
+      status: string;
+    }>('/api/v1/email/schedule', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async cancelScheduledCampaign(campaignId: string) {
-    return this.request<{ campaignId: string; status: string }>(`/api/v1/email/schedule/${campaignId}`, {
-      method: 'DELETE',
-    });
+    return this.request<{ campaignId: string; status: string }>(
+      `/api/v1/email/schedule/${campaignId}`,
+      {
+        method: 'DELETE',
+      }
+    );
   }
 
   async getScheduledCampaignStatus(campaignId: string) {
-    return this.request<{ campaignId: string; state: string }>(`/api/v1/email/schedule/${campaignId}`);
+    return this.request<{ campaignId: string; state: string }>(
+      `/api/v1/email/schedule/${campaignId}`
+    );
   }
 
   async sendTestEmail(configId: string, toEmail: string) {
-    return this.request<{ success: boolean; message?: string }>(`/api/v1/email/configs/${configId}/test`, {
-      method: 'POST',
-      body: JSON.stringify({ toEmail }),
-    });
+    return this.request<{ success: boolean; message?: string }>(
+      `/api/v1/email/configs/${configId}/test`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ toEmail }),
+      }
+    );
   }
 
   // API Keys
@@ -776,7 +896,10 @@ class ApiClient {
     });
   }
 
-  async updateOutgoingWebhook(id: string, data: { url?: string; events?: string[]; active?: boolean }) {
+  async updateOutgoingWebhook(
+    id: string,
+    data: { url?: string; events?: string[]; active?: boolean }
+  ) {
     return this.request<OutgoingWebhook>(`/api/v1/outgoing-webhooks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -792,7 +915,12 @@ class ApiClient {
   }
 
   async testOutgoingWebhook(id: string, event?: string) {
-    return this.request<{ success: boolean; statusCode?: number; responseTime?: number; payload?: Record<string, unknown> }>(`/api/v1/outgoing-webhooks/${id}/test`, {
+    return this.request<{
+      success: boolean;
+      statusCode?: number;
+      responseTime?: number;
+      payload?: Record<string, unknown>;
+    }>(`/api/v1/outgoing-webhooks/${id}/test`, {
       method: 'POST',
       body: JSON.stringify(event ? { event } : {}),
     });
@@ -859,7 +987,12 @@ class ApiClient {
     });
   }
 
-  async getInboxConversations(filters?: { channel?: string; search?: string; page?: number; limit?: number }) {
+  async getInboxConversations(filters?: {
+    channel?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -869,7 +1002,9 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<Record<string, unknown>>(`/api/v1/interactions/inbox${query ? `?${query}` : ''}`);
+    return this.request<Record<string, unknown>>(
+      `/api/v1/interactions/inbox${query ? `?${query}` : ''}`
+    );
   }
 
   // Funnels (Pipeline)
@@ -887,7 +1022,11 @@ class ApiClient {
     return this.request<Record<string, unknown>>(`/api/v1/funnels/${id}`);
   }
 
-  async createFunnel(data: { name: string; type?: 'LEAD' | 'DEAL'; columns?: Array<{ title: string; color?: string; mappedStatus?: string }> }) {
+  async createFunnel(data: {
+    name: string;
+    type?: 'LEAD' | 'DEAL';
+    columns?: Array<{ title: string; color?: string; mappedStatus?: string }>;
+  }) {
     return this.request<Record<string, unknown>>('/api/v1/funnels', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -907,18 +1046,28 @@ class ApiClient {
     });
   }
 
-  async addFunnelColumn(funnelId: string, data: { title: string; color?: string; mappedStatus?: string }) {
+  async addFunnelColumn(
+    funnelId: string,
+    data: { title: string; color?: string; mappedStatus?: string }
+  ) {
     return this.request<Record<string, unknown>>(`/api/v1/funnels/${funnelId}/columns`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateFunnelColumn(funnelId: string, columnId: string, data: { title?: string; color?: string; order?: number }) {
-    return this.request<Record<string, unknown>>(`/api/v1/funnels/${funnelId}/columns/${columnId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+  async updateFunnelColumn(
+    funnelId: string,
+    columnId: string,
+    data: { title?: string; color?: string; order?: number }
+  ) {
+    return this.request<Record<string, unknown>>(
+      `/api/v1/funnels/${funnelId}/columns/${columnId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   async reorderFunnelColumns(funnelId: string, columnIds: string[]) {
@@ -959,7 +1108,9 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<Record<string, unknown>>(`/api/v1/notifications${query ? `?${query}` : ''}`);
+    return this.request<Record<string, unknown>>(
+      `/api/v1/notifications${query ? `?${query}` : ''}`
+    );
   }
 
   async getUnreadNotificationsCount() {
@@ -1000,14 +1151,30 @@ class ApiClient {
     return this.request<Record<string, unknown>>(`/api/v1/scoring-rules/${id}`);
   }
 
-  async createScoringRule(data: { name: string; eventType: string; points: number; description?: string; conditions?: Record<string, unknown> }) {
+  async createScoringRule(data: {
+    name: string;
+    eventType: string;
+    points: number;
+    description?: string;
+    conditions?: Record<string, unknown>;
+  }) {
     return this.request<Record<string, unknown>>('/api/v1/scoring-rules', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateScoringRule(id: string, data: { name?: string; eventType?: string; points?: number; description?: string | null; active?: boolean; conditions?: Record<string, unknown> | null }) {
+  async updateScoringRule(
+    id: string,
+    data: {
+      name?: string;
+      eventType?: string;
+      points?: number;
+      description?: string | null;
+      active?: boolean;
+      conditions?: Record<string, unknown> | null;
+    }
+  ) {
     return this.request<Record<string, unknown>>(`/api/v1/scoring-rules/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -1041,13 +1208,28 @@ class ApiClient {
   // ========================
 
   async getGoals(params?: { userId?: string; month?: number; year?: number }) {
-    const qs = params ? new URLSearchParams(
-      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))
-    ).toString() : '';
-    return this.request<{ status: number; data: Array<Record<string, unknown>> }>(`/api/v1/goals${qs ? `?${qs}` : ''}`);
+    const qs = params
+      ? new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(params)
+              .filter(([, v]) => v !== undefined)
+              .map(([k, v]) => [k, String(v)])
+          )
+        ).toString()
+      : '';
+    return this.request<{ status: number; data: Array<Record<string, unknown>> }>(
+      `/api/v1/goals${qs ? `?${qs}` : ''}`
+    );
   }
 
-  async upsertGoal(data: { userId: string; month: number; year: number; targetRevenue?: number; targetDeals?: number; targetLeads?: number }) {
+  async upsertGoal(data: {
+    userId: string;
+    month: number;
+    year: number;
+    targetRevenue?: number;
+    targetDeals?: number;
+    targetLeads?: number;
+  }) {
     return this.request<{ status: number; data: Record<string, unknown> }>('/api/v1/goals', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -1070,14 +1252,22 @@ class ApiClient {
     return this.request<Record<string, unknown>>(`/api/v1/reports/${id}`);
   }
 
-  async createReport(data: { name: string; description?: string; type?: string; config?: Record<string, unknown> }) {
+  async createReport(data: {
+    name: string;
+    description?: string;
+    type?: string;
+    config?: Record<string, unknown>;
+  }) {
     return this.request<Record<string, unknown>>('/api/v1/reports', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateReport(id: string, data: { name?: string; description?: string; type?: string; config?: Record<string, unknown> }) {
+  async updateReport(
+    id: string,
+    data: { name?: string; description?: string; type?: string; config?: Record<string, unknown> }
+  ) {
     return this.request<Record<string, unknown>>(`/api/v1/reports/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -1103,14 +1293,26 @@ class ApiClient {
   // ========================
 
   async getUsers() {
-    return this.request<Array<{ id: string; name: string; email: string; role: string; status?: string; createdAt?: string }>>('/api/v1/users');
+    return this.request<
+      Array<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        status?: string;
+        createdAt?: string;
+      }>
+    >('/api/v1/users');
   }
 
   async updateUser(id: string, data: { role?: string; status?: string }) {
-    return this.request<{ id: string; name: string; email: string; role: string }>(`/api/v1/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ id: string; name: string; email: string; role: string }>(
+      `/api/v1/users/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   // ========================
@@ -1118,20 +1320,32 @@ class ApiClient {
   // ========================
 
   async getInvitations() {
-    return this.request<Array<{ id: string; email: string; role: string; status: string; createdAt: string }>>('/api/v1/invitations');
+    return this.request<
+      Array<{ id: string; email: string; role: string; status: string; createdAt: string }>
+    >('/api/v1/invitations');
   }
 
   async createInvitation(data: { email: string; role: string }) {
-    return this.request<{ id: string; email: string; role: string; status: string; emailSent: boolean; invitationLink?: string }>('/api/v1/invitations', {
+    return this.request<{
+      id: string;
+      email: string;
+      role: string;
+      status: string;
+      emailSent: boolean;
+      invitationLink?: string;
+    }>('/api/v1/invitations', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async resendInvitation(id: string) {
-    return this.request<{ emailSent: boolean; invitationLink?: string }>(`/api/v1/invitations/${id}/resend`, {
-      method: 'POST',
-    });
+    return this.request<{ emailSent: boolean; invitationLink?: string }>(
+      `/api/v1/invitations/${id}/resend`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   async cancelInvitation(id: string) {
@@ -1144,7 +1358,13 @@ class ApiClient {
   // Payments (Backend API)
   // ========================
 
-  async createPaymentIntent(data: { planId: string; planType: string; amount: number; method: string; billingCycle: string }) {
+  async createPaymentIntent(data: {
+    planId: string;
+    planType: string;
+    amount: number;
+    method: string;
+    billingCycle: string;
+  }) {
     return this.request<Record<string, unknown>>('/api/v1/payments/intent', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -1182,7 +1402,10 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<{ deals: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/v1/deals${query ? `?${query}` : ''}`);
+    return this.request<{
+      deals: Record<string, unknown>[];
+      pagination?: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/deals${query ? `?${query}` : ''}`);
   }
 
   async getDeal(id: string) {
@@ -1221,15 +1444,24 @@ class ApiClient {
       });
     }
     const qs = params.toString();
-    return this.request<{ status: number; data: import('../../types').ForecastData }>(`/api/v1/deals/forecast${qs ? `?${qs}` : ''}`);
+    return this.request<{ status: number; data: import('../../types').ForecastData }>(
+      `/api/v1/deals/forecast${qs ? `?${qs}` : ''}`
+    );
   }
 
   async getDealTrend(months?: number) {
     const qs = months ? `?months=${months}` : '';
-    return this.request<{ status: number; data: import('../../types').TrendData }>(`/api/v1/deals/trend${qs}`);
+    return this.request<{ status: number; data: import('../../types').TrendData }>(
+      `/api/v1/deals/trend${qs}`
+    );
   }
 
-  async getFunnelConversion(filters?: { from?: string; to?: string; source?: string; assignedTo?: string }) {
+  async getFunnelConversion(filters?: {
+    from?: string;
+    to?: string;
+    source?: string;
+    assignedTo?: string;
+  }) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -1237,7 +1469,9 @@ class ApiClient {
       });
     }
     const qs = params.toString();
-    return this.request<{ status: number; data: import('../../types').FunnelConversionData }>(`/api/v1/reports/funnel-conversion${qs ? `?${qs}` : ''}`);
+    return this.request<{ status: number; data: import('../../types').FunnelConversionData }>(
+      `/api/v1/reports/funnel-conversion${qs ? `?${qs}` : ''}`
+    );
   }
 
   async getDealInteractions(dealId: string) {
@@ -1249,15 +1483,21 @@ class ApiClient {
   // ========================
 
   async getLeadNextAction(leadId: string) {
-    return this.request<{ status: number; data: import('../../types').NextAction }>(`/api/v1/leads/${leadId}/next-action`);
+    return this.request<{ status: number; data: import('../../types').NextAction }>(
+      `/api/v1/leads/${leadId}/next-action`
+    );
   }
 
   async getDealNextAction(dealId: string) {
-    return this.request<{ status: number; data: import('../../types').NextAction }>(`/api/v1/deals/${dealId}/next-action`);
+    return this.request<{ status: number; data: import('../../types').NextAction }>(
+      `/api/v1/deals/${dealId}/next-action`
+    );
   }
 
   async getActionSummary(limit = 5) {
-    return this.request<{ status: number; data: import('../../types').ActionSummaryItem[] }>(`/api/v1/deals/action-summary?limit=${limit}`);
+    return this.request<{ status: number; data: import('../../types').ActionSummaryItem[] }>(
+      `/api/v1/deals/action-summary?limit=${limit}`
+    );
   }
 
   // ========================
@@ -1274,7 +1514,10 @@ class ApiClient {
       });
     }
     const query = params.toString();
-    return this.request<{ companies: Record<string, unknown>[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/api/v1/companies${query ? `?${query}` : ''}`);
+    return this.request<{
+      companies: Record<string, unknown>[];
+      pagination?: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/companies${query ? `?${query}` : ''}`);
   }
 
   async getCompany(id: string) {
@@ -1314,7 +1557,13 @@ class ApiClient {
   }
 
   async getGoogleCalendarStatus() {
-    return this.request<{ connected: boolean; email?: string; syncEnabled?: boolean; lastSyncAt?: string | null; connectedAt?: string }>('/api/v1/integrations/google/status');
+    return this.request<{
+      connected: boolean;
+      email?: string;
+      syncEnabled?: boolean;
+      lastSyncAt?: string | null;
+      connectedAt?: string;
+    }>('/api/v1/integrations/google/status');
   }
 
   async toggleGoogleCalendarSync(syncEnabled: boolean) {
@@ -1343,7 +1592,7 @@ class ApiClient {
   private async downloadExport(
     entity: 'leads' | 'deals' | 'tasks',
     format: 'json' | 'csv' | 'xlsx',
-    filters?: Record<string, string | number | undefined>,
+    filters?: Record<string, string | number | undefined>
   ): Promise<Blob> {
     const params = new URLSearchParams();
     params.set('format', format);
@@ -1365,21 +1614,42 @@ class ApiClient {
 
   async exportLeadsDownload(
     format: 'json' | 'csv' | 'xlsx',
-    filters?: { status?: string; source?: string; search?: string; tagId?: string; assignedTo?: string },
+    filters?: {
+      status?: string;
+      source?: string;
+      search?: string;
+      tagId?: string;
+      assignedTo?: string;
+    }
   ): Promise<Blob> {
     return this.downloadExport('leads', format, filters);
   }
 
   async exportDealsDownload(
     format: 'json' | 'csv' | 'xlsx',
-    filters?: { stage?: string; search?: string; assignedTo?: string; leadId?: string; minValue?: number; maxValue?: number },
+    filters?: {
+      stage?: string;
+      search?: string;
+      assignedTo?: string;
+      leadId?: string;
+      minValue?: number;
+      maxValue?: number;
+    }
   ): Promise<Blob> {
     return this.downloadExport('deals', format, filters);
   }
 
   async exportTasksDownload(
     format: 'json' | 'csv' | 'xlsx',
-    filters?: { status?: string; priority?: string; search?: string; assignedTo?: string; leadId?: string; startDate?: string; endDate?: string },
+    filters?: {
+      status?: string;
+      priority?: string;
+      search?: string;
+      assignedTo?: string;
+      leadId?: string;
+      startDate?: string;
+      endDate?: string;
+    }
   ): Promise<Blob> {
     return this.downloadExport('tasks', format, filters);
   }
@@ -1404,24 +1674,34 @@ class ApiClient {
     templateType: import('../../types').DraftTemplateType;
     customInstructions?: string;
   }) {
-    return this.request<{ status: number; data: import('../../types').EmailDraft }>('/api/v1/ai/email-draft', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ status: number; data: import('../../types').EmailDraft }>(
+      '/api/v1/ai/email-draft',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   async getAITemplates() {
-    return this.request<{ status: number; data: import('../../types').DraftTemplate[] }>('/api/v1/ai/templates');
+    return this.request<{ status: number; data: import('../../types').DraftTemplate[] }>(
+      '/api/v1/ai/templates'
+    );
   }
 
   async getAIConfig() {
-    return this.request<{ status: number; data: import('../../types').AIConfig }>('/api/v1/ai/config');
+    return this.request<{ status: number; data: import('../../types').AIConfig }>(
+      '/api/v1/ai/config'
+    );
   }
 
   async testAIConnection() {
-    return this.request<{ status: number; data: import('../../types').AIConnectionTest }>('/api/v1/ai/test-connection', {
-      method: 'POST',
-    });
+    return this.request<{ status: number; data: import('../../types').AIConnectionTest }>(
+      '/api/v1/ai/test-connection',
+      {
+        method: 'POST',
+      }
+    );
   }
 
   // ========================
@@ -1433,7 +1713,9 @@ class ApiClient {
    * components and makes no further AI calls.
    */
   async getAIStatus() {
-    const res = await this.request<{ status: number; data: import('../../types').AIStatus }>('/api/v1/ai/status');
+    const res = await this.request<{ status: number; data: import('../../types').AIStatus }>(
+      '/api/v1/ai/status'
+    );
     return res.data;
   }
 
@@ -1443,7 +1725,9 @@ class ApiClient {
    */
   async getLeadAISummary(leadId: string, force = false) {
     const query = force ? '?refresh=true' : '';
-    const res = await this.request<{ status: number; data: import('../../types').AISummary }>(`/api/v1/leads/${leadId}/ai-summary${query}`);
+    const res = await this.request<{ status: number; data: import('../../types').AISummary }>(
+      `/api/v1/leads/${leadId}/ai-summary${query}`
+    );
     return res.data;
   }
 
@@ -1451,7 +1735,9 @@ class ApiClient {
    * Deal close-propensity score with top factors (req 22).
    */
   async getDealAIScore(dealId: string) {
-    const res = await this.request<{ status: number; data: import('../../types').DealAIScore }>(`/api/v1/deals/${dealId}/ai-score`);
+    const res = await this.request<{ status: number; data: import('../../types').DealAIScore }>(
+      `/api/v1/deals/${dealId}/ai-score`
+    );
     return res.data;
   }
 
@@ -1464,7 +1750,7 @@ class ApiClient {
   async streamLeadAIChat(
     leadId: string,
     body: { message: string; history: import('../../types').ChatMessage[] },
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<Response> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const csrfToken = this.getCsrfToken();
@@ -1503,15 +1789,18 @@ class ApiClient {
     });
   }
 
-  async updateSavedView(id: string, data: {
-    name?: string;
-    filters?: Record<string, unknown>;
-    columns?: Record<string, unknown> | null;
-    isDefault?: boolean;
-    isShared?: boolean;
-    sortBy?: string | null;
-    sortOrder?: string | null;
-  }) {
+  async updateSavedView(
+    id: string,
+    data: {
+      name?: string;
+      filters?: Record<string, unknown>;
+      columns?: Record<string, unknown> | null;
+      isDefault?: boolean;
+      isShared?: boolean;
+      sortBy?: string | null;
+      sortOrder?: string | null;
+    }
+  ) {
     return this.request<{ status: number; data: SavedView }>(`/api/v1/saved-views/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -1519,14 +1808,19 @@ class ApiClient {
   }
 
   async deleteSavedView(id: string) {
-    return this.request<{ status: number; data: { deleted: boolean } }>(`/api/v1/saved-views/${id}`, {
-      method: 'DELETE',
-    });
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/saved-views/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
   }
 
   // ── Campaigns (Email Campaigns) ─────────────────────
   async getCampaigns() {
-    const res = await this.request<{ status: number; data: CampaignListItem[] }>('/api/v1/campaigns');
+    const res = await this.request<{ status: number; data: CampaignListItem[] }>(
+      '/api/v1/campaigns'
+    );
     return res.data;
   }
 
@@ -1556,27 +1850,37 @@ class ApiClient {
   }
 
   async previewCampaignAudience(id: string) {
-    const res = await this.request<{ status: number; data: CampaignAudiencePreview }>(`/api/v1/campaigns/${id}/preview-audience`);
+    const res = await this.request<{ status: number; data: CampaignAudiencePreview }>(
+      `/api/v1/campaigns/${id}/preview-audience`
+    );
     return res.data;
   }
 
   async scheduleCampaign(id: string, sendAt: string | null) {
-    const res = await this.request<{ status: number; data: Campaign }>(`/api/v1/campaigns/${id}/schedule`, {
-      method: 'POST',
-      body: JSON.stringify({ sendAt }),
-    });
+    const res = await this.request<{ status: number; data: Campaign }>(
+      `/api/v1/campaigns/${id}/schedule`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ sendAt }),
+      }
+    );
     return res.data;
   }
 
   async sendCampaignTestEmail(id: string) {
-    const res = await this.request<{ status: number; data: { success: boolean } }>(`/api/v1/campaigns/${id}/test-email`, {
-      method: 'POST',
-    });
+    const res = await this.request<{ status: number; data: { success: boolean } }>(
+      `/api/v1/campaigns/${id}/test-email`,
+      {
+        method: 'POST',
+      }
+    );
     return res.data;
   }
 
   async getCampaignStats(id: string) {
-    const res = await this.request<{ status: number; data: CampaignStats }>(`/api/v1/campaigns/${id}/stats`);
+    const res = await this.request<{ status: number; data: CampaignStats }>(
+      `/api/v1/campaigns/${id}/stats`
+    );
     return res.data;
   }
 
@@ -1596,7 +1900,10 @@ class ApiClient {
     });
   }
 
-  async updateEmailTemplate(id: string, data: Partial<{ name: string; subject: string; html: string }>) {
+  async updateEmailTemplate(
+    id: string,
+    data: Partial<{ name: string; subject: string; html: string }>
+  ) {
     return this.request<EmailTemplateDetail>(`/api/v1/email-templates/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -1617,7 +1924,11 @@ class ApiClient {
    * must let the browser set the multipart boundary itself. Mirrors the
    * cookie + CSRF auth handling used by the rest of the client.
    */
-  private async postImport<T>(entity: 'leads' | 'deals' | 'interactions' | 'companies' | 'contacts', formData: FormData, dryRun: boolean): Promise<T> {
+  private async postImport<T>(
+    entity: 'leads' | 'deals' | 'interactions' | 'companies' | 'contacts',
+    formData: FormData,
+    dryRun: boolean
+  ): Promise<T> {
     const csrfToken = this.getCsrfToken();
     const headers: Record<string, string> = {};
     if (csrfToken) headers['x-csrf-token'] = csrfToken;
@@ -1635,7 +1946,8 @@ class ApiClient {
       } catch {
         errorData = { error: response.statusText || 'Import failed' };
       }
-      const message = (errorData.error as string) || (errorData.message as string) || 'Falha na importação';
+      const message =
+        (errorData.error as string) || (errorData.message as string) || 'Falha na importação';
       throw new ApiError(message, response.status, errorData);
     }
     // Backend wraps every import response in the standard { status, data } envelope.
@@ -1644,7 +1956,12 @@ class ApiClient {
     return (json?.data ?? json) as T;
   }
 
-  async importLeadsFile(file: File, mapping: Record<string, string>, dryRun: boolean, options?: { duplicateActions?: Record<string, ImportDuplicateAction> }): Promise<ImportResult> {
+  async importLeadsFile(
+    file: File,
+    mapping: Record<string, string>,
+    dryRun: boolean,
+    options?: { duplicateActions?: Record<string, ImportDuplicateAction> }
+  ): Promise<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mapping', JSON.stringify(mapping));
@@ -1654,14 +1971,23 @@ class ApiClient {
     return this.postImport<ImportResult>('leads', formData, dryRun);
   }
 
-  async importCompaniesFile(file: File, mapping: Record<string, string>, dryRun: boolean): Promise<ImportResult> {
+  async importCompaniesFile(
+    file: File,
+    mapping: Record<string, string>,
+    dryRun: boolean
+  ): Promise<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mapping', JSON.stringify(mapping));
     return this.postImport<ImportResult>('companies', formData, dryRun);
   }
 
-  async importContactsFile(file: File, mapping: Record<string, string>, dryRun: boolean, options?: { duplicateActions?: Record<string, ImportDuplicateAction> }): Promise<ImportResult> {
+  async importContactsFile(
+    file: File,
+    mapping: Record<string, string>,
+    dryRun: boolean,
+    options?: { duplicateActions?: Record<string, ImportDuplicateAction> }
+  ): Promise<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mapping', JSON.stringify(mapping));
@@ -1689,13 +2015,15 @@ class ApiClient {
   }
 
   async getImportBatch(batchId: string): Promise<{ batch: ImportBatch }> {
-    const res = await this.request<{ data: { batch: ImportBatch } }>(`/api/v1/import/batches/${batchId}`);
+    const res = await this.request<{ data: { batch: ImportBatch } }>(
+      `/api/v1/import/batches/${batchId}`
+    );
     return res.data;
   }
 
-  async rollbackImportBatch(
-    batchId: string,
-  ): Promise<{ deleted: { leads: number; deals: number; interactions: number; companies: number } }> {
+  async rollbackImportBatch(batchId: string): Promise<{
+    deleted: { leads: number; deals: number; interactions: number; companies: number };
+  }> {
     const res = await this.request<{
       data: { deleted: { leads: number; deals: number; interactions: number; companies: number } };
     }>(`/api/v1/import/batches/${batchId}`, {
@@ -1744,9 +2072,7 @@ class ApiClient {
   }
 
   async getDeepResearchTemplates() {
-    return this.request<{ items: DeepResearchTemplate[] }>(
-      '/api/v1/deep-research/templates',
-    );
+    return this.request<{ items: DeepResearchTemplate[] }>('/api/v1/deep-research/templates');
   }
 
   async createDeepResearchTemplate(data: {
@@ -1762,12 +2088,12 @@ class ApiClient {
 
   async updateDeepResearchTemplate(
     id: string,
-    data: { name?: string; description?: string; promptBody?: string },
+    data: { name?: string; description?: string; promptBody?: string }
   ) {
-    return this.request<DeepResearchTemplate>(
-      `/api/v1/deep-research/templates/${id}`,
-      { method: 'PUT', body: JSON.stringify(data) },
-    );
+    return this.request<DeepResearchTemplate>(`/api/v1/deep-research/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async deleteDeepResearchTemplate(id: string) {
@@ -1781,7 +2107,8 @@ class ApiClient {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') params.append(key, String(value));
+        if (value !== undefined && value !== null && value !== '')
+          params.append(key, String(value));
       });
     }
     const query = params.toString();
@@ -1845,7 +2172,8 @@ class ApiClient {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') params.append(key, String(value));
+        if (value !== undefined && value !== null && value !== '')
+          params.append(key, String(value));
       });
     }
     const query = params.toString();
@@ -1900,7 +2228,8 @@ class ApiClient {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') params.append(key, String(value));
+        if (value !== undefined && value !== null && value !== '')
+          params.append(key, String(value));
       });
     }
     const query = params.toString();
@@ -2140,12 +2469,7 @@ export interface CampaignStats {
 
 export type ImportType = 'LEADS' | 'DEALS' | 'INTERACTIONS' | 'COMPANIES';
 
-export type ImportBatchStatus =
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'COMPLETED'
-  | 'FAILED'
-  | 'ROLLED_BACK';
+export type ImportBatchStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'ROLLED_BACK';
 
 export type ImportDuplicateAction = 'skip' | 'update';
 
@@ -2203,4 +2527,3 @@ export interface ImportBatch {
   updatedAt: string;
   user?: { id: string; name: string; email?: string } | null;
 }
-

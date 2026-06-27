@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Loader2, CheckCircle, XCircle, Sparkles, Info } from "lucide-react";
-import { toast } from "sonner";
-import { apiClient } from "../../services/api/client";
-import type { AIConfig, AIConnectionTest } from "../../types";
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Loader2, CheckCircle, XCircle, Sparkles, Info } from 'lucide-react';
+import { toast } from 'sonner';
+import { apiClient } from '../../services/api/client';
+import type { AIConfig, AIConnectionTest } from '../../types';
 
 export function AISettingsTab() {
   const [config, setConfig] = useState<AIConfig | null>(null);
@@ -22,7 +22,7 @@ export function AISettingsTab() {
       const result = await apiClient.getAIConfig();
       setConfig(result.data);
     } catch (error: any) {
-      console.error("Erro ao carregar configuracao de IA:", error);
+      console.error('Erro ao carregar configuracao de IA:', error);
     } finally {
       setLoading(false);
     }
@@ -35,12 +35,12 @@ export function AISettingsTab() {
       const result = await apiClient.testAIConnection();
       setTestResult(result.data);
       if (result.data.success) {
-        toast.success("Conexao com provider de IA testada com sucesso!");
+        toast.success('Conexao com provider de IA testada com sucesso!');
       } else {
         toast.error(`Falha na conexao: ${result.data.error}`);
       }
     } catch (error: any) {
-      toast.error("Erro ao testar conexao");
+      toast.error('Erro ao testar conexao');
     } finally {
       setTesting(false);
     }
@@ -54,11 +54,12 @@ export function AISettingsTab() {
     );
   }
 
-  const providerLabel = config?.provider === "openai"
-    ? "OpenAI"
-    : config?.provider === "anthropic"
-      ? "Anthropic"
-      : "Nenhum";
+  const providerLabel =
+    config?.provider === 'openai'
+      ? 'OpenAI'
+      : config?.provider === 'anthropic'
+        ? 'Anthropic'
+        : 'Nenhum';
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -83,8 +84,8 @@ export function AISettingsTab() {
             </p>
           </div>
           <Badge
-            variant={config?.configured ? "default" : "secondary"}
-            className={config?.configured ? "bg-green-100 text-green-700 hover:bg-green-100" : ""}
+            variant={config?.configured ? 'default' : 'secondary'}
+            className={config?.configured ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}
           >
             {config?.configured ? (
               <>
@@ -92,7 +93,7 @@ export function AISettingsTab() {
                 IA Configurada
               </>
             ) : (
-              "Sem IA — usando templates"
+              'Sem IA — usando templates'
             )}
           </Badge>
         </div>
@@ -106,15 +107,25 @@ export function AISettingsTab() {
             <p className="font-medium mb-1">Como configurar</p>
             <p>
               A configuracao do provider de IA e feita via variaveis de ambiente no servidor.
-              Adicione as seguintes variaveis ao seu arquivo <code className="bg-blue-100 px-1 rounded">.env</code>:
+              Adicione as seguintes variaveis ao seu arquivo{' '}
+              <code className="bg-blue-100 px-1 rounded">.env</code>:
             </p>
             <ul className="mt-2 space-y-1 list-disc list-inside text-xs">
-              <li><code className="bg-blue-100 px-1 rounded">AI_PROVIDER</code> — <code>openai</code> ou <code>anthropic</code></li>
-              <li><code className="bg-blue-100 px-1 rounded">AI_API_KEY</code> — Sua chave de API</li>
-              <li><code className="bg-blue-100 px-1 rounded">AI_MODEL</code> — Modelo especifico (opcional)</li>
+              <li>
+                <code className="bg-blue-100 px-1 rounded">AI_PROVIDER</code> — <code>openai</code>{' '}
+                ou <code>anthropic</code>
+              </li>
+              <li>
+                <code className="bg-blue-100 px-1 rounded">AI_API_KEY</code> — Sua chave de API
+              </li>
+              <li>
+                <code className="bg-blue-100 px-1 rounded">AI_MODEL</code> — Modelo especifico
+                (opcional)
+              </li>
             </ul>
             <p className="mt-2 text-xs">
-              Alternativamente, defina <code className="bg-blue-100 px-1 rounded">OPENAI_API_KEY</code> ou{" "}
+              Alternativamente, defina{' '}
+              <code className="bg-blue-100 px-1 rounded">OPENAI_API_KEY</code> ou{' '}
               <code className="bg-blue-100 px-1 rounded">ANTHROPIC_API_KEY</code> diretamente.
             </p>
           </div>
@@ -144,17 +155,19 @@ export function AISettingsTab() {
                   Testando...
                 </>
               ) : (
-                "Testar Conexao"
+                'Testar Conexao'
               )}
             </Button>
           </div>
 
           {testResult && (
-            <div className={`mt-3 p-3 rounded-lg text-sm flex items-center gap-2 ${
-              testResult.success
-                ? "bg-green-50 text-green-700 border border-green-200"
-                : "bg-red-50 text-red-700 border border-red-200"
-            }`}>
+            <div
+              className={`mt-3 p-3 rounded-lg text-sm flex items-center gap-2 ${
+                testResult.success
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}
+            >
               {testResult.success ? (
                 <>
                   <CheckCircle size={16} />
@@ -175,12 +188,13 @@ export function AISettingsTab() {
       {!config?.configured && (
         <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
           <p className="text-sm text-gray-600">
-            Sem provider de IA configurado, o sistema utiliza <strong>templates estaticos</strong> para geracao de emails.
-            Os templates preenchem automaticamente os dados do lead/deal e estao disponiveis em portugues.
+            Sem provider de IA configurado, o sistema utiliza <strong>templates estaticos</strong>{' '}
+            para geracao de emails. Os templates preenchem automaticamente os dados do lead/deal e
+            estao disponiveis em portugues.
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            Funcionalidade 100% operacional mesmo sem IA — os templates cobrem os 4 cenarios mais comuns:
-            primeiro contato, follow-up, proposta comercial e agradecimento.
+            Funcionalidade 100% operacional mesmo sem IA — os templates cobrem os 4 cenarios mais
+            comuns: primeiro contato, follow-up, proposta comercial e agradecimento.
           </p>
         </div>
       )}

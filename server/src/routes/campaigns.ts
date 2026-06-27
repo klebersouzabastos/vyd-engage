@@ -25,7 +25,12 @@ router.use(tenantScope);
 
 const blockSchema = z.discriminatedUnion('type', [
   z.object({ id: z.string(), type: z.literal('text'), content: z.string() }),
-  z.object({ id: z.string(), type: z.literal('image'), url: z.string(), alt: z.string().optional() }),
+  z.object({
+    id: z.string(),
+    type: z.literal('image'),
+    url: z.string(),
+    alt: z.string().optional(),
+  }),
   z.object({ id: z.string(), type: z.literal('button'), label: z.string(), href: z.string() }),
   z.object({ id: z.string(), type: z.literal('divider') }),
   z.object({ id: z.string(), type: z.literal('spacer'), height: z.number().optional() }),
@@ -218,7 +223,13 @@ router.put('/:id', async (req, res, next) => {
 
     // Don't allow editing a campaign that is already sending/sent.
     if (existing.status === 'SENDING' || existing.status === 'SENT') {
-      return next(createError('Cannot edit a campaign that is sending or already sent', 409, 'CAMPAIGN_LOCKED'));
+      return next(
+        createError(
+          'Cannot edit a campaign that is sending or already sent',
+          409,
+          'CAMPAIGN_LOCKED'
+        )
+      );
     }
 
     const data = updateCampaignSchema.parse(req.body);
@@ -232,7 +243,9 @@ router.put('/:id', async (req, res, next) => {
         ...(data.configId !== undefined ? { configId: data.configId } : {}),
         ...(data.subject !== undefined ? { subject: data.subject } : {}),
         ...(data.blocks !== undefined ? { blocks: data.blocks as any } : {}),
-        ...(data.audienceFilters !== undefined ? { audienceFilters: data.audienceFilters as any } : {}),
+        ...(data.audienceFilters !== undefined
+          ? { audienceFilters: data.audienceFilters as any }
+          : {}),
       },
     });
 
@@ -280,7 +293,10 @@ router.get('/:id/preview-audience', async (req, res, next) => {
     });
     if (!campaign) return next(createError('Campaign not found', 404));
 
-    const result = await previewAudience(tenantId, (campaign.audienceFilters as AudienceFilters) || {});
+    const result = await previewAudience(
+      tenantId,
+      (campaign.audienceFilters as AudienceFilters) || {}
+    );
     res.json({ status: 200, data: result });
   } catch (error) {
     next(error);
@@ -300,7 +316,10 @@ router.post('/:id/test-email', async (req, res, next) => {
       return next(createError('Campaign has no email configuration', 400, 'NO_EMAIL_CONFIG'));
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
     if (!user?.email) return next(createError('Logged-in user has no email', 400));
 
     // Render with the user's own data as the merge context for the preview.
@@ -355,11 +374,16 @@ router.post('/:id/schedule', async (req, res, next) => {
     }
 
     // Resolve audience now and materialize recipients (req 14: exclude unsubscribed).
-    const leadIds = await buildAudienceLeadIds(tenantId, (campaign.audienceFilters as AudienceFilters) || {});
+    const leadIds = await buildAudienceLeadIds(
+      tenantId,
+      (campaign.audienceFilters as AudienceFilters) || {}
+    );
 
     // Edge case: empty audience -> block at API level.
     if (leadIds.length === 0) {
-      return next(createError('Audiência vazia: nenhum lead corresponde aos filtros', 400, 'EMPTY_AUDIENCE'));
+      return next(
+        createError('Audiência vazia: nenhum lead corresponde aos filtros', 400, 'EMPTY_AUDIENCE')
+      );
     }
 
     // Redis / engine availability (edge case -> 503). Checked before mutating state.
@@ -393,7 +417,12 @@ router.post('/:id/schedule', async (req, res, next) => {
 
     res.json({
       status: 200,
-      data: { id: updated.id, status: updated.status, scheduledAt: updated.scheduledAt, recipientCount: leadIds.length },
+      data: {
+        id: updated.id,
+        status: updated.status,
+        scheduledAt: updated.scheduledAt,
+        recipientCount: leadIds.length,
+      },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

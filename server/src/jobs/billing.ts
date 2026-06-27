@@ -28,7 +28,7 @@ export const billingWorker = new Worker(
   'billing',
   async (job: Job) => {
     const { subscriptionId } = job.data;
-    
+
     logger.info('Processing billing job', { subscriptionId, jobId: job.id });
 
     try {
@@ -47,9 +47,9 @@ export const billingWorker = new Worker(
 
       // Check if subscription is active
       if (subscription.status !== 'ACTIVE' && subscription.status !== 'TRIAL') {
-        logger.info('Subscription not active, skipping billing', { 
-          subscriptionId, 
-          status: subscription.status 
+        logger.info('Subscription not active, skipping billing', {
+          subscriptionId,
+          status: subscription.status,
         });
         return;
       }
@@ -63,9 +63,8 @@ export const billingWorker = new Worker(
       // Calculate amount based on plan and billing cycle
       // Plan has a single `price` field (monthly base); yearly = price * 12 * 0.8 (20% discount)
       const monthlyPrice = Number(subscription.plan.price);
-      const amount = subscription.billingCycle === 'YEARLY'
-        ? monthlyPrice * 12 * 0.8
-        : monthlyPrice;
+      const amount =
+        subscription.billingCycle === 'YEARLY' ? monthlyPrice * 12 * 0.8 : monthlyPrice;
 
       // Get first admin user from tenant
       const adminUser = await prisma.user.findFirst({
@@ -121,12 +120,9 @@ export const billingWorker = new Worker(
 );
 
 // Schedule a billing job for a subscription
-export async function scheduleBillingJob(
-  subscriptionId: string,
-  renewalDate: Date
-): Promise<void> {
+export async function scheduleBillingJob(subscriptionId: string, renewalDate: Date): Promise<void> {
   const delay = renewalDate.getTime() - Date.now();
-  
+
   if (delay <= 0) {
     // If renewal date has passed, process immediately
     await billingQueue.add('process-billing', { subscriptionId });
@@ -207,4 +203,3 @@ billingWorker.on('completed', (job) => {
 billingWorker.on('failed', (job, err) => {
   logger.error('Billing job failed', err, { jobId: job?.id });
 });
-

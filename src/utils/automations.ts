@@ -4,8 +4,8 @@
 export interface Automation {
   id: number;
   name: string;
-  type: "whatsapp" | "email";
-  status: "active" | "paused";
+  type: 'whatsapp' | 'email';
+  status: 'active' | 'paused';
   steps: number;
   createdAt?: string;
   updatedAt?: string;

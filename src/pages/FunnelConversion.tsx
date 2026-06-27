@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
+import { useState, useMemo } from 'react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
 import {
   RefreshCw,
   AlertTriangle,
@@ -9,55 +9,55 @@ import {
   Users,
   Percent,
   TrendingDown,
-} from "lucide-react";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { FunnelChart } from "../components/forecast/FunnelChart";
-import { useFunnelConversion } from "../hooks/useFunnelConversion";
+} from 'lucide-react';
+import { PageSkeleton } from '../components/PageSkeleton';
+import { FunnelChart } from '../components/forecast/FunnelChart';
+import { useFunnelConversion } from '../hooks/useFunnelConversion';
 
 const STAGE_NAMES: Record<string, string> = {
-  NEW: "Novo",
-  CONTACTED: "Contato",
-  QUALIFIED: "Qualificado",
-  PROPOSAL: "Proposta",
-  NEGOTIATION: "Negociação",
-  WON: "Ganho",
-  LOST: "Perdido",
+  NEW: 'Novo',
+  CONTACTED: 'Contato',
+  QUALIFIED: 'Qualificado',
+  PROPOSAL: 'Proposta',
+  NEGOTIATION: 'Negociação',
+  WON: 'Ganho',
+  LOST: 'Perdido',
 };
 
 const SOURCE_OPTIONS = [
-  { value: "", label: "Todas as origens" },
-  { value: "WEBSITE", label: "Website" },
-  { value: "SOCIAL_MEDIA", label: "Redes Sociais" },
-  { value: "REFERRAL", label: "Indicação" },
-  { value: "EMAIL", label: "E-mail" },
-  { value: "PHONE", label: "Telefone" },
-  { value: "OTHER", label: "Outro" },
+  { value: '', label: 'Todas as origens' },
+  { value: 'WEBSITE', label: 'Website' },
+  { value: 'SOCIAL_MEDIA', label: 'Redes Sociais' },
+  { value: 'REFERRAL', label: 'Indicação' },
+  { value: 'EMAIL', label: 'E-mail' },
+  { value: 'PHONE', label: 'Telefone' },
+  { value: 'OTHER', label: 'Outro' },
 ];
 
-type DatePreset = "7d" | "30d" | "90d" | "all";
+type DatePreset = '7d' | '30d' | '90d' | 'all';
 
 function getDateRange(preset: DatePreset): { from?: string; to?: string } {
-  if (preset === "all") return {};
+  if (preset === 'all') return {};
   const now = new Date();
-  const days = preset === "7d" ? 7 : preset === "30d" ? 30 : 90;
+  const days = preset === '7d' ? 7 : preset === '30d' ? 30 : 90;
   const from = new Date(now);
   from.setDate(from.getDate() - days);
   return {
-    from: from.toISOString().split("T")[0],
-    to: now.toISOString().split("T")[0],
+    from: from.toISOString().split('T')[0],
+    to: now.toISOString().split('T')[0],
   };
 }
 
 const PRESET_LABELS: Record<DatePreset, string> = {
-  "7d": "7 dias",
-  "30d": "30 dias",
-  "90d": "90 dias",
-  all: "Tudo",
+  '7d': '7 dias',
+  '30d': '30 dias',
+  '90d': '90 dias',
+  all: 'Tudo',
 };
 
 export function FunnelConversion() {
-  const [datePreset, setDatePreset] = useState<DatePreset>("all");
-  const [source, setSource] = useState("");
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [source, setSource] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const dateRange = useMemo(() => getDateRange(datePreset), [datePreset]);
@@ -71,9 +71,9 @@ export function FunnelConversion() {
   // Compute overall conversion rate (NEW -> WON)
   const overallStats = useMemo(() => {
     if (!data) return null;
-    const newStage = data.stages.find((s) => s.stage === "NEW");
-    const wonStage = data.stages.find((s) => s.stage === "WON");
-    const lostStage = data.stages.find((s) => s.stage === "LOST");
+    const newStage = data.stages.find((s) => s.stage === 'NEW');
+    const wonStage = data.stages.find((s) => s.stage === 'WON');
+    const lostStage = data.stages.find((s) => s.stage === 'LOST');
     const newCount = newStage?.count || 0;
     const wonCount = wonStage?.count || 0;
     const lostCount = lostStage?.count || 0;
@@ -81,13 +81,14 @@ export function FunnelConversion() {
 
     // Find worst drop-off
     const activeFunnel = data.stages.filter(
-      (s) => s.stage !== "LOST" && s.stage !== "WON" && s.dropOffRate !== null
+      (s) => s.stage !== 'LOST' && s.stage !== 'WON' && s.dropOffRate !== null
     );
-    const worstDropOff = activeFunnel.length > 0
-      ? activeFunnel.reduce((worst, s) =>
-          (s.dropOffRate || 0) > (worst.dropOffRate || 0) ? s : worst
-        )
-      : null;
+    const worstDropOff =
+      activeFunnel.length > 0
+        ? activeFunnel.reduce((worst, s) =>
+            (s.dropOffRate || 0) > (worst.dropOffRate || 0) ? s : worst
+          )
+        : null;
 
     return {
       total: data.total,
@@ -101,7 +102,7 @@ export function FunnelConversion() {
   // Build conversion table data (stage -> next stage)
   const conversionTable = useMemo(() => {
     if (!data) return [];
-    const chain = data.stages.filter((s) => s.stage !== "LOST");
+    const chain = data.stages.filter((s) => s.stage !== 'LOST');
     const rows: Array<{
       from: string;
       to: string;
@@ -171,9 +172,7 @@ export function FunnelConversion() {
                 key={key}
                 onClick={() => setDatePreset(key)}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
-                  datePreset === key
-                    ? "bg-primary text-white"
-                    : "text-gray-600 hover:bg-gray-100"
+                  datePreset === key ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {PRESET_LABELS[key]}
@@ -201,10 +200,14 @@ export function FunnelConversion() {
         {showFilters && (
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex flex-wrap gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label
+                htmlFor="funnel-source-filter"
+                className="block text-xs font-medium text-gray-600 mb-1"
+              >
                 Origem
               </label>
               <select
+                id="funnel-source-filter"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
                 className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white"
@@ -242,7 +245,7 @@ export function FunnelConversion() {
               subtext={
                 overallStats.total > 0
                   ? `${Math.round((overallStats.lostCount / overallStats.total) * 1000) / 10}% do total`
-                  : ""
+                  : ''
               }
               color="red"
             />
@@ -261,9 +264,7 @@ export function FunnelConversion() {
         {/* Funnel Chart */}
         {data && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mb-8">
-            <h3 className="text-sm font-semibold text-gray-900 mb-6">
-              Funil de Leads
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-6">Funil de Leads</h3>
             <FunnelChart stages={data.stages} total={data.total} />
           </div>
         )}
@@ -272,9 +273,7 @@ export function FunnelConversion() {
         {conversionTable.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">
-                Taxas de Conversão por Etapa
-              </h3>
+              <h3 className="text-sm font-semibold text-gray-900">Taxas de Conversão por Etapa</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -299,10 +298,7 @@ export function FunnelConversion() {
                 </thead>
                 <tbody>
                   {conversionTable.map((row) => (
-                    <tr
-                      key={`${row.from}-${row.to}`}
-                      className="border-b border-gray-100"
-                    >
+                    <tr key={`${row.from}-${row.to}`} className="border-b border-gray-100">
                       <td className="py-2.5 px-4 text-sm text-gray-900">
                         <div className="flex items-center gap-2">
                           <span>{row.from}</span>
@@ -320,10 +316,10 @@ export function FunnelConversion() {
                         <span
                           className={`text-sm font-medium ${
                             row.rate >= 70
-                              ? "text-green-600"
+                              ? 'text-green-600'
                               : row.rate >= 40
-                              ? "text-yellow-600"
-                              : "text-red-600"
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
                           }`}
                         >
                           {row.rate}%
@@ -333,10 +329,10 @@ export function FunnelConversion() {
                         <span
                           className={`text-sm ${
                             row.dropOff <= 30
-                              ? "text-green-600"
+                              ? 'text-green-600'
                               : row.dropOff <= 60
-                              ? "text-yellow-600"
-                              : "text-red-600"
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
                           }`}
                         >
                           -{row.dropOff}%
@@ -354,9 +350,7 @@ export function FunnelConversion() {
         {data && data.total === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users className="h-12 w-12 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-700 mb-2">
-              Nenhum lead encontrado
-            </h3>
+            <h3 className="text-lg font-medium text-gray-700 mb-2">Nenhum lead encontrado</h3>
             <p className="text-sm text-gray-500">
               Ajuste os filtros ou adicione leads para visualizar o funil.
             </p>
@@ -381,24 +375,20 @@ function SummaryCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-green-50 text-green-600",
-    red: "bg-red-50 text-red-600",
-    orange: "bg-orange-50 text-orange-600",
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-green-50 text-green-600',
+    red: 'bg-red-50 text-red-600',
+    orange: 'bg-orange-50 text-orange-600',
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
-          {icon}
-        </div>
+        <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">
           <p className="text-xs text-gray-500 truncate">{label}</p>
           <p className="text-lg font-bold text-gray-900 truncate">{value}</p>
-          {subtext && (
-            <p className="text-xs text-gray-400 truncate">{subtext}</p>
-          )}
+          {subtext && <p className="text-xs text-gray-400 truncate">{subtext}</p>}
         </div>
       </div>
     </div>

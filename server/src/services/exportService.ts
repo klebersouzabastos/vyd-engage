@@ -35,7 +35,13 @@ function escapeCsvField(value: unknown): string {
   if (value === null || value === undefined) return '';
   const str = String(value);
   // If the value contains a comma, double-quote, newline, or starts/ends with whitespace, wrap in quotes
-  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r') || str !== str.trim()) {
+  if (
+    str.includes(',') ||
+    str.includes('"') ||
+    str.includes('\n') ||
+    str.includes('\r') ||
+    str !== str.trim()
+  ) {
     return '"' + str.replace(/"/g, '""') + '"';
   }
   return str;
@@ -59,7 +65,7 @@ export async function exportLeads(
   tenantId: string,
   filters: ExportFilters,
   format: ExportFormat,
-  res: Response,
+  res: Response
 ) {
   // Build where clause
   const where: any = { tenantId, deletedAt: null };
@@ -118,15 +124,29 @@ export async function exportLeads(
 
   // Build column definitions
   const staticHeaders = [
-    'Nome', 'Email', 'Telefone', 'Empresa', 'Cargo', 'Status',
-    'Fonte', 'Score', 'Responsavel', 'Tags', 'Data Criacao', 'Data Atualizacao',
+    'Nome',
+    'Email',
+    'Telefone',
+    'Empresa',
+    'Cargo',
+    'Status',
+    'Fonte',
+    'Score',
+    'Responsavel',
+    'Tags',
+    'Data Criacao',
+    'Data Atualizacao',
   ];
   const dynamicHeaders = customFieldDefs.map((cf: any) => cf.label || cf.name);
   const allHeaders = [...staticHeaders, ...dynamicHeaders];
 
   // Map rows
   const rows = leads.map((lead: any) => {
-    const tagStr = lead.tags?.map((lt: any) => lt.tag?.name).filter(Boolean).join(', ') || '';
+    const tagStr =
+      lead.tags
+        ?.map((lt: any) => lt.tag?.name)
+        .filter(Boolean)
+        .join(', ') || '';
     const assignedName = lead.assignedUser?.name || '';
     const staticValues = [
       lead.name || '',
@@ -164,7 +184,7 @@ export async function exportDeals(
   tenantId: string,
   filters: ExportFilters,
   format: ExportFormat,
-  res: Response,
+  res: Response
 ) {
   const where: any = { tenantId, deletedAt: null };
   if (filters.stage) where.stage = filters.stage;
@@ -214,8 +234,16 @@ export async function exportDeals(
   });
 
   const headers = [
-    'Nome', 'Valor', 'Estagio', 'Probabilidade', 'Data Prevista Fechamento',
-    'Lead Associado', 'Responsavel', 'Notas', 'Data Criacao', 'Data Fechamento',
+    'Nome',
+    'Valor',
+    'Estagio',
+    'Probabilidade',
+    'Data Prevista Fechamento',
+    'Lead Associado',
+    'Responsavel',
+    'Notas',
+    'Data Criacao',
+    'Data Fechamento',
   ];
 
   const rows = deals.map((deal: any) => [
@@ -246,7 +274,7 @@ export async function exportTasks(
   tenantId: string,
   filters: ExportFilters,
   format: ExportFormat,
-  res: Response,
+  res: Response
 ) {
   const where: any = { tenantId, deletedAt: null };
   if (filters.status) where.status = filters.status;
@@ -302,8 +330,16 @@ export async function exportTasks(
   });
 
   const headers = [
-    'Titulo', 'Descricao', 'Status', 'Prioridade', 'Responsavel',
-    'Lead Associado', 'Deal Associado', 'Data Vencimento', 'Data Conclusao', 'Data Criacao',
+    'Titulo',
+    'Descricao',
+    'Status',
+    'Prioridade',
+    'Responsavel',
+    'Lead Associado',
+    'Deal Associado',
+    'Data Vencimento',
+    'Data Conclusao',
+    'Data Criacao',
   ];
 
   const rows = tasks.map((task: any) => [
@@ -330,15 +366,13 @@ export async function exportTasks(
 // Streaming helpers
 // ────────────────────────────────────────────────────────────────────
 
-function streamCsv(
-  res: Response,
-  entityName: string,
-  headers: string[],
-  rows: unknown[][],
-) {
+function streamCsv(res: Response, entityName: string, headers: string[], rows: unknown[][]) {
   const dateStr = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${entityName}-export-${dateStr}.csv"`);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${entityName}-export-${dateStr}.csv"`
+  );
 
   // Write BOM for Excel UTF-8 compatibility
   res.write('\uFEFF');
@@ -356,14 +390,17 @@ async function streamXlsx(
   entityName: string,
   sheetName: string,
   headers: string[],
-  rows: unknown[][],
+  rows: unknown[][]
 ) {
   const dateStr = new Date().toISOString().slice(0, 10);
   res.setHeader(
     'Content-Type',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   );
-  res.setHeader('Content-Disposition', `attachment; filename="${entityName}-export-${dateStr}.xlsx"`);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${entityName}-export-${dateStr}.xlsx"`
+  );
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName);

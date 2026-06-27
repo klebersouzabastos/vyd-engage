@@ -1,49 +1,49 @@
-import { useState, useEffect } from "react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
-import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
-import { Card } from "../components/ui/card";
-import { Camera, Save, X, Loader2 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+import { Card } from '../components/ui/card';
+import { Camera, Save, X, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
 
 export function Profile() {
   const { user, refreshUser } = useAuth();
 
   const [profileData, setProfileData] = useState({
-    name: "",
-    email: "",
-    phone: "",
+    name: '',
+    email: '',
+    phone: '',
     avatar: null as string | null,
-    role: "",
-    createdAt: "",
+    role: '',
+    createdAt: '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [stats, setStats] = useState({ leads: 0, automations: 0, memberSince: "", plan: "" });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [stats, setStats] = useState({ leads: 0, automations: 0, memberSince: '', plan: '' });
 
   useEffect(() => {
     if (user) {
       setProfileData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: (user as any).phone || "",
+        name: user.name || '',
+        email: user.email || '',
+        phone: (user as any).phone || '',
         avatar: user.avatar || null,
-        role: user.role || "",
-        createdAt: (user as any).createdAt || "",
+        role: user.role || '',
+        createdAt: (user as any).createdAt || '',
       });
     }
   }, [user]);
@@ -58,10 +58,21 @@ export function Profile() {
           apiClient.getCurrentSubscription(),
         ]);
         setStats({
-          leads: leadsRes.status === "fulfilled" ? (leadsRes.value?.pagination?.total || leadsRes.value?.data?.length || 0) : 0,
-          automations: automationsRes.status === "fulfilled" ? (automationsRes.value?.pagination?.total || automationsRes.value?.data?.length || 0) : 0,
-          memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : "—",
-          plan: subRes.status === "fulfilled" ? (subRes.value?.subscription?.plan?.name || "—") : "—",
+          leads:
+            leadsRes.status === 'fulfilled'
+              ? leadsRes.value?.pagination?.total || leadsRes.value?.data?.length || 0
+              : 0,
+          automations:
+            automationsRes.status === 'fulfilled'
+              ? automationsRes.value?.pagination?.total || automationsRes.value?.data?.length || 0
+              : 0,
+          memberSince: user?.createdAt
+            ? new Date(user.createdAt).toLocaleDateString('pt-BR', {
+                month: 'short',
+                year: 'numeric',
+              })
+            : '—',
+          plan: subRes.status === 'fulfilled' ? subRes.value?.subscription?.plan?.name || '—' : '—',
         });
       } catch {
         // Stats are non-critical
@@ -77,12 +88,12 @@ export function Profile() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith("image/")) {
-        toast.error("Por favor, selecione uma imagem válida");
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor, selecione uma imagem válida');
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("A imagem deve ter no máximo 5MB");
+        toast.error('A imagem deve ter no máximo 5MB');
         return;
       }
       const reader = new FileReader();
@@ -106,24 +117,24 @@ export function Profile() {
       if (refreshUser) await refreshUser();
       setAvatarPreview(null);
       setIsEditing(false);
-      toast.success("Perfil atualizado com sucesso");
+      toast.success('Perfil atualizado com sucesso');
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar perfil. Tente novamente.");
+      toast.error(error.message || 'Erro ao salvar perfil. Tente novamente.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleChangePassword = async () => {
-    setPasswordError("");
-    setPasswordSuccess("");
+    setPasswordError('');
+    setPasswordSuccess('');
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordError("As senhas não coincidem");
+      setPasswordError('As senhas não coincidem');
       return;
     }
     if (passwordData.newPassword.length < 8) {
-      setPasswordError("A senha deve ter pelo menos 8 caracteres");
+      setPasswordError('A senha deve ter pelo menos 8 caracteres');
       return;
     }
 
@@ -132,22 +143,22 @@ export function Profile() {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      setPasswordSuccess("Senha alterada com sucesso!");
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordSuccess('Senha alterada com sucesso!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error: any) {
-      setPasswordError(error.message || "Erro ao alterar senha");
+      setPasswordError(error.message || 'Erro ao alterar senha');
     }
   };
 
   const handleCancel = () => {
     if (user) {
       setProfileData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: (user as any).phone || "",
+        name: user.name || '',
+        email: user.email || '',
+        phone: (user as any).phone || '',
         avatar: user.avatar || null,
-        role: user.role || "",
-        createdAt: (user as any).createdAt || "",
+        role: user.role || '',
+        createdAt: (user as any).createdAt || '',
       });
     }
     setAvatarPreview(null);
@@ -156,9 +167,9 @@ export function Profile() {
 
   const getInitials = (name: string) => {
     return name
-      .split(" ")
+      .split(' ')
       .map((n) => n[0])
-      .join("")
+      .join('')
       .toUpperCase()
       .slice(0, 2);
   };
@@ -182,7 +193,7 @@ export function Profile() {
                       />
                     ) : null}
                     <AvatarFallback className="bg-primary text-white text-xl font-semibold">
-                      {getInitials(profileData.name || "U")}
+                      {getInitials(profileData.name || 'U')}
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (
@@ -203,9 +214,7 @@ export function Profile() {
                 </div>
 
                 <div className="flex-1">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-                    {profileData.name}
-                  </h2>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">{profileData.name}</h2>
                   <p className="text-gray-600 mb-2">{profileData.role}</p>
                   <p className="text-sm text-gray-600">{profileData.email}</p>
                 </div>
@@ -222,7 +231,11 @@ export function Profile() {
                         disabled={saving}
                         className="bg-primary hover:bg-primary-dark gap-2"
                       >
-                        {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        {saving ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Save size={16} />
+                        )}
                         Salvar
                       </Button>
                     </>
@@ -244,16 +257,14 @@ export function Profile() {
             {/* Personal Information */}
             <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Informações Pessoais
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações Pessoais</h3>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="name">Nome completo</Label>
                     <Input
                       id="name"
                       value={profileData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
                       disabled={!isEditing}
                       className="mt-1.5"
                     />
@@ -274,7 +285,7 @@ export function Profile() {
                     <Input
                       id="phone"
                       value={profileData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
                       disabled={!isEditing}
                       className="mt-1.5"
                     />
@@ -286,9 +297,7 @@ export function Profile() {
             {/* Password Security */}
             <Card className="bg-white border-gray-300 shadow-sm">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Segurança e Senha
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Segurança e Senha</h3>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="current-password">Senha atual</Label>
@@ -332,12 +341,8 @@ export function Profile() {
                       className="mt-1.5"
                     />
                   </div>
-                  {passwordError && (
-                    <p className="text-sm text-red-600">{passwordError}</p>
-                  )}
-                  {passwordSuccess && (
-                    <p className="text-sm text-green-600">{passwordSuccess}</p>
-                  )}
+                  {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+                  {passwordSuccess && <p className="text-sm text-green-600">{passwordSuccess}</p>}
                   <Button
                     onClick={handleChangePassword}
                     disabled={
@@ -357,9 +362,7 @@ export function Profile() {
             {/* Account Statistics */}
             <Card className="bg-white border-gray-300 shadow-sm lg:col-span-2">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Estatísticas da Conta
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Estatísticas da Conta</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
                     <span className="text-sm text-gray-600">Leads criados</span>

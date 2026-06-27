@@ -1,37 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Deal, DealStage } from "../../types";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../ui/dialog";
-import { Loader2, Search } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { FieldError } from "../register/FieldError";
-import { dealFormSchema } from "../../utils/validation/formSchemas";
-import { useFormValidation } from "../../hooks/useFormValidation";
-import { useAutoFocus, useFocusReturn } from "../../hooks/useFocusManagement";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Deal, DealStage } from '../../types';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Loader2, Search } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { FieldError } from '../register/FieldError';
+import { dealFormSchema } from '../../utils/validation/formSchemas';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { useAutoFocus, useFocusReturn } from '../../hooks/useFocusManagement';
 
 const STAGES: { value: DealStage; label: string }[] = [
-  { value: "QUALIFICATION", label: "Qualificação" },
-  { value: "PROPOSAL", label: "Proposta" },
-  { value: "NEGOTIATION", label: "Negociação" },
-  { value: "CLOSING", label: "Fechamento" },
-  { value: "WON", label: "Ganho" },
-  { value: "LOST", label: "Perdido" },
+  { value: 'QUALIFICATION', label: 'Qualificação' },
+  { value: 'PROPOSAL', label: 'Proposta' },
+  { value: 'NEGOTIATION', label: 'Negociação' },
+  { value: 'CLOSING', label: 'Fechamento' },
+  { value: 'WON', label: 'Ganho' },
+  { value: 'LOST', label: 'Perdido' },
 ];
 
 interface DealFormProps {
@@ -43,26 +31,43 @@ interface DealFormProps {
   defaultFunnelId?: string;
 }
 
-export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFunnelId }: DealFormProps) {
-  const [name, setName] = useState("");
-  const [value, setValue] = useState("");
-  const [stage, setStage] = useState<DealStage>("QUALIFICATION");
-  const [probability, setProbability] = useState("20");
-  const [expectedCloseDate, setExpectedCloseDate] = useState("");
-  const [leadId, setLeadId] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
-  const [notes, setNotes] = useState("");
-  const [lostReason, setLostReason] = useState("");
-  const [funnelId, setFunnelId] = useState("");
+export function DealForm({
+  open,
+  onClose,
+  onSave,
+  deal,
+  defaultLeadId,
+  defaultFunnelId,
+}: DealFormProps) {
+  const [name, setName] = useState('');
+  const [value, setValue] = useState('');
+  const [stage, setStage] = useState<DealStage>('QUALIFICATION');
+  const [probability, setProbability] = useState('20');
+  const [expectedCloseDate, setExpectedCloseDate] = useState('');
+  const [leadId, setLeadId] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [notes, setNotes] = useState('');
+  const [lostReason, setLostReason] = useState('');
+  const [funnelId, setFunnelId] = useState('');
   const [saving, setSaving] = useState(false);
-  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, resetValidation, formRef } = useFormValidation({ schema: dealFormSchema });
+  const {
+    fieldErrors,
+    touchedFields,
+    handleBlur,
+    handleChange,
+    validateAll,
+    resetValidation,
+    formRef,
+  } = useFormValidation({ schema: dealFormSchema });
   const autoFocusRef = useAutoFocus<HTMLFormElement>(open, 200);
   const { saveTrigger, returnFocus } = useFocusReturn();
 
   const [leads, setLeads] = useState<Array<{ id: string; name: string }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
-  const [dealFunnels, setDealFunnels] = useState<Array<{ id: string; name: string; isDefault: boolean }>>([]);
-  const [leadSearch, setLeadSearch] = useState("");
+  const [dealFunnels, setDealFunnels] = useState<
+    Array<{ id: string; name: string; isDefault: boolean }>
+  >([]);
+  const [leadSearch, setLeadSearch] = useState('');
   const [loadingLeads, setLoadingLeads] = useState(false);
   const leadSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -94,16 +99,24 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
     if (open) {
       // Load leads (initial), users, and deal funnels for selects
       fetchLeads();
-      apiClient.getUsers().then(res => {
-        const userList = Array.isArray(res) ? res : res.data || [];
-        setUsers(userList.map((u: any) => ({ id: u.id, name: u.name })));
-      }).catch(() => {});
-      apiClient.getFunnels('DEAL').then(res => {
-        const funnelList: any[] = (res as any).data || res || [];
-        setDealFunnels(funnelList.map((f: any) => ({ id: f.id, name: f.name, isDefault: f.isDefault })));
-      }).catch(() => {});
+      apiClient
+        .getUsers()
+        .then((res) => {
+          const userList = Array.isArray(res) ? res : res.data || [];
+          setUsers(userList.map((u: any) => ({ id: u.id, name: u.name })));
+        })
+        .catch(() => {});
+      apiClient
+        .getFunnels('DEAL')
+        .then((res) => {
+          const funnelList: any[] = (res as any).data || res || [];
+          setDealFunnels(
+            funnelList.map((f: any) => ({ id: f.id, name: f.name, isDefault: f.isDefault }))
+          );
+        })
+        .catch(() => {});
     } else {
-      setLeadSearch("");
+      setLeadSearch('');
     }
   }, [open, fetchLeads]);
 
@@ -124,23 +137,23 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
       setValue(String(deal.value));
       setStage(deal.stage);
       setProbability(String(deal.probability));
-      setExpectedCloseDate(deal.expectedCloseDate ? deal.expectedCloseDate.split("T")[0] : "");
-      setLeadId(deal.leadId || "");
-      setAssignedTo(deal.assignedTo || "");
-      setNotes(deal.notes || "");
-      setLostReason(deal.lostReason || "");
-      setFunnelId(deal.funnelId || "");
+      setExpectedCloseDate(deal.expectedCloseDate ? deal.expectedCloseDate.split('T')[0] : '');
+      setLeadId(deal.leadId || '');
+      setAssignedTo(deal.assignedTo || '');
+      setNotes(deal.notes || '');
+      setLostReason(deal.lostReason || '');
+      setFunnelId(deal.funnelId || '');
     } else {
-      setName("");
-      setValue("");
-      setStage("QUALIFICATION");
-      setProbability("20");
-      setExpectedCloseDate("");
-      setLeadId(defaultLeadId || "");
-      setAssignedTo("");
-      setNotes("");
-      setLostReason("");
-      setFunnelId(defaultFunnelId || "");
+      setName('');
+      setValue('');
+      setStage('QUALIFICATION');
+      setProbability('20');
+      setExpectedCloseDate('');
+      setLeadId(defaultLeadId || '');
+      setAssignedTo('');
+      setNotes('');
+      setLostReason('');
+      setFunnelId(defaultFunnelId || '');
     }
   }, [deal, open, defaultLeadId, defaultFunnelId]);
 
@@ -148,7 +161,16 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
     e.preventDefault();
 
     const isValid = validateAll({
-      name, value, stage, probability, expectedCloseDate, leadId, assignedTo, notes, lostReason, funnelId,
+      name,
+      value,
+      stage,
+      probability,
+      expectedCloseDate,
+      leadId,
+      assignedTo,
+      notes,
+      lostReason,
+      funnelId,
     });
     if (!isValid) return;
 
@@ -163,7 +185,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
         leadId: leadId || null,
         assignedTo: assignedTo || null,
         notes: notes.trim() || undefined,
-        lostReason: stage === "LOST" ? lostReason.trim() || undefined : undefined,
+        lostReason: stage === 'LOST' ? lostReason.trim() || undefined : undefined,
         funnelId: funnelId || null,
       });
       onClose();
@@ -178,7 +200,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{deal ? "Editar Deal" : "Novo Deal"}</DialogTitle>
+          <DialogTitle>{deal ? 'Editar Deal' : 'Novo Deal'}</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={handleSubmit}
@@ -194,13 +216,22 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
             <Input
               id="deal-name"
               value={name}
-              onChange={(e) => { setName(e.target.value); handleChange('name', e.target.value); }}
+              onChange={(e) => {
+                setName(e.target.value);
+                handleChange('name', e.target.value);
+              }}
               onBlur={() => handleBlur('name', name)}
               placeholder="Nome do negócio"
               error={touchedFields.name ? fieldErrors.name : undefined}
-              aria-describedby={fieldErrors.name && touchedFields.name ? "deal-name-error" : undefined}
+              aria-describedby={
+                fieldErrors.name && touchedFields.name ? 'deal-name-error' : undefined
+              }
             />
-            <FieldError id="deal-name-error" error={fieldErrors.name as string} touched={touchedFields.name} />
+            <FieldError
+              id="deal-name-error"
+              error={fieldErrors.name as string}
+              touched={touchedFields.name}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -212,13 +243,22 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
                 min="0"
                 step="0.01"
                 value={value}
-                onChange={(e) => { setValue(e.target.value); handleChange('value', e.target.value); }}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  handleChange('value', e.target.value);
+                }}
                 onBlur={() => handleBlur('value', value)}
                 placeholder="0.00"
                 error={touchedFields.value ? fieldErrors.value : undefined}
-                aria-describedby={fieldErrors.value && touchedFields.value ? "deal-value-error" : undefined}
+                aria-describedby={
+                  fieldErrors.value && touchedFields.value ? 'deal-value-error' : undefined
+                }
               />
-              <FieldError id="deal-value-error" error={fieldErrors.value as string} touched={touchedFields.value} />
+              <FieldError
+                id="deal-value-error"
+                error={fieldErrors.value as string}
+                touched={touchedFields.value}
+              />
             </div>
             <div>
               <Label htmlFor="deal-stage">Stage</Label>
@@ -227,8 +267,10 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STAGES.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  {STAGES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -261,14 +303,21 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="deal-lead">Lead Associado</Label>
-              <Select value={leadId || "none"} onValueChange={(v) => setLeadId(v === "none" ? "" : v)}>
+              <Select
+                value={leadId || 'none'}
+                onValueChange={(v) => setLeadId(v === 'none' ? '' : v)}
+              >
                 <SelectTrigger id="deal-lead">
                   <SelectValue placeholder="Nenhum" />
                 </SelectTrigger>
                 <SelectContent>
                   <div className="px-2 pb-2">
                     <div className="relative">
-                      <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+                      <Search
+                        size={14}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+                        aria-hidden="true"
+                      />
                       <input
                         type="text"
                         placeholder="Buscar lead..."
@@ -291,8 +340,10 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
                       Nenhum lead encontrado
                     </div>
                   ) : (
-                    leads.map(l => (
-                      <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                    leads.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
                     ))
                   )}
                 </SelectContent>
@@ -300,14 +351,19 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
             </div>
             <div>
               <Label htmlFor="deal-assigned">Responsável</Label>
-              <Select value={assignedTo || "none"} onValueChange={(v) => setAssignedTo(v === "none" ? "" : v)}>
+              <Select
+                value={assignedTo || 'none'}
+                onValueChange={(v) => setAssignedTo(v === 'none' ? '' : v)}
+              >
                 <SelectTrigger id="deal-assigned">
                   <SelectValue placeholder="Nenhum" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -317,15 +373,19 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
           {dealFunnels.length > 0 && (
             <div>
               <Label htmlFor="deal-funnel">Pipeline</Label>
-              <Select value={funnelId || "none"} onValueChange={(v) => setFunnelId(v === "none" ? "" : v)}>
+              <Select
+                value={funnelId || 'none'}
+                onValueChange={(v) => setFunnelId(v === 'none' ? '' : v)}
+              >
                 <SelectTrigger id="deal-funnel">
                   <SelectValue placeholder="Selecionar pipeline" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  {dealFunnels.map(f => (
+                  {dealFunnels.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
-                      {f.name}{f.isDefault ? " (Padrão)" : ""}
+                      {f.name}
+                      {f.isDefault ? ' (Padrão)' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -344,7 +404,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
             />
           </div>
 
-          {stage === "LOST" && (
+          {stage === 'LOST' && (
             <div>
               <Label htmlFor="deal-lost-reason">Motivo da Perda</Label>
               <Input
@@ -362,7 +422,7 @@ export function DealForm({ open, onClose, onSave, deal, defaultLeadId, defaultFu
             </Button>
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
-              {deal ? "Salvar" : "Criar"}
+              {deal ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
         </form>

@@ -21,7 +21,10 @@ const ALIASES: Record<string, keyof MergeContext> = {
   phone: 'phone',
 };
 
-export function interpolateMergeTags(template: string | null | undefined, ctx: MergeContext): string {
+export function interpolateMergeTags(
+  template: string | null | undefined,
+  ctx: MergeContext
+): string {
   if (!template) return '';
   return template.replace(/\{\{\s*([a-zA-Z_-]+)\s*\}\}/g, (match, rawKey: string) => {
     const field = ALIASES[rawKey.toLowerCase()];

@@ -14,7 +14,7 @@ describe('apiClient (MSW)', () => {
 
   it('surfaces a 500 as a thrown error', async () => {
     server.use(
-      http.get(`${API}/tags`, () => HttpResponse.json({ error: 'boom' }, { status: 500 })),
+      http.get(`${API}/tags`, () => HttpResponse.json({ error: 'boom' }, { status: 500 }))
     );
     await expect(apiClient.getTags()).rejects.toThrow();
   });

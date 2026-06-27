@@ -126,12 +126,19 @@ describe('writeLeads contacts mode (via executeBatch)', () => {
     prismaMock.company.findMany.mockResolvedValue([]);
     prismaMock.lead.create.mockResolvedValue({ id: 'l2' } as never);
 
-    const rows = [{ row: 1, name: 'No Email', email: undefined, company: 'Ghost Co', customFields: {} }];
+    const rows = [
+      { row: 1, name: 'No Email', email: undefined, company: 'Ghost Co', customFields: {} },
+    ];
     await executeBatch('batch-1', contactInput(), { type: 'LEADS', rows } as never);
 
     expect(prismaMock.lead.create).toHaveBeenCalledTimes(1);
     const data = firstArg(prismaMock.lead.create).data;
-    expect(data).toMatchObject({ name: 'No Email', email: null, company: 'Ghost Co', isContact: true });
+    expect(data).toMatchObject({
+      name: 'No Email',
+      email: null,
+      company: 'Ghost Co',
+      isContact: true,
+    });
   });
 
   it('updates an existing contact matched by name+email (idempotent re-import)', async () => {

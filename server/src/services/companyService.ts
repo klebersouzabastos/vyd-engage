@@ -91,15 +91,18 @@ export const companyService = {
     return company;
   },
 
-  async findAll(tenantId: string, filters?: {
-    search?: string;
-    industry?: string;
-    size?: CompanySize;
-    page?: number;
-    limit?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-  }) {
+  async findAll(
+    tenantId: string,
+    filters?: {
+      search?: string;
+      industry?: string;
+      size?: CompanySize;
+      page?: number;
+      limit?: number;
+      sort?: string;
+      order?: 'asc' | 'desc';
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
@@ -150,7 +153,9 @@ export const companyService = {
 
   async update(tenantId: string, data: UpdateCompanyData) {
     // Verify ownership
-    const existing = await prisma.company.findFirst({ where: { id: data.id, tenantId, deletedAt: null } });
+    const existing = await prisma.company.findFirst({
+      where: { id: data.id, tenantId, deletedAt: null },
+    });
     if (!existing) {
       throw createError('Company not found', 404, 'COMPANY_NOT_FOUND');
     }

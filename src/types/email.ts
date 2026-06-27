@@ -1,10 +1,10 @@
 // Tipos para integração de Email
 
-export type EmailProvider = "smtp" | "sendgrid" | "mailgun" | "resend";
+export type EmailProvider = 'smtp' | 'sendgrid' | 'mailgun' | 'resend';
 
-export type EmailStatus = "connected" | "disconnected" | "testing" | "error";
+export type EmailStatus = 'connected' | 'disconnected' | 'testing' | 'error';
 
-export type PlanType = "starter" | "pro" | "enterprise";
+export type PlanType = 'starter' | 'pro' | 'enterprise';
 
 // Limites por plano
 export interface PlanLimits {
@@ -47,11 +47,7 @@ export interface ResendConfig {
   fromName?: string;
 }
 
-export type ProviderConfig = 
-  | SMTPConfig 
-  | SendGridConfig 
-  | MailgunConfig 
-  | ResendConfig;
+export type ProviderConfig = SMTPConfig | SendGridConfig | MailgunConfig | ResendConfig;
 
 // Informações de status da configuração
 export interface EmailStatusInfo {
@@ -123,4 +119,3 @@ export interface EmailConfigValidation {
   errors: string[];
   warnings: string[];
 }
-

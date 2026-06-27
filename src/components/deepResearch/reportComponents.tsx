@@ -9,30 +9,33 @@ import type { Components } from 'react-markdown';
  */
 export const reportComponents: Components = {
   h1: ({ node, ...props }) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- conteúdo vem via children/props do react-markdown
     <h1
       className="scroll-mt-24 mb-5 mt-2 text-[1.9rem] font-bold leading-tight tracking-tight text-slate-900"
       {...props}
     />
   ),
   h2: ({ node, ...props }) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- conteúdo vem via children/props do react-markdown
     <h2
       className="scroll-mt-24 mt-12 mb-4 flex items-center gap-3 border-b border-slate-200 pb-2 text-2xl font-bold tracking-tight text-slate-900 before:h-6 before:w-1.5 before:rounded-full before:bg-primary before:content-['']"
       {...props}
     />
   ),
   h3: ({ node, ...props }) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- conteúdo vem via children/props do react-markdown
     <h3 className="scroll-mt-24 mt-8 mb-2 text-lg font-semibold text-slate-800" {...props} />
   ),
   h4: ({ node, ...props }) => (
-    <h4
-      className="scroll-mt-24 mt-5 mb-2 text-base font-semibold text-slate-800"
-      {...props}
-    />
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- conteúdo vem via children/props do react-markdown
+    <h4 className="scroll-mt-24 mt-5 mb-2 text-base font-semibold text-slate-800" {...props} />
   ),
   h5: ({ node, ...props }) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- conteúdo vem via children/props do react-markdown
     <h5 className="scroll-mt-24 mt-4 mb-1 text-sm font-semibold text-slate-700" {...props} />
   ),
   h6: ({ node, ...props }) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- conteúdo vem via children/props do react-markdown
     <h6
       className="scroll-mt-24 mt-3 mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500"
       {...props}
@@ -42,6 +45,7 @@ export const reportComponents: Components = {
     <p className="my-3.5 text-[0.95rem] leading-7 text-slate-700" {...props} />
   ),
   a: ({ node, ...props }) => (
+    // eslint-disable-next-line jsx-a11y/anchor-has-content -- conteúdo vem via children/props do react-markdown
     <a
       target="_blank"
       rel="noopener noreferrer nofollow"

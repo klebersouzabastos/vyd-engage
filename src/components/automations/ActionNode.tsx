@@ -9,26 +9,21 @@ import {
   Zap,
   X,
   Maximize2,
-} from "lucide-react";
-import { ACTION_TYPES } from "../../utils/automationFlowConverter";
-import type { FlowNode } from "../../utils/automationFlowConverter";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { useRef, useState, type ReactNode } from "react";
+} from 'lucide-react';
+import { ACTION_TYPES } from '../../utils/automationFlowConverter';
+import type { FlowNode } from '../../utils/automationFlowConverter';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { useRef, useState, type ReactNode } from 'react';
 
 // Variáveis de merge disponíveis (substituídas pelo engine com os dados do lead).
 const MERGE_TAGS: { tag: string; label: string }[] = [
-  { tag: "nome", label: "Nome" },
-  { tag: "email", label: "E-mail" },
-  { tag: "empresa", label: "Empresa" },
-  { tag: "telefone", label: "Telefone" },
+  { tag: 'nome', label: 'Nome' },
+  { tag: 'email', label: 'E-mail' },
+  { tag: 'empresa', label: 'Empresa' },
+  { tag: 'telefone', label: 'Telefone' },
 ];
 
 /**
@@ -56,7 +51,7 @@ function MergeTagField({
 
   const insertTag = (tag: string) => {
     const token = `{{${tag}}}`;
-    const el = wrapRef.current?.querySelector("input, textarea") as
+    const el = wrapRef.current?.querySelector('input, textarea') as
       | HTMLInputElement
       | HTMLTextAreaElement
       | null;
@@ -153,7 +148,7 @@ function ActionConfigFields({
   const config = node.data.config;
 
   return (
-    <div className={large ? "space-y-4" : "space-y-3"}>
+    <div className={large ? 'space-y-4' : 'space-y-3'}>
       {/* Action type selector */}
       <div>
         <Label className="text-xs">Tipo da Ação</Label>
@@ -175,17 +170,17 @@ function ActionConfigFields({
       </div>
 
       {/* Send Email */}
-      {nodeType === "send_email" && (
+      {nodeType === 'send_email' && (
         <>
           <MergeTagField
             label="Assunto"
-            value={config.subject || ""}
+            value={config.subject || ''}
             onChange={(v) => onUpdate({ ...config, subject: v })}
             placeholder="Assunto do e-mail"
           />
           <MergeTagField
             label="Corpo do E-mail"
-            value={config.message || ""}
+            value={config.message || ''}
             onChange={(v) => onUpdate({ ...config, message: v })}
             placeholder="Conteúdo do e-mail..."
             multiline
@@ -196,10 +191,10 @@ function ActionConfigFields({
       )}
 
       {/* Send WhatsApp */}
-      {nodeType === "send_whatsapp" && (
+      {nodeType === 'send_whatsapp' && (
         <MergeTagField
           label="Mensagem"
-          value={config.message || ""}
+          value={config.message || ''}
           onChange={(v) => onUpdate({ ...config, message: v })}
           placeholder="Mensagem do WhatsApp..."
           multiline
@@ -209,18 +204,18 @@ function ActionConfigFields({
       )}
 
       {/* Create Task */}
-      {nodeType === "create_task" && (
+      {nodeType === 'create_task' && (
         <>
           <MergeTagField
             label="Título da Tarefa"
-            value={config.title || ""}
+            value={config.title || ''}
             onChange={(v) => onUpdate({ ...config, title: v })}
             placeholder="Ex: Follow-up com cliente"
           />
           <div>
             <Label className="text-xs">ID do Responsável (opcional)</Label>
             <Input
-              value={config.assigneeId || ""}
+              value={config.assigneeId || ''}
               onChange={(e) => onUpdate({ ...config, assigneeId: e.target.value })}
               placeholder="ID do usuário"
               className="mt-1 text-sm"
@@ -231,7 +226,7 @@ function ActionConfigFields({
             <Input
               type="number"
               min="1"
-              value={config.dueDateOffset || ""}
+              value={config.dueDateOffset || ''}
               onChange={(e) =>
                 onUpdate({ ...config, dueDateOffset: parseInt(e.target.value) || undefined })
               }
@@ -243,12 +238,12 @@ function ActionConfigFields({
       )}
 
       {/* Update Field */}
-      {nodeType === "update_field" && (
+      {nodeType === 'update_field' && (
         <>
           <div>
             <Label className="text-xs">Campo</Label>
             <select
-              value={config.field || "status"}
+              value={config.field || 'status'}
               onChange={(e) => onUpdate({ ...config, field: e.target.value })}
               className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
             >
@@ -260,9 +255,9 @@ function ActionConfigFields({
           </div>
           <div>
             <Label className="text-xs">Novo Valor</Label>
-            {config.field === "status" ? (
+            {config.field === 'status' ? (
               <select
-                value={config.value || ""}
+                value={config.value || ''}
                 onChange={(e) => onUpdate({ ...config, value: e.target.value })}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
               >
@@ -277,7 +272,7 @@ function ActionConfigFields({
               </select>
             ) : (
               <Input
-                value={config.value || ""}
+                value={config.value || ''}
                 onChange={(e) => onUpdate({ ...config, value: e.target.value })}
                 placeholder="Novo valor"
                 className="mt-1 text-sm"
@@ -288,11 +283,11 @@ function ActionConfigFields({
       )}
 
       {/* Add/Remove Tag */}
-      {(nodeType === "add_tag" || nodeType === "remove_tag") && (
+      {(nodeType === 'add_tag' || nodeType === 'remove_tag') && (
         <div>
           <Label className="text-xs">Nome da Tag</Label>
           <Input
-            value={config.tagName || ""}
+            value={config.tagName || ''}
             onChange={(e) => onUpdate({ ...config, tagName: e.target.value })}
             placeholder="Ex: lead-quente"
             className="mt-1 text-sm"
@@ -301,12 +296,12 @@ function ActionConfigFields({
       )}
 
       {/* Send Webhook */}
-      {nodeType === "send_webhook" && (
+      {nodeType === 'send_webhook' && (
         <>
           <div>
             <Label className="text-xs">URL do Webhook</Label>
             <Input
-              value={config.url || ""}
+              value={config.url || ''}
               onChange={(e) => onUpdate({ ...config, url: e.target.value })}
               placeholder="https://..."
               className="mt-1 text-sm"
@@ -315,7 +310,7 @@ function ActionConfigFields({
           <div>
             <Label className="text-xs">Método HTTP</Label>
             <select
-              value={config.method || "POST"}
+              value={config.method || 'POST'}
               onChange={(e) => onUpdate({ ...config, method: e.target.value })}
               className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
             >
@@ -328,7 +323,7 @@ function ActionConfigFields({
       )}
 
       {/* Wait Delay */}
-      {nodeType === "wait_delay" && (
+      {nodeType === 'wait_delay' && (
         <div>
           <Label className="text-xs">Tempo de Espera</Label>
           <div className="flex gap-2 mt-1">
@@ -336,13 +331,11 @@ function ActionConfigFields({
               type="number"
               min="1"
               value={config.duration || 1}
-              onChange={(e) =>
-                onUpdate({ ...config, duration: parseInt(e.target.value) || 1 })
-              }
+              onChange={(e) => onUpdate({ ...config, duration: parseInt(e.target.value) || 1 })}
               className="flex-1 text-sm"
             />
             <select
-              value={config.unit || "d"}
+              value={config.unit || 'd'}
               onChange={(e) => onUpdate({ ...config, unit: e.target.value })}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
             >
@@ -396,9 +389,7 @@ function ActionConfigPanel({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent className="sm:max-w-2xl bg-white max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Configurar Ação{actionLabel ? ` — ${actionLabel}` : ""}
-            </DialogTitle>
+            <DialogTitle>Configurar Ação{actionLabel ? ` — ${actionLabel}` : ''}</DialogTitle>
           </DialogHeader>
           <ActionConfigFields node={node} onUpdate={onUpdate} large />
         </DialogContent>
@@ -417,35 +408,44 @@ export function ActionNode({
   onToggleConfig,
 }: ActionNodeProps) {
   const icon = ICONS[node.data.nodeType] || <Zap size={18} />;
-  const label = node.data.label || "Ação";
+  const label = node.data.label || 'Ação';
 
   // Build a brief summary
   const configSummary = (() => {
     const c = node.data.config;
     const nt = node.data.nodeType;
-    if (nt === "send_email" && c.subject) return `Assunto: ${c.subject}`;
-    if (nt === "send_whatsapp" && c.message) return c.message.slice(0, 40) + (c.message.length > 40 ? "..." : "");
-    if (nt === "create_task" && c.title) return c.title;
-    if (nt === "update_field") return `${c.field || "status"} → ${c.value || "..."}`;
-    if ((nt === "add_tag" || nt === "remove_tag") && c.tagName) return c.tagName;
-    if (nt === "send_webhook" && c.url) return c.url.slice(0, 30) + "...";
-    if (nt === "wait_delay") {
+    if (nt === 'send_email' && c.subject) return `Assunto: ${c.subject}`;
+    if (nt === 'send_whatsapp' && c.message)
+      return c.message.slice(0, 40) + (c.message.length > 40 ? '...' : '');
+    if (nt === 'create_task' && c.title) return c.title;
+    if (nt === 'update_field') return `${c.field || 'status'} → ${c.value || '...'}`;
+    if ((nt === 'add_tag' || nt === 'remove_tag') && c.tagName) return c.tagName;
+    if (nt === 'send_webhook' && c.url) return c.url.slice(0, 30) + '...';
+    if (nt === 'wait_delay') {
       const dur = c.duration || 1;
-      const unitMap: Record<string, string> = { n: "min", h: "h", d: "dias", w: "sem" };
-      return `${dur} ${unitMap[c.unit || "d"] || c.unit || "dias"}`;
+      const unitMap: Record<string, string> = { n: 'min', h: 'h', d: 'dias', w: 'sem' };
+      return `${dur} ${unitMap[c.unit || 'd'] || c.unit || 'dias'}`;
     }
-    return "";
+    return '';
   })();
 
   return (
     <div className="relative group">
       <div
+        role="button"
+        tabIndex={0}
         className={`w-72 rounded-lg border-2 cursor-pointer transition-all shadow-sm ${
           selected
-            ? "border-blue-500 shadow-blue-100 shadow-md"
-            : "border-blue-300 hover:border-blue-400 hover:shadow-md"
+            ? 'border-blue-500 shadow-blue-100 shadow-md'
+            : 'border-blue-300 hover:border-blue-400 hover:shadow-md'
         }`}
         onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') e.preventDefault();
+            onSelect();
+          }
+        }}
         onDoubleClick={onToggleConfig}
       >
         <div className="bg-blue-50 border-b border-blue-200 rounded-t-lg px-4 py-2 flex items-center justify-between">
@@ -467,16 +467,12 @@ export function ActionNode({
         </div>
         <div className="bg-white rounded-b-lg px-4 py-3">
           <p className="text-sm font-medium text-gray-900">{label}</p>
-          {configSummary && (
-            <p className="text-xs text-gray-500 mt-1 truncate">{configSummary}</p>
-          )}
+          {configSummary && <p className="text-xs text-gray-500 mt-1 truncate">{configSummary}</p>}
           <p className="text-xs text-gray-400 mt-1">Clique duplo para configurar</p>
         </div>
       </div>
 
-      {showConfig && (
-        <ActionConfigPanel node={node} onUpdate={onUpdate} onClose={onToggleConfig} />
-      )}
+      {showConfig && <ActionConfigPanel node={node} onUpdate={onUpdate} onClose={onToggleConfig} />}
     </div>
   );
 }

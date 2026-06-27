@@ -1,6 +1,6 @@
-import { Component, ReactNode } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
-import { isChunkLoadError, reloadForChunkError } from "../utils/chunkReload";
+import { Component, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { isChunkLoadError, reloadForChunkError } from '../utils/chunkReload';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       reloadForChunkError();
       return;
     }
-    console.error("ErrorBoundary caught:", error, errorInfo);
+    console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
   handleReset = () => {
@@ -48,13 +48,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <RefreshCw size={32} className="text-blue-600 animate-spin" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Atualizando o aplicativo
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Atualizando o aplicativo</h2>
             <p className="text-gray-600 text-center mb-4 max-w-md">
-              Uma nova versão foi publicada. Estamos recarregando para aplicar as
-              atualizações. Se a tela não atualizar sozinha em alguns segundos,
-              clique abaixo.
+              Uma nova versão foi publicada. Estamos recarregando para aplicar as atualizações. Se a
+              tela não atualizar sozinha em alguns segundos, clique abaixo.
             </p>
             <button
               onClick={() => window.location.reload()}
@@ -76,9 +73,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle size={32} className="text-red-600" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Algo deu errado
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Algo deu errado</h2>
           <p className="text-gray-600 text-center mb-4 max-w-md">
             Ocorreu um erro inesperado. Tente recarregar a página.
           </p>

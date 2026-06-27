@@ -23,11 +23,8 @@ vi.mock('../../services/googleCalendarService.js', () => ({
   googleCalendarService: { syncTaskForUser: vi.fn(async () => {}) },
 }));
 
-// eslint-disable-next-line import/first
 import { roadmapService } from '../../services/roadmapService.js';
-// eslint-disable-next-line import/first
 import { taskService } from '../../services/taskService.js';
-// eslint-disable-next-line import/first
 import { dealService } from '../../services/dealService.js';
 
 const tenantId = 'tenant-1';
@@ -52,9 +49,30 @@ describe('roadmapService.create — geração de ações pelo playbook', () => {
     prismaMock.playbookTemplate.findFirst.mockResolvedValue({
       id: 'pb1',
       steps: [
-        { order: 1, title: 'Mapear decisores', actionType: 'LIGACAO', offsetDays: 0, priority: 'HIGH', description: null },
-        { order: 2, title: 'Reunião', actionType: 'REUNIAO', offsetDays: 7, priority: 'MEDIUM', description: null },
-        { order: 3, title: 'Pedido de proposta', actionType: 'PROPOSTA', offsetDays: 30, priority: 'URGENT', description: null },
+        {
+          order: 1,
+          title: 'Mapear decisores',
+          actionType: 'LIGACAO',
+          offsetDays: 0,
+          priority: 'HIGH',
+          description: null,
+        },
+        {
+          order: 2,
+          title: 'Reunião',
+          actionType: 'REUNIAO',
+          offsetDays: 7,
+          priority: 'MEDIUM',
+          description: null,
+        },
+        {
+          order: 3,
+          title: 'Pedido de proposta',
+          actionType: 'PROPOSTA',
+          offsetDays: 30,
+          priority: 'URGENT',
+          description: null,
+        },
       ],
     } as never);
     prismaMock.commercialRoadmap.findFirst.mockResolvedValue({ id: 'rm1', title: 'Acme' } as never);
@@ -84,7 +102,10 @@ describe('roadmapService.create — geração de ações pelo playbook', () => {
       empreendimentoId: null,
       playbookTemplateId: null,
     } as never);
-    prismaMock.commercialRoadmap.findFirst.mockResolvedValue({ id: 'rm2', title: 'Sem playbook' } as never);
+    prismaMock.commercialRoadmap.findFirst.mockResolvedValue({
+      id: 'rm2',
+      title: 'Sem playbook',
+    } as never);
 
     await roadmapService.create(tenantId, 'user-1', { title: 'Sem playbook', companyId: 'co1' });
 
@@ -128,7 +149,10 @@ describe('roadmapService.advanceToProposal — vínculo roadmap → Deal', () =>
       company: { id: 'co1', name: 'Acme' },
       empreendimento: null,
     } as never);
-    prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-open', stage: DealStage.QUALIFICATION } as never);
+    prismaMock.deal.findFirst.mockResolvedValue({
+      id: 'deal-open',
+      stage: DealStage.QUALIFICATION,
+    } as never);
     prismaMock.commercialRoadmap.update.mockResolvedValue({ id: 'rm1' } as never);
 
     await roadmapService.advanceToProposal(tenantId, 'rm1', 'user-1');

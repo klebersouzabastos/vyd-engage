@@ -46,7 +46,9 @@ const scoreSchema = z.object({
     .array(
       z.object({
         label: z.string().describe('Nome curto do fator'),
-        detail: z.string().describe('Explicação curta; use "dados insuficientes" quando faltar dado'),
+        detail: z
+          .string()
+          .describe('Explicação curta; use "dados insuficientes" quando faltar dado'),
       })
     )
     .describe('Os 3 fatores principais que influenciam o score'),
@@ -71,7 +73,10 @@ interface DealMetrics {
   assigneeClosedCount: number;
 }
 
-async function buildDealMetrics(tenantId: string, dealId: string): Promise<{ metrics: DealMetrics } | null> {
+async function buildDealMetrics(
+  tenantId: string,
+  dealId: string
+): Promise<{ metrics: DealMetrics } | null> {
   const deal = await prisma.deal.findFirst({
     where: { id: dealId, tenantId },
     select: {
@@ -108,7 +113,9 @@ async function buildDealMetrics(tenantId: string, dealId: string): Promise<{ met
   if (deal.assignedTo) {
     const [won, lost] = await Promise.all([
       prisma.deal.count({ where: { tenantId, assignedTo: deal.assignedTo, stage: DealStage.WON } }),
-      prisma.deal.count({ where: { tenantId, assignedTo: deal.assignedTo, stage: DealStage.LOST } }),
+      prisma.deal.count({
+        where: { tenantId, assignedTo: deal.assignedTo, stage: DealStage.LOST },
+      }),
     ]);
     assigneeClosedCount = won + lost;
     if (assigneeClosedCount > 0) {
@@ -132,7 +139,9 @@ async function buildDealMetrics(tenantId: string, dealId: string): Promise<{ met
 }
 
 function renderMetrics(m: DealMetrics): string {
-  const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(m.value);
+  const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+    m.value
+  );
   return [
     `Deal: ${m.name}`,
     `Estágio atual: ${m.stage}`,
@@ -142,7 +151,9 @@ function renderMetrics(m: DealMetrics): string {
     `Número de interações: ${m.interactionCount}`,
     `Dias desde o último contato: ${m.daysSinceLastContact === null ? `${INSUFFICIENT} (sem interações)` : m.daysSinceLastContact}`,
     `Win rate do responsável: ${
-      m.assigneeWinRate === null ? `${INSUFFICIENT} (sem histórico de fechamento)` : `${m.assigneeWinRate}% (${m.assigneeClosedCount} deals fechados)`
+      m.assigneeWinRate === null
+        ? `${INSUFFICIENT} (sem histórico de fechamento)`
+        : `${m.assigneeWinRate}% (${m.assigneeClosedCount} deals fechados)`
     }`,
   ].join('\n');
 }
@@ -157,7 +168,10 @@ export const dealScoringService = {
 
     const built = await buildDealMetrics(tenantId, dealId);
     if (!built) {
-      throw Object.assign(new Error('Deal não encontrado'), { statusCode: 404, isOperational: true });
+      throw Object.assign(new Error('Deal não encontrado'), {
+        statusCode: 404,
+        isOperational: true,
+      });
     }
 
     const model = getActiveModel();
@@ -224,7 +238,10 @@ export const dealScoringService = {
       select: { aiScore: true, aiScoreUpdatedAt: true, aiScoreFactors: true },
     });
     if (!deal) {
-      throw Object.assign(new Error('Deal não encontrado'), { statusCode: 404, isOperational: true });
+      throw Object.assign(new Error('Deal não encontrado'), {
+        statusCode: 404,
+        isOperational: true,
+      });
     }
 
     if (deal.aiScore !== null && deal.aiScoreUpdatedAt) {

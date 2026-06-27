@@ -6,7 +6,7 @@ const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000; // 15 minutes
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Cross-origin deployment (frontend and backend on different domains) requires SameSite=none + Secure
-const SAME_SITE = IS_PRODUCTION ? 'none' as const : 'strict' as const;
+const SAME_SITE = IS_PRODUCTION ? ('none' as const) : ('strict' as const);
 
 /**
  * Set authentication cookies (httpOnly, secure)

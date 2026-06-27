@@ -31,7 +31,11 @@ export interface UpdateDeepResearchData {
  * platform admin — o prompt é IP da plataforma e nunca chega ao usuário final.
  */
 function toClientResearch<
-  T extends { promptUsed?: string; providerResponseId?: string | null; providerError?: string | null },
+  T extends {
+    promptUsed?: string;
+    providerResponseId?: string | null;
+    providerError?: string | null;
+  },
 >(research: T, includePrompt: boolean) {
   if (includePrompt) return research;
   // Usuário comum não recebe o prompt nem detalhes técnicos do provider.
@@ -43,7 +47,7 @@ function toClientResearch<
 async function buildPromptForResearch(
   tenantId: string,
   templateId: string | null | undefined,
-  variables: Record<string, string> | undefined,
+  variables: Record<string, string> | undefined
 ): Promise<string> {
   if (!templateId) return '';
   const tpl = await deepResearchTemplateService.getRaw(tenantId, templateId);
@@ -56,7 +60,7 @@ export const deepResearchService = {
     tenantId: string,
     createdById: string | undefined,
     data: CreateDeepResearchData,
-    includePrompt = false,
+    includePrompt = false
   ) {
     const promptUsed = await buildPromptForResearch(tenantId, data.templateId, data.variables);
     const research = await prisma.deepResearch.create({
@@ -96,7 +100,7 @@ export const deepResearchService = {
       search?: string;
       page?: number;
       limit?: number;
-    },
+    }
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
@@ -135,12 +139,7 @@ export const deepResearchService = {
     };
   },
 
-  async update(
-    tenantId: string,
-    id: string,
-    data: UpdateDeepResearchData,
-    includePrompt = false,
-  ) {
+  async update(tenantId: string, id: string, data: UpdateDeepResearchData, includePrompt = false) {
     const current = await prisma.deepResearch.findFirst({
       where: { id, tenantId },
       select: { id: true, templateId: true },
@@ -165,7 +164,7 @@ export const deepResearchService = {
       updateData.promptUsed = await buildPromptForResearch(
         tenantId,
         current.templateId,
-        data.variables,
+        data.variables
       );
     }
 
@@ -239,11 +238,10 @@ export const deepResearchService = {
           where: { id },
           data: { requestedAt: new Date(), providerError: null },
         });
-        provider
-          .run!(r.promptUsed)
+        provider.run!(r.promptUsed)
           .then((result) => this.applyProviderResult(id, result))
           .catch((err) =>
-            this.applyProviderResult(id, { failed: true, error: String(err?.message || err) }),
+            this.applyProviderResult(id, { failed: true, error: String(err?.message || err) })
           );
       }
     } catch (err: any) {
@@ -266,7 +264,7 @@ export const deepResearchService = {
       searchResults?: ResearchSource[];
       failed?: boolean;
       error?: string;
-    },
+    }
   ) {
     if (result.failed) {
       await prisma.deepResearch.update({

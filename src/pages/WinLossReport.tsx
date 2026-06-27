@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Header } from "../components/Header";
-import { Skeleton } from "../components/ui/skeleton";
-import { AlertTriangle, TrendingUp, TrendingDown, Percent, DollarSign } from "lucide-react";
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Header } from '../components/Header';
+import { Skeleton } from '../components/ui/skeleton';
+import { AlertTriangle, TrendingUp, TrendingDown, Percent, DollarSign } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -15,19 +15,19 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
+} from 'recharts';
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
     maximumFractionDigits: 0,
   }).format(value);
 }
 
-type Period = "30d" | "90d" | "180d" | "all";
+type Period = '30d' | '90d' | '180d' | 'all';
 
 interface LossReason {
   reason: string;
@@ -62,46 +62,59 @@ interface WinLossData {
 function getPeriodDates(period: Period): { from: string; to: string } {
   const to = new Date();
   const from = new Date();
-  if (period === "30d") from.setDate(from.getDate() - 30);
-  else if (period === "90d") from.setDate(from.getDate() - 90);
-  else if (period === "180d") from.setDate(from.getDate() - 180);
+  if (period === '30d') from.setDate(from.getDate() - 30);
+  else if (period === '90d') from.setDate(from.getDate() - 90);
+  else if (period === '180d') from.setDate(from.getDate() - 180);
   else from.setFullYear(from.getFullYear() - 10);
   return {
-    from: from.toISOString().split("T")[0],
-    to: to.toISOString().split("T")[0],
+    from: from.toISOString().split('T')[0],
+    to: to.toISOString().split('T')[0],
   };
 }
 
 async function fetchWinLoss(period: Period): Promise<WinLossData> {
   const { from, to } = getPeriodDates(period);
-  const token = localStorage.getItem("accessToken");
-  const params = period === "all" ? "" : `?from=${from}&to=${to}`;
+  const token = localStorage.getItem('accessToken');
+  const params = period === 'all' ? '' : `?from=${from}&to=${to}`;
   const res = await fetch(`${API_BASE}/api/v1/reports/win-loss${params}`, {
     headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json",
+      Authorization: 'Bearer ' + token,
+      'Content-Type': 'application/json',
     },
-    credentials: "include",
+    credentials: 'include',
   });
-  if (!res.ok) throw new Error("Erro ao carregar relatório win/loss");
+  if (!res.ok) throw new Error('Erro ao carregar relatório win/loss');
   const data = await res.json();
   return data.data ?? data;
 }
 
 const PIE_COLORS = [
-  "#ef4444",
-  "#f97316",
-  "#eab308",
-  "#8b5cf6",
-  "#06b6d4",
-  "#ec4899",
-  "#6366f1",
-  "#14b8a6",
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#8b5cf6',
+  '#06b6d4',
+  '#ec4899',
+  '#6366f1',
+  '#14b8a6',
 ];
 
 function formatMonthLabel(month: string): string {
-  const [year, m] = month.split("-");
-  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const [year, m] = month.split('-');
+  const monthNames = [
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez',
+  ];
   return `${monthNames[Number(m) - 1]}/${year.slice(2)}`;
 }
 
@@ -119,10 +132,10 @@ function StatCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    green: "bg-green-50 text-green-600",
-    red: "bg-red-50 text-red-500",
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
+    green: 'bg-green-50 text-green-600',
+    red: 'bg-red-50 text-red-500',
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
   };
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
@@ -139,10 +152,10 @@ function StatCard({
 }
 
 export function WinLossReport() {
-  const [period, setPeriod] = useState<Period>("90d");
+  const [period, setPeriod] = useState<Period>('90d');
 
   const { data, isLoading, error } = useQuery<WinLossData>({
-    queryKey: ["win-loss-report", period],
+    queryKey: ['win-loss-report', period],
     queryFn: () => fetchWinLoss(period),
     staleTime: 5 * 60 * 1000,
   });
@@ -159,16 +172,16 @@ export function WinLossReport() {
   const pieData = useMemo(() => {
     if (!data?.lossReasons?.length) return [];
     return data.lossReasons.map((r) => ({
-      name: r.reason || "Não informado",
+      name: r.reason || 'Não informado',
       value: r.count,
     }));
   }, [data]);
 
   const PERIODS: { value: Period; label: string }[] = [
-    { value: "30d", label: "30 dias" },
-    { value: "90d", label: "90 dias" },
-    { value: "180d", label: "180 dias" },
-    { value: "all", label: "Tudo" },
+    { value: '30d', label: '30 dias' },
+    { value: '90d', label: '90 dias' },
+    { value: '180d', label: '180 dias' },
+    { value: 'all', label: 'Tudo' },
   ];
 
   const isEmpty = !isLoading && !error && data && data.wonCount === 0 && data.lostCount === 0;
@@ -185,9 +198,7 @@ export function WinLossReport() {
               key={p.value}
               onClick={() => setPeriod(p.value)}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                period === p.value
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                period === p.value ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               {p.label}
@@ -266,9 +277,7 @@ export function WinLossReport() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={({ name, percent }) =>
-                          `${name} (${(percent * 100).toFixed(0)}%)`
-                        }
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                         labelLine={false}
                       >
                         {pieData.map((_, index) => (
@@ -279,7 +288,7 @@ export function WinLossReport() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => [value, "Deals"]}
+                        formatter={(value: number) => [value, 'Deals']}
                         contentStyle={{ fontSize: 12, borderRadius: 8 }}
                       />
                     </PieChart>
@@ -289,7 +298,9 @@ export function WinLossReport() {
 
               {/* Bar chart — won vs lost per month */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Ganhos vs Perdidos por Mês</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  Ganhos vs Perdidos por Mês
+                </h3>
                 {isLoading ? (
                   <Skeleton className="h-[280px] w-full" />
                 ) : barChartData.length === 0 ? (
@@ -325,24 +336,43 @@ export function WinLossReport() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Concorrente</th>
-                        <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Ocorrências</th>
-                        <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">% das Perdas</th>
+                        <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                          Concorrente
+                        </th>
+                        <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                          Ocorrências
+                        </th>
+                        <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                          % das Perdas
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {isLoading
                         ? Array.from({ length: 4 }).map((_, i) => (
                             <tr key={i} className="border-b border-gray-100">
-                              <td className="py-2.5 px-4"><Skeleton className="h-4 w-40" /></td>
-                              <td className="py-2.5 px-4 text-right"><Skeleton className="h-4 w-8 ml-auto" /></td>
-                              <td className="py-2.5 px-4 text-right"><Skeleton className="h-4 w-12 ml-auto" /></td>
+                              <td className="py-2.5 px-4">
+                                <Skeleton className="h-4 w-40" />
+                              </td>
+                              <td className="py-2.5 px-4 text-right">
+                                <Skeleton className="h-4 w-8 ml-auto" />
+                              </td>
+                              <td className="py-2.5 px-4 text-right">
+                                <Skeleton className="h-4 w-12 ml-auto" />
+                              </td>
                             </tr>
                           ))
                         : data?.competitors.map((comp) => (
-                            <tr key={comp.name} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                              <td className="py-2.5 px-4 text-sm text-gray-900 font-medium">{comp.name}</td>
-                              <td className="py-2.5 px-4 text-sm text-gray-600 text-right">{comp.count}</td>
+                            <tr
+                              key={comp.name}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="py-2.5 px-4 text-sm text-gray-900 font-medium">
+                                {comp.name}
+                              </td>
+                              <td className="py-2.5 px-4 text-sm text-gray-600 text-right">
+                                {comp.count}
+                              </td>
                               <td className="py-2.5 px-4 text-sm text-red-500 text-right">
                                 {comp.percentageOfLosses.toFixed(1)}%
                               </td>

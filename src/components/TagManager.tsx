@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Trash2, Edit2, Plus, X } from "lucide-react";
-import { Tag } from "../types";
-import { useTags } from "../contexts/TagsContext";
-import { TAG_COLORS } from "../utils/tags";
-import { TagBadge } from "./TagBadge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Trash2, Edit2, Plus, X } from 'lucide-react';
+import { Tag } from '../types';
+import { useTags } from '../contexts/TagsContext';
+import { TAG_COLORS } from '../utils/tags';
+import { TagBadge } from './TagBadge';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
+} from './ui/alert-dialog';
 
 export function TagManager() {
   const { tags, createTag, updateTag, deleteTag, getUsageCount } = useTags();
@@ -25,7 +25,7 @@ export function TagManager() {
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    name: '',
     color: TAG_COLORS[0],
   });
 
@@ -37,10 +37,10 @@ export function TagManager() {
         name: formData.name.trim(),
         color: formData.color,
       });
-      setFormData({ name: "", color: TAG_COLORS[0] });
+      setFormData({ name: '', color: TAG_COLORS[0] });
       setIsCreateDialogOpen(false);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar tag");
+      toast.error(error.message || 'Erro ao criar tag');
     }
   };
 
@@ -59,10 +59,10 @@ export function TagManager() {
         color: formData.color,
       });
       setEditingTag(null);
-      setFormData({ name: "", color: TAG_COLORS[0] });
+      setFormData({ name: '', color: TAG_COLORS[0] });
       setIsCreateDialogOpen(false);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar tag");
+      toast.error(error.message || 'Erro ao atualizar tag');
     }
   };
 
@@ -75,7 +75,7 @@ export function TagManager() {
   const handleCloseDialog = () => {
     setIsCreateDialogOpen(false);
     setEditingTag(null);
-    setFormData({ name: "", color: TAG_COLORS[0] });
+    setFormData({ name: '', color: TAG_COLORS[0] });
   };
 
   return (
@@ -132,9 +132,7 @@ export function TagManager() {
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-gray-600">
-                  Usada em {usageCount} lead(s)
-                </div>
+                <div className="text-xs text-gray-600">Usada em {usageCount} lead(s)</div>
               </div>
             );
           })}
@@ -146,14 +144,9 @@ export function TagManager() {
         <div className="border border-gray-300 rounded-lg bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-semibold text-gray-900">
-              {editingTag ? "Editar Tag" : "Nova Tag"}
+              {editingTag ? 'Editar Tag' : 'Nova Tag'}
             </h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCloseDialog}
-              className="h-8 w-8 p-0"
-            >
+            <Button variant="ghost" size="sm" onClick={handleCloseDialog} className="h-8 w-8 p-0">
               <X size={16} />
             </Button>
           </div>
@@ -163,9 +156,7 @@ export function TagManager() {
               <Input
                 id="tag-name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ex: Cliente VIP, Prospect, etc."
                 className="mt-1.5"
               />
@@ -182,8 +173,8 @@ export function TagManager() {
                       w-10 h-10 rounded-lg border-2 transition-all
                       ${
                         formData.color === color
-                          ? "border-gray-900 scale-110"
-                          : "border-gray-300 hover:border-gray-400"
+                          ? 'border-gray-900 scale-110'
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}
                     style={{ backgroundColor: color }}
@@ -200,7 +191,7 @@ export function TagManager() {
                 onClick={editingTag ? handleUpdate : handleCreate}
                 className="bg-primary hover:bg-primary-dark"
               >
-                {editingTag ? "Salvar" : "Criar"}
+                {editingTag ? 'Salvar' : 'Criar'}
               </Button>
             </div>
           </div>
@@ -208,10 +199,7 @@ export function TagManager() {
       )}
 
       {/* Dialog de confirmação de exclusão */}
-      <AlertDialog
-        open={!!deletingTag}
-        onOpenChange={(open) => !open && setDeletingTag(null)}
-      >
+      <AlertDialog open={!!deletingTag} onOpenChange={(open) => !open && setDeletingTag(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
@@ -224,10 +212,7 @@ export function TagManager() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -236,4 +221,3 @@ export function TagManager() {
     </div>
   );
 }
-

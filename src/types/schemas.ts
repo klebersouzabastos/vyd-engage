@@ -5,21 +5,35 @@ import { z } from 'zod';
 // ========================
 
 export const LeadStatusSchema = z.enum([
-  'NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST',
+  'NEW',
+  'CONTACTED',
+  'QUALIFIED',
+  'PROPOSAL',
+  'NEGOTIATION',
+  'WON',
+  'LOST',
 ]);
 
 export const LeadSourceSchema = z.enum([
-  'WEBSITE', 'SOCIAL_MEDIA', 'REFERRAL', 'EMAIL', 'PHONE', 'OTHER',
+  'WEBSITE',
+  'SOCIAL_MEDIA',
+  'REFERRAL',
+  'EMAIL',
+  'PHONE',
+  'OTHER',
 ]);
 
 export const TaskPrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
-export const TaskStatusSchema = z.enum([
-  'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED',
-]);
+export const TaskStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
 
 export const DealStageSchema = z.enum([
-  'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSING', 'WON', 'LOST',
+  'QUALIFICATION',
+  'PROPOSAL',
+  'NEGOTIATION',
+  'CLOSING',
+  'WON',
+  'LOST',
 ]);
 
 export const UserRoleSchema = z.enum(['ADMIN', 'USER', 'VIEWER']);
@@ -49,12 +63,14 @@ export const UserSchema = z.object({
   role: UserRoleSchema,
   tenantId: z.string(),
   phone: z.string().nullable().optional(),
-  tenant: z.object({
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-    logo: z.string().nullable().optional(),
-  }).optional(),
+  tenant: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      slug: z.string(),
+      logo: z.string().nullable().optional(),
+    })
+    .optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
@@ -66,11 +82,13 @@ export type UserResponse = z.infer<typeof UserSchema>;
 // ========================
 
 export const LeadTagSchema = z.object({
-  tag: z.object({
-    id: z.string(),
-    name: z.string(),
-    color: z.string(),
-  }).optional(),
+  tag: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      color: z.string(),
+    })
+    .optional(),
   tagId: z.string().optional(),
 });
 
@@ -144,19 +162,25 @@ export const DealSchema = z.object({
   probability: z.number(),
   expectedCloseDate: z.string().nullable().optional(),
   leadId: z.string().nullable().optional(),
-  lead: z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string().optional(),
-    phone: z.string().optional(),
-    company: z.string().optional(),
-  }).nullable().optional(),
+  lead: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      company: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
   assignedTo: z.string().nullable().optional(),
-  assignedUser: z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string(),
-  }).nullable().optional(),
+  assignedUser: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+    })
+    .nullable()
+    .optional(),
   notes: z.string().nullable().optional(),
   customFields: z.record(z.unknown()).default({}),
   lostReason: z.string().nullable().optional(),
@@ -186,12 +210,14 @@ export const DealStatsSchema = z.object({
   winRate: z.number(),
   avgDealSize: z.number(),
   avgCycleTime: z.number(),
-  byStage: z.array(z.object({
-    stage: z.string(),
-    count: z.number(),
-    totalValue: z.number(),
-    weightedValue: z.number(),
-  })),
+  byStage: z.array(
+    z.object({
+      stage: z.string(),
+      count: z.number(),
+      totalValue: z.number(),
+      weightedValue: z.number(),
+    })
+  ),
   totalDeals: z.number(),
   activeDeals: z.number(),
   wonDeals: z.number(),
@@ -222,23 +248,31 @@ export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 // ========================
 
 export const SubscriptionResponseSchema = z.object({
-  subscription: z.object({
-    plan: z.object({
-      type: z.string(),
-      name: z.string().optional(),
-    }).optional(),
-    status: z.string().optional(),
-    startDate: z.string().optional(),
-    createdAt: z.string().optional(),
-    renewalDate: z.string().optional(),
-    billingCycle: z.string().optional(),
-    payments: z.array(z.object({
-      id: z.string(),
-      amount: z.union([z.number(), z.string()]),
+  subscription: z
+    .object({
+      plan: z
+        .object({
+          type: z.string(),
+          name: z.string().optional(),
+        })
+        .optional(),
       status: z.string().optional(),
+      startDate: z.string().optional(),
       createdAt: z.string().optional(),
-    })).optional(),
-  }).optional(),
+      renewalDate: z.string().optional(),
+      billingCycle: z.string().optional(),
+      payments: z
+        .array(
+          z.object({
+            id: z.string(),
+            amount: z.union([z.number(), z.string()]),
+            status: z.string().optional(),
+            createdAt: z.string().optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
   usage: z.unknown().optional(),
 });
 
@@ -258,7 +292,10 @@ export const NotificationSchema = z.object({
   link: z.string().nullable().optional(),
   createdAt: z.string().optional(),
   timestamp: z.string().optional(),
-  metadata: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).nullable().optional(),
+  metadata: z
+    .record(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .nullable()
+    .optional(),
 });
 
 export type NotificationResponse = z.infer<typeof NotificationSchema>;

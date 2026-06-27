@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { SlackTeamsSection } from "./SlackTeamsSection";
-import { MeetingScheduleSection } from "./MeetingScheduleSection";
-import { Button } from "../ui/button";
-import { Plus, HelpCircle, X, FileText, Copy, Key, Loader2 } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { useWhatsApp } from "../../contexts/WhatsAppContext";
-import { useEmail } from "../../contexts/EmailContext";
-import { ConnectionCard } from "../whatsapp/ConnectionCard";
-import { ConnectionForm } from "../whatsapp/ConnectionForm";
-import { EmailConfigCard } from "../email/EmailConfigCard";
-import { EmailConfigForm } from "../email/EmailConfigForm";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { SlackTeamsSection } from './SlackTeamsSection';
+import { MeetingScheduleSection } from './MeetingScheduleSection';
+import { Button } from '../ui/button';
+import { Plus, HelpCircle, X, FileText, Copy, Key, Loader2 } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { useWhatsApp } from '../../contexts/WhatsAppContext';
+import { useEmail } from '../../contexts/EmailContext';
+import { ConnectionCard } from '../whatsapp/ConnectionCard';
+import { ConnectionForm } from '../whatsapp/ConnectionForm';
+import { EmailConfigCard } from '../email/EmailConfigCard';
+import { EmailConfigForm } from '../email/EmailConfigForm';
 
 const scrollbarStyle = {
   scrollbarWidth: 'thin' as const,
@@ -27,18 +27,29 @@ function WhatsAppHelpContent() {
       <div>
         <h3 className="font-semibold mb-2">O que sao Conexoes WhatsApp?</h3>
         <p className="text-gray-600 mb-3">
-          As conexoes WhatsApp permitem integrar o VYD Engage com WhatsApp para enviar e receber mensagens diretamente do CRM.
-          Voce pode usar tanto a API oficial do WhatsApp Business quanto solucoes nao oficiais.
+          As conexoes WhatsApp permitem integrar o VYD Engage com WhatsApp para enviar e receber
+          mensagens diretamente do CRM. Voce pode usar tanto a API oficial do WhatsApp Business
+          quanto solucoes nao oficiais.
         </p>
       </div>
 
       <div>
         <h3 className="font-semibold mb-2">Tipos de conexao disponiveis</h3>
         <ul className="list-disc list-inside space-y-2 text-gray-600">
-          <li><strong>WhatsApp Business API (Oficial):</strong> Solucao oficial do Meta/Facebook para empresas. Requer aprovacao e tem custos por mensagem.</li>
-          <li><strong>Baileys:</strong> Biblioteca nao oficial que permite conectar usando WhatsApp Web.</li>
-          <li><strong>Evolution API:</strong> Solucao nao oficial que oferece API REST para WhatsApp.</li>
-          <li><strong>ChatAPI:</strong> Servico de terceiros que fornece API para WhatsApp.</li>
+          <li>
+            <strong>WhatsApp Business API (Oficial):</strong> Solucao oficial do Meta/Facebook para
+            empresas. Requer aprovacao e tem custos por mensagem.
+          </li>
+          <li>
+            <strong>Baileys:</strong> Biblioteca nao oficial que permite conectar usando WhatsApp
+            Web.
+          </li>
+          <li>
+            <strong>Evolution API:</strong> Solucao nao oficial que oferece API REST para WhatsApp.
+          </li>
+          <li>
+            <strong>ChatAPI:</strong> Servico de terceiros que fornece API para WhatsApp.
+          </li>
         </ul>
       </div>
 
@@ -59,7 +70,17 @@ function WhatsAppHelpContent() {
           <div>
             <p className="font-medium mb-1">WhatsApp Business API (Oficial):</p>
             <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Acesse o <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Facebook Business</a></li>
+              <li>
+                Acesse o{' '}
+                <a
+                  href="https://business.facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Facebook Business
+                </a>
+              </li>
               <li>Crie uma conta Business e configure o WhatsApp Business</li>
               <li>Obtenha o Access Token e numero de telefone</li>
               <li>Configure a URL de webhook para receber mensagens</li>
@@ -91,8 +112,8 @@ function WhatsAppHelpContent() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold mb-2 text-blue-900">Dica</h3>
         <p className="text-blue-800 text-sm">
-          Para producao, recomendamos usar a API oficial do WhatsApp Business.
-          Para testes e desenvolvimento, as solucoes nao oficiais podem ser mais rapidas de configurar.
+          Para producao, recomendamos usar a API oficial do WhatsApp Business. Para testes e
+          desenvolvimento, as solucoes nao oficiais podem ser mais rapidas de configurar.
         </p>
       </div>
 
@@ -115,19 +136,30 @@ function EmailHelpContent() {
       <div>
         <h3 className="font-semibold mb-2">O que e o Servico de Email?</h3>
         <p className="text-gray-600 mb-3">
-          O servico de email permite configurar como o VYD Engage envia emails para seus leads e clientes.
-          Voce pode usar SMTP tradicional ou APIs de servicos de email modernos.
+          O servico de email permite configurar como o VYD Engage envia emails para seus leads e
+          clientes. Voce pode usar SMTP tradicional ou APIs de servicos de email modernos.
         </p>
       </div>
 
       <div>
         <h3 className="font-semibold mb-2">Tipos de configuracao disponiveis</h3>
         <ul className="list-disc list-inside space-y-2 text-gray-600">
-          <li><strong>SMTP:</strong> Protocolo tradicional de email. Funciona com Gmail, Outlook, servidores proprios, etc.</li>
-          <li><strong>SendGrid:</strong> Servico de email transacional com API REST.</li>
-          <li><strong>Mailgun:</strong> Plataforma de email para desenvolvedores.</li>
-          <li><strong>Amazon SES:</strong> Servico de email da AWS.</li>
-          <li><strong>Resend:</strong> API moderna de email para desenvolvedores.</li>
+          <li>
+            <strong>SMTP:</strong> Protocolo tradicional de email. Funciona com Gmail, Outlook,
+            servidores proprios, etc.
+          </li>
+          <li>
+            <strong>SendGrid:</strong> Servico de email transacional com API REST.
+          </li>
+          <li>
+            <strong>Mailgun:</strong> Plataforma de email para desenvolvedores.
+          </li>
+          <li>
+            <strong>Amazon SES:</strong> Servico de email da AWS.
+          </li>
+          <li>
+            <strong>Resend:</strong> API moderna de email para desenvolvedores.
+          </li>
         </ul>
       </div>
 
@@ -146,14 +178,17 @@ function EmailHelpContent() {
         <h3 className="font-semibold mb-2">Como configurar SMTP?</h3>
         <ol className="list-decimal list-inside space-y-2 text-gray-600">
           <li>Escolha seu provedor de email (Gmail, Outlook, servidor proprio, etc.)</li>
-          <li>Obtenha as configuracoes SMTP do seu provedor:
+          <li>
+            Obtenha as configuracoes SMTP do seu provedor:
             <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
               <li>Servidor SMTP (ex: smtp.gmail.com)</li>
               <li>Porta (geralmente 587 para TLS ou 465 para SSL)</li>
               <li>Usuario e senha (ou senha de aplicativo)</li>
             </ul>
           </li>
-          <li>Para Gmail, voce precisara criar uma "Senha de App" nas configuracoes de seguranca</li>
+          <li>
+            Para Gmail, voce precisara criar uma "Senha de App" nas configuracoes de seguranca
+          </li>
           <li>Preencha os campos no formulario e teste a conexao</li>
         </ol>
       </div>
@@ -195,8 +230,8 @@ function EmailHelpContent() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold mb-2 text-blue-900">Dica</h3>
         <p className="text-blue-800 text-sm">
-          Para producao e grandes volumes, recomendamos usar APIs como SendGrid ou Mailgun.
-          Para testes e volumes pequenos, SMTP pode ser suficiente.
+          Para producao e grandes volumes, recomendamos usar APIs como SendGrid ou Mailgun. Para
+          testes e volumes pequenos, SMTP pode ser suficiente.
         </p>
       </div>
 
@@ -225,14 +260,17 @@ function MetaLeadAdsSection() {
               Em breve
             </span>
           </div>
-          <p className="text-sm text-gray-600">Capture leads do Facebook e Instagram automaticamente com integracao direta</p>
+          <p className="text-sm text-gray-600">
+            Capture leads do Facebook e Instagram automaticamente com integracao direta
+          </p>
         </div>
         <Button variant="outline" size="sm" disabled>
           Como configurar
         </Button>
       </div>
       <p className="text-xs text-gray-500 mt-2">
-        Enquanto isso, use a secao "Webhook para Captura" abaixo para receber leads do Meta via webhook.
+        Enquanto isso, use a secao "Webhook para Captura" abaixo para receber leads do Meta via
+        webhook.
       </p>
     </div>
   );
@@ -249,14 +287,17 @@ function GoogleLeadFormsSection() {
               Em breve
             </span>
           </div>
-          <p className="text-sm text-gray-600">Capture leads do Google Ads com integracao direta de formularios</p>
+          <p className="text-sm text-gray-600">
+            Capture leads do Google Ads com integracao direta de formularios
+          </p>
         </div>
         <Button variant="outline" size="sm" disabled>
           Como configurar
         </Button>
       </div>
       <p className="text-xs text-gray-500 mt-2">
-        Enquanto isso, use a secao "Webhook para Captura" abaixo para receber leads do Google Ads via webhook.
+        Enquanto isso, use a secao "Webhook para Captura" abaixo para receber leads do Google Ads
+        via webhook.
       </p>
     </div>
   );
@@ -280,22 +321,25 @@ function WebhookCaptureSection() {
       const result = await apiClient.getApiKeys();
       const keys = result?.data || result || [];
       setApiKeys(Array.isArray(keys) ? keys : []);
-    } catch { }
-    finally { setLoading(false); }
+    } catch {
+      /* noop: falha ao carregar chaves não bloqueia a UI */
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateKey = async () => {
     setCreating(true);
     try {
-      const result = await apiClient.createApiKey({ name: "Webhook Capture Key" });
+      const result = await apiClient.createApiKey({ name: 'Webhook Capture Key' });
       const data = result?.data || result;
       if (data?.fullKey) {
         setNewKeyValue(data.fullKey);
       }
       await loadApiKeys();
-      toast.success("Chave API criada");
+      toast.success('Chave API criada');
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar chave");
+      toast.error(error.message || 'Erro ao criar chave');
     } finally {
       setCreating(false);
     }
@@ -306,7 +350,7 @@ function WebhookCaptureSection() {
     toast.success(`${label} copiado`);
   };
 
-  const activeKey = apiKeys.find(k => k.active);
+  const activeKey = apiKeys.find((k) => k.active);
   const webhookUrl = activeKey ? `${apiUrl}/api/webhooks/capture/YOUR_API_KEY` : null;
 
   return (
@@ -315,12 +359,16 @@ function WebhookCaptureSection() {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h4 className="font-medium text-gray-900">Webhook para Captura</h4>
-            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Ativo</span>
+            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+              Ativo
+            </span>
           </div>
-          <p className="text-sm text-gray-600">Receba leads de qualquer fonte externa via webhook HTTP POST</p>
+          <p className="text-sm text-gray-600">
+            Receba leads de qualquer fonte externa via webhook HTTP POST
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowDetails(!showDetails)}>
-          {showDetails ? "Fechar" : "Configurar"}
+          {showDetails ? 'Fechar' : 'Configurar'}
         </Button>
       </div>
 
@@ -341,20 +389,28 @@ function WebhookCaptureSection() {
                 <span className="text-xs text-green-600">Ativa</span>
               </div>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleCreateKey} disabled={creating} className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateKey}
+                disabled={creating}
+                className="gap-2"
+              >
                 {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 Criar Chave API
               </Button>
             )}
             {newKeyValue && (
               <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-xs text-yellow-800 font-medium mb-1">Copie sua chave agora — ela nao sera exibida novamente:</p>
+                <p className="text-xs text-yellow-800 font-medium mb-1">
+                  Copie sua chave agora — ela nao sera exibida novamente:
+                </p>
                 <div className="flex items-center gap-2">
                   <code className="text-xs bg-white px-2 py-1 rounded border border-yellow-300 font-mono flex-1 break-all">
                     {newKeyValue}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(newKeyValue, "Chave API")}
+                    onClick={() => copyToClipboard(newKeyValue, 'Chave API')}
                     className="p-1.5 rounded hover:bg-yellow-100"
                   >
                     <Copy size={14} className="text-yellow-700" />
@@ -373,7 +429,7 @@ function WebhookCaptureSection() {
               </code>
               {webhookUrl && (
                 <button
-                  onClick={() => copyToClipboard(webhookUrl, "URL")}
+                  onClick={() => copyToClipboard(webhookUrl, 'URL')}
                   className="p-1.5 rounded hover:bg-gray-100"
                 >
                   <Copy size={14} className="text-gray-500" />
@@ -386,7 +442,7 @@ function WebhookCaptureSection() {
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2">Formato do Payload (JSON)</h5>
             <pre className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-3 overflow-x-auto font-mono text-gray-700">
-{`{
+              {`{
   "name": "Nome do Lead",
   "email": "email@exemplo.com",
   "phone": "(11) 99999-0000",
@@ -397,7 +453,8 @@ function WebhookCaptureSection() {
 }`}
             </pre>
             <p className="text-xs text-gray-500 mt-2">
-              Campos aceitos: name (obrigatorio), email, phone/telefone, company/empresa, position/cargo, source, notes/observacao
+              Campos aceitos: name (obrigatorio), email, phone/telefone, company/empresa,
+              position/cargo, source, notes/observacao
             </p>
           </div>
         </div>
@@ -408,8 +465,24 @@ function WebhookCaptureSection() {
 
 export function IntegrationsTab() {
   const navigate = useNavigate();
-  const { connections, addConnection, updateConnection, deleteConnection, setDefaultConnection, planLimits, canAddConnection } = useWhatsApp();
-  const { configs: emailConfigs, addEmailConfig, updateEmailConfig, deleteEmailConfig, setDefaultEmailConfig, planLimits: emailPlanLimits, canAddEmailConfig } = useEmail();
+  const {
+    connections,
+    addConnection,
+    updateConnection,
+    deleteConnection,
+    setDefaultConnection,
+    planLimits,
+    canAddConnection,
+  } = useWhatsApp();
+  const {
+    configs: emailConfigs,
+    addEmailConfig,
+    updateEmailConfig,
+    deleteEmailConfig,
+    setDefaultEmailConfig,
+    planLimits: emailPlanLimits,
+    canAddEmailConfig,
+  } = useEmail();
   const [isAddingConnection, setIsAddingConnection] = useState(false);
   const [editingConnectionId, setEditingConnectionId] = useState<string | null>(null);
   const [isAddingEmailConfig, setIsAddingEmailConfig] = useState(false);
@@ -446,9 +519,12 @@ export function IntegrationsTab() {
                 >
                   <div className="space-y-4 pr-2">
                     <div>
-                      <h3 className="font-semibold text-lg mb-2 text-gray-900">Como funciona as Conexoes WhatsApp</h3>
+                      <h3 className="font-semibold text-lg mb-2 text-gray-900">
+                        Como funciona as Conexoes WhatsApp
+                      </h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        Entenda como integrar e usar WhatsApp no VYD Engage para enviar e receber mensagens
+                        Entenda como integrar e usar WhatsApp no VYD Engage para enviar e receber
+                        mensagens
                       </p>
                     </div>
                     <WhatsAppHelpContent />
@@ -460,7 +536,9 @@ export function IntegrationsTab() {
               Gerencie suas integracoes com WhatsApp (Oficial e nao oficial)
             </p>
             <p className="text-xs text-gray-600 mt-1">
-              {connections.length} / {planLimits.maxConnections === Infinity ? "ilimitado" : planLimits.maxConnections} conexoes
+              {connections.length} /{' '}
+              {planLimits.maxConnections === Infinity ? 'ilimitado' : planLimits.maxConnections}{' '}
+              conexoes
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -468,7 +546,7 @@ export function IntegrationsTab() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate("/app/whatsapp/templates")}
+                onClick={() => navigate('/app/whatsapp/templates')}
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Templates
@@ -492,35 +570,32 @@ export function IntegrationsTab() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-3">
-            {connections.length > 0 ? (
-              connections.map((connection) => (
-                <ConnectionCard
-                  key={connection.id}
-                  connection={connection}
-                  onEdit={() => {
-                    setEditingConnectionId(connection.id);
-                    setIsAddingConnection(false);
-                  }}
-                  onDelete={async () => {
-                    await deleteConnection(connection.id);
-                    if (editingConnectionId === connection.id) {
-                      setEditingConnectionId(null);
-                    }
-                  }}
-                  onSetDefault={async () => {
-                    await setDefaultConnection(connection.id);
-                  }}
-                />
-              ))
-            ) : (
-              !isAddingConnection && !editingConnectionId && (
-                <div className="p-4 bg-gray-100 rounded-lg text-center">
-                  <p className="text-sm text-gray-600">
-                    Nenhuma conexao configurada
-                  </p>
-                </div>
-              )
-            )}
+            {connections.length > 0
+              ? connections.map((connection) => (
+                  <ConnectionCard
+                    key={connection.id}
+                    connection={connection}
+                    onEdit={() => {
+                      setEditingConnectionId(connection.id);
+                      setIsAddingConnection(false);
+                    }}
+                    onDelete={async () => {
+                      await deleteConnection(connection.id);
+                      if (editingConnectionId === connection.id) {
+                        setEditingConnectionId(null);
+                      }
+                    }}
+                    onSetDefault={async () => {
+                      await setDefaultConnection(connection.id);
+                    }}
+                  />
+                ))
+              : !isAddingConnection &&
+                !editingConnectionId && (
+                  <div className="p-4 bg-gray-100 rounded-lg text-center">
+                    <p className="text-sm text-gray-600">Nenhuma conexao configurada</p>
+                  </div>
+                )}
           </div>
 
           {(isAddingConnection || editingConnectionId) && (
@@ -529,7 +604,7 @@ export function IntegrationsTab() {
                 <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-medium text-gray-900">
-                      {isAddingConnection ? "Nova Conexao WhatsApp" : "Editar Conexao"}
+                      {isAddingConnection ? 'Nova Conexao WhatsApp' : 'Editar Conexao'}
                     </h3>
                     <Button
                       variant="ghost"
@@ -544,18 +619,18 @@ export function IntegrationsTab() {
                     </Button>
                   </div>
                   <ConnectionForm
-                    connection={editingConnectionId ? connections.find(c => c.id === editingConnectionId) : undefined}
+                    connection={
+                      editingConnectionId
+                        ? connections.find((c) => c.id === editingConnectionId)
+                        : undefined
+                    }
                     onSubmit={async (data) => {
-                      try {
-                        if (editingConnectionId) {
-                          await updateConnection(editingConnectionId, data);
-                          setEditingConnectionId(null);
-                        } else {
-                          await addConnection(data);
-                          setIsAddingConnection(false);
-                        }
-                      } catch (error) {
-                        throw error;
+                      if (editingConnectionId) {
+                        await updateConnection(editingConnectionId, data);
+                        setEditingConnectionId(null);
+                      } else {
+                        await addConnection(data);
+                        setIsAddingConnection(false);
                       }
                     }}
                     onCancel={() => {
@@ -593,7 +668,9 @@ export function IntegrationsTab() {
                 >
                   <div className="space-y-4 pr-2">
                     <div>
-                      <h3 className="font-semibold text-lg mb-2 text-gray-900">Como funciona o Servico de Email</h3>
+                      <h3 className="font-semibold text-lg mb-2 text-gray-900">
+                        Como funciona o Servico de Email
+                      </h3>
                       <p className="text-sm text-gray-600 mb-4">
                         Entenda como configurar e usar servicos de email no VYD Engage
                       </p>
@@ -607,7 +684,9 @@ export function IntegrationsTab() {
               Configure seu servico de envio de emails (SMTP ou APIs)
             </p>
             <p className="text-xs text-gray-600 mt-1">
-              {emailConfigs.length} / {emailPlanLimits.maxConfigs === Infinity ? "ilimitado" : emailPlanLimits.maxConfigs} configuracoes
+              {emailConfigs.length} /{' '}
+              {emailPlanLimits.maxConfigs === Infinity ? 'ilimitado' : emailPlanLimits.maxConfigs}{' '}
+              configuracoes
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -624,11 +703,7 @@ export function IntegrationsTab() {
                 Adicionar Configuracao
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/app/email/campaigns")}
-            >
+            <Button variant="outline" size="sm" onClick={() => navigate('/app/email/campaigns')}>
               <FileText className="h-4 w-4 mr-2" />
               Campanhas
             </Button>
@@ -637,35 +712,34 @@ export function IntegrationsTab() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-3">
-            {emailConfigs.length > 0 ? (
-              emailConfigs.map((config) => (
-                <EmailConfigCard
-                  key={config.id}
-                  config={config}
-                  onEdit={() => {
-                    setEditingEmailConfigId(config.id);
-                    setIsAddingEmailConfig(false);
-                  }}
-                  onDelete={async () => {
-                    await deleteEmailConfig(config.id);
-                    if (editingEmailConfigId === config.id) {
-                      setEditingEmailConfigId(null);
-                    }
-                  }}
-                  onSetDefault={async () => {
-                    await setDefaultEmailConfig(config.id);
-                  }}
-                />
-              ))
-            ) : (
-              !isAddingEmailConfig && !editingEmailConfigId && (
-                <div className="p-4 bg-gray-100 rounded-lg text-center">
-                  <p className="text-sm text-gray-600">
-                    Nenhuma configuracao de email configurada
-                  </p>
-                </div>
-              )
-            )}
+            {emailConfigs.length > 0
+              ? emailConfigs.map((config) => (
+                  <EmailConfigCard
+                    key={config.id}
+                    config={config}
+                    onEdit={() => {
+                      setEditingEmailConfigId(config.id);
+                      setIsAddingEmailConfig(false);
+                    }}
+                    onDelete={async () => {
+                      await deleteEmailConfig(config.id);
+                      if (editingEmailConfigId === config.id) {
+                        setEditingEmailConfigId(null);
+                      }
+                    }}
+                    onSetDefault={async () => {
+                      await setDefaultEmailConfig(config.id);
+                    }}
+                  />
+                ))
+              : !isAddingEmailConfig &&
+                !editingEmailConfigId && (
+                  <div className="p-4 bg-gray-100 rounded-lg text-center">
+                    <p className="text-sm text-gray-600">
+                      Nenhuma configuracao de email configurada
+                    </p>
+                  </div>
+                )}
           </div>
 
           {(isAddingEmailConfig || editingEmailConfigId) && (
@@ -674,7 +748,7 @@ export function IntegrationsTab() {
                 <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-medium text-gray-900">
-                      {isAddingEmailConfig ? "Nova Configuracao de Email" : "Editar Configuracao"}
+                      {isAddingEmailConfig ? 'Nova Configuracao de Email' : 'Editar Configuracao'}
                     </h3>
                     <Button
                       variant="ghost"
@@ -689,18 +763,18 @@ export function IntegrationsTab() {
                     </Button>
                   </div>
                   <EmailConfigForm
-                    config={editingEmailConfigId ? emailConfigs.find(c => c.id === editingEmailConfigId) : undefined}
+                    config={
+                      editingEmailConfigId
+                        ? emailConfigs.find((c) => c.id === editingEmailConfigId)
+                        : undefined
+                    }
                     onSubmit={async (data) => {
-                      try {
-                        if (editingEmailConfigId) {
-                          await updateEmailConfig(editingEmailConfigId, data);
-                          setEditingEmailConfigId(null);
-                        } else {
-                          await addEmailConfig(data);
-                          setIsAddingEmailConfig(false);
-                        }
-                      } catch (error) {
-                        throw error;
+                      if (editingEmailConfigId) {
+                        await updateEmailConfig(editingEmailConfigId, data);
+                        setEditingEmailConfigId(null);
+                      } else {
+                        await addEmailConfig(data);
+                        setIsAddingEmailConfig(false);
                       }
                     }}
                     onCancel={() => {

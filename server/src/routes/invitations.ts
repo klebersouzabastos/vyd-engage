@@ -82,11 +82,7 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
     }
 
     const data = createInvitationSchema.parse(req.body);
-    const invitation = await invitationService.create(
-      req.user.tenantId,
-      req.user.userId,
-      data
-    );
+    const invitation = await invitationService.create(req.user.tenantId, req.user.userId, data);
     res.status(201).json(invitation);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -125,11 +121,3 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

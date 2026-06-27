@@ -71,18 +71,21 @@ export const emailTrackingService = {
 
     // Trigger lead scoring (only on first open)
     if (opens === 1 && interaction.leadId) {
-      scoringService.processEvent(
-        interaction.tenantId,
-        interaction.leadId,
-        'EMAIL_OPENED' as any
-      ).catch(err => logger.error('Failed to score EMAIL_OPENED', { err }));
+      scoringService
+        .processEvent(interaction.tenantId, interaction.leadId, 'EMAIL_OPENED' as any)
+        .catch((err) => logger.error('Failed to score EMAIL_OPENED', { err }));
     }
   },
 
   /**
    * Record a link click event and return the original URL.
    */
-  async recordClick(trackingToken: string, url: string, ipAddress?: string, userAgent?: string): Promise<string | null> {
+  async recordClick(
+    trackingToken: string,
+    url: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<string | null> {
     const interaction = await this.findByToken(trackingToken);
     if (!interaction) return null;
 
@@ -110,11 +113,9 @@ export const emailTrackingService = {
 
     // Trigger lead scoring (only on first click)
     if (clicks === 1 && interaction.leadId) {
-      scoringService.processEvent(
-        interaction.tenantId,
-        interaction.leadId,
-        'EMAIL_CLICKED' as any
-      ).catch(err => logger.error('Failed to score EMAIL_CLICKED', { err }));
+      scoringService
+        .processEvent(interaction.tenantId, interaction.leadId, 'EMAIL_CLICKED' as any)
+        .catch((err) => logger.error('Failed to score EMAIL_CLICKED', { err }));
     }
 
     return url;

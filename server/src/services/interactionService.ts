@@ -44,7 +44,9 @@ export const interactionService = {
 
     // Score interaction event
     if (interaction.leadId) {
-      scoringService.processEvent(tenantId, interaction.leadId, ScoreEvent.INTERACTION_CREATED).catch(() => {});
+      scoringService
+        .processEvent(tenantId, interaction.leadId, ScoreEvent.INTERACTION_CREATED)
+        .catch(() => {});
       // Recalculate the lead's next-action suggestion after a new interaction
       // (spec req 14). Fire-and-forget — must not block interaction creation.
       getLeadNextActionWithReasoning(tenantId, interaction.leadId).catch(() => {});
@@ -53,13 +55,16 @@ export const interactionService = {
     return interaction;
   },
 
-  async findAll(tenantId: string, filters?: {
-    leadId?: string;
-    dealId?: string;
-    type?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async findAll(
+    tenantId: string,
+    filters?: {
+      leadId?: string;
+      dealId?: string;
+      type?: string;
+      page?: number;
+      limit?: number;
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
     const skip = (page - 1) * limit;
@@ -134,12 +139,15 @@ export const interactionService = {
    * Get unified inbox conversations grouped by lead,
    * showing latest message and unread count per conversation.
    */
-  async getInboxConversations(tenantId: string, filters: {
-    channel?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async getInboxConversations(
+    tenantId: string,
+    filters: {
+      channel?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    }
+  ) {
     const page = filters.page || 1;
     const limit = filters.limit || 30;
 
@@ -241,11 +249,3 @@ export const interactionService = {
     };
   },
 };
-
-
-
-
-
-
-
-

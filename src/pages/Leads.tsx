@@ -1,29 +1,33 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { LeadModal } from "../components/LeadModal";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { Users, UserCheck, ArrowLeftRight } from "lucide-react";
-import { LeadImportModal } from "../components/leads/LeadImportModal";
-import { LeadBulkActions } from "../components/leads/LeadBulkActions";
-import { LeadFilters } from "../components/leads/LeadFilters";
-import { LeadTable } from "../components/leads/LeadTable";
-import { LeadMobileCards } from "../components/leads/LeadMobileCards";
-import { Pagination } from "../components/Pagination";
-import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
-import { useTags } from "../contexts/TagsContext";
-import { useCustomFields } from "../contexts/CustomFieldsContext";
-import { useSidePanel } from "../contexts/SidePanelContext";
-import { Lead } from "../types";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { LeadModal } from '../components/LeadModal';
+import { EmptyState } from '../components/EmptyState';
+import { PageSkeleton } from '../components/PageSkeleton';
+import { Users, UserCheck, ArrowLeftRight } from 'lucide-react';
+import { LeadImportModal } from '../components/leads/LeadImportModal';
+import { LeadBulkActions } from '../components/leads/LeadBulkActions';
+import { LeadFilters } from '../components/leads/LeadFilters';
+import { LeadTable } from '../components/leads/LeadTable';
+import { LeadMobileCards } from '../components/leads/LeadMobileCards';
+import { Pagination } from '../components/Pagination';
+import { ScoreBreakdownModal } from '../components/ScoreBreakdownModal';
+import { useTags } from '../contexts/TagsContext';
+import { useCustomFields } from '../contexts/CustomFieldsContext';
+import { useSidePanel } from '../contexts/SidePanelContext';
+import { Lead } from '../types';
 // excelExport is dynamically imported to avoid bundling ExcelJS eagerly
-import { apiClient } from "../services/api/client";
-import { useLeads } from "../hooks/useLeads";
-import { mapStatusToBackend, mapSourceToBackend } from "../utils/leadEnums";
-import { useSavedViews } from "../hooks/useSavedViews";
-import { SavedViewsBar } from "../components/filters/SavedViewsBar";
-import { AdvancedFilterPanel, type FilterCondition, type FieldDefinition } from "../components/filters/AdvancedFilterPanel";
+import { apiClient } from '../services/api/client';
+import { useLeads } from '../hooks/useLeads';
+import { mapStatusToBackend, mapSourceToBackend } from '../utils/leadEnums';
+import { useSavedViews } from '../hooks/useSavedViews';
+import { SavedViewsBar } from '../components/filters/SavedViewsBar';
+import {
+  AdvancedFilterPanel,
+  type FilterCondition,
+  type FieldDefinition,
+} from '../components/filters/AdvancedFilterPanel';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,50 +37,50 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 
 // --- Constants ---
 
 interface Automation {
   id: number;
   name: string;
-  type: "whatsapp" | "email";
-  status: "active" | "paused";
+  type: 'whatsapp' | 'email';
+  status: 'active' | 'paused';
 }
 
 const availableAutomations: Automation[] = [
-  { id: 1, name: "Boas-vindas WhatsApp", type: "whatsapp", status: "active" },
-  { id: 2, name: "Follow-up E-mail", type: "email", status: "active" },
-  { id: 3, name: "Recuperação de Leads Perdidos", type: "whatsapp", status: "paused" },
+  { id: 1, name: 'Boas-vindas WhatsApp', type: 'whatsapp', status: 'active' },
+  { id: 2, name: 'Follow-up E-mail', type: 'email', status: 'active' },
+  { id: 3, name: 'Recuperação de Leads Perdidos', type: 'whatsapp', status: 'paused' },
 ];
 
 const getAutomationById = (id: number): Automation | undefined => {
-  return availableAutomations.find(automation => automation.id === id);
+  return availableAutomations.find((automation) => automation.id === id);
 };
 
 const getStatusLabel = (status: string) => {
   const statusMap: Record<string, string> = {
-    novo: "Novo",
-    contato: "Em Contato",
-    fechado: "Fechado",
-    perdido: "Perdido",
+    novo: 'Novo',
+    contato: 'Em Contato',
+    fechado: 'Fechado',
+    perdido: 'Perdido',
   };
   return statusMap[status] || status;
 };
 
 const getSourceLabel = (source: string) => {
   const sourceMap: Record<string, string> = {
-    meta: "Meta Ads",
-    google: "Google Ads",
-    organico: "Orgânico",
-    manual: "Manual",
+    meta: 'Meta Ads',
+    google: 'Google Ads',
+    organico: 'Orgânico',
+    manual: 'Manual',
   };
   return sourceMap[source] || source;
 };
 
 // --- Component ---
 
-type ViewTab = "leads" | "contacts" | "all";
+type ViewTab = 'leads' | 'contacts' | 'all';
 
 export function Leads() {
   const navigate = useNavigate();
@@ -84,7 +88,14 @@ export function Leads() {
   const { getTagById, tags } = useTags();
   const { fields: customFields } = useCustomFields();
   const { openPanel } = useSidePanel();
-  const { leads: leadsData, loading, pagination, deleteLead: deleteLeadAPI, fetchLeads, refetch } = useLeads();
+  const {
+    leads: leadsData,
+    loading,
+    pagination,
+    deleteLead: deleteLeadAPI,
+    fetchLeads,
+    refetch,
+  } = useLeads();
   const {
     views: savedViews,
     activeView,
@@ -93,11 +104,12 @@ export function Leads() {
     saveView,
     updateView: updateSavedView,
     deleteView: deleteSavedView,
-  } = useSavedViews("leads");
+  } = useSavedViews('leads');
 
   // View tab state from URL
-  const viewParam = searchParams.get("view");
-  const activeTab: ViewTab = viewParam === "contacts" ? "contacts" : viewParam === "all" ? "all" : "leads";
+  const viewParam = searchParams.get('view');
+  const activeTab: ViewTab =
+    viewParam === 'contacts' ? 'contacts' : viewParam === 'all' ? 'all' : 'leads';
 
   // Convert/revert dialog state
   const [convertLeadId, setConvertLeadId] = useState<string | null>(null);
@@ -112,11 +124,11 @@ export function Leads() {
   const [filterAutomation, setFilterAutomation] = useState<string[]>([]);
   const [filterTag, setFilterTag] = useState<string[]>([]);
   const [filterCustomFields, setFilterCustomFields] = useState<Record<string, any>>({});
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Advanced filter state
   const [advancedConditions, setAdvancedConditions] = useState<FilterCondition[]>([]);
-  const [advancedLogic, setAdvancedLogic] = useState<"AND" | "OR">("AND");
+  const [advancedLogic, setAdvancedLogic] = useState<'AND' | 'OR'>('AND');
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -130,36 +142,39 @@ export function Leads() {
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
 
   // Debounced search
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Server filter params ---
 
-  const buildServerFilters = useCallback((page: number = 1) => {
-    const serverFilters: Record<string, string | number | undefined> = {
-      page,
-      limit: pagination.limit,
-    };
-    if (filterStatus.length === 1) {
-      serverFilters.status = mapStatusToBackend(filterStatus[0]);
-    }
-    if (filterSource.length === 1) {
-      serverFilters.source = mapSourceToBackend(filterSource[0]);
-    }
-    if (debouncedSearch) {
-      serverFilters.search = debouncedSearch;
-    }
-    if (filterTag.length === 1) {
-      serverFilters.tagId = filterTag[0];
-    }
-    // Apply isContact filter based on active tab
-    if (activeTab === "leads") {
-      serverFilters.isContact = "false";
-    } else if (activeTab === "contacts") {
-      serverFilters.isContact = "true";
-    }
-    return serverFilters;
-  }, [filterStatus, filterSource, debouncedSearch, filterTag, pagination.limit, activeTab]);
+  const buildServerFilters = useCallback(
+    (page: number = 1) => {
+      const serverFilters: Record<string, string | number | undefined> = {
+        page,
+        limit: pagination.limit,
+      };
+      if (filterStatus.length === 1) {
+        serverFilters.status = mapStatusToBackend(filterStatus[0]);
+      }
+      if (filterSource.length === 1) {
+        serverFilters.source = mapSourceToBackend(filterSource[0]);
+      }
+      if (debouncedSearch) {
+        serverFilters.search = debouncedSearch;
+      }
+      if (filterTag.length === 1) {
+        serverFilters.tagId = filterTag[0];
+      }
+      // Apply isContact filter based on active tab
+      if (activeTab === 'leads') {
+        serverFilters.isContact = 'false';
+      } else if (activeTab === 'contacts') {
+        serverFilters.isContact = 'true';
+      }
+      return serverFilters;
+    },
+    [filterStatus, filterSource, debouncedSearch, filterTag, pagination.limit, activeTab]
+  );
 
   // Debounce search input
   useEffect(() => {
@@ -183,32 +198,35 @@ export function Leads() {
   const filteredLeads = leadsData.filter((lead: any) => {
     const matchesStatus = filterStatus.length <= 1 || filterStatus.includes(lead.status);
     const matchesSource = filterSource.length <= 1 || filterSource.includes(lead.source);
-    const matchesTag = filterTag.length <= 1 ||
+    const matchesTag =
+      filterTag.length <= 1 ||
       (lead.tags && lead.tags.some((tagId: string) => filterTag.includes(tagId)));
-    const matchesAutomation = filterAutomation.length === 0 ||
+    const matchesAutomation =
+      filterAutomation.length === 0 ||
       filterAutomation.some((filter: string) => {
-        if (filter === "with") return lead.automations && lead.automations.length > 0;
-        if (filter === "without") return !lead.automations || lead.automations.length === 0;
+        if (filter === 'with') return lead.automations && lead.automations.length > 0;
+        if (filter === 'without') return !lead.automations || lead.automations.length === 0;
         return lead.automations && lead.automations.includes(Number(filter));
       });
-    const matchesCustomFields = Object.keys(filterCustomFields).length === 0 ||
+    const matchesCustomFields =
+      Object.keys(filterCustomFields).length === 0 ||
       Object.entries(filterCustomFields).every(([fieldId, filterValue]) => {
-        if (filterValue === null || filterValue === undefined || filterValue === "") return true;
+        if (filterValue === null || filterValue === undefined || filterValue === '') return true;
         const leadValue = lead.customFields?.[fieldId];
-        if (leadValue === null || leadValue === undefined || leadValue === "") return false;
-        const field = customFields.find(f => f.id === fieldId);
+        if (leadValue === null || leadValue === undefined || leadValue === '') return false;
+        const field = customFields.find((f) => f.id === fieldId);
         if (!field) return true;
         switch (field.type) {
-          case "text":
-          case "textarea":
+          case 'text':
+          case 'textarea':
             return String(leadValue).toLowerCase().includes(String(filterValue).toLowerCase());
-          case "number":
+          case 'number':
             return Number(leadValue) === Number(filterValue);
-          case "date":
+          case 'date':
             return String(leadValue) === String(filterValue);
-          case "checkbox":
+          case 'checkbox':
             return Boolean(leadValue) === Boolean(filterValue);
-          case "select":
+          case 'select':
             return String(leadValue) === String(filterValue);
           default:
             return String(leadValue) === String(filterValue);
@@ -220,7 +238,7 @@ export function Leads() {
   // --- Handlers ---
 
   const toggleLeadExpansion = (leadId: string) => {
-    setExpandedLeads(prev => {
+    setExpandedLeads((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(leadId)) {
         newSet.delete(leadId);
@@ -232,10 +250,10 @@ export function Leads() {
   };
 
   const handleSelectAll = () => {
-    const filteredLeadIds = filteredLeads.map(l => l.id);
-    const allFilteredSelected = filteredLeadIds.every(id => selectedLeads.includes(id));
+    const filteredLeadIds = filteredLeads.map((l) => l.id);
+    const allFilteredSelected = filteredLeadIds.every((id) => selectedLeads.includes(id));
     if (allFilteredSelected && filteredLeadIds.length > 0) {
-      setSelectedLeads(selectedLeads.filter(id => !filteredLeadIds.includes(id)));
+      setSelectedLeads(selectedLeads.filter((id) => !filteredLeadIds.includes(id)));
     } else {
       setSelectedLeads([...new Set([...selectedLeads, ...filteredLeadIds])]);
     }
@@ -243,7 +261,7 @@ export function Leads() {
 
   const handleSelectLead = (id: string) => {
     if (selectedLeads.includes(id)) {
-      setSelectedLeads(selectedLeads.filter(l => l !== id));
+      setSelectedLeads(selectedLeads.filter((l) => l !== id));
     } else {
       setSelectedLeads([...selectedLeads, id]);
     }
@@ -251,14 +269,20 @@ export function Leads() {
 
   const handleExportLeads = async () => {
     try {
-      const { exportLeadsToExcel } = await import("../utils/excelExport");
+      const { exportLeadsToExcel } = await import('../utils/excelExport');
       await exportLeadsToExcel(
         filteredLeads,
-        { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
+        {
+          status: filterStatus,
+          source: filterSource,
+          automation: filterAutomation,
+          tag: filterTag,
+          searchQuery,
+        },
         getStatusLabel,
         getSourceLabel,
         getAutomationById,
-        getTagById,
+        getTagById
       );
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
@@ -274,55 +298,61 @@ export function Leads() {
       if (searchQuery) filters.search = searchQuery;
       if (filterTag.length === 1) filters.tagId = filterTag[0];
 
-      toast.info("Exportando todos os leads filtrados...");
+      toast.info('Exportando todos os leads filtrados...');
       const response = await apiClient.exportLeads(filters);
       const leads = response?.data || response || [];
 
       if (!Array.isArray(leads) || leads.length === 0) {
-        toast.warning("Nenhum lead encontrado para exportar.");
+        toast.warning('Nenhum lead encontrado para exportar.');
         return;
       }
 
       const mapped = leads.map((lead: any) => ({
         id: lead.id,
-        name: lead.name || "",
-        phone: lead.phone || "",
-        email: lead.email || "",
-        status: lead.status || "",
-        source: lead.source || "",
-        date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("pt-BR") : "",
+        name: lead.name || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        status: lead.status || '',
+        source: lead.source || '',
+        date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '',
         tags: lead.tags?.map((t: any) => t.tagId || t.tag?.id) || [],
         customFields: lead.customFields || {},
       }));
 
       toast.info(`Exportando ${mapped.length} leads...`);
-      const { exportLeadsToExcel } = await import("../utils/excelExport");
+      const { exportLeadsToExcel } = await import('../utils/excelExport');
       await exportLeadsToExcel(
         mapped,
-        { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
+        {
+          status: filterStatus,
+          source: filterSource,
+          automation: filterAutomation,
+          tag: filterTag,
+          searchQuery,
+        },
         getStatusLabel,
         getSourceLabel,
         getAutomationById,
-        getTagById,
+        getTagById
       );
       toast.success(`${mapped.length} leads exportados com sucesso!`);
     } catch (error) {
-      console.error("Erro ao exportar leads filtrados:", error);
-      toast.error("Erro ao exportar leads. Tente novamente.");
+      console.error('Erro ao exportar leads filtrados:', error);
+      toast.error('Erro ao exportar leads. Tente novamente.');
     }
   };
 
   const handleDeleteLead = async (leadId: string) => {
     try {
       await deleteLeadAPI(leadId);
-      setSelectedLeads(prev => prev.filter(id => id !== leadId));
+      setSelectedLeads((prev) => prev.filter((id) => id !== leadId));
       if (selectedLead?.id === leadId) {
         setModalOpen(false);
         setSelectedLead(null);
       }
       setDeleteSingleLeadId(null);
     } catch (error) {
-      console.error("Erro ao deletar lead:", error);
+      console.error('Erro ao deletar lead:', error);
     }
   };
 
@@ -340,8 +370,8 @@ export function Leads() {
       refetch();
       toast.success(`${leadToDeleteCount} lead(s) deletado(s) com sucesso!`);
     } catch (error) {
-      console.error("Erro ao deletar leads:", error);
-      toast.error("Erro ao deletar leads. Tente novamente.");
+      console.error('Erro ao deletar leads:', error);
+      toast.error('Erro ao deletar leads. Tente novamente.');
     }
   };
 
@@ -353,8 +383,8 @@ export function Leads() {
       refetch();
       toast.success(`Status atualizado para ${selectedLeads.length} lead(s)!`);
     } catch (error) {
-      console.error("Erro ao alterar status:", error);
-      toast.error("Erro ao alterar status. Tente novamente.");
+      console.error('Erro ao alterar status:', error);
+      toast.error('Erro ao alterar status. Tente novamente.');
     }
   };
 
@@ -366,34 +396,40 @@ export function Leads() {
       refetch();
       toast.success(`Tag adicionada a ${selectedLeads.length} lead(s)!`);
     } catch (error) {
-      console.error("Erro ao adicionar tag:", error);
-      toast.error("Erro ao adicionar tag. Tente novamente.");
+      console.error('Erro ao adicionar tag:', error);
+      toast.error('Erro ao adicionar tag. Tente novamente.');
     }
   };
 
   const handleBulkExportCSV = async () => {
-    const selectedLeadData = filteredLeads.filter(l => selectedLeads.includes(l.id));
+    const selectedLeadData = filteredLeads.filter((l) => selectedLeads.includes(l.id));
     if (selectedLeadData.length === 0) return;
     try {
-      const { exportLeadsToExcel } = await import("../utils/excelExport");
+      const { exportLeadsToExcel } = await import('../utils/excelExport');
       await exportLeadsToExcel(
         selectedLeadData,
-        { status: filterStatus, source: filterSource, automation: filterAutomation, tag: filterTag, searchQuery },
+        {
+          status: filterStatus,
+          source: filterSource,
+          automation: filterAutomation,
+          tag: filterTag,
+          searchQuery,
+        },
         getStatusLabel,
         getSourceLabel,
         getAutomationById,
-        getTagById,
+        getTagById
       );
       toast.success(`${selectedLeadData.length} lead(s) exportado(s)!`);
     } catch (error) {
-      console.error("Erro ao exportar leads:", error);
-      toast.error("Erro ao exportar leads. Tente novamente.");
+      console.error('Erro ao exportar leads:', error);
+      toast.error('Erro ao exportar leads. Tente novamente.');
     }
   };
 
   // --- Tab switching ---
   const handleTabChange = (tab: ViewTab) => {
-    if (tab === "leads") {
+    if (tab === 'leads') {
       setSearchParams({});
     } else {
       setSearchParams({ view: tab });
@@ -403,37 +439,78 @@ export function Leads() {
 
   // --- Advanced Filter Fields ---
   const advancedFilterFields: FieldDefinition[] = [
-    { key: "name", label: "Nome", type: "text" },
-    { key: "email", label: "E-mail", type: "text" },
-    { key: "phone", label: "Telefone", type: "text" },
-    { key: "company", label: "Empresa", type: "text" },
-    { key: "status", label: "Status", type: "select", options: [
-      { value: "NEW", label: "Novo" }, { value: "CONTACTED", label: "Em Contato" },
-      { value: "QUALIFIED", label: "Qualificado" }, { value: "PROPOSAL", label: "Proposta" },
-      { value: "NEGOTIATION", label: "Negociacao" }, { value: "WON", label: "Ganho" },
-      { value: "LOST", label: "Perdido" },
-    ]},
-    { key: "source", label: "Origem", type: "select", options: [
-      { value: "WEBSITE", label: "Website" }, { value: "SOCIAL_MEDIA", label: "Redes Sociais" },
-      { value: "REFERRAL", label: "Indicacao" }, { value: "EMAIL", label: "E-mail" },
-      { value: "PHONE", label: "Telefone" }, { value: "OTHER", label: "Outro" },
-    ]},
-    { key: "score", label: "Score", type: "number" },
-    { key: "createdAt", label: "Data de criacao", type: "date" },
-    { key: "isContact", label: "Contato", type: "boolean" },
-    ...customFields.map(cf => ({
+    { key: 'name', label: 'Nome', type: 'text' },
+    { key: 'email', label: 'E-mail', type: 'text' },
+    { key: 'phone', label: 'Telefone', type: 'text' },
+    { key: 'company', label: 'Empresa', type: 'text' },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { value: 'NEW', label: 'Novo' },
+        { value: 'CONTACTED', label: 'Em Contato' },
+        { value: 'QUALIFIED', label: 'Qualificado' },
+        { value: 'PROPOSAL', label: 'Proposta' },
+        { value: 'NEGOTIATION', label: 'Negociacao' },
+        { value: 'WON', label: 'Ganho' },
+        { value: 'LOST', label: 'Perdido' },
+      ],
+    },
+    {
+      key: 'source',
+      label: 'Origem',
+      type: 'select',
+      options: [
+        { value: 'WEBSITE', label: 'Website' },
+        { value: 'SOCIAL_MEDIA', label: 'Redes Sociais' },
+        { value: 'REFERRAL', label: 'Indicacao' },
+        { value: 'EMAIL', label: 'E-mail' },
+        { value: 'PHONE', label: 'Telefone' },
+        { value: 'OTHER', label: 'Outro' },
+      ],
+    },
+    { key: 'score', label: 'Score', type: 'number' },
+    { key: 'createdAt', label: 'Data de criacao', type: 'date' },
+    { key: 'isContact', label: 'Contato', type: 'boolean' },
+    ...customFields.map((cf) => ({
       key: `cf_${cf.id}`,
       label: cf.name,
-      type: (cf.type === "textarea" ? "text" : cf.type === "checkbox" ? "boolean" : cf.type) as FieldDefinition["type"],
-      options: cf.type === "select" && cf.options ? (cf.options as { value: string; label: string }[]) : undefined,
+      type: (cf.type === 'textarea'
+        ? 'text'
+        : cf.type === 'checkbox'
+          ? 'boolean'
+          : cf.type) as FieldDefinition['type'],
+      options:
+        cf.type === 'select' && cf.options
+          ? (cf.options as { value: string; label: string }[])
+          : undefined,
     })),
   ];
 
   // --- Saved Views ---
-  const getCurrentFilters = useCallback(() => ({
-    filterStatus, filterSource, filterAutomation, filterTag,
-    filterCustomFields, searchQuery, advancedConditions, advancedLogic,
-  }), [filterStatus, filterSource, filterAutomation, filterTag, filterCustomFields, searchQuery, advancedConditions, advancedLogic]);
+  const getCurrentFilters = useCallback(
+    () => ({
+      filterStatus,
+      filterSource,
+      filterAutomation,
+      filterTag,
+      filterCustomFields,
+      searchQuery,
+      advancedConditions,
+      advancedLogic,
+    }),
+    [
+      filterStatus,
+      filterSource,
+      filterAutomation,
+      filterTag,
+      filterCustomFields,
+      searchQuery,
+      advancedConditions,
+      advancedLogic,
+    ]
+  );
 
   const applySavedViewFilters = useCallback((filters: Record<string, any>) => {
     setFilterStatus(filters.filterStatus || []);
@@ -441,68 +518,87 @@ export function Leads() {
     setFilterAutomation(filters.filterAutomation || []);
     setFilterTag(filters.filterTag || []);
     setFilterCustomFields(filters.filterCustomFields || {});
-    setSearchQuery(filters.searchQuery || "");
+    setSearchQuery(filters.searchQuery || '');
     setAdvancedConditions(filters.advancedConditions || []);
-    setAdvancedLogic(filters.advancedLogic || "AND");
+    setAdvancedLogic(filters.advancedLogic || 'AND');
   }, []);
 
-  const handleSavedViewSelect = useCallback((viewId: string | null) => {
-    selectSavedView(viewId);
-    if (viewId === null) {
-      setFilterStatus([]); setFilterSource([]); setFilterAutomation([]);
-      setFilterTag([]); setFilterCustomFields({}); setSearchQuery("");
-      setAdvancedConditions([]); setAdvancedLogic("AND");
-    } else {
-      const view = savedViews.find((v) => v.id === viewId);
-      if (view) applySavedViewFilters(view.filters);
-    }
-  }, [selectSavedView, savedViews, applySavedViewFilters]);
+  const handleSavedViewSelect = useCallback(
+    (viewId: string | null) => {
+      selectSavedView(viewId);
+      if (viewId === null) {
+        setFilterStatus([]);
+        setFilterSource([]);
+        setFilterAutomation([]);
+        setFilterTag([]);
+        setFilterCustomFields({});
+        setSearchQuery('');
+        setAdvancedConditions([]);
+        setAdvancedLogic('AND');
+      } else {
+        const view = savedViews.find((v) => v.id === viewId);
+        if (view) applySavedViewFilters(view.filters);
+      }
+    },
+    [selectSavedView, savedViews, applySavedViewFilters]
+  );
 
-  const handleSaveCurrentView = useCallback(async (name: string, options?: { isDefault?: boolean; isShared?: boolean }) => {
-    await saveView(name, getCurrentFilters(), options);
-  }, [saveView, getCurrentFilters]);
+  const handleSaveCurrentView = useCallback(
+    async (name: string, options?: { isDefault?: boolean; isShared?: boolean }) => {
+      await saveView(name, getCurrentFilters(), options);
+    },
+    [saveView, getCurrentFilters]
+  );
 
-  const handleUpdateSavedView = useCallback(async (id: string, data: { name?: string; isDefault?: boolean; isShared?: boolean }) => {
-    await updateSavedView(id, data);
-  }, [updateSavedView]);
+  const handleUpdateSavedView = useCallback(
+    async (id: string, data: { name?: string; isDefault?: boolean; isShared?: boolean }) => {
+      await updateSavedView(id, data);
+    },
+    [updateSavedView]
+  );
 
-  const handleDeleteSavedView = useCallback(async (id: string) => {
-    await deleteSavedView(id);
-  }, [deleteSavedView]);
+  const handleDeleteSavedView = useCallback(
+    async (id: string) => {
+      await deleteSavedView(id);
+    },
+    [deleteSavedView]
+  );
 
   // --- Convert / Revert ---
   const handleConvertToContact = async (leadId: string) => {
     try {
       await apiClient.convertToContact(leadId);
-      toast.success("Lead convertido para Contato com sucesso!");
+      toast.success('Lead convertido para Contato com sucesso!');
       setConvertLeadId(null);
       refetch();
     } catch (error) {
-      console.error("Erro ao converter lead:", error);
-      toast.error("Erro ao converter lead para contato.");
+      console.error('Erro ao converter lead:', error);
+      toast.error('Erro ao converter lead para contato.');
     }
   };
 
   const handleRevertToLead = async (leadId: string) => {
     try {
       await apiClient.revertToLead(leadId);
-      toast.success("Contato revertido para Lead com sucesso!");
+      toast.success('Contato revertido para Lead com sucesso!');
       setRevertLeadId(null);
       refetch();
     } catch (error) {
-      console.error("Erro ao reverter contato:", error);
-      toast.error("Erro ao reverter contato para lead.");
+      console.error('Erro ao reverter contato:', error);
+      toast.error('Erro ao reverter contato para lead.');
     }
   };
 
   // --- Render ---
 
-  const headerTitle = activeTab === "contacts" ? "Contatos" : activeTab === "all" ? "Leads & Contatos" : "Leads";
-  const headerSubtitle = activeTab === "contacts"
-    ? "Contatos qualificados convertidos de leads"
-    : activeTab === "all"
-    ? "Todos os leads e contatos em um só lugar"
-    : "Gerencie todos os seus leads em um só lugar";
+  const headerTitle =
+    activeTab === 'contacts' ? 'Contatos' : activeTab === 'all' ? 'Leads & Contatos' : 'Leads';
+  const headerSubtitle =
+    activeTab === 'contacts'
+      ? 'Contatos qualificados convertidos de leads'
+      : activeTab === 'all'
+        ? 'Todos os leads e contatos em um só lugar'
+        : 'Gerencie todos os seus leads em um só lugar';
 
   if (loading) {
     return (
@@ -521,33 +617,33 @@ export function Leads() {
         {/* View Tabs: Leads | Contatos | Todos */}
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mb-4 w-fit">
           <button
-            onClick={() => handleTabChange("leads")}
+            onClick={() => handleTabChange('leads')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "leads"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+              activeTab === 'leads'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <Users size={16} />
             Leads
           </button>
           <button
-            onClick={() => handleTabChange("contacts")}
+            onClick={() => handleTabChange('contacts')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "contacts"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+              activeTab === 'contacts'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <UserCheck size={16} />
             Contatos
           </button>
           <button
-            onClick={() => handleTabChange("all")}
+            onClick={() => handleTabChange('all')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "all"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+              activeTab === 'all'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             Todos
@@ -584,7 +680,10 @@ export function Leads() {
           onLogicChange={setAdvancedLogic}
           fields={advancedFilterFields}
           onApply={() => fetchLeads(buildServerFilters(1))}
-          onClear={() => { setAdvancedConditions([]); fetchLeads(buildServerFilters(1)); }}
+          onClear={() => {
+            setAdvancedConditions([]);
+            fetchLeads(buildServerFilters(1));
+          }}
         />
 
         {/* Filters Bar */}
@@ -673,7 +772,7 @@ export function Leads() {
               title="Nenhum lead encontrado"
               description="Comece adicionando seu primeiro lead ou ajuste os filtros de busca"
               actionLabel="Adicionar Lead"
-              onAction={() => navigate("/app/leads/new")}
+              onAction={() => navigate('/app/leads/new')}
             />
           </div>
         )}
@@ -681,7 +780,11 @@ export function Leads() {
 
       <LeadModal
         open={modalOpen}
-        onClose={() => { setModalOpen(false); setSelectedLead(null); refetch(); }}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedLead(null);
+          refetch();
+        }}
         lead={selectedLead || undefined}
       />
 
@@ -691,31 +794,46 @@ export function Leads() {
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Leads Selecionados</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja deletar {selectedLeads.length} lead{selectedLeads.length > 1 ? "s" : ""}?
-              Esta ação não pode ser desfeita e os leads serão removidos permanentemente do sistema.
+              Tem certeza que deseja deletar {selectedLeads.length} lead
+              {selectedLeads.length > 1 ? 's' : ''}? Esta ação não pode ser desfeita e os leads
+              serão removidos permanentemente do sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteSelectedLeads} className="bg-red-600 hover:bg-red-700">Deletar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSelectedLeads}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Deletar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Delete Single Lead Dialog */}
-      <AlertDialog open={deleteSingleLeadId !== null} onOpenChange={(open) => !open && setDeleteSingleLeadId(null)}>
+      <AlertDialog
+        open={deleteSingleLeadId !== null}
+        onOpenChange={(open) => !open && setDeleteSingleLeadId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Lead</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja deletar este lead?
-              Esta ação não pode ser desfeita e o lead será removido permanentemente do sistema.
+              Tem certeza que deseja deletar este lead? Esta ação não pode ser desfeita e o lead
+              será removido permanentemente do sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteSingleLeadId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteSingleLeadId(null)}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { if (deleteSingleLeadId !== null) handleDeleteLead(deleteSingleLeadId); }}
+              onClick={() => {
+                if (deleteSingleLeadId !== null) handleDeleteLead(deleteSingleLeadId);
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               Deletar
@@ -733,25 +851,30 @@ export function Leads() {
 
       {/* Score Breakdown Modal */}
       <ScoreBreakdownModal
-        leadId={scoreLeadId ?? ""}
+        leadId={scoreLeadId ?? ''}
         open={!!scoreLeadId}
         onClose={() => setScoreLeadId(null)}
       />
 
       {/* Convert to Contact Dialog */}
-      <AlertDialog open={convertLeadId !== null} onOpenChange={(open) => !open && setConvertLeadId(null)}>
+      <AlertDialog
+        open={convertLeadId !== null}
+        onOpenChange={(open) => !open && setConvertLeadId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Converter para Contato</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja converter este lead para contato?
-              O status sera alterado para WON e ele aparecera na aba "Contatos".
+              Tem certeza que deseja converter este lead para contato? O status sera alterado para
+              WON e ele aparecera na aba "Contatos".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setConvertLeadId(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { if (convertLeadId) handleConvertToContact(convertLeadId); }}
+              onClick={() => {
+                if (convertLeadId) handleConvertToContact(convertLeadId);
+              }}
               className="bg-green-600 hover:bg-green-700"
             >
               Converter
@@ -761,19 +884,24 @@ export function Leads() {
       </AlertDialog>
 
       {/* Revert to Lead Dialog */}
-      <AlertDialog open={revertLeadId !== null} onOpenChange={(open) => !open && setRevertLeadId(null)}>
+      <AlertDialog
+        open={revertLeadId !== null}
+        onOpenChange={(open) => !open && setRevertLeadId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reverter para Lead</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja reverter este contato para lead?
-              Ele deixara de aparecer na aba "Contatos".
+              Tem certeza que deseja reverter este contato para lead? Ele deixara de aparecer na aba
+              "Contatos".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setRevertLeadId(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { if (revertLeadId) handleRevertToLead(revertLeadId); }}
+              onClick={() => {
+                if (revertLeadId) handleRevertToLead(revertLeadId);
+              }}
             >
               Reverter
             </AlertDialogAction>

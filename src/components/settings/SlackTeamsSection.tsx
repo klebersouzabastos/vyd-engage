@@ -1,22 +1,26 @@
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Loader2, Save } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Loader2, Save } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { toast } from 'sonner';
 
 export function SlackTeamsSection() {
-  const [slackUrl, setSlackUrl] = useState("");
-  const [teamsUrl, setTeamsUrl] = useState("");
+  const [slackUrl, setSlackUrl] = useState('');
+  const [teamsUrl, setTeamsUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    apiClient.getTenant().then(({ tenant }) => {
-      const s = tenant.settings as { slackWebhookUrl?: string; teamsWebhookUrl?: string };
-      setSlackUrl(s?.slackWebhookUrl ?? "");
-      setTeamsUrl(s?.teamsWebhookUrl ?? "");
-    }).catch(() => {}).finally(() => setLoading(false));
+    apiClient
+      .getTenant()
+      .then(({ tenant }) => {
+        const s = tenant.settings as { slackWebhookUrl?: string; teamsWebhookUrl?: string };
+        setSlackUrl(s?.slackWebhookUrl ?? '');
+        setTeamsUrl(s?.teamsWebhookUrl ?? '');
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
@@ -28,9 +32,9 @@ export function SlackTeamsSection() {
           teamsWebhookUrl: teamsUrl.trim() || null,
         },
       });
-      toast.success("Configurações de notificação salvas");
+      toast.success('Configurações de notificação salvas');
     } catch {
-      toast.error("Erro ao salvar configurações");
+      toast.error('Erro ao salvar configurações');
     } finally {
       setSaving(false);
     }
@@ -47,18 +51,23 @@ export function SlackTeamsSection() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Loader2 size={14} className="animate-spin" />Carregando…
+          <Loader2 size={14} className="animate-spin" />
+          Carregando…
         </div>
       ) : (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="slack-webhook-url"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Slack Incoming Webhook URL
             </label>
             <Input
+              id="slack-webhook-url"
               placeholder="https://hooks.slack.com/services/..."
               value={slackUrl}
-              onChange={e => setSlackUrl(e.target.value)}
+              onChange={(e) => setSlackUrl(e.target.value)}
             />
             <p className="text-xs text-gray-400 mt-1">
               Crie em: <span className="font-mono">api.slack.com/apps → Incoming Webhooks</span>
@@ -66,13 +75,17 @@ export function SlackTeamsSection() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="teams-webhook-url"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               MS Teams Webhook URL
             </label>
             <Input
+              id="teams-webhook-url"
               placeholder="https://outlook.office.com/webhook/..."
               value={teamsUrl}
-              onChange={e => setTeamsUrl(e.target.value)}
+              onChange={(e) => setTeamsUrl(e.target.value)}
             />
             <p className="text-xs text-gray-400 mt-1">
               Crie via conector "Incoming Webhook" em um canal do Teams.

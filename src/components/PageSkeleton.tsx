@@ -1,7 +1,7 @@
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from './ui/skeleton';
 
 interface PageSkeletonProps {
-  type?: "table" | "cards" | "dashboard" | "pipeline";
+  type?: 'table' | 'cards' | 'dashboard' | 'pipeline';
 }
 
 function FilterBarSkeleton() {
@@ -23,13 +23,27 @@ function FilterBarSkeleton() {
 function TableRowSkeleton() {
   return (
     <tr>
-      <td className="px-6 py-4"><Skeleton className="h-4 w-4" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-4 w-32" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-4 w-40" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-8 w-16" /></td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-4 w-4" />
+      </td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-4 w-32" />
+      </td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-4 w-24" />
+      </td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-4 w-40" />
+      </td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-6 w-16 rounded-full" />
+      </td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </td>
+      <td className="px-6 py-4">
+        <Skeleton className="h-8 w-16" />
+      </td>
     </tr>
   );
 }
@@ -55,11 +69,7 @@ function ChartSkeleton() {
       <Skeleton className="h-5 w-40 mb-4" />
       <div className="flex items-end gap-2 h-48">
         {CHART_BAR_HEIGHTS.map((h, i) => (
-          <Skeleton
-            key={i}
-            className="flex-1 rounded-t"
-            style={{ height: `${h}%` }}
-          />
+          <Skeleton key={i} className="flex-1 rounded-t" style={{ height: `${h}%` }} />
         ))}
       </div>
     </div>
@@ -129,8 +139,8 @@ function BottomPanelSkeleton() {
   );
 }
 
-export function PageSkeleton({ type = "table" }: PageSkeletonProps) {
-  if (type === "dashboard") {
+export function PageSkeleton({ type = 'table' }: PageSkeletonProps) {
+  if (type === 'dashboard') {
     return (
       <div className="p-4 md:p-8 space-y-6">
         {/* Date range + actions */}
@@ -164,7 +174,7 @@ export function PageSkeleton({ type = "table" }: PageSkeletonProps) {
     );
   }
 
-  if (type === "cards") {
+  if (type === 'cards') {
     return (
       <div className="p-8">
         <FilterBarSkeleton />
@@ -177,7 +187,7 @@ export function PageSkeleton({ type = "table" }: PageSkeletonProps) {
     );
   }
 
-  if (type === "pipeline") {
+  if (type === 'pipeline') {
     return (
       <div className="p-8">
         <FilterBarSkeleton />

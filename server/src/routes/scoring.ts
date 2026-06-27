@@ -60,7 +60,10 @@ router.get('/breakdown/:leadId', async (req, res, next) => {
     const { leadId } = req.params;
 
     // Verify lead belongs to tenant
-    const lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId }, select: { id: true, score: true, name: true } });
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, tenantId },
+      select: { id: true, score: true, name: true },
+    });
     if (!lead) return next(createError('Lead not found', 404));
 
     // Get active scoring rules
@@ -72,31 +75,49 @@ router.get('/breakdown/:leadId', async (req, res, next) => {
       where: { leadId, tenantId },
       _count: { id: true },
     });
-    const interactionMap = new Map(interactions.map(i => [i.type, i._count.id]));
+    const interactionMap = new Map(interactions.map((i) => [i.type, i._count.id]));
 
     // Build breakdown
-    const breakdown = rules.map(rule => {
-      // Map score event to interaction type or other source
-      let count = 0;
-      switch (rule.eventType) {
-        case 'LEAD_CREATED': count = 1; break;
-        case 'INTERACTION_CREATED': count = Array.from(interactionMap.values()).reduce((sum, v) => sum + v, 0); break;
-        case 'EMAIL_OPENED': count = interactionMap.get('EMAIL') || 0; break;
-        case 'EMAIL_CLICKED': count = 0; break; // No tracking yet
-        case 'WHATSAPP_REPLIED': count = interactionMap.get('WHATSAPP') || 0; break;
-        case 'STATUS_CHANGED': count = interactionMap.get('STATUS_CHANGE') || 0; break;
-        case 'TAG_ADDED': count = 0; break; // Would need tag history
-        case 'FORM_SUBMITTED': count = 0; break;
-      }
-      return {
-        ruleId: rule.id,
-        ruleName: rule.name,
-        event: rule.eventType,
-        pointsPerEvent: rule.points,
-        eventCount: count,
-        totalPoints: count * rule.points,
-      };
-    }).filter(r => r.totalPoints > 0);
+    const breakdown = rules
+      .map((rule) => {
+        // Map score event to interaction type or other source
+        let count = 0;
+        switch (rule.eventType) {
+          case 'LEAD_CREATED':
+            count = 1;
+            break;
+          case 'INTERACTION_CREATED':
+            count = Array.from(interactionMap.values()).reduce((sum, v) => sum + v, 0);
+            break;
+          case 'EMAIL_OPENED':
+            count = interactionMap.get('EMAIL') || 0;
+            break;
+          case 'EMAIL_CLICKED':
+            count = 0;
+            break; // No tracking yet
+          case 'WHATSAPP_REPLIED':
+            count = interactionMap.get('WHATSAPP') || 0;
+            break;
+          case 'STATUS_CHANGED':
+            count = interactionMap.get('STATUS_CHANGE') || 0;
+            break;
+          case 'TAG_ADDED':
+            count = 0;
+            break; // Would need tag history
+          case 'FORM_SUBMITTED':
+            count = 0;
+            break;
+        }
+        return {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          event: rule.eventType,
+          pointsPerEvent: rule.points,
+          eventCount: count,
+          totalPoints: count * rule.points,
+        };
+      })
+      .filter((r) => r.totalPoints > 0);
 
     res.json({
       status: 200,

@@ -112,10 +112,7 @@ router.get('/progress', async (req, res, next) => {
     });
 
     // Aggregate actuals per user
-    const actualsByUser: Record<
-      string,
-      { revenue: number; deals: number; leads: number }
-    > = {};
+    const actualsByUser: Record<string, { revenue: number; deals: number; leads: number }> = {};
 
     for (const deal of wonDeals) {
       const uid = deal.assignedTo ?? '__unassigned__';
@@ -136,17 +133,11 @@ router.get('/progress', async (req, res, next) => {
       const actual = actualsByUser[goal.userId] ?? { revenue: 0, deals: 0, leads: 0 };
 
       const pctRevenue =
-        goal.targetRevenue > 0
-          ? Math.round((actual.revenue / goal.targetRevenue) * 100)
-          : 0;
+        goal.targetRevenue > 0 ? Math.round((actual.revenue / goal.targetRevenue) * 100) : 0;
       const pctDeals =
-        goal.targetDeals > 0
-          ? Math.round((actual.deals / goal.targetDeals) * 100)
-          : 0;
+        goal.targetDeals > 0 ? Math.round((actual.deals / goal.targetDeals) * 100) : 0;
       const pctLeads =
-        goal.targetLeads > 0
-          ? Math.round((actual.leads / goal.targetLeads) * 100)
-          : 0;
+        goal.targetLeads > 0 ? Math.round((actual.leads / goal.targetLeads) * 100) : 0;
 
       return {
         userId: goal.userId,

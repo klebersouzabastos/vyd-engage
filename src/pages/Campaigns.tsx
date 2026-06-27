@@ -1,11 +1,11 @@
-import { useNavigate } from "react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Plus, Mail, Loader2, Trash2, BarChart3 } from "lucide-react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { useNavigate } from 'react-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Plus, Mail, Loader2, Trash2, BarChart3 } from 'lucide-react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,29 +15,29 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { apiClient, type CampaignStatus } from "../services/api/client";
+} from '../components/ui/alert-dialog';
+import { apiClient, type CampaignStatus } from '../services/api/client';
 
 const STATUS_LABELS: Record<CampaignStatus, string> = {
-  DRAFT: "Rascunho",
-  SCHEDULED: "Agendada",
-  SENDING: "Enviando",
-  SENT: "Enviada",
-  PAUSED: "Pausada",
-  CANCELLED: "Cancelada",
+  DRAFT: 'Rascunho',
+  SCHEDULED: 'Agendada',
+  SENDING: 'Enviando',
+  SENT: 'Enviada',
+  PAUSED: 'Pausada',
+  CANCELLED: 'Cancelada',
 };
 
 const STATUS_CLASSES: Record<CampaignStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  SCHEDULED: "bg-blue-100 text-blue-700",
-  SENDING: "bg-amber-100 text-amber-700",
-  SENT: "bg-green-100 text-green-700",
-  PAUSED: "bg-orange-100 text-orange-700",
-  CANCELLED: "bg-red-100 text-red-700",
+  DRAFT: 'bg-gray-100 text-gray-600',
+  SCHEDULED: 'bg-blue-100 text-blue-700',
+  SENDING: 'bg-amber-100 text-amber-700',
+  SENT: 'bg-green-100 text-green-700',
+  PAUSED: 'bg-orange-100 text-orange-700',
+  CANCELLED: 'bg-red-100 text-red-700',
 };
 
 function pct(value?: number): string {
-  if (value === undefined || value === null) return "—";
+  if (value === undefined || value === null) return '—';
   return `${value.toFixed(1)}%`;
 }
 
@@ -47,18 +47,18 @@ export function Campaigns() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: campaigns = [], isLoading } = useQuery({
-    queryKey: ["campaigns"],
+    queryKey: ['campaigns'],
     queryFn: () => apiClient.getCampaigns(),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.deleteCampaign(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       setDeleteId(null);
-      toast.success("Campanha removida");
+      toast.success('Campanha removida');
     },
-    onError: (err: Error) => toast.error(err.message || "Erro ao remover campanha"),
+    onError: (err: Error) => toast.error(err.message || 'Erro ao remover campanha'),
   });
 
   return (
@@ -67,7 +67,7 @@ export function Campaigns() {
 
       <div className="p-4 md:p-8">
         <div className="mb-6 flex items-center justify-end">
-          <Button onClick={() => navigate("/app/campaigns/new")} className="gap-2">
+          <Button onClick={() => navigate('/app/campaigns/new')} className="gap-2">
             <Plus size={16} /> Nova Campanha
           </Button>
         </div>
@@ -81,7 +81,7 @@ export function Campaigns() {
             <Mail className="mx-auto mb-4 h-12 w-12 text-gray-300" />
             <h3 className="mb-2 text-lg font-medium text-gray-900">Nenhuma campanha ainda</h3>
             <p className="mb-4 text-gray-500">Crie sua primeira campanha de email para começar.</p>
-            <Button onClick={() => navigate("/app/campaigns/new")} className="gap-2">
+            <Button onClick={() => navigate('/app/campaigns/new')} className="gap-2">
               <Plus size={16} /> Nova Campanha
             </Button>
           </div>
@@ -110,16 +110,14 @@ export function Campaigns() {
                       <div className="truncate text-xs text-gray-500">{c.subject}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_CLASSES[c.status]}>
-                        {STATUS_LABELS[c.status]}
-                      </Badge>
+                      <Badge className={STATUS_CLASSES[c.status]}>{STATUS_LABELS[c.status]}</Badge>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{c.sentCount ?? 0}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{pct(c.openRate)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{pct(c.ctr)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {c.status === "SENT" && (
+                        {c.status === 'SENT' && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -157,9 +155,7 @@ export function Campaigns() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover campanha?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>

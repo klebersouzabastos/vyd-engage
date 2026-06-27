@@ -147,10 +147,15 @@ export const emailMessagingService = {
         try {
           const { emailTrackingService } = await import('./emailTrackingService.js');
           const trackingToken = await emailTrackingService.createTracking(interaction.id);
-          const baseUrl = process.env.API_URL || process.env.FRONTEND_URL?.replace(':5173', ':3001') || 'http://localhost:3001';
+          const baseUrl =
+            process.env.API_URL ||
+            process.env.FRONTEND_URL?.replace(':5173', ':3001') ||
+            'http://localhost:3001';
           trackedHtml = emailTrackingService.applyTracking(data.html, trackingToken, baseUrl);
         } catch (trackErr: any) {
-          logger.warn('Email tracking injection failed, sending without tracking', { error: trackErr.message });
+          logger.warn('Email tracking injection failed, sending without tracking', {
+            error: trackErr.message,
+          });
         }
       }
 
@@ -223,7 +228,8 @@ export const emailMessagingService = {
       ? `"${emailConfig.fromName}" <${emailConfig.fromEmail}>`
       : emailConfig.fromEmail;
 
-    const results: Array<{ email: string; status: string; messageId?: string; error?: string }> = [];
+    const results: Array<{ email: string; status: string; messageId?: string; error?: string }> =
+      [];
 
     for (const recipient of data.recipients) {
       try {
@@ -273,7 +279,7 @@ export const emailMessagingService = {
     }
 
     // Update total sent count
-    const sentCount = results.filter(r => r.status === 'sent').length;
+    const sentCount = results.filter((r) => r.status === 'sent').length;
     if (sentCount > 0) {
       await prisma.emailConfig.update({
         where: { id: data.configId },
@@ -410,7 +416,7 @@ export const emailMessagingService = {
       take: 200,
     });
 
-    const interaction = interactions.find(i => {
+    const interaction = interactions.find((i) => {
       const meta = i.metadata as any;
       return meta?.messageId?.includes(messageId);
     });
@@ -431,9 +437,13 @@ export const emailMessagingService = {
       // Score email events
       if (interaction.leadId) {
         if (status === 'opened') {
-          scoringService.processEvent(interaction.tenantId, interaction.leadId, ScoreEvent.EMAIL_OPENED).catch(() => {});
+          scoringService
+            .processEvent(interaction.tenantId, interaction.leadId, ScoreEvent.EMAIL_OPENED)
+            .catch(() => {});
         } else if (status === 'clicked') {
-          scoringService.processEvent(interaction.tenantId, interaction.leadId, ScoreEvent.EMAIL_CLICKED).catch(() => {});
+          scoringService
+            .processEvent(interaction.tenantId, interaction.leadId, ScoreEvent.EMAIL_CLICKED)
+            .catch(() => {});
         }
       }
     }

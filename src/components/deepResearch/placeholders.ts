@@ -26,10 +26,7 @@ export function extractPlaceholders(template: string): string[] {
 }
 
 /** Substitui os placeholders pelos valores; mantém o original quando vazio. */
-export function applyPlaceholders(
-  template: string,
-  values: Record<string, string>,
-): string {
+export function applyPlaceholders(template: string, values: Record<string, string>): string {
   return (template || '').replace(placeholderRegex(), (full, rawKey: string) => {
     const value = values[rawKey.trim()];
     return value && value.trim() ? value : full;
@@ -37,10 +34,7 @@ export function applyPlaceholders(
 }
 
 /** Placeholders ainda sem valor preenchido (para sinalizar ao usuário). */
-export function unfilledPlaceholders(
-  template: string,
-  values: Record<string, string>,
-): string[] {
+export function unfilledPlaceholders(template: string, values: Record<string, string>): string[] {
   return extractPlaceholders(template).filter((k) => !values[k] || !values[k].trim());
 }
 
@@ -58,9 +52,9 @@ const PLACEHOLDER_EXAMPLES: Record<string, string> = {
   SETOR: 'Mineração',
   SEGMENTO: 'Minerais críticos no Brasil',
   REGIAO: 'Brasil',
-  'REGIÃO': 'Brasil',
+  REGIÃO: 'Brasil',
   PAIS: 'Brasil',
-  'PAÍS': 'Brasil',
+  PAÍS: 'Brasil',
 };
 
 /** Exemplo de preenchimento para um placeholder, ou '' se desconhecido. */

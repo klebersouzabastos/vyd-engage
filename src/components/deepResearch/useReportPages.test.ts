@@ -45,7 +45,9 @@ describe('buildReportPages', () => {
       'cover',
       'intro',
     ]);
-    expect(buildReportPages(mkSplit({ intro: '   ' }), false).map((p) => p.kind)).toEqual(['cover']);
+    expect(buildReportPages(mkSplit({ intro: '   ' }), false).map((p) => p.kind)).toEqual([
+      'cover',
+    ]);
   });
 
   it('uma página por seção, na ordem', () => {
@@ -56,7 +58,7 @@ describe('buildReportPages', () => {
           { key: 'sec-1', title: 'B', markdown: '## B' },
         ],
       }),
-      false,
+      false
     );
     expect(pages.map((p) => p.kind)).toEqual(['cover', 'section', 'section']);
     expect(pages[1]).toMatchObject({ kind: 'section', title: 'A' });
@@ -67,14 +69,14 @@ describe('buildReportPages', () => {
     const withSrc = buildReportPages(mkSplit({ sections }), true);
     expect(withSrc[withSrc.length - 1]).toEqual({ kind: 'sources' });
     expect(buildReportPages(mkSplit({ sections }), false).some((p) => p.kind === 'sources')).toBe(
-      false,
+      false
     );
   });
 
   it('ordem completa: cover → intro → sections → sources', () => {
     const pages = buildReportPages(
       mkSplit({ intro: 'x', sections: [{ key: 'sec-0', title: 'A', markdown: '## A' }] }),
-      true,
+      true
     );
     expect(pages.map((p) => p.kind)).toEqual(['cover', 'intro', 'section', 'sources']);
   });

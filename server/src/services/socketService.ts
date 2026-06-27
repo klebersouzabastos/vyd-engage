@@ -1,7 +1,8 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
-// @ts-ignore — `cookie` é dep transitiva (via cookie-parser); CI sem @types/cookie
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-ignore (não @ts-expect-error): `cookie` não tem declaração de tipos no CI (sem @types/cookie), mas resolve localmente
+// @ts-ignore
 import cookie from 'cookie';
 import { logger } from '../utils/logger.js';
 

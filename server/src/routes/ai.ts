@@ -51,7 +51,7 @@ router.post('/email-draft', async (req, res, next) => {
       data.templateType,
       data.leadId,
       data.dealId,
-      data.customInstructions,
+      data.customInstructions
     );
 
     res.json({ status: 200, data: draft });

@@ -14,7 +14,12 @@ import {
 
 describe('computeSignature (X-VYD-Signature)', () => {
   const secret = 'whsec_test_123';
-  const body = JSON.stringify({ event: 'lead.created', tenantId: 't1', timestamp: '2026-01-01T00:00:00.000Z', data: { id: 'l1' } });
+  const body = JSON.stringify({
+    event: 'lead.created',
+    tenantId: 't1',
+    timestamp: '2026-01-01T00:00:00.000Z',
+    data: { id: 'l1' },
+  });
 
   it('matches an independently computed HMAC-SHA256 hex digest', () => {
     const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');

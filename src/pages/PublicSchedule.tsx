@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Loader2, Calendar, Clock, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Loader2, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
-const API_BASE = import.meta.env.VITE_API_URL || (
-  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? window.location.origin
-    : 'http://localhost:3001'
-);
+    : 'http://localhost:3001');
 
 interface AvailabilityData {
   id: string;
@@ -21,30 +21,38 @@ interface AvailabilityData {
 }
 
 const DAY_LABELS: Record<string, string> = {
-  mon: 'Segunda', tue: 'Terça', wed: 'Quarta',
-  thu: 'Quinta', fri: 'Sexta', sat: 'Sábado', sun: 'Domingo',
+  mon: 'Segunda',
+  tue: 'Terça',
+  wed: 'Quarta',
+  thu: 'Quinta',
+  fri: 'Sexta',
+  sat: 'Sábado',
+  sun: 'Domingo',
 };
 
 export function PublicSchedule() {
   const { slug } = useParams<{ slug: string }>();
   const [avail, setAvail] = useState<AvailabilityData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
     fetch(`${API_BASE}/api/public/schedule/${slug}`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.error) { setError(d.error); return; }
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) {
+          setError(d.error);
+          return;
+        }
         setAvail(d.data);
       })
       .catch(() => setError('Erro ao carregar agendamento'))
@@ -54,7 +62,7 @@ export function PublicSchedule() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !selectedDate || !selectedTime) {
-      toast.error("Preencha todos os campos obrigatórios");
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
     setSubmitting(true);
@@ -114,37 +122,86 @@ export function PublicSchedule() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{avail.title}</h1>
           <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-            <span className="flex items-center gap-1"><Clock size={14} />{avail.duration} min</span>
+            <span className="flex items-center gap-1">
+              <Clock size={14} />
+              {avail.duration} min
+            </span>
             {activeDays && (
-              <span className="flex items-center gap-1"><Calendar size={14} />{activeDays}</span>
+              <span className="flex items-center gap-1">
+                <Calendar size={14} />
+                {activeDays}
+              </span>
             )}
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" required />
+            <label htmlFor="schedule-name" className="block text-sm font-medium text-gray-700 mb-1">
+              Nome *
+            </label>
+            <Input
+              id="schedule-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Seu nome"
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail *</label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required />
+            <label
+              htmlFor="schedule-email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              E-mail *
+            </label>
+            <Input
+              id="schedule-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
-            <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} required min={new Date().toISOString().split('T')[0]} />
+            <label htmlFor="schedule-date" className="block text-sm font-medium text-gray-700 mb-1">
+              Data *
+            </label>
+            <Input
+              id="schedule-date"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              required
+              min={new Date().toISOString().split('T')[0]}
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Horário *</label>
-            <Input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)} required />
+            <label htmlFor="schedule-time" className="block text-sm font-medium text-gray-700 mb-1">
+              Horário *
+            </label>
+            <Input
+              id="schedule-time"
+              type="time"
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mensagem (opcional)</label>
+            <label
+              htmlFor="schedule-message"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Mensagem (opcional)
+            </label>
             <textarea
+              id="schedule-message"
               className="w-full border border-gray-300 rounded-md p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={3}
               value={message}
-              onChange={e => setMessage(e.target.value)}
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Algum contexto sobre a reunião?"
             />
           </div>

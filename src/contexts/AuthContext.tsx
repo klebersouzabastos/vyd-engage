@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  ReactNode,
+} from 'react';
 import { apiClient } from '../services/api/client';
 
 interface User {
@@ -60,27 +68,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = useCallback(async (email: string, password: string, totpCode?: string): Promise<TwoFactorRequired | void> => {
-    const body: Record<string, string> = { email, password };
-    if (totpCode) body.totpCode = totpCode;
-    const result = await apiClient.login(body as { email: string; password: string; totpCode?: string });
-    if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
-      return result as TwoFactorRequired;
-    }
-    if ('user' in result) {
-      setUser(result.user);
-    }
-  }, []);
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      totpCode?: string
+    ): Promise<TwoFactorRequired | void> => {
+      const body: Record<string, string> = { email, password };
+      if (totpCode) body.totpCode = totpCode;
+      const result = await apiClient.login(
+        body as { email: string; password: string; totpCode?: string }
+      );
+      if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
+        return result as TwoFactorRequired;
+      }
+      if ('user' in result) {
+        setUser(result.user);
+      }
+    },
+    []
+  );
 
-  const register = useCallback(async (data: {
-    email: string;
-    password: string;
-    name: string;
-    companyName: string;
-  }) => {
-    const result = await apiClient.register(data);
-    setUser(result.user);
-  }, []);
+  const register = useCallback(
+    async (data: { email: string; password: string; name: string; companyName: string }) => {
+      const result = await apiClient.register(data);
+      setUser(result.user);
+    },
+    []
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -100,20 +115,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo(() => ({
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    refreshUser,
-  }), [user, loading, login, register, logout, refreshUser]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      refreshUser,
+    }),
+    [user, loading, login, register, logout, refreshUser]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
@@ -123,4 +137,3 @@ export function useAuth() {
   }
   return context;
 }
-

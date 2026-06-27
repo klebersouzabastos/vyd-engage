@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { getErrorMessage } from '../utils/errors';
@@ -42,18 +50,21 @@ export function TagsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const getTagById = useCallback((id: string): Tag | undefined => {
-    return tags.find(tag => tag.id === id);
-  }, [tags]);
+  const getTagById = useCallback(
+    (id: string): Tag | undefined => {
+      return tags.find((tag) => tag.id === id);
+    },
+    [tags]
+  );
 
   const createTag = useCallback(async (name: string, color: string = '#2563EB'): Promise<Tag> => {
     try {
       const newTag = await apiClient.createTag({ name, color });
-      setTags(prev => [...prev, newTag]);
+      setTags((prev) => [...prev, newTag]);
       toast.success('Tag criada com sucesso!');
       return newTag;
     } catch (error) {
-      toast.error(getErrorMessage(error) ||'Erro ao criar tag');
+      toast.error(getErrorMessage(error) || 'Erro ao criar tag');
       throw error;
     }
   }, []);
@@ -61,11 +72,11 @@ export function TagsProvider({ children }: { children: ReactNode }) {
   const updateTag = useCallback(async (id: string, name?: string, color?: string): Promise<Tag> => {
     try {
       const updatedTag = await apiClient.updateTag(id, { name, color });
-      setTags(prev => prev.map(t => t.id === id ? updatedTag : t));
+      setTags((prev) => prev.map((t) => (t.id === id ? updatedTag : t)));
       toast.success('Tag atualizada com sucesso!');
       return updatedTag;
     } catch (error) {
-      toast.error(getErrorMessage(error) ||'Erro ao atualizar tag');
+      toast.error(getErrorMessage(error) || 'Erro ao atualizar tag');
       throw error;
     }
   }, []);
@@ -73,10 +84,10 @@ export function TagsProvider({ children }: { children: ReactNode }) {
   const deleteTag = useCallback(async (id: string): Promise<void> => {
     try {
       await apiClient.deleteTag(id);
-      setTags(prev => prev.filter(t => t.id !== id));
+      setTags((prev) => prev.filter((t) => t.id !== id));
       toast.success('Tag deletada com sucesso!');
     } catch (error) {
-      toast.error(getErrorMessage(error) ||'Erro ao deletar tag');
+      toast.error(getErrorMessage(error) || 'Erro ao deletar tag');
       throw error;
     }
   }, []);
@@ -90,21 +101,20 @@ export function TagsProvider({ children }: { children: ReactNode }) {
     fetchTags();
   }, [user, fetchTags]);
 
-  const value = useMemo(() => ({
-    tags,
-    loading,
-    getTagById,
-    createTag,
-    updateTag,
-    deleteTag,
-    refetch: fetchTags,
-  }), [tags, loading, getTagById, createTag, updateTag, deleteTag, fetchTags]);
-
-  return (
-    <TagsContext.Provider value={value}>
-      {children}
-    </TagsContext.Provider>
+  const value = useMemo(
+    () => ({
+      tags,
+      loading,
+      getTagById,
+      createTag,
+      updateTag,
+      deleteTag,
+      refetch: fetchTags,
+    }),
+    [tags, loading, getTagById, createTag, updateTag, deleteTag, fetchTags]
   );
+
+  return <TagsContext.Provider value={value}>{children}</TagsContext.Provider>;
 }
 
 export function useTags() {

@@ -1,9 +1,17 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
-import { Notification, NotificationType } from "../types";
-import { apiClient } from "../services/api/client";
-import { formatNotificationTime } from "../utils/notifications";
-import { useAuth } from "./AuthContext";
-import { useSocket } from "../hooks/useSocket";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  ReactNode,
+} from 'react';
+import { Notification, NotificationType } from '../types';
+import { apiClient } from '../services/api/client';
+import { formatNotificationTime } from '../utils/notifications';
+import { useAuth } from './AuthContext';
+import { useSocket } from '../hooks/useSocket';
 
 /**
  * Maps backend UPPER_SNAKE notification types to frontend lowercase types.
@@ -11,17 +19,19 @@ import { useSocket } from "../hooks/useSocket";
  * Frontend uses: task_due, task_overdue, lead_assigned, automation_error, etc.
  */
 const BACKEND_TYPE_MAP: Record<string, NotificationType> = {
-  TASK_DUE: "task_due",
-  TASK_OVERDUE: "task_overdue",
-  LEAD_ASSIGNED: "lead_assigned",
-  AUTOMATION_ERROR: "automation_error",
-  PAYMENT_FAILED: "payment_failed",
-  SUBSCRIPTION_EXPIRING: "subscription_expiring",
-  SYSTEM: "system",
+  TASK_DUE: 'task_due',
+  TASK_OVERDUE: 'task_overdue',
+  LEAD_ASSIGNED: 'lead_assigned',
+  AUTOMATION_ERROR: 'automation_error',
+  PAYMENT_FAILED: 'payment_failed',
+  SUBSCRIPTION_EXPIRING: 'subscription_expiring',
+  SYSTEM: 'system',
 };
 
 function normalizeNotificationType(backendType: string): NotificationType {
-  return BACKEND_TYPE_MAP[backendType] || (backendType?.toLowerCase() as NotificationType) || "system";
+  return (
+    BACKEND_TYPE_MAP[backendType] || (backendType?.toLowerCase() as NotificationType) || 'system'
+  );
 }
 
 interface RawNotification {
@@ -43,7 +53,7 @@ function mapBackendNotification(raw: RawNotification): Notification {
     type: normalizeNotificationType(raw.type),
     title: raw.title,
     message: raw.message,
-    read: raw.status === "READ" || raw.read === true,
+    read: raw.status === 'READ' || raw.read === true,
     link: raw.link || undefined,
     timestamp: raw.createdAt || raw.timestamp || new Date().toISOString(),
     metadata: raw.metadata,
@@ -53,7 +63,7 @@ function mapBackendNotification(raw: RawNotification): Notification {
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (notification: Omit<Notification, "id" | "timestamp" | "read">) => Notification;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => Notification;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   deleteNotification: (id: string) => void;
@@ -80,7 +90,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setUnreadCount(countResult?.count ?? notifs.filter((n: { read: boolean }) => !n.read).length);
     } catch (error) {
       // API pode não estar disponível, manter estado atual
-      console.error("Erro ao carregar notificações:", error);
+      console.error('Erro ao carregar notificações:', error);
     }
   }, []);
 
@@ -89,6 +99,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado a partir do user (limpa notificações no logout)
       setNotifications([]);
       setUnreadCount(0);
       return;
@@ -104,92 +115,96 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const cleanup = on('notification:new', (data: unknown) => {
       const notif = mapBackendNotification({ ...(data as RawNotification), read: false });
-      setNotifications(prev => [notif, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      setNotifications((prev) => [notif, ...prev]);
+      setUnreadCount((prev) => prev + 1);
     });
     return cleanup;
   }, [user, on]);
 
   // Notificações criadas pelo frontend ficam em memória (transientes)
-  const addNotification = useCallback((
-    notification: Omit<Notification, "id" | "timestamp" | "read">
-  ) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    setNotifications(prev => [newNotification, ...prev]);
-    setUnreadCount(prev => prev + 1);
-    return newNotification;
-  }, []);
+  const addNotification = useCallback(
+    (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+      const newNotification: Notification = {
+        ...notification,
+        id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        read: false,
+      };
+      setNotifications((prev) => [newNotification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+      return newNotification;
+    },
+    []
+  );
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      if (!id.startsWith("local_")) {
+      if (!id.startsWith('local_')) {
         await apiClient.markNotificationAsRead(id);
       }
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error("Erro ao marcar notificação como lida:", error);
+      console.error('Erro ao marcar notificação como lida:', error);
     }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
     try {
       await apiClient.markAllNotificationsAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error("Erro ao marcar todas como lidas:", error);
+      console.error('Erro ao marcar todas como lidas:', error);
     }
   }, []);
 
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      if (!id.startsWith("local_")) {
+      if (!id.startsWith('local_')) {
         await apiClient.deleteNotification(id);
       }
-      setNotifications(prev => {
-        const removed = prev.find(n => n.id === id);
+      setNotifications((prev) => {
+        const removed = prev.find((n) => n.id === id);
         if (removed && !removed.read) {
-          setUnreadCount(c => Math.max(0, c - 1));
+          setUnreadCount((c) => Math.max(0, c - 1));
         }
-        return prev.filter(n => n.id !== id);
+        return prev.filter((n) => n.id !== id);
       });
     } catch (error) {
-      console.error("Erro ao deletar notificação:", error);
+      console.error('Erro ao deletar notificação:', error);
     }
   }, []);
 
-  const value = useMemo(() => ({
-    notifications,
-    unreadCount,
-    addNotification,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    refreshNotifications,
-    formatTime: formatNotificationTime,
-  }), [notifications, unreadCount, addNotification, markAsRead, markAllAsRead, deleteNotification, refreshNotifications]);
-
-  return (
-    <NotificationContext.Provider value={value}>
-      {children}
-    </NotificationContext.Provider>
+  const value = useMemo(
+    () => ({
+      notifications,
+      unreadCount,
+      addNotification,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      refreshNotifications,
+      formatTime: formatNotificationTime,
+    }),
+    [
+      notifications,
+      unreadCount,
+      addNotification,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      refreshNotifications,
+    ]
   );
+
+  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }
 
 export function useNotifications() {
   const context = useContext(NotificationContext);
   if (context === undefined) {
-    throw new Error("useNotifications must be used within a NotificationProvider");
+    throw new Error('useNotifications must be used within a NotificationProvider');
   }
   return context;
 }
-
-
-
-

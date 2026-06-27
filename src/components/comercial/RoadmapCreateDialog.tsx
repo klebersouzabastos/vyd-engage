@@ -12,13 +12,7 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { apiClient } from '../../services/api/client';
 import { useEmpreendimentos, usePlaybooks, useRoadmapActions } from '../../hooks/useComercial';
 import type { CommercialRoadmap } from '../../types/comercial';
@@ -58,7 +52,7 @@ export function RoadmapCreateDialog({
   const companies = (companiesQuery.data?.companies ?? []) as Array<{ id: string; name: string }>;
 
   const empreendimentosQuery = useEmpreendimentos(companyId ? { companyId } : undefined);
-  const empreendimentos = companyId ? empreendimentosQuery.data?.items ?? [] : [];
+  const empreendimentos = companyId ? (empreendimentosQuery.data?.items ?? []) : [];
 
   const playbooksQuery = usePlaybooks();
   const playbooks = playbooksQuery.data?.items ?? [];
@@ -131,7 +125,9 @@ export function RoadmapCreateDialog({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={companiesQuery.isLoading ? 'Carregando…' : 'Selecione a empresa'} />
+                <SelectValue
+                  placeholder={companiesQuery.isLoading ? 'Carregando…' : 'Selecione a empresa'}
+                />
               </SelectTrigger>
               <SelectContent>
                 {companies.map((c) => (

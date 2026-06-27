@@ -102,19 +102,22 @@ export const dealService = {
     return deal;
   },
 
-  async findAll(tenantId: string, filters?: {
-    stage?: DealStage;
-    assignedTo?: string;
-    leadId?: string;
-    funnelId?: string;
-    search?: string;
-    minValue?: number;
-    maxValue?: number;
-    page?: number;
-    limit?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-  }) {
+  async findAll(
+    tenantId: string,
+    filters?: {
+      stage?: DealStage;
+      assignedTo?: string;
+      leadId?: string;
+      funnelId?: string;
+      search?: string;
+      minValue?: number;
+      maxValue?: number;
+      page?: number;
+      limit?: number;
+      sort?: string;
+      order?: 'asc' | 'desc';
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
@@ -140,9 +143,7 @@ export const dealService = {
     }
 
     if (filters?.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-      ];
+      where.OR = [{ name: { contains: filters.search, mode: 'insensitive' } }];
     }
 
     if (filters?.minValue !== undefined) {
@@ -183,16 +184,20 @@ export const dealService = {
 
     const stage = data.stage ?? existing.stage;
     // Auto-update probability when stage changes and probability wasn't explicitly set
-    const probability = data.probability ?? (data.stage ? STAGE_PROBABILITY[data.stage] : undefined);
+    const probability =
+      data.probability ?? (data.stage ? STAGE_PROBABILITY[data.stage] : undefined);
 
     const updateData: any = {
       name: data.name,
       value: data.value,
       stage: data.stage,
       probability,
-      expectedCloseDate: data.expectedCloseDate !== undefined
-        ? (data.expectedCloseDate ? new Date(data.expectedCloseDate) : null)
-        : undefined,
+      expectedCloseDate:
+        data.expectedCloseDate !== undefined
+          ? data.expectedCloseDate
+            ? new Date(data.expectedCloseDate)
+            : null
+          : undefined,
       leadId: data.leadId,
       companyId: data.companyId,
       empreendimentoId: data.empreendimentoId,
@@ -223,7 +228,9 @@ export const dealService = {
     });
 
     // Tenant-safe update: verify ownership before updating
-    const verified = await prisma.deal.findFirst({ where: { id: data.id, tenantId, deletedAt: null } });
+    const verified = await prisma.deal.findFirst({
+      where: { id: data.id, tenantId, deletedAt: null },
+    });
     if (!verified) {
       throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
     }
@@ -240,51 +247,60 @@ export const dealService = {
     // HOOK A — Stage History tracking
     const newStage = deal.stage;
     if (existing.stage !== newStage) {
-      await prisma.dealStageHistory.updateMany({
-        where: { dealId: data.id, exitedAt: null },
-        data: { exitedAt: new Date() },
-      }).catch(() => {});
-      await prisma.dealStageHistory.create({
-        data: { dealId: data.id, stage: newStage },
-      }).catch(() => {});
+      await prisma.dealStageHistory
+        .updateMany({
+          where: { dealId: data.id, exitedAt: null },
+          data: { exitedAt: new Date() },
+        })
+        .catch(() => {});
+      await prisma.dealStageHistory
+        .create({
+          data: { dealId: data.id, stage: newStage },
+        })
+        .catch(() => {});
     }
 
     // HOOK B — Auto-task creation on funnel column change
     if (existing.funnelColumnId !== deal.funnelColumnId && deal.funnelColumnId) {
-      prisma.stageTaskTemplate.findMany({
-        where: { funnelColumnId: deal.funnelColumnId },
-      }).then(async (templates) => {
-        for (const t of templates) {
-          const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + t.dueDaysFromNow);
-          await prisma.task.create({
-            data: {
-              tenantId: deal.tenantId,
-              title: t.taskTitle,
-              priority: t.priority as any,
-              dueDate,
-              dealId: deal.id,
-              assignedTo: t.assignToOwner ? (deal.assignedTo || null) : null,
-            },
-          });
-        }
-      }).catch((err) => {
-        logger.error('Failed to create auto-tasks on stage change', err, { dealId: deal.id });
-      });
+      prisma.stageTaskTemplate
+        .findMany({
+          where: { funnelColumnId: deal.funnelColumnId },
+        })
+        .then(async (templates) => {
+          for (const t of templates) {
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + t.dueDaysFromNow);
+            await prisma.task.create({
+              data: {
+                tenantId: deal.tenantId,
+                title: t.taskTitle,
+                priority: t.priority as any,
+                dueDate,
+                dealId: deal.id,
+                assignedTo: t.assignToOwner ? deal.assignedTo || null : null,
+              },
+            });
+          }
+        })
+        .catch((err) => {
+          logger.error('Failed to create auto-tasks on stage change', err, { dealId: deal.id });
+        });
     }
 
     // When deal is WON and has a leadId, update lead status to WON
     if (data.stage === DealStage.WON && deal.leadId) {
-      await prisma.lead.update({
-        where: { id: deal.leadId },
-        data: { status: 'WON' },
-      }).catch((err) => {
-        logger.error('Failed to update lead status to WON after deal won', err, {
-          dealId: deal.id,
-          leadId: deal.leadId,
-          tenantId,
+      await prisma.lead
+        .update({
+          where: { id: deal.leadId },
+          data: { status: 'WON' },
+        })
+        .catch((err) => {
+          logger.error('Failed to update lead status to WON after deal won', err, {
+            dealId: deal.id,
+            leadId: deal.leadId,
+            tenantId,
+          });
         });
-      });
     }
 
     // Desdobramento comercial — refletir a etapa do Deal no status dos roadmaps
@@ -354,53 +370,47 @@ export const dealService = {
     ];
 
     // All aggregations at DB level — no full table load
-    const [
-      totalCount,
-      stageGroups,
-      activeAgg,
-      wonAgg,
-      lostAgg,
-      wonCycleTimeDeals,
-    ] = await Promise.all([
-      // Total deal count
-      prisma.deal.count({ where: { tenantId, deletedAt: null } }),
+    const [totalCount, stageGroups, activeAgg, wonAgg, lostAgg, wonCycleTimeDeals] =
+      await Promise.all([
+        // Total deal count
+        prisma.deal.count({ where: { tenantId, deletedAt: null } }),
 
-      // Group by stage: count + sum value
-      prisma.deal.groupBy({
-        by: ['stage'],
-        where: { tenantId, deletedAt: null },
-        _count: { id: true },
-        _sum: { value: true },
-      }),
+        // Group by stage: count + sum value
+        prisma.deal.groupBy({
+          by: ['stage'],
+          where: { tenantId, deletedAt: null },
+          _count: { id: true },
+          _sum: { value: true },
+        }),
 
-      // Active pipeline aggregation (sum value for active stages)
-      prisma.deal.aggregate({
-        where: { tenantId, deletedAt: null, stage: { in: activeStages } },
-        _sum: { value: true },
-        _count: { id: true },
-      }),
+        // Active pipeline aggregation (sum value for active stages)
+        prisma.deal.aggregate({
+          where: { tenantId, deletedAt: null, stage: { in: activeStages } },
+          _sum: { value: true },
+          _count: { id: true },
+        }),
 
-      // Won deals aggregation
-      prisma.deal.aggregate({
-        where: { tenantId, deletedAt: null, stage: DealStage.WON },
-        _sum: { value: true },
-        _count: { id: true },
-        _avg: { value: true },
-      }),
+        // Won deals aggregation
+        prisma.deal.aggregate({
+          where: { tenantId, deletedAt: null, stage: DealStage.WON },
+          _sum: { value: true },
+          _count: { id: true },
+          _avg: { value: true },
+        }),
 
-      // Lost deals aggregation
-      prisma.deal.aggregate({
-        where: { tenantId, deletedAt: null, stage: DealStage.LOST },
-        _sum: { value: true },
-        _count: { id: true },
-      }),
+        // Lost deals aggregation
+        prisma.deal.aggregate({
+          where: { tenantId, deletedAt: null, stage: DealStage.LOST },
+          _sum: { value: true },
+          _count: { id: true },
+        }),
 
-      // Won deals with closedAt for cycle time calculation (lightweight select)
-      prisma.deal.findMany({
-        where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null } },
-        select: { createdAt: true, closedAt: true },
-      }),
-    ]);
+        // Won deals with closedAt for cycle time calculation (lightweight select)
+        prisma.deal.findMany({
+          where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null } },
+          select: { createdAt: true, closedAt: true },
+        }),
+      ]);
 
     const totalPipelineValue = Number(activeAgg._sum.value || 0);
     const wonValue = Number(wonAgg._sum.value || 0);
@@ -413,7 +423,7 @@ export const dealService = {
     const avgDealSize = wonCount > 0 ? wonValue / wonCount : 0;
 
     // Weighted pipeline value needs per-stage probability, compute from groupBy
-    const stageGroupMap = new Map(stageGroups.map(g => [g.stage, g]));
+    const stageGroupMap = new Map(stageGroups.map((g) => [g.stage, g]));
     let weightedValue = 0;
     for (const stage of activeStages) {
       const group = stageGroupMap.get(stage);
@@ -424,14 +434,13 @@ export const dealService = {
 
     // Average cycle time (days) for won deals
     const cycleTimes = wonCycleTimeDeals.map(
-      d => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      (d) => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24)
     );
-    const avgCycleTime = cycleTimes.length > 0
-      ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length
-      : 0;
+    const avgCycleTime =
+      cycleTimes.length > 0 ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length : 0;
 
     // By stage breakdown
-    const byStage = activeStages.map(stage => {
+    const byStage = activeStages.map((stage) => {
       const group = stageGroupMap.get(stage);
       const totalValue = Number(group?._sum.value || 0);
       return {

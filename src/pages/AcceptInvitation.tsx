@@ -1,18 +1,18 @@
-import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { Loader2, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { Loader2, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
-const API_BASE = import.meta.env.VITE_API_URL || (
-  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? window.location.origin
-    : 'http://localhost:3001'
-);
+    : 'http://localhost:3001');
 
 export function AcceptInvitation() {
   const [params] = useSearchParams();
@@ -30,9 +30,18 @@ export function AcceptInvitation() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) { toast.error('Informe seu nome'); return; }
-    if (password.length < 8) { toast.error('A senha deve ter pelo menos 8 caracteres'); return; }
-    if (password !== confirm) { toast.error('As senhas não coincidem'); return; }
+    if (!name.trim()) {
+      toast.error('Informe seu nome');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error('A senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+    if (password !== confirm) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -112,117 +121,126 @@ export function AcceptInvitation() {
       <VYDEcosystemBanner />
 
       <div className="flex-1 flex flex-col lg:flex-row">
-      {/* Left side — form */}
-      <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
-        <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
-
-          {/* Logo */}
-          <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 md:mb-12">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-xs sm:text-sm">VE</span>
-            </div>
-            <span className="text-xl sm:text-2xl font-semibold text-gray-900">VYD Engage</span>
-          </div>
-
-          {/* Heading */}
-          <div className="mb-8 sm:mb-10 md:mb-12">
-            <h1 className="text-gray-900 mb-3 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
-              Você foi convidado!
-            </h1>
-            <p className="text-gray-600 text-base sm:text-lg md:text-xl mt-2">
-              Crie sua senha para acessar sua conta.
-            </p>
-          </div>
-
-          {/* Error alert */}
-          {error && (
-            <div className="mb-6 flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-              <AlertCircle size={16} className="mt-0.5 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-            <div className="space-y-2.5">
-              <Label htmlFor="name" className="text-gray-900 text-base sm:text-lg font-medium block">
-                Seu nome
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Nome completo"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                autoFocus
-                required
-              />
+        {/* Left side — form */}
+        <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
+          <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
+            {/* Logo */}
+            <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 md:mb-12">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-xs sm:text-sm">VE</span>
+              </div>
+              <span className="text-xl sm:text-2xl font-semibold text-gray-900">VYD Engage</span>
             </div>
 
-            <div className="space-y-2.5">
-              <Label htmlFor="password" className="text-gray-900 text-base sm:text-lg font-medium block">
-                Senha
-              </Label>
-              <div className="relative">
+            {/* Heading */}
+            <div className="mb-8 sm:mb-10 md:mb-12">
+              <h1 className="text-gray-900 mb-3 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
+                Você foi convidado!
+              </h1>
+              <p className="text-gray-600 text-base sm:text-lg md:text-xl mt-2">
+                Crie sua senha para acessar sua conta.
+              </p>
+            </div>
+
+            {/* Error alert */}
+            {error && (
+              <div className="mb-6 flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+              <div className="space-y-2.5">
+                <Label
+                  htmlFor="name"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
+                  Seu nome
+                </Label>
                 <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Mínimo 8 caracteres"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  id="name"
+                  type="text"
+                  placeholder="Nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional
+                  autoFocus
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
               </div>
-            </div>
 
-            <div className="space-y-2.5">
-              <Label htmlFor="confirm" className="text-gray-900 text-base sm:text-lg font-medium block">
-                Confirmar senha
-              </Label>
-              <div className="relative">
-                <Input
-                  id="confirm"
-                  type={showConfirm ? 'text' : 'password'}
-                  placeholder="Repita a senha"
-                  value={confirm}
-                  onChange={e => setConfirm(e.target.value)}
-                  className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
-                  aria-label={showConfirm ? 'Ocultar senha' : 'Mostrar senha'}
+              <div className="space-y-2.5">
+                <Label
+                  htmlFor="password"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
                 >
-                  {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Mínimo 8 caracteres"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 sm:h-14 bg-primary hover:bg-primary/90 text-white font-semibold text-base rounded-lg transition-all mt-2"
-            >
-              {loading && <Loader2 size={18} className="mr-2 animate-spin" />}
-              Criar conta e entrar
-            </Button>
-          </form>
+              <div className="space-y-2.5">
+                <Label
+                  htmlFor="confirm"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
+                  Confirmar senha
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirm"
+                    type={showConfirm ? 'text' : 'password'}
+                    placeholder="Repita a senha"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
+                    aria-label={showConfirm ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 sm:h-14 bg-primary hover:bg-primary/90 text-white font-semibold text-base rounded-lg transition-all mt-2"
+              >
+                {loading && <Loader2 size={18} className="mr-2 animate-spin" />}
+                Criar conta e entrar
+              </Button>
+            </form>
+          </div>
         </div>
-      </div>
 
-      <RightPanel />
+        <RightPanel />
       </div>
     </div>
   );

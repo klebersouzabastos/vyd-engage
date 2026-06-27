@@ -14,27 +14,27 @@ import {
   isSameDay,
   isToday,
   isSameMonth,
-} from "date-fns";
-import { ptBR } from "date-fns/locale";
-import type { Task } from "../../types";
+} from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import type { Task } from '../../types';
 
-export type CalendarViewMode = "list" | "month" | "week" | "agenda";
+export type CalendarViewMode = 'list' | 'month' | 'week' | 'agenda';
 
 export const PRIORITY_COLORS: Record<string, string> = {
-  URGENT: "bg-red-500 text-white",
-  HIGH: "bg-orange-500 text-white",
-  MEDIUM: "bg-yellow-400 text-yellow-900",
-  LOW: "bg-blue-400 text-white",
+  URGENT: 'bg-red-500 text-white',
+  HIGH: 'bg-orange-500 text-white',
+  MEDIUM: 'bg-yellow-400 text-yellow-900',
+  LOW: 'bg-blue-400 text-white',
 };
 
 export const PRIORITY_DOT_COLORS: Record<string, string> = {
-  URGENT: "bg-red-500",
-  HIGH: "bg-orange-500",
-  MEDIUM: "bg-yellow-400",
-  LOW: "bg-blue-400",
+  URGENT: 'bg-red-500',
+  HIGH: 'bg-orange-500',
+  MEDIUM: 'bg-yellow-400',
+  LOW: 'bg-blue-400',
 };
 
-export const COMPLETED_CLASSES = "bg-gray-300 text-gray-500 line-through";
+export const COMPLETED_CLASSES = 'bg-gray-300 text-gray-500 line-through';
 
 export function getMonthGridDays(date: Date): Date[] {
   const monthStart = startOfMonth(date);
@@ -51,13 +51,13 @@ export function getWeekDays(date: Date): Date[] {
 }
 
 export function formatMonthTitle(date: Date): string {
-  return format(date, "MMMM yyyy", { locale: ptBR });
+  return format(date, 'MMMM yyyy', { locale: ptBR });
 }
 
 export function formatWeekTitle(weekStart: Date): string {
   const weekEnd = addDays(weekStart, 6);
-  const startStr = format(weekStart, "d", { locale: ptBR });
-  const endStr = format(weekEnd, "d MMM yyyy", { locale: ptBR });
+  const startStr = format(weekStart, 'd', { locale: ptBR });
+  const endStr = format(weekEnd, 'd MMM yyyy', { locale: ptBR });
   return `${startStr} - ${endStr}`;
 }
 
@@ -65,7 +65,7 @@ export function groupTasksByDate(tasks: Task[]): Map<string, Task[]> {
   const map = new Map<string, Task[]>();
   for (const task of tasks) {
     if (!task.dueDate) continue;
-    const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
+    const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd');
     const existing = map.get(dateKey) || [];
     existing.push(task);
     map.set(dateKey, existing);
@@ -80,12 +80,12 @@ export function getDateRangeForView(
   let start: Date;
   let end: Date;
 
-  if (viewMode === "month") {
+  if (viewMode === 'month') {
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
     start = startOfWeek(monthStart, { weekStartsOn: 0 });
     end = endOfWeek(monthEnd, { weekStartsOn: 0 });
-  } else if (viewMode === "week") {
+  } else if (viewMode === 'week') {
     start = startOfWeek(date, { weekStartsOn: 0 });
     end = endOfWeek(date, { weekStartsOn: 0 });
   } else {
@@ -96,16 +96,28 @@ export function getDateRangeForView(
   }
 
   return {
-    startDate: format(start, "yyyy-MM-dd"),
-    endDate: format(end, "yyyy-MM-dd"),
+    startDate: format(start, 'yyyy-MM-dd'),
+    endDate: format(end, 'yyyy-MM-dd'),
   };
 }
 
 export function formatDayHeader(date: Date): string {
-  if (isToday(date)) return "Hoje";
+  if (isToday(date)) return 'Hoje';
   const tomorrow = addDays(new Date(), 1);
-  if (isSameDay(date, tomorrow)) return "Amanhã";
+  if (isSameDay(date, tomorrow)) return 'Amanhã';
   return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
 }
 
-export { isSameDay, isToday, isSameMonth, format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek };
+export {
+  isSameDay,
+  isToday,
+  isSameMonth,
+  format,
+  addMonths,
+  subMonths,
+  addWeeks,
+  subWeeks,
+  addDays,
+  subDays,
+  startOfWeek,
+};

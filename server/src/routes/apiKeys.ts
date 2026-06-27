@@ -51,12 +51,14 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const { name, expiresAt, scopes } = z.object({
-      name: z.string().min(1),
-      expiresAt: z.coerce.date().optional(),
-      // req 17/18 — optional list of scopes; empty/omitted = full access (req 20).
-      scopes: z.array(apiScopeEnum).optional(),
-    }).parse(req.body);
+    const { name, expiresAt, scopes } = z
+      .object({
+        name: z.string().min(1),
+        expiresAt: z.coerce.date().optional(),
+        // req 17/18 — optional list of scopes; empty/omitted = full access (req 20).
+        scopes: z.array(apiScopeEnum).optional(),
+      })
+      .parse(req.body);
 
     // Generate API key — store only hash + masked suffix in DB
     const apiKey = `fcrm_${uuidv4().replace(/-/g, '')}`;
@@ -123,11 +125,3 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

@@ -1,19 +1,10 @@
-import { useState } from "react";
-import { WhatsAppConnection } from "../../types/whatsapp";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Button } from "../ui/button";
-import { ConnectionStatusBadge } from "./ConnectionStatusBadge";
-import { Badge } from "../ui/badge";
-import {
-  Edit,
-  Trash2,
-  TestTube,
-  QrCode,
-  Star,
-  StarOff,
-  MessageSquare,
-  Phone
-} from "lucide-react";
+import { useState } from 'react';
+import { WhatsAppConnection } from '../../types/whatsapp';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { ConnectionStatusBadge } from './ConnectionStatusBadge';
+import { Badge } from '../ui/badge';
+import { Edit, Trash2, TestTube, QrCode, Star, StarOff, MessageSquare, Phone } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog";
+} from '../ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,9 +22,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { QRCodeModal } from "./QRCodeModal";
-import { TestMessageModal } from "./TestMessageModal";
+} from '../ui/alert-dialog';
+import { QRCodeModal } from './QRCodeModal';
+import { TestMessageModal } from './TestMessageModal';
 
 interface ConnectionCardProps {
   connection: WhatsAppConnection;
@@ -44,10 +35,10 @@ interface ConnectionCardProps {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  official: "WhatsApp Business API",
-  evolution: "Evolution API",
-  baileys: "Baileys/WPPConnect",
-  chatapi: "ChatAPI",
+  official: 'WhatsApp Business API',
+  evolution: 'Evolution API',
+  baileys: 'Baileys/WPPConnect',
+  chatapi: 'ChatAPI',
 };
 
 export function ConnectionCard({
@@ -99,7 +90,7 @@ export function ConnectionCard({
         <div className="space-y-4">
           <ConnectionStatusBadge
             status={connection.status}
-            showBattery={connection.provider === "baileys" || connection.provider === "evolution"}
+            showBattery={connection.provider === 'baileys' || connection.provider === 'evolution'}
             showLastSync={true}
           />
 
@@ -111,12 +102,7 @@ export function ConnectionCard({
 
           <div className="flex items-center gap-2 flex-wrap">
             {!connection.isDefault && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSetDefault}
-                className="text-xs"
-              >
+              <Button variant="outline" size="sm" onClick={onSetDefault} className="text-xs">
                 <StarOff className="h-3 w-3 mr-1" />
                 Definir como padrão
               </Button>
@@ -127,7 +113,7 @@ export function ConnectionCard({
               Editar
             </Button>
 
-            {(connection.provider === "baileys" || connection.provider === "evolution") && (
+            {(connection.provider === 'baileys' || connection.provider === 'evolution') && (
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="text-xs">
@@ -170,7 +156,8 @@ export function ConnectionCard({
               <AlertDialogHeader>
                 <AlertDialogTitle>Excluir Conexão</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Tem certeza que deseja deletar a conexão "{connection.name}"? Esta ação não pode ser desfeita.
+                  Tem certeza que deseja deletar a conexão "{connection.name}"? Esta ação não pode
+                  ser desfeita.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -188,9 +175,7 @@ export function ConnectionCard({
                 <div>Mensagens enviadas: {connection.metadata.messageCount}</div>
               )}
               {connection.lastUsedAt && (
-                <div>
-                  Último uso: {new Date(connection.lastUsedAt).toLocaleString("pt-BR")}
-                </div>
+                <div>Último uso: {new Date(connection.lastUsedAt).toLocaleString('pt-BR')}</div>
               )}
             </div>
           )}
@@ -199,11 +184,3 @@ export function ConnectionCard({
     </Card>
   );
 }
-
-
-
-
-
-
-
-

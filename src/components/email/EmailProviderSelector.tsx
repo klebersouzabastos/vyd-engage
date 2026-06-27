@@ -1,12 +1,6 @@
-import { EmailProvider } from "../../types/email";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Label } from "../ui/label";
+import { EmailProvider } from '../../types/email';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../ui/label';
 
 interface EmailProviderSelectorProps {
   value: EmailProvider;
@@ -15,10 +9,10 @@ interface EmailProviderSelectorProps {
 }
 
 const PROVIDER_OPTIONS = [
-  { value: "smtp" as EmailProvider, label: "SMTP (Gmail, Outlook, etc.)" },
-  { value: "sendgrid" as EmailProvider, label: "SendGrid" },
-  { value: "mailgun" as EmailProvider, label: "Mailgun" },
-  { value: "resend" as EmailProvider, label: "Resend" },
+  { value: 'smtp' as EmailProvider, label: 'SMTP (Gmail, Outlook, etc.)' },
+  { value: 'sendgrid' as EmailProvider, label: 'SendGrid' },
+  { value: 'mailgun' as EmailProvider, label: 'Mailgun' },
+  { value: 'resend' as EmailProvider, label: 'Resend' },
 ];
 
 export function EmailProviderSelector({
@@ -44,11 +38,3 @@ export function EmailProviderSelector({
     </div>
   );
 }
-
-
-
-
-
-
-
-

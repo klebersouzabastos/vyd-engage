@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "./ui/skeleton";
+import { useQuery } from '@tanstack/react-query';
+import { Skeleton } from './ui/skeleton';
 
 interface HealthFactor {
   name: string;
@@ -18,37 +18,37 @@ interface PipelineHealthGaugeProps {
 }
 
 function scoreLabel(score: number): string {
-  if (score >= 70) return "Saudável";
-  if (score >= 40) return "Atenção";
-  return "Crítico";
+  if (score >= 70) return 'Saudável';
+  if (score >= 40) return 'Atenção';
+  return 'Crítico';
 }
 
 function scoreRingColor(score: number): string {
-  if (score >= 70) return "border-green-500";
-  if (score >= 40) return "border-yellow-500";
-  return "border-red-500";
+  if (score >= 70) return 'border-green-500';
+  if (score >= 40) return 'border-yellow-500';
+  return 'border-red-500';
 }
 
 function scoreBadgeColor(score: number): string {
-  if (score >= 70) return "bg-green-100 text-green-700";
-  if (score >= 40) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-red-700";
+  if (score >= 70) return 'bg-green-100 text-green-700';
+  if (score >= 40) return 'bg-yellow-100 text-yellow-700';
+  return 'bg-red-100 text-red-700';
 }
 
 function scoreTextColor(score: number): string {
-  if (score >= 70) return "text-green-600";
-  if (score >= 40) return "text-yellow-600";
-  return "text-red-600";
+  if (score >= 70) return 'text-green-600';
+  if (score >= 40) return 'text-yellow-600';
+  return 'text-red-600';
 }
 
 export function PipelineHealthGauge({ compact = false }: PipelineHealthGaugeProps) {
   const { data, isLoading } = useQuery<PipelineHealthData>({
-    queryKey: ["pipeline-health"],
+    queryKey: ['pipeline-health'],
     queryFn: async () => {
-      const response = await fetch("/api/v1/reports/pipeline-health", {
-        credentials: "include",
+      const response = await fetch('/api/v1/reports/pipeline-health', {
+        credentials: 'include',
       });
-      if (!response.ok) throw new Error("Falha ao carregar saúde do pipeline");
+      if (!response.ok) throw new Error('Falha ao carregar saúde do pipeline');
       const json = await response.json();
       return json.data ?? json;
     },
@@ -57,8 +57,10 @@ export function PipelineHealthGauge({ compact = false }: PipelineHealthGaugeProp
 
   if (isLoading) {
     return (
-      <div className={compact ? "flex items-center gap-3" : "p-4 space-y-4"}>
-        <Skeleton className={compact ? "h-12 w-12 rounded-full" : "h-24 w-24 rounded-full mx-auto"} />
+      <div className={compact ? 'flex items-center gap-3' : 'p-4 space-y-4'}>
+        <Skeleton
+          className={compact ? 'h-12 w-12 rounded-full' : 'h-24 w-24 rounded-full mx-auto'}
+        />
         {!compact && (
           <div className="space-y-2">
             <Skeleton className="h-3 w-full" />
@@ -88,7 +90,9 @@ export function PipelineHealthGauge({ compact = false }: PipelineHealthGaugeProp
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-gray-700">Saúde do Pipeline</span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full self-start ${badgeColor}`}>
+          <span
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full self-start ${badgeColor}`}
+          >
             {label}
           </span>
         </div>

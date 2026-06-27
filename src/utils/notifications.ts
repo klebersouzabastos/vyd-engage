@@ -6,7 +6,7 @@ export function formatNotificationTime(timestamp: string): string {
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return "agora";
+    return 'agora';
   }
 
   const diffInMinutes = Math.floor(diffInSeconds / 60);
@@ -24,8 +24,8 @@ export function formatNotificationTime(timestamp: string): string {
     return `há ${diffInDays}d`;
   }
 
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
   });
 }

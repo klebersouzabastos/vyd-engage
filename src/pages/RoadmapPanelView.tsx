@@ -1,14 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import {
-  AlertTriangle,
-  CalendarClock,
-  Clock,
-  GitBranch,
-  ArrowLeft,
-  Building2,
-} from 'lucide-react';
+import { AlertTriangle, CalendarClock, Clock, GitBranch, ArrowLeft, Building2 } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -44,7 +37,9 @@ function TaskRow({ t, onOpen, danger }: { t: PanelTask; onOpen: () => void; dang
           {t.type ? TASK_TYPE_LABELS[t.type] : 'Ação'}
         </p>
       </div>
-      <span className={`shrink-0 text-xs ${danger ? 'font-medium text-red-600' : 'text-slate-500'}`}>
+      <span
+        className={`shrink-0 text-xs ${danger ? 'font-medium text-red-600' : 'text-slate-500'}`}
+      >
         {fmtDate(t.dueDate)}
       </span>
     </button>
@@ -67,11 +62,19 @@ export function RoadmapPanelView() {
 
   return (
     <div className="min-h-screen bg-slate-50/60">
-      <Header title="Não deixar passar" subtitle="Próximas ações, atrasadas e desdobramentos em risco" />
+      <Header
+        title="Não deixar passar"
+        subtitle="Próximas ações, atrasadas e desdobramentos em risco"
+      />
 
       <div className="space-y-6 p-4 md:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" className="px-2" onClick={() => navigate('/app/deep-research')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="px-2"
+            onClick={() => navigate('/app/deep-research')}
+          >
             <ArrowLeft className="mr-1 h-4 w-4" />
             Voltar
           </Button>
@@ -135,7 +138,9 @@ export function RoadmapPanelView() {
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 py-8 text-center text-sm text-slate-500">Nenhuma ação atrasada.</p>
+                  <p className="px-4 py-8 text-center text-sm text-slate-500">
+                    Nenhuma ação atrasada.
+                  </p>
                 )}
               </CardContent>
             </Card>

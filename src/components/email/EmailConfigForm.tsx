@@ -1,38 +1,40 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { EmailConfig, EmailProvider, ProviderConfig } from "../../types/email";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-import { EmailProviderSelector } from "./EmailProviderSelector";
-import { validateEmailConfig } from "../../utils/email/emailValidators";
-import { Alert, AlertDescription } from "../ui/alert";
-import { AlertCircle, Info } from "lucide-react";
-import { useAutoFocus } from "../../hooks/useFocusManagement";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { EmailConfig, EmailProvider, ProviderConfig } from '../../types/email';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
+import { EmailProviderSelector } from './EmailProviderSelector';
+import { validateEmailConfig } from '../../utils/email/emailValidators';
+import { Alert, AlertDescription } from '../ui/alert';
+import { AlertCircle, Info } from 'lucide-react';
+import { useAutoFocus } from '../../hooks/useFocusManagement';
 
 interface EmailConfigFormProps {
   config?: EmailConfig;
-  onSubmit: (data: Omit<EmailConfig, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  onSubmit: (data: Omit<EmailConfig, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onCancel?: () => void;
 }
 
 export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormProps) {
-  const [provider, setProvider] = useState<EmailProvider>(
-    config?.provider || "smtp"
-  );
-  const [name, setName] = useState(config?.name || "");
+  const [provider, setProvider] = useState<EmailProvider>(config?.provider || 'smtp');
+  const [name, setName] = useState(config?.name || '');
   const [isDefault, setIsDefault] = useState(config?.isDefault || false);
   const [emailConfig, setEmailConfig] = useState<ProviderConfig>(
     config?.config || {
-      host: "",
+      host: '',
       port: 587,
-      user: "",
-      password: "",
+      user: '',
+      password: '',
       secure: false,
     }
   );
-  const [validation, setValidation] = useState<{ isValid: boolean; errors: string[]; warnings: string[] } | null>(null);
+  const [validation, setValidation] = useState<{
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
@@ -47,17 +49,17 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
     setProvider(newProvider);
     // Reset config based on provider
     switch (newProvider) {
-      case "smtp":
-        setEmailConfig({ host: "", port: 587, user: "", password: "", secure: false });
+      case 'smtp':
+        setEmailConfig({ host: '', port: 587, user: '', password: '', secure: false });
         break;
-      case "sendgrid":
-        setEmailConfig({ apiKey: "" });
+      case 'sendgrid':
+        setEmailConfig({ apiKey: '' });
         break;
-      case "mailgun":
-        setEmailConfig({ apiKey: "", domain: "" });
+      case 'mailgun':
+        setEmailConfig({ apiKey: '', domain: '' });
         break;
-      case "resend":
-        setEmailConfig({ apiKey: "" });
+      case 'resend':
+        setEmailConfig({ apiKey: '' });
         break;
     }
   };
@@ -68,7 +70,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validation?.isValid) {
       return;
     }
@@ -80,13 +82,13 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         provider,
         config: emailConfig,
         status: config?.status || {
-          status: "disconnected",
+          status: 'disconnected',
         },
         isDefault,
       });
     } catch (error) {
-      console.error("Erro ao salvar configuração:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao salvar configuração");
+      console.error('Erro ao salvar configuração:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao salvar configuração');
     } finally {
       setIsSubmitting(false);
     }
@@ -98,8 +100,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="host">Host SMTP *</Label>
         <Input
           id="host"
-          value={(emailConfig as any).host || ""}
-          onChange={(e) => handleConfigChange("host", e.target.value)}
+          value={(emailConfig as any).host || ''}
+          onChange={(e) => handleConfigChange('host', e.target.value)}
           placeholder="smtp.gmail.com"
           className="mt-1.5"
         />
@@ -110,7 +112,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           id="port"
           type="number"
           value={(emailConfig as any).port || 587}
-          onChange={(e) => handleConfigChange("port", parseInt(e.target.value) || 587)}
+          onChange={(e) => handleConfigChange('port', parseInt(e.target.value) || 587)}
           placeholder="587"
           className="mt-1.5"
           min="1"
@@ -121,8 +123,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="user">Usuário *</Label>
         <Input
           id="user"
-          value={(emailConfig as any).user || ""}
-          onChange={(e) => handleConfigChange("user", e.target.value)}
+          value={(emailConfig as any).user || ''}
+          onChange={(e) => handleConfigChange('user', e.target.value)}
           placeholder="seu@email.com"
           className="mt-1.5"
         />
@@ -132,8 +134,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="password"
           type="password"
-          value={(emailConfig as any).password || ""}
-          onChange={(e) => handleConfigChange("password", e.target.value)}
+          value={(emailConfig as any).password || ''}
+          onChange={(e) => handleConfigChange('password', e.target.value)}
           placeholder="••••••••"
           className="mt-1.5"
         />
@@ -146,7 +148,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Switch
           id="secure"
           checked={(emailConfig as any).secure || false}
-          onCheckedChange={(checked) => handleConfigChange("secure", checked)}
+          onCheckedChange={(checked) => handleConfigChange('secure', checked)}
         />
       </div>
       <div>
@@ -154,8 +156,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="smtp-fromEmail"
           type="email"
-          value={(emailConfig as any).fromEmail || ""}
-          onChange={(e) => handleConfigChange("fromEmail", e.target.value)}
+          value={(emailConfig as any).fromEmail || ''}
+          onChange={(e) => handleConfigChange('fromEmail', e.target.value)}
           placeholder="remetente@email.com"
           className="mt-1.5"
         />
@@ -164,8 +166,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="smtp-fromName">Nome do Remetente (Opcional)</Label>
         <Input
           id="smtp-fromName"
-          value={(emailConfig as any).fromName || ""}
-          onChange={(e) => handleConfigChange("fromName", e.target.value)}
+          value={(emailConfig as any).fromName || ''}
+          onChange={(e) => handleConfigChange('fromName', e.target.value)}
           placeholder="Sua Empresa"
           className="mt-1.5"
         />
@@ -180,8 +182,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="sendgrid-apiKey"
           type="password"
-          value={(emailConfig as any).apiKey || ""}
-          onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+          value={(emailConfig as any).apiKey || ''}
+          onChange={(e) => handleConfigChange('apiKey', e.target.value)}
           placeholder="SG.xxxxxxxxxxxxx"
           className="mt-1.5"
         />
@@ -194,8 +196,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="sendgrid-fromEmail"
           type="email"
-          value={(emailConfig as any).fromEmail || ""}
-          onChange={(e) => handleConfigChange("fromEmail", e.target.value)}
+          value={(emailConfig as any).fromEmail || ''}
+          onChange={(e) => handleConfigChange('fromEmail', e.target.value)}
           placeholder="remetente@email.com"
           className="mt-1.5"
         />
@@ -204,8 +206,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="sendgrid-fromName">Nome do Remetente (Opcional)</Label>
         <Input
           id="sendgrid-fromName"
-          value={(emailConfig as any).fromName || ""}
-          onChange={(e) => handleConfigChange("fromName", e.target.value)}
+          value={(emailConfig as any).fromName || ''}
+          onChange={(e) => handleConfigChange('fromName', e.target.value)}
           placeholder="Sua Empresa"
           className="mt-1.5"
         />
@@ -220,8 +222,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="mailgun-apiKey"
           type="password"
-          value={(emailConfig as any).apiKey || ""}
-          onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+          value={(emailConfig as any).apiKey || ''}
+          onChange={(e) => handleConfigChange('apiKey', e.target.value)}
           placeholder="key-xxxxxxxxxxxxx"
           className="mt-1.5"
         />
@@ -230,22 +232,20 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="domain">Domínio *</Label>
         <Input
           id="domain"
-          value={(emailConfig as any).domain || ""}
-          onChange={(e) => handleConfigChange("domain", e.target.value)}
+          value={(emailConfig as any).domain || ''}
+          onChange={(e) => handleConfigChange('domain', e.target.value)}
           placeholder="mg.exemplo.com"
           className="mt-1.5"
         />
-        <p className="text-xs text-gray-600 mt-1">
-          Domínio verificado no Mailgun
-        </p>
+        <p className="text-xs text-gray-600 mt-1">Domínio verificado no Mailgun</p>
       </div>
       <div>
         <Label htmlFor="mailgun-fromEmail">Email de Remetente (Opcional)</Label>
         <Input
           id="mailgun-fromEmail"
           type="email"
-          value={(emailConfig as any).fromEmail || ""}
-          onChange={(e) => handleConfigChange("fromEmail", e.target.value)}
+          value={(emailConfig as any).fromEmail || ''}
+          onChange={(e) => handleConfigChange('fromEmail', e.target.value)}
           placeholder="remetente@email.com"
           className="mt-1.5"
         />
@@ -254,8 +254,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="mailgun-fromName">Nome do Remetente (Opcional)</Label>
         <Input
           id="mailgun-fromName"
-          value={(emailConfig as any).fromName || ""}
-          onChange={(e) => handleConfigChange("fromName", e.target.value)}
+          value={(emailConfig as any).fromName || ''}
+          onChange={(e) => handleConfigChange('fromName', e.target.value)}
           placeholder="Sua Empresa"
           className="mt-1.5"
         />
@@ -270,8 +270,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="resend-apiKey"
           type="password"
-          value={(emailConfig as any).apiKey || ""}
-          onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+          value={(emailConfig as any).apiKey || ''}
+          onChange={(e) => handleConfigChange('apiKey', e.target.value)}
           placeholder="re_xxxxxxxxxxxxx"
           className="mt-1.5"
         />
@@ -284,8 +284,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Input
           id="resend-fromEmail"
           type="email"
-          value={(emailConfig as any).fromEmail || ""}
-          onChange={(e) => handleConfigChange("fromEmail", e.target.value)}
+          value={(emailConfig as any).fromEmail || ''}
+          onChange={(e) => handleConfigChange('fromEmail', e.target.value)}
           placeholder="remetente@email.com"
           className="mt-1.5"
         />
@@ -294,8 +294,8 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
         <Label htmlFor="resend-fromName">Nome do Remetente (Opcional)</Label>
         <Input
           id="resend-fromName"
-          value={(emailConfig as any).fromName || ""}
-          onChange={(e) => handleConfigChange("fromName", e.target.value)}
+          value={(emailConfig as any).fromName || ''}
+          onChange={(e) => handleConfigChange('fromName', e.target.value)}
           placeholder="Sua Empresa"
           className="mt-1.5"
         />
@@ -305,13 +305,13 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
 
   const renderProviderFields = () => {
     switch (provider) {
-      case "smtp":
+      case 'smtp':
         return renderSMTPFields();
-      case "sendgrid":
+      case 'sendgrid':
         return renderSendGridFields();
-      case "mailgun":
+      case 'mailgun':
         return renderMailgunFields();
-      case "resend":
+      case 'resend':
         return renderResendFields();
       default:
         return null;
@@ -387,7 +387,7 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
           disabled={!validation?.isValid || isSubmitting}
           className="bg-primary hover:bg-primary-dark"
         >
-          {isSubmitting ? "Salvando..." : config ? "Atualizar" : "Criar Configuração"}
+          {isSubmitting ? 'Salvando...' : config ? 'Atualizar' : 'Criar Configuração'}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -398,11 +398,3 @@ export function EmailConfigForm({ config, onSubmit, onCancel }: EmailConfigFormP
     </form>
   );
 }
-
-
-
-
-
-
-
-

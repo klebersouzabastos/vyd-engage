@@ -45,9 +45,7 @@ router.get('/', async (req, res, next) => {
       where: {
         tenantId,
         ...(active !== undefined ? { active } : {}),
-        ...(search
-          ? { name: { contains: search, mode: 'insensitive' } }
-          : {}),
+        ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
       },
       orderBy: { name: 'asc' },
     });

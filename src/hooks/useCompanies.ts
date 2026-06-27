@@ -11,14 +11,18 @@ const DEFAULT_PAGINATION = { page: 1, limit: 20, total: 0, totalPages: 0 };
  */
 export function useCompanies() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<Record<string, string | number | undefined> | undefined>(undefined);
+  const [filters, setFilters] = useState<Record<string, string | number | undefined> | undefined>(
+    undefined
+  );
 
   const query = useQuery({
     queryKey: ['companies', filters],
     queryFn: async () => {
       const result = await apiClient.getCompanies(filters);
       return {
-        companies: (result.companies as Record<string, unknown>[]).map((c) => c as unknown as Company),
+        companies: (result.companies as Record<string, unknown>[]).map(
+          (c) => c as unknown as Company
+        ),
         pagination: result.pagination || { ...DEFAULT_PAGINATION },
       };
     },
@@ -32,40 +36,49 @@ export function useCompanies() {
     setFilters(next);
   }, []);
 
-  const createCompany = useCallback(async (data: Partial<Company>) => {
-    try {
-      const result = await apiClient.createCompany(data);
-      toast.success('Empresa criada com sucesso!');
-      await queryClient.invalidateQueries({ queryKey: ['companies'] });
-      return result as unknown as Company;
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao criar empresa');
-      throw err;
-    }
-  }, [queryClient]);
+  const createCompany = useCallback(
+    async (data: Partial<Company>) => {
+      try {
+        const result = await apiClient.createCompany(data);
+        toast.success('Empresa criada com sucesso!');
+        await queryClient.invalidateQueries({ queryKey: ['companies'] });
+        return result as unknown as Company;
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao criar empresa');
+        throw err;
+      }
+    },
+    [queryClient]
+  );
 
-  const updateCompany = useCallback(async (id: string, data: Partial<Company>) => {
-    try {
-      const result = await apiClient.updateCompany(id, data);
-      toast.success('Empresa atualizada com sucesso!');
-      await queryClient.invalidateQueries({ queryKey: ['companies'] });
-      return result as unknown as Company;
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar empresa');
-      throw err;
-    }
-  }, [queryClient]);
+  const updateCompany = useCallback(
+    async (id: string, data: Partial<Company>) => {
+      try {
+        const result = await apiClient.updateCompany(id, data);
+        toast.success('Empresa atualizada com sucesso!');
+        await queryClient.invalidateQueries({ queryKey: ['companies'] });
+        return result as unknown as Company;
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao atualizar empresa');
+        throw err;
+      }
+    },
+    [queryClient]
+  );
 
-  const deleteCompany = useCallback(async (id: string) => {
-    try {
-      await apiClient.deleteCompany(id);
-      toast.success('Empresa removida com sucesso!');
-      await queryClient.invalidateQueries({ queryKey: ['companies'] });
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao remover empresa');
-      throw err;
-    }
-  }, [queryClient]);
+  const deleteCompany = useCallback(
+    async (id: string) => {
+      try {
+        await apiClient.deleteCompany(id);
+        toast.success('Empresa removida com sucesso!');
+        await queryClient.invalidateQueries({ queryKey: ['companies'] });
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao remover empresa');
+        throw err;
+      }
+    },
+    [queryClient]
+  );
 
   return {
     companies: query.data?.companies ?? [],

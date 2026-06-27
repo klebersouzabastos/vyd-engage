@@ -38,6 +38,7 @@ export interface AuthenticatedApiKey {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- augmentação de tipos do Express exige namespace
   namespace Express {
     interface Request {
       apiKey?: AuthenticatedApiKey;
@@ -62,11 +63,7 @@ export const apiKeyRateLimiter = rateLimit({
  * Authenticate via `X-API-Key`. Resolves tenant + scopes; updates lastUsedAt.
  * Fails 401 when missing/invalid/expired.
  */
-export async function apiKeyAuth(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function apiKeyAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     const provided = (req.headers['x-api-key'] as string | undefined)?.trim();
     if (!provided) {
@@ -134,12 +131,14 @@ export function requireScope(scope: ApiScope) {
     // Reject keys carrying a scope the system doesn't recognize (edge case → 400).
     const unknown = scopes.find((s) => !API_SCOPE_SET.has(s));
     if (unknown) {
-      return next(createError(`Unknown scope on API key: ${unknown}`, 400, 'API_KEY_UNKNOWN_SCOPE'));
+      return next(
+        createError(`Unknown scope on API key: ${unknown}`, 400, 'API_KEY_UNKNOWN_SCOPE')
+      );
     }
 
     if (!scopes.includes(scope)) {
       return next(
-        createError(`API key missing required scope: ${scope}`, 403, 'API_KEY_INSUFFICIENT_SCOPE'),
+        createError(`API key missing required scope: ${scope}`, 403, 'API_KEY_INSUFFICIENT_SCOPE')
       );
     }
 

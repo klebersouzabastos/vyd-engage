@@ -48,7 +48,8 @@ export function useRoadmap(id?: string) {
 export function useRoadmapPanel(filters?: { assignedTo?: string; riskDays?: number }) {
   return useQuery({
     queryKey: [...PANEL_KEY, filters ?? {}],
-    queryFn: () => apiClient.getRoadmapPanel(filters as Record<string, string | number | undefined>),
+    queryFn: () =>
+      apiClient.getRoadmapPanel(filters as Record<string, string | number | undefined>),
   });
 }
 
@@ -60,7 +61,7 @@ export function useRoadmapActions() {
       qc.invalidateQueries({ queryKey: PANEL_KEY });
       if (id) qc.invalidateQueries({ queryKey: [...ROADMAPS_KEY, id] });
     },
-    [qc],
+    [qc]
   );
 
   const createRoadmap = useCallback(
@@ -75,7 +76,7 @@ export function useRoadmapActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const updateRoadmap = useCallback(
@@ -90,7 +91,7 @@ export function useRoadmapActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const deleteRoadmap = useCallback(
@@ -104,7 +105,7 @@ export function useRoadmapActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const advanceToProposal = useCallback(
@@ -119,7 +120,7 @@ export function useRoadmapActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const upsertStakeholder = useCallback(
@@ -133,7 +134,7 @@ export function useRoadmapActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const removeStakeholder = useCallback(
@@ -146,7 +147,7 @@ export function useRoadmapActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   return {
@@ -173,7 +174,7 @@ export function useEmpreendimentoActions() {
   const qc = useQueryClient();
   const invalidate = useCallback(
     () => qc.invalidateQueries({ queryKey: EMPREENDIMENTOS_KEY }),
-    [qc],
+    [qc]
   );
 
   const createEmpreendimento = useCallback(
@@ -188,7 +189,7 @@ export function useEmpreendimentoActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const updateEmpreendimento = useCallback(
@@ -203,7 +204,7 @@ export function useEmpreendimentoActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const deleteEmpreendimento = useCallback(
@@ -217,7 +218,7 @@ export function useEmpreendimentoActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   return { createEmpreendimento, updateEmpreendimento, deleteEmpreendimento };
@@ -247,7 +248,7 @@ export function usePlaybookActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const updatePlaybook = useCallback(
@@ -262,7 +263,7 @@ export function usePlaybookActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   const deletePlaybook = useCallback(
@@ -276,7 +277,7 @@ export function usePlaybookActions() {
         throw err;
       }
     },
-    [invalidate],
+    [invalidate]
   );
 
   return { createPlaybook, updatePlaybook, deletePlaybook };

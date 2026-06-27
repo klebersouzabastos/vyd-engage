@@ -1,14 +1,24 @@
-import { ArrowLeft } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useLocation } from "react-router";
+import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router';
 
 export function VYDEcosystemBanner() {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   // Define public routes where banner should ALWAYS appear
-  const publicRoutes = ['/', '/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/verify-email', '/accept-invitation'];
-  const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/capture/');
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/register',
+    '/onboarding',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/accept-invitation',
+  ];
+  const isPublicRoute =
+    publicRoutes.includes(location.pathname) || location.pathname.startsWith('/capture/');
 
   // Hide banner only if:
   // 1. We're on a private route (starts with /app)
@@ -29,9 +39,7 @@ export function VYDEcosystemBanner() {
           <ArrowLeft size={14} />
           <span>Back to VYD Hub</span>
         </a>
-        <span className="text-gray-600 flex-shrink-0 ml-auto">
-          A VYD ecosystem solution
-        </span>
+        <span className="text-gray-600 flex-shrink-0 ml-auto">A VYD ecosystem solution</span>
       </div>
     </div>
   );

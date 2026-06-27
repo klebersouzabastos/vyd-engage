@@ -1,55 +1,48 @@
-import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { ArrowLeft, Download, Loader2, Eye } from "lucide-react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { CampaignPreview } from "../components/campaigns/CampaignPreview";
+import { useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ArrowLeft, Download, Loader2, Eye } from 'lucide-react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { CampaignPreview } from '../components/campaigns/CampaignPreview';
 import {
   apiClient,
   type CampaignStatus,
   type CampaignStats,
   type CampaignRecipientRow,
-} from "../services/api/client";
+} from '../services/api/client';
 
 const STATUS_LABELS: Record<CampaignStatus, string> = {
-  DRAFT: "Rascunho",
-  SCHEDULED: "Agendada",
-  SENDING: "Enviando",
-  SENT: "Enviada",
-  PAUSED: "Pausada",
-  CANCELLED: "Cancelada",
+  DRAFT: 'Rascunho',
+  SCHEDULED: 'Agendada',
+  SENDING: 'Enviando',
+  SENT: 'Enviada',
+  PAUSED: 'Pausada',
+  CANCELLED: 'Cancelada',
 };
 
 const RECIPIENT_STATUS_LABELS: Record<string, string> = {
-  sent: "Enviado",
-  delivered: "Entregue",
-  opened: "Aberto",
-  clicked: "Clicado",
-  unsubscribed: "Descadastrado",
-  bounced: "Bounce",
-  error: "Erro",
+  sent: 'Enviado',
+  delivered: 'Entregue',
+  opened: 'Aberto',
+  clicked: 'Clicado',
+  unsubscribed: 'Descadastrado',
+  bounced: 'Bounce',
+  error: 'Erro',
 };
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return '—';
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("pt-BR");
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
 }
 
 /** Escapes a value for CSV (quotes when it contains comma, quote or newline). */
 function csvCell(value: string | number | null | undefined): string {
-  const s = value === null || value === undefined ? "" : String(value);
+  const s = value === null || value === undefined ? '' : String(value);
   if (/[",\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
@@ -58,21 +51,21 @@ function csvCell(value: string | number | null | undefined): string {
 
 /** Builds and downloads a CSV of the recipients list with their events (req 33). */
 function exportRecipientsCsv(campaignName: string, recipients: CampaignRecipientRow[]) {
-  const header = ["Nome", "Email", "Status", "Data de abertura"];
+  const header = ['Nome', 'Email', 'Status', 'Data de abertura'];
   const rows = recipients.map((r) => [
     csvCell(r.name),
     csvCell(r.email),
     csvCell(RECIPIENT_STATUS_LABELS[r.status] ?? r.status),
     csvCell(formatDateTime(r.openedAt)),
   ]);
-  const csv = [header, ...rows].map((cols) => cols.join(",")).join("\r\n");
+  const csv = [header, ...rows].map((cols) => cols.join(',')).join('\r\n');
   // Prepend BOM so Excel reads UTF-8 accents correctly.
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
-  const safeName = campaignName.replace(/\s+/g, "_") || "campanha";
-  link.download = `${safeName}_destinatarios_${new Date().toISOString().split("T")[0]}.csv`;
+  const safeName = campaignName.replace(/\s+/g, '_') || 'campanha';
+  link.download = `${safeName}_destinatarios_${new Date().toISOString().split('T')[0]}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -84,16 +77,16 @@ export function CampaignDetail() {
   const navigate = useNavigate();
 
   const { data: campaign, isLoading } = useQuery({
-    queryKey: ["campaign", id],
+    queryKey: ['campaign', id],
     queryFn: () => apiClient.getCampaign(id!),
     enabled: !!id,
   });
 
-  const isSent = campaign?.status === "SENT";
+  const isSent = campaign?.status === 'SENT';
 
   // Results are only fetched/available after the campaign was sent (req 28).
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["campaign-stats", id],
+    queryKey: ['campaign-stats', id],
     queryFn: () => apiClient.getCampaignStats(id!),
     enabled: !!id && isSent,
   });
@@ -124,13 +117,13 @@ export function CampaignDetail() {
 
       <div className="p-4 md:p-8">
         <div className="mb-6 flex items-center justify-between">
-          <Button variant="outline" onClick={() => navigate("/app/campaigns")} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/app/campaigns')} className="gap-2">
             <ArrowLeft size={16} /> Voltar
           </Button>
           <Badge>{STATUS_LABELS[campaign.status]}</Badge>
         </div>
 
-        <Tabs defaultValue={isSent ? "results" : "overview"}>
+        <Tabs defaultValue={isSent ? 'results' : 'overview'}>
           <TabsList>
             <TabsTrigger value="overview">Visão geral</TabsTrigger>
             {/* Results tab is only available after the campaign has been sent (req 28). */}
@@ -142,8 +135,8 @@ export function CampaignDetail() {
               <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-5 text-sm">
                 <div>
                   <span className="text-gray-500">Remetente: </span>
-                  {campaign.fromName || "—"}
-                  {campaign.fromEmail ? ` <${campaign.fromEmail}>` : ""}
+                  {campaign.fromName || '—'}
+                  {campaign.fromEmail ? ` <${campaign.fromEmail}>` : ''}
                 </div>
                 <div>
                   <span className="text-gray-500">Assunto: </span>
@@ -208,16 +201,10 @@ function MetricCard({ label, value }: { label: string; value: string | number })
   );
 }
 
-function ResultsPanel({
-  campaignName,
-  stats,
-}: {
-  campaignName: string;
-  stats: CampaignStats;
-}) {
+function ResultsPanel({ campaignName, stats }: { campaignName: string; stats: CampaignStats }) {
   const chartData = useMemo(
     () => stats.timeline.map((t) => ({ hour: t.hour, opens: t.opens })),
-    [stats.timeline],
+    [stats.timeline]
   );
 
   return (

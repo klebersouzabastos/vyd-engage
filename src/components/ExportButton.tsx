@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Button } from "./ui/button";
+import { useState } from 'react';
+import { Button } from './ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Download, ChevronDown, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+} from './ui/dropdown-menu';
+import { Download, ChevronDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-type ExportFormat = "json" | "csv" | "xlsx";
+type ExportFormat = 'json' | 'csv' | 'xlsx';
 
 interface ExportButtonProps {
   /** Called with the selected format. Should return a Blob. */
@@ -19,20 +19,25 @@ interface ExportButtonProps {
   /** Button label */
   label?: string;
   /** Variant */
-  variant?: "outline" | "default" | "ghost";
+  variant?: 'outline' | 'default' | 'ghost';
   /** Additional class names */
   className?: string;
 }
 
 const FORMAT_OPTIONS: { value: ExportFormat; label: string; ext: string; mime: string }[] = [
-  { value: "csv", label: "CSV", ext: "csv", mime: "text/csv" },
-  { value: "xlsx", label: "Excel (XLSX)", ext: "xlsx", mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
-  { value: "json", label: "JSON", ext: "json", mime: "application/json" },
+  { value: 'csv', label: 'CSV', ext: 'csv', mime: 'text/csv' },
+  {
+    value: 'xlsx',
+    label: 'Excel (XLSX)',
+    ext: 'xlsx',
+    mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  },
+  { value: 'json', label: 'JSON', ext: 'json', mime: 'application/json' },
 ];
 
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -45,10 +50,10 @@ function triggerDownload(blob: Blob, filename: string) {
 
 export function ExportButton({
   onExport,
-  filename = "export",
-  label = "Exportar",
-  variant = "outline",
-  className = "",
+  filename = 'export',
+  label = 'Exportar',
+  variant = 'outline',
+  className = '',
 }: ExportButtonProps) {
   const [loading, setLoading] = useState(false);
 
@@ -61,8 +66,8 @@ export function ExportButton({
       triggerDownload(blob, `${filename}-${dateStr}.${opt.ext}`);
       toast.success(`Export concluido com sucesso`);
     } catch (error: any) {
-      console.error("Export error:", error);
-      toast.error(error?.message || "Erro ao exportar. Tente novamente.");
+      console.error('Export error:', error);
+      toast.error(error?.message || 'Erro ao exportar. Tente novamente.');
     } finally {
       setLoading(false);
     }

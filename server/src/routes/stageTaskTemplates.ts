@@ -37,10 +37,7 @@ router.get('/', async (req, res, next) => {
       include: {
         funnelColumn: { select: { id: true, title: true, order: true } },
       },
-      orderBy: [
-        { funnelColumn: { order: 'asc' } },
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ funnelColumn: { order: 'asc' } }, { createdAt: 'asc' }],
     });
 
     res.json({ status: 200, data: templates });

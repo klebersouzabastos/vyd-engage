@@ -6,13 +6,27 @@ import type { PrismaClient } from '@prisma/client';
 // Neutralize all Redis-backed infrastructure so the full app can be imported
 // without a running Redis (BullMQ queues/workers are created at module load).
 vi.mock('bullmq', () => {
-  class FakeQueue { add = vi.fn(); on = vi.fn(); close = vi.fn(); }
-  class FakeWorker { on = vi.fn(); close = vi.fn(); }
-  class FakeQueueEvents { on = vi.fn(); close = vi.fn(); }
+  class FakeQueue {
+    add = vi.fn();
+    on = vi.fn();
+    close = vi.fn();
+  }
+  class FakeWorker {
+    on = vi.fn();
+    close = vi.fn();
+  }
+  class FakeQueueEvents {
+    on = vi.fn();
+    close = vi.fn();
+  }
   return { Queue: FakeQueue, Worker: FakeWorker, QueueEvents: FakeQueueEvents };
 });
 vi.mock('ioredis', () => {
-  class FakeRedis { on = vi.fn(); quit = vi.fn(); disconnect = vi.fn(); }
+  class FakeRedis {
+    on = vi.fn();
+    quit = vi.fn();
+    disconnect = vi.fn();
+  }
   return { default: FakeRedis, Redis: FakeRedis };
 });
 // Avoid the always-on setInterval keeping the test process alive.

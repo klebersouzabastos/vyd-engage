@@ -20,7 +20,7 @@ const ctx: MergeTagContext = { name: 'Maria', company: 'Acme', email: 'm@acme.co
 describe('escapeHtml', () => {
   it('escapes the HTML-significant characters', () => {
     expect(escapeHtml(`<script>"&'</script>`)).toBe(
-      '&lt;script&gt;&quot;&amp;&#39;&lt;/script&gt;',
+      '&lt;script&gt;&quot;&amp;&#39;&lt;/script&gt;'
     );
   });
 
@@ -63,7 +63,7 @@ describe('sanitizeHtml (defense-in-depth on assembled doc)', () => {
 
   it('strips style/iframe/object/embed/link/meta blocks and self-closing tags', () => {
     const out = sanitizeHtml(
-      '<style>body{}</style><iframe src="x"></iframe><object></object><embed/><link rel="x"/><meta http-equiv="x"/>',
+      '<style>body{}</style><iframe src="x"></iframe><object></object><embed/><link rel="x"/><meta http-equiv="x"/>'
     );
     expect(out).not.toMatch(/<(style|iframe|object|embed|link|meta)/i);
   });
@@ -110,9 +110,7 @@ describe('blocksToHtml — block rendering + XSS through user content', () => {
   });
 
   it('escapes a <script> injected via a text block (no live markup)', () => {
-    const blocks: Block[] = [
-      { id: '1', type: 'text', content: '<script>alert(1)</script>' },
-    ];
+    const blocks: Block[] = [{ id: '1', type: 'text', content: '<script>alert(1)</script>' }];
     const html = blocksToHtml(blocks, ctx);
     expect(html).not.toMatch(/<script>alert/i);
     expect(html).toContain('&lt;script&gt;');
@@ -124,9 +122,7 @@ describe('blocksToHtml — block rendering + XSS through user content', () => {
   });
 
   it('blocks a javascript: button href → "#"', () => {
-    const blocks: Block[] = [
-      { id: '1', type: 'button', label: 'x', href: 'javascript:alert(1)' },
-    ];
+    const blocks: Block[] = [{ id: '1', type: 'button', label: 'x', href: 'javascript:alert(1)' }];
     const html = blocksToHtml(blocks, ctx);
     expect(html).not.toMatch(/javascript:/i);
     expect(html).toContain('href="#"');
@@ -150,7 +146,7 @@ describe('blocksToHtml — block rendering + XSS through user content', () => {
     expect(tooBig).toContain('height:200px'); // clamped to max 200
     const bad = blocksToHtml(
       [{ id: '1', type: 'spacer', height: 'evil' as unknown as number }],
-      ctx,
+      ctx
     );
     expect(bad).toContain('height:24px'); // falls back to default 24
   });

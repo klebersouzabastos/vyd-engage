@@ -1,18 +1,18 @@
-import { useEffect } from "react";
-import { Search } from "lucide-react";
-import { openCommandPalette } from "@/hooks/useCommandPalette";
+import { useEffect } from 'react';
+import { Search } from 'lucide-react';
+import { openCommandPalette } from '@/hooks/useCommandPalette';
 
 export function GlobalSearch() {
   // Ctrl+K / ⌘K — delegate to CommandPalette
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         openCommandPalette();
       }
     };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
   }, []);
 
   return (

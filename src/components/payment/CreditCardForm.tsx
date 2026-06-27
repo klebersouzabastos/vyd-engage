@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '../ui/button';
+import { Label } from '../ui/label';
+import { Loader2, ShieldCheck } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -29,10 +29,10 @@ function loadMercadoPagoSDK(): Promise<void> {
       resolve();
       return;
     }
-    const script = document.createElement("script");
-    script.src = "https://sdk.mercadopago.com/js/v2";
+    const script = document.createElement('script');
+    script.src = 'https://sdk.mercadopago.com/js/v2';
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Falha ao carregar SDK do Mercado Pago"));
+    script.onerror = () => reject(new Error('Falha ao carregar SDK do Mercado Pago'));
     document.head.appendChild(script);
   });
 }
@@ -48,6 +48,7 @@ export function CreditCardForm({
   const cardFormRef = useRef<any>(null);
   const mountedRef = useRef(false);
   const onSubmitRef = useRef(onSubmit);
+  // eslint-disable-next-line react-hooks/refs -- latest-ref idiom: mantém onSubmitRef apontando para o onSubmit atual usado no callback registrado no effect
   onSubmitRef.current = onSubmit;
 
   useEffect(() => {
@@ -60,47 +61,47 @@ export function CreditCardForm({
         if (cancelled || mountedRef.current) return;
 
         const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
-        if (!publicKey || publicKey === "TEST_PUBLIC_KEY") {
+        if (!publicKey || publicKey === 'TEST_PUBLIC_KEY') {
           setSdkError(
-            "Chave pública do Mercado Pago não configurada. Configure VITE_MERCADOPAGO_PUBLIC_KEY."
+            'Chave pública do Mercado Pago não configurada. Configure VITE_MERCADOPAGO_PUBLIC_KEY.'
           );
           return;
         }
 
         const mp = new window.MercadoPago(publicKey, {
-          locale: "pt-BR",
+          locale: 'pt-BR',
         });
 
         cardFormRef.current = mp.cardForm({
           amount: String(amount),
           iframe: true,
           form: {
-            id: "mp-card-form",
+            id: 'mp-card-form',
             cardNumber: {
-              id: "mp-card-number",
-              placeholder: "0000 0000 0000 0000",
+              id: 'mp-card-number',
+              placeholder: '0000 0000 0000 0000',
             },
             expirationDate: {
-              id: "mp-expiration-date",
-              placeholder: "MM/AA",
+              id: 'mp-expiration-date',
+              placeholder: 'MM/AA',
             },
             securityCode: {
-              id: "mp-security-code",
-              placeholder: "CVV",
+              id: 'mp-security-code',
+              placeholder: 'CVV',
             },
             cardholderName: {
-              id: "mp-cardholder-name",
-              placeholder: "NOME NO CARTÃO",
+              id: 'mp-cardholder-name',
+              placeholder: 'NOME NO CARTÃO',
             },
             installments: {
-              id: "mp-installments",
-              placeholder: "Parcelas",
+              id: 'mp-installments',
+              placeholder: 'Parcelas',
             },
           },
           callbacks: {
             onFormMounted: (error: any) => {
               if (error) {
-                setSdkError("Erro ao montar formulário seguro do Mercado Pago");
+                setSdkError('Erro ao montar formulário seguro do Mercado Pago');
                 return;
               }
               mountedRef.current = true;
@@ -126,7 +127,7 @@ export function CreditCardForm({
         });
       } catch (err) {
         if (!cancelled) {
-          setSdkError("Erro ao inicializar pagamento seguro. Tente novamente.");
+          setSdkError('Erro ao inicializar pagamento seguro. Tente novamente.');
         }
       }
     }
@@ -135,7 +136,7 @@ export function CreditCardForm({
 
     return () => {
       cancelled = true;
-      if (cardFormRef.current && typeof cardFormRef.current.unmount === "function") {
+      if (cardFormRef.current && typeof cardFormRef.current.unmount === 'function') {
         cardFormRef.current.unmount();
       }
       mountedRef.current = false;
@@ -164,7 +165,7 @@ export function CreditCardForm({
         </div>
       )}
 
-      <form id="mp-card-form" className={sdkReady ? "" : "hidden"}>
+      <form id="mp-card-form" className={sdkReady ? '' : 'hidden'}>
         <div className="space-y-4">
           <div>
             <Label>Número do Cartão</Label>
@@ -211,11 +212,11 @@ export function CreditCardForm({
         <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
           <ShieldCheck size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-medium text-green-900">
-              Ambiente seguro Mercado Pago
-            </p>
+            <p className="text-xs font-medium text-green-900">Ambiente seguro Mercado Pago</p>
             <p className="text-xs text-green-800 mt-0.5">
-              Os dados do seu cartão são digitados em campos seguros do Mercado Pago (iframe criptografado) e nunca passam pelos nossos servidores. Apenas um token de pagamento é transmitido.
+              Os dados do seu cartão são digitados em campos seguros do Mercado Pago (iframe
+              criptografado) e nunca passam pelos nossos servidores. Apenas um token de pagamento é
+              transmitido.
             </p>
           </div>
         </div>
@@ -235,7 +236,7 @@ export function CreditCardForm({
             disabled={isLoading || !sdkReady}
             className="flex-1 bg-primary hover:bg-primary-dark"
           >
-            {isLoading ? "Processando..." : "Pagar"}
+            {isLoading ? 'Processando...' : 'Pagar'}
           </Button>
         </div>
       </form>

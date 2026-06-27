@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -46,8 +40,8 @@ export function TemplateManager({ open, onOpenChange, templates }: TemplateManag
           <DialogHeader>
             <DialogTitle>Modelos de prompt</DialogTitle>
             <DialogDescription>
-              Gerência exclusiva do admin da plataforma. Estes prompts são a inteligência do
-              produto e não são exibidos aos usuários.
+              Gerência exclusiva do admin da plataforma. Estes prompts são a inteligência do produto
+              e não são exibidos aos usuários.
             </DialogDescription>
           </DialogHeader>
 
@@ -114,10 +108,7 @@ export function TemplateManager({ open, onOpenChange, templates }: TemplateManag
 
       <TemplateEditor open={editorOpen} onOpenChange={setEditorOpen} template={editing} />
 
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir modelo?</AlertDialogTitle>

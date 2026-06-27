@@ -59,7 +59,7 @@ export const whatsappService = {
       orderBy: { createdAt: 'desc' },
     });
 
-    return connections.map(conn => ({
+    return connections.map((conn) => ({
       ...conn,
       config: safeDecryptConfig(conn.config),
     }));
@@ -116,11 +116,3 @@ export const whatsappService = {
     });
   },
 };
-
-
-
-
-
-
-
-

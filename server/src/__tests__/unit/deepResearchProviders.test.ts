@@ -29,7 +29,9 @@ describe('parsePerplexity', () => {
   });
 
   it('lê também de response aninhado', () => {
-    const { markdown } = parsePerplexity({ response: { choices: [{ message: { content: 'aninhado' } }] } });
+    const { markdown } = parsePerplexity({
+      response: { choices: [{ message: { content: 'aninhado' } }] },
+    });
     expect(markdown).toBe('aninhado');
   });
 });
@@ -54,7 +56,9 @@ describe('applyChunk (stream OpenRouter)', () => {
   it('acumula annotations url_citation incrementais e deduplica (formato real do stream)', () => {
     const acc = { markdown: '', citations: [] as string[], searchResults: [] as any[] };
     const chunk = (url: string, title: string) => ({
-      choices: [{ delta: { annotations: [{ type: 'url_citation', url_citation: { url, title } }] } }],
+      choices: [
+        { delta: { annotations: [{ type: 'url_citation', url_citation: { url, title } }] } },
+      ],
     });
     applyChunk(chunk('https://a.com', 'A'), acc);
     applyChunk(chunk('https://b.com', 'B'), acc);

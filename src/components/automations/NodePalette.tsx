@@ -13,12 +13,12 @@ import {
   Bell,
   ArrowRightLeft,
   BarChart3,
-} from "lucide-react";
-import { TRIGGER_TYPES, ACTION_TYPES } from "../../utils/automationFlowConverter";
-import type { ReactNode } from "react";
+} from 'lucide-react';
+import { TRIGGER_TYPES, ACTION_TYPES } from '../../utils/automationFlowConverter';
+import type { ReactNode } from 'react';
 
 interface NodePaletteProps {
-  onAddNode: (type: "trigger" | "action" | "condition", nodeType: string) => void;
+  onAddNode: (type: 'trigger' | 'action' | 'condition', nodeType: string) => void;
   hasTrigger: boolean;
 }
 
@@ -55,12 +55,12 @@ export function NodePalette({ onAddNode, hasTrigger }: NodePaletteProps) {
           {TRIGGER_TYPES.map((trigger) => (
             <button
               key={trigger.value}
-              onClick={() => onAddNode("trigger", trigger.value)}
+              onClick={() => onAddNode('trigger', trigger.value)}
               disabled={hasTrigger}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
                 hasTrigger
-                  ? "opacity-40 cursor-not-allowed bg-gray-50 text-gray-400"
-                  : "hover:bg-green-50 text-gray-700 hover:text-green-700 border border-transparent hover:border-green-200"
+                  ? 'opacity-40 cursor-not-allowed bg-gray-50 text-gray-400'
+                  : 'hover:bg-green-50 text-gray-700 hover:text-green-700 border border-transparent hover:border-green-200'
               }`}
             >
               <div className="w-7 h-7 rounded-md bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
@@ -71,14 +71,12 @@ export function NodePalette({ onAddNode, hasTrigger }: NodePaletteProps) {
           ))}
         </div>
 
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Ações
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Ações</h3>
         <div className="space-y-1.5 mb-6">
           {ACTION_TYPES.map((action) => (
             <button
               key={action.value}
-              onClick={() => onAddNode("action", action.value)}
+              onClick={() => onAddNode('action', action.value)}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-transparent hover:border-blue-200"
             >
               <div className="w-7 h-7 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
@@ -94,7 +92,7 @@ export function NodePalette({ onAddNode, hasTrigger }: NodePaletteProps) {
         </h3>
         <div className="space-y-1.5">
           <button
-            onClick={() => onAddNode("condition", "condition")}
+            onClick={() => onAddNode('condition', 'condition')}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors hover:bg-amber-50 text-gray-700 hover:text-amber-700 border border-transparent hover:border-amber-200"
           >
             <div className="w-7 h-7 rounded-md bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">

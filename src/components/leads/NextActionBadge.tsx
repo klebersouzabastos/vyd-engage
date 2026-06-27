@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   PhoneOutgoing,
   MessageCircle,
@@ -10,15 +10,11 @@ import {
   CheckCircle,
   Phone,
   Zap,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../ui/tooltip";
-import { apiClient } from "../../services/api/client";
-import { useAIStatus } from "../../hooks/useAIStatus";
-import type { NextAction } from "../../types";
+} from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { apiClient } from '../../services/api/client';
+import { useAIStatus } from '../../hooks/useAIStatus';
+import type { NextAction } from '../../types';
 
 interface NextActionBadgeProps {
   leadId: string;
@@ -26,7 +22,7 @@ interface NextActionBadgeProps {
    * "badge" (default) renders a labelled pill for the detail page; "icon"
    * renders a compact icon-only chip suited to a dense list row.
    */
-  variant?: "badge" | "icon";
+  variant?: 'badge' | 'icon';
 }
 
 /**
@@ -45,27 +41,25 @@ const ACTION_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ICON_HINTS: Record<string, React.ReactNode> = {
-  "phone-outgoing": <PhoneOutgoing size={14} />,
+  'phone-outgoing': <PhoneOutgoing size={14} />,
   phone: <Phone size={14} />,
-  "message-circle": <MessageCircle size={14} />,
+  'message-circle': <MessageCircle size={14} />,
   mail: <Mail size={14} />,
   calendar: <Calendar size={14} />,
   handshake: <Handshake size={14} />,
-  "refresh-cw": <RefreshCw size={14} />,
-  "check-circle": <CheckCircle size={14} />,
+  'refresh-cw': <RefreshCw size={14} />,
+  'check-circle': <CheckCircle size={14} />,
 };
 
 const PRIORITY_STYLES: Record<string, string> = {
-  HIGH: "bg-red-50 text-red-700 border-red-200",
-  MEDIUM: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  LOW: "bg-green-50 text-green-700 border-green-200",
+  HIGH: 'bg-red-50 text-red-700 border-red-200',
+  MEDIUM: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  LOW: 'bg-green-50 text-green-700 border-green-200',
 };
 
 function resolveIcon(action: NextAction): React.ReactNode {
   return (
-    ACTION_ICONS[action.action?.toUpperCase?.()] ||
-    ICON_HINTS[action.icon] ||
-    <Zap size={14} />
+    ACTION_ICONS[action.action?.toUpperCase?.()] || ICON_HINTS[action.icon] || <Zap size={14} />
   );
 }
 
@@ -75,7 +69,7 @@ function resolveIcon(action: NextAction): React.ReactNode {
  * on the Lead detail page and in the leads list. Hidden (and makes no AI call)
  * when the AI provider is not configured (req 33).
  */
-export function NextActionBadge({ leadId, variant = "badge" }: NextActionBadgeProps) {
+export function NextActionBadge({ leadId, variant = 'badge' }: NextActionBadgeProps) {
   const { enabled } = useAIStatus();
   const [action, setAction] = useState<NextAction | null>(null);
 
@@ -110,7 +104,7 @@ export function NextActionBadge({ leadId, variant = "badge" }: NextActionBadgePr
           className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium cursor-default ${styles}`}
         >
           {icon}
-          {variant === "badge" && <span className="truncate max-w-[180px]">{action.action}</span>}
+          {variant === 'badge' && <span className="truncate max-w-[180px]">{action.action}</span>}
           <span className="sr-only">Próxima ação sugerida por IA: {action.action}</span>
         </span>
       </TooltipTrigger>

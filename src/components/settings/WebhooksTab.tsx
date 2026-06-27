@@ -1,11 +1,26 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { Button } from "../ui/button";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
 import {
-  Plus, Trash2, Play, Pause, Send, ChevronDown, ChevronUp, Loader2,
-  CheckCircle, XCircle, Clock, Copy,
-} from "lucide-react";
-import { apiClient, ApiError, type OutgoingWebhook, type OutgoingWebhookLog } from "../../services/api/client";
+  Plus,
+  Trash2,
+  Play,
+  Pause,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Copy,
+} from 'lucide-react';
+import {
+  apiClient,
+  ApiError,
+  type OutgoingWebhook,
+  type OutgoingWebhookLog,
+} from '../../services/api/client';
 
 interface TestResult {
   success: boolean;
@@ -17,27 +32,27 @@ interface TestResult {
 
 // The 9 selectable events (req 10) — fallback if the events endpoint is unavailable.
 const SELECTABLE_EVENTS = [
-  "lead.created",
-  "lead.updated",
-  "lead.deleted",
-  "deal.created",
-  "deal.updated",
-  "deal.won",
-  "deal.lost",
-  "task.completed",
-  "automation.triggered",
+  'lead.created',
+  'lead.updated',
+  'lead.deleted',
+  'deal.created',
+  'deal.updated',
+  'deal.won',
+  'deal.lost',
+  'task.completed',
+  'automation.triggered',
 ];
 
 const EVENT_LABELS: Record<string, string> = {
-  "lead.created": "Lead criado",
-  "lead.updated": "Lead atualizado",
-  "lead.deleted": "Lead deletado",
-  "deal.created": "Deal criado",
-  "deal.updated": "Deal atualizado",
-  "deal.won": "Deal ganho",
-  "deal.lost": "Deal perdido",
-  "task.completed": "Tarefa concluida",
-  "automation.triggered": "Automacao disparada",
+  'lead.created': 'Lead criado',
+  'lead.updated': 'Lead atualizado',
+  'lead.deleted': 'Lead deletado',
+  'deal.created': 'Deal criado',
+  'deal.updated': 'Deal atualizado',
+  'deal.won': 'Deal ganho',
+  'deal.lost': 'Deal perdido',
+  'task.completed': 'Tarefa concluida',
+  'automation.triggered': 'Automacao disparada',
 };
 
 export function WebhooksTab() {
@@ -45,9 +60,9 @@ export function WebhooksTab() {
   const [availableEvents, setAvailableEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formUrl, setFormUrl] = useState("");
+  const [formUrl, setFormUrl] = useState('');
   const [formEvents, setFormEvents] = useState<string[]>([]);
-  const [formSecret, setFormSecret] = useState("");
+  const [formSecret, setFormSecret] = useState('');
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, OutgoingWebhookLog[]>>({});
@@ -70,32 +85,43 @@ export function WebhooksTab() {
     }
   }, []);
 
-  useEffect(() => { loadWebhooks(); }, [loadWebhooks]);
+  useEffect(() => {
+    loadWebhooks();
+  }, [loadWebhooks]);
 
   const handleCreate = async () => {
     if (!formUrl || formEvents.length === 0) {
-      toast.error("Preencha a URL e selecione pelo menos um evento");
+      toast.error('Preencha a URL e selecione pelo menos um evento');
       return;
     }
     if (!formSecret.trim()) {
-      toast.error("O secret e obrigatorio para assinatura HMAC");
+      toast.error('O secret e obrigatorio para assinatura HMAC');
       return;
     }
     setSaving(true);
     try {
-      await apiClient.createOutgoingWebhook({ url: formUrl, events: formEvents, secret: formSecret.trim() });
-      toast.success("Webhook criado");
+      await apiClient.createOutgoingWebhook({
+        url: formUrl,
+        events: formEvents,
+        secret: formSecret.trim(),
+      });
+      toast.success('Webhook criado');
       setShowForm(false);
-      setFormUrl("");
+      setFormUrl('');
       setFormEvents([]);
-      setFormSecret("");
+      setFormSecret('');
       await loadWebhooks();
     } catch (error) {
       // Tenant reached the 10-webhook limit (req 15 → HTTP 422).
-      if (error instanceof ApiError && (error.statusCode === 422 || error.code === "WEBHOOK_LIMIT_REACHED")) {
-        toast.error(error.message || "Limite de 10 webhooks atingido. Remova um existente para criar outro.");
+      if (
+        error instanceof ApiError &&
+        (error.statusCode === 422 || error.code === 'WEBHOOK_LIMIT_REACHED')
+      ) {
+        toast.error(
+          error.message || 'Limite de 10 webhooks atingido. Remova um existente para criar outro.'
+        );
       } else {
-        toast.error(error instanceof Error ? error.message : "Erro ao criar webhook");
+        toast.error(error instanceof Error ? error.message : 'Erro ao criar webhook');
       }
     } finally {
       setSaving(false);
@@ -105,20 +131,20 @@ export function WebhooksTab() {
   const handleToggle = async (webhook: OutgoingWebhook) => {
     try {
       await apiClient.updateOutgoingWebhook(webhook.id, { active: !webhook.active });
-      toast.success(webhook.active ? "Webhook desativado" : "Webhook ativado");
+      toast.success(webhook.active ? 'Webhook desativado' : 'Webhook ativado');
       await loadWebhooks();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar webhook");
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await apiClient.deleteOutgoingWebhook(id);
-      toast.success("Webhook removido");
+      toast.success('Webhook removido');
       await loadWebhooks();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao remover webhook");
+      toast.error(error instanceof Error ? error.message : 'Erro ao remover webhook');
     }
   };
 
@@ -126,7 +152,10 @@ export function WebhooksTab() {
     setTesting(id);
     try {
       const selectedEvent = testEvent[id] || undefined;
-      const result = await apiClient.testOutgoingWebhook(id, selectedEvent) as unknown as TestResult;
+      const result = (await apiClient.testOutgoingWebhook(
+        id,
+        selectedEvent
+      )) as unknown as TestResult;
       if (result.success) {
         toast.success(`Teste enviado com sucesso (status ${result.statusCode})`);
       } else {
@@ -137,10 +166,10 @@ export function WebhooksTab() {
       // Reload logs if expanded
       if (expandedId === id) {
         const logData = await apiClient.getWebhookLogs(id);
-        setLogs(prev => ({ ...prev, [id]: logData }));
+        setLogs((prev) => ({ ...prev, [id]: logData }));
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao testar webhook");
+      toast.error(error instanceof Error ? error.message : 'Erro ao testar webhook');
     } finally {
       setTesting(null);
     }
@@ -155,7 +184,7 @@ export function WebhooksTab() {
     if (!logs[id]) {
       try {
         const logData = await apiClient.getWebhookLogs(id);
-        setLogs(prev => ({ ...prev, [id]: logData }));
+        setLogs((prev) => ({ ...prev, [id]: logData }));
       } catch {
         // silent
       }
@@ -163,15 +192,15 @@ export function WebhooksTab() {
   };
 
   const toggleEvent = (event: string) => {
-    setFormEvents(prev =>
-      prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]
+    setFormEvents((prev) =>
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
     );
   };
 
   const copyPayload = () => {
     if (testResultModal?.payload) {
       navigator.clipboard.writeText(JSON.stringify(testResultModal.payload, null, 2));
-      toast.success("Payload copiado");
+      toast.success('Payload copiado');
     }
   };
 
@@ -204,8 +233,11 @@ export function WebhooksTab() {
       {showForm && (
         <div className="p-4 border border-gray-300 rounded-lg bg-gray-50 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL do Endpoint</label>
+            <label htmlFor="webhook-url" className="block text-sm font-medium text-gray-700 mb-1">
+              URL do Endpoint
+            </label>
             <input
+              id="webhook-url"
               type="url"
               value={formUrl}
               onChange={(e) => setFormUrl(e.target.value)}
@@ -215,18 +247,26 @@ export function WebhooksTab() {
           </div>
           {/* Secret — required for HMAC signing (req 9). */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Secret (assinatura HMAC)</label>
+            <label
+              htmlFor="webhook-secret"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Secret (assinatura HMAC)
+            </label>
             <input
+              id="webhook-secret"
               type="text"
               value={formSecret}
               onChange={(e) => setFormSecret(e.target.value)}
               placeholder="String secreta e aleatoria"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
-            <p className="text-xs text-gray-500 mt-1">Usado para assinar cada disparo (X-VYD-Signature). Obrigatorio.</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Usado para assinar cada disparo (X-VYD-Signature). Obrigatorio.
+            </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Eventos</label>
+            <span className="block text-sm font-medium text-gray-700 mb-2">Eventos</span>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {availableEvents.map((event) => (
                 <label key={event} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -242,7 +282,16 @@ export function WebhooksTab() {
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setFormUrl(""); setFormEvents([]); setFormSecret(""); }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowForm(false);
+                setFormUrl('');
+                setFormEvents([]);
+                setFormSecret('');
+              }}
+            >
               Cancelar
             </Button>
             <Button size="sm" onClick={handleCreate} disabled={saving}>
@@ -265,12 +314,17 @@ export function WebhooksTab() {
               <div className="p-4 flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`w-2 h-2 rounded-full ${webhook.active ? "bg-green-500" : "bg-gray-400"}`} />
+                    <span
+                      className={`w-2 h-2 rounded-full ${webhook.active ? 'bg-green-500' : 'bg-gray-400'}`}
+                    />
                     <code className="text-sm font-mono truncate block">{webhook.url}</code>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {webhook.events.map((e) => (
-                      <span key={e} className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                      <span
+                        key={e}
+                        className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
+                      >
                         {EVENT_LABELS[e] || e}
                       </span>
                     ))}
@@ -285,7 +339,7 @@ export function WebhooksTab() {
                     {webhook.lastTriggeredAt && (
                       <span className="flex items-center gap-1">
                         <Clock size={12} />
-                        {new Date(webhook.lastTriggeredAt).toLocaleDateString("pt-BR")}
+                        {new Date(webhook.lastTriggeredAt).toLocaleDateString('pt-BR')}
                       </span>
                     )}
                   </div>
@@ -294,13 +348,17 @@ export function WebhooksTab() {
                   {/* Event selector for test */}
                   <select
                     className="text-xs border border-gray-300 rounded px-1 py-1 bg-white max-w-[140px]"
-                    value={testEvent[webhook.id] || ""}
-                    onChange={(e) => setTestEvent(prev => ({ ...prev, [webhook.id]: e.target.value }))}
+                    value={testEvent[webhook.id] || ''}
+                    onChange={(e) =>
+                      setTestEvent((prev) => ({ ...prev, [webhook.id]: e.target.value }))
+                    }
                     title="Evento de teste"
                   >
                     <option value="">Teste generico</option>
                     {availableEvents.map((ev) => (
-                      <option key={ev} value={ev}>{EVENT_LABELS[ev] || ev}</option>
+                      <option key={ev} value={ev}>
+                        {EVENT_LABELS[ev] || ev}
+                      </option>
                     ))}
                   </select>
                   <Button
@@ -310,13 +368,17 @@ export function WebhooksTab() {
                     disabled={testing === webhook.id}
                     title="Testar"
                   >
-                    {testing === webhook.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                    {testing === webhook.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleToggle(webhook)}
-                    title={webhook.active ? "Desativar" : "Ativar"}
+                    title={webhook.active ? 'Desativar' : 'Ativar'}
                   >
                     {webhook.active ? <Pause size={14} /> : <Play size={14} />}
                   </Button>
@@ -329,12 +391,12 @@ export function WebhooksTab() {
                   >
                     <Trash2 size={14} />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleLogs(webhook.id)}
-                  >
-                    {expandedId === webhook.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  <Button variant="ghost" size="sm" onClick={() => toggleLogs(webhook.id)}>
+                    {expandedId === webhook.id ? (
+                      <ChevronUp size={14} />
+                    ) : (
+                      <ChevronDown size={14} />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -352,16 +414,23 @@ export function WebhooksTab() {
                       {logs[webhook.id].map((log) => (
                         <div key={log.id} className="flex items-center gap-3 text-xs py-1">
                           {/* success indicator (req 14) */}
-                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                            log.success ? "bg-green-500" : "bg-red-500"
-                          }`} />
+                          <span
+                            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                              log.success ? 'bg-green-500' : 'bg-red-500'
+                            }`}
+                          />
                           <span className="text-gray-600 w-24 flex-shrink-0">
-                            {new Date(log.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                            {new Date(log.createdAt).toLocaleString('pt-BR', {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })}
                           </span>
                           <span className="font-mono text-gray-700">{log.event}</span>
                           {/* HTTP status code (req 14) */}
                           {log.statusCode != null && (
-                            <span className={`${log.statusCode < 300 ? "text-green-600" : "text-red-600"}`}>
+                            <span
+                              className={`${log.statusCode < 300 ? 'text-green-600' : 'text-red-600'}`}
+                            >
                               {log.statusCode}
                             </span>
                           )}
@@ -383,8 +452,25 @@ export function WebhooksTab() {
 
       {/* Test Result Modal */}
       {testResultModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setTestResultModal(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setTestResultModal(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (e.key === ' ') e.preventDefault();
+              setTestResultModal(null);
+            }
+          }}
+        >
+          <div
+            role="presentation"
+            className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h4 className="font-medium text-gray-900">Resultado do Teste</h4>
               <Button variant="ghost" size="sm" onClick={() => setTestResultModal(null)}>
@@ -393,20 +479,28 @@ export function WebhooksTab() {
             </div>
             <div className="p-4 space-y-3">
               <div className="flex items-center gap-3">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  testResultModal.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                }`}>
-                  {testResultModal.success ? "Sucesso" : "Falhou"}
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    testResultModal.success
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}
+                >
+                  {testResultModal.success ? 'Sucesso' : 'Falhou'}
                 </span>
                 {testResultModal.statusCode && (
-                  <span className="text-sm text-gray-600">Status: {testResultModal.statusCode}</span>
+                  <span className="text-sm text-gray-600">
+                    Status: {testResultModal.statusCode}
+                  </span>
                 )}
                 {testResultModal.responseTime !== undefined && (
                   <span className="text-sm text-gray-600">{testResultModal.responseTime}ms</span>
                 )}
               </div>
               {testResultModal.error && (
-                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{testResultModal.error}</div>
+                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                  {testResultModal.error}
+                </div>
               )}
               {testResultModal.payload && (
                 <div>

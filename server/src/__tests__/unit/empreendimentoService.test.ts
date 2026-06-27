@@ -11,7 +11,10 @@ describe('empreendimentoService.create — exige empresa válida', () => {
     prismaMock.company.findFirst.mockResolvedValue(null as never);
 
     await expect(
-      empreendimentoService.create('tenant-1', 'user-1', { companyId: 'inexistente', name: 'Obra X' }),
+      empreendimentoService.create('tenant-1', 'user-1', {
+        companyId: 'inexistente',
+        name: 'Obra X',
+      })
     ).rejects.toThrow(/Empresa não encontrada/);
 
     expect(prismaMock.empreendimento.create).not.toHaveBeenCalled();
@@ -26,6 +29,11 @@ describe('empreendimentoService.create — exige empresa válida', () => {
     expect(prismaMock.empreendimento.create).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (prismaMock.empreendimento.create as any).mock.calls[0][0].data;
-    expect(data).toMatchObject({ tenantId: 'tenant-1', companyId: 'co1', name: 'Obra X', status: 'ATIVO' });
+    expect(data).toMatchObject({
+      tenantId: 'tenant-1',
+      companyId: 'co1',
+      name: 'Obra X',
+      status: 'ATIVO',
+    });
   });
 });
