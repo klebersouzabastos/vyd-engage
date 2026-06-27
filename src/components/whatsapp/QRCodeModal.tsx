@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { WhatsAppConnection } from "../../types/whatsapp";
-import { DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { ConnectionStatusBadge } from "./ConnectionStatusBadge";
-import { RefreshCw, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "../ui/alert";
-import { getBaileysQRCode, startBaileysConnection } from "../../utils/whatsapp/baileysApi";
-import { getEvolutionQRCode } from "../../utils/whatsapp/evolutionApi";
+import { useState, useEffect } from 'react';
+import { WhatsAppConnection } from '../../types/whatsapp';
+import { DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { ConnectionStatusBadge } from './ConnectionStatusBadge';
+import { RefreshCw, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '../ui/alert';
+import { getBaileysQRCode, startBaileysConnection } from '../../utils/whatsapp/baileysApi';
+import { getEvolutionQRCode } from '../../utils/whatsapp/evolutionApi';
 
 interface QRCodeModalProps {
   connection: WhatsAppConnection;
@@ -24,17 +24,17 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
 
     try {
       let result;
-      
-      if (connection.provider === "baileys") {
+
+      if (connection.provider === 'baileys') {
         result = await getBaileysQRCode(connection.config as any);
         if (!result) {
           // Tentar iniciar conexão se não houver QR code
           result = await startBaileysConnection(connection.config as any);
         }
-      } else if (connection.provider === "evolution") {
+      } else if (connection.provider === 'evolution') {
         result = await getEvolutionQRCode(connection.config as any);
       } else {
-        setError("QR Code não disponível para este tipo de provedor");
+        setError('QR Code não disponível para este tipo de provedor');
         setIsLoading(false);
         return;
       }
@@ -43,10 +43,12 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
         setQrCode(result.qrCode);
         setExpiresAt(result.expiresAt);
       } else {
-        setError("Não foi possível obter o QR Code. Verifique se a instância está configurada corretamente.");
+        setError(
+          'Não foi possível obter o QR Code. Verifique se a instância está configurada corretamente.'
+        );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao obter QR Code");
+      setError(err instanceof Error ? err.message : 'Erro ao obter QR Code');
     } finally {
       setIsLoading(false);
     }
@@ -104,29 +106,25 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
                 decoding="async"
               />
               <p className="text-sm text-gray-600 mt-4 text-center max-w-sm">
-                1. Abra o WhatsApp no seu celular<br />
-                2. Vá em Configurações → Aparelhos conectados<br />
-                3. Toque em "Conectar um aparelho"<br />
+                1. Abra o WhatsApp no seu celular
+                <br />
+                2. Vá em Configurações → Aparelhos conectados
+                <br />
+                3. Toque em "Conectar um aparelho"
+                <br />
                 4. Escaneie este QR Code
               </p>
             </>
           ) : (
             <div className="flex flex-col items-center gap-4">
               <AlertCircle className="h-12 w-12 text-gray-600" />
-              <p className="text-sm text-gray-600">
-                Não foi possível gerar o QR Code
-              </p>
+              <p className="text-sm text-gray-600">Não foi possível gerar o QR Code</p>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            onClick={fetchQRCode}
-            disabled={isLoading}
-            variant="outline"
-            className="flex-1"
-          >
+          <Button onClick={fetchQRCode} disabled={isLoading} variant="outline" className="flex-1">
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -143,18 +141,10 @@ export function QRCodeModal({ connection }: QRCodeModalProps) {
 
         {expiresAt && !isExpired && (
           <p className="text-xs text-center text-gray-600">
-            QR Code expira em: {new Date(expiresAt).toLocaleString("pt-BR")}
+            QR Code expira em: {new Date(expiresAt).toLocaleString('pt-BR')}
           </p>
         )}
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-

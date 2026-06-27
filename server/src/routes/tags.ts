@@ -12,7 +12,10 @@ router.use(tenantScope);
 
 const createTagSchema = z.object({
   name: z.string().min(1),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-F]{6}$/i)
+    .optional(),
 });
 
 const updateTagSchema = createTagSchema.extend({
@@ -96,11 +99,3 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

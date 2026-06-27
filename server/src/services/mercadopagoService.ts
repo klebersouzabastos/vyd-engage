@@ -120,7 +120,8 @@ export const mercadopagoService = {
             email: params.payerEmail,
           },
           external_reference: params.externalReference,
-          notification_url: params.notificationUrl || `${process.env.API_URL}/api/webhooks/mercadopago`,
+          notification_url:
+            params.notificationUrl || `${process.env.API_URL}/api/webhooks/mercadopago`,
           statement_descriptor: 'VYD Engage',
         },
         requestOptions: { idempotencyKey: crypto.randomUUID() },
@@ -156,11 +157,3 @@ export const mercadopagoService = {
     }
   },
 };
-
-
-
-
-
-
-
-

@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { MoreVertical, Edit, Trash2, Send } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { MoreVertical, Edit, Trash2, Send } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from './ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,10 +19,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
-import { apiClient } from "../services/api/client";
-import { useAuth } from "../contexts/AuthContext";
-import { formatRelativeTime } from "../utils/interactions";
+} from './ui/alert-dialog';
+import { apiClient } from '../services/api/client';
+import { useAuth } from '../contexts/AuthContext';
+import { formatRelativeTime } from '../utils/interactions';
 
 interface CommentItem {
   id: string;
@@ -47,17 +47,13 @@ function extractMentions(text: string): string[] {
 export function CommentsSection({ leadId }: CommentsSectionProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<CommentItem[]>([]);
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
+  const [editingText, setEditingText] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const currentUserId = user?.id || "";
-  const currentUserName = user?.name || "Usuário";
-
-  useEffect(() => {
-    loadComments();
-  }, [leadId]);
+  const currentUserId = user?.id || '';
+  const currentUserName = user?.name || 'Usuário';
 
   const loadComments = async () => {
     try {
@@ -65,21 +61,26 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
       const interactions = result?.data || result || [];
       // Filter only NOTE type interactions (comments)
       const noteInteractions = interactions
-        .filter((i: any) => i.type === "NOTE")
+        .filter((i: any) => i.type === 'NOTE')
         .map((i: any) => ({
           id: i.id,
           userId: i.userId,
-          userName: i.user?.name || "Usuário",
-          content: i.content || "",
+          userName: i.user?.name || 'Usuário',
+          content: i.content || '',
           createdAt: i.createdAt,
           updatedAt: i.updatedAt !== i.createdAt ? i.updatedAt : undefined,
           mentions: i.metadata?.mentions || [],
         }));
       setComments(noteInteractions);
     } catch (error) {
-      console.error("Erro ao carregar comentários:", error);
+      console.error('Erro ao carregar comentários:', error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza comentários a partir da API quando leadId muda
+    loadComments();
+  }, [leadId]);
 
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
@@ -89,8 +90,8 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
     try {
       const result = await apiClient.createInteraction({
         leadId: String(leadId),
-        type: "NOTE",
-        direction: "OUTBOUND",
+        type: 'NOTE',
+        direction: 'OUTBOUND',
         content: newComment,
         metadata: mentions.length > 0 ? { mentions } : undefined,
       });
@@ -106,10 +107,10 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
       };
 
       setComments([newItem, ...comments]);
-      setNewComment("");
+      setNewComment('');
     } catch (error) {
-      console.error("Erro ao adicionar comentário:", error);
-      toast.error("Erro ao adicionar comentário");
+      console.error('Erro ao adicionar comentário:', error);
+      toast.error('Erro ao adicionar comentário');
     }
   };
 
@@ -125,12 +126,17 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
     // For now, just update locally since the API may not support update
     const updatedComments = comments.map((c) =>
       c.id === editingId
-        ? { ...c, content: editingText, updatedAt: new Date().toISOString(), mentions: extractMentions(editingText) }
+        ? {
+            ...c,
+            content: editingText,
+            updatedAt: new Date().toISOString(),
+            mentions: extractMentions(editingText),
+          }
         : c
     );
     setComments(updatedComments);
     setEditingId(null);
-    setEditingText("");
+    setEditingText('');
   };
 
   const handleDelete = async () => {
@@ -139,17 +145,17 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
       await apiClient.deleteInteraction(deletingId);
       setComments(comments.filter((c) => c.id !== deletingId));
     } catch (error) {
-      console.error("Erro ao excluir comentário:", error);
-      toast.error("Erro ao excluir comentário");
+      console.error('Erro ao excluir comentário:', error);
+      toast.error('Erro ao excluir comentário');
     }
     setDeletingId(null);
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(" ")
+      .split(' ')
       .map((n) => n[0])
-      .join("")
+      .join('')
       .toUpperCase()
       .slice(0, 2);
   };
@@ -169,9 +175,7 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
             className="resize-none"
           />
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-600">
-              Use @nome para mencionar alguém
-            </p>
+            <p className="text-xs text-gray-600">Use @nome para mencionar alguém</p>
             <Button
               onClick={handleSubmit}
               disabled={!newComment.trim()}
@@ -201,12 +205,10 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-1">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {comment.userName}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">{comment.userName}</p>
                       <p className="text-xs text-gray-600">
                         {formatRelativeTime(comment.createdAt)}
-                        {comment.updatedAt && " (editado)"}
+                        {comment.updatedAt && ' (editado)'}
                       </p>
                     </div>
                     {comment.userId === currentUserId && (
@@ -244,7 +246,14 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                         <Button size="sm" onClick={handleSaveEdit} disabled={!editingText.trim()}>
                           Salvar
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingText(""); }}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditingText('');
+                          }}
+                        >
                           Cancelar
                         </Button>
                       </div>
@@ -252,9 +261,12 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                   ) : (
                     <div className="text-sm text-gray-900 whitespace-pre-wrap">
                       {comment.content.split(/(@\w+)/g).map((part, index) => {
-                        if (part.startsWith("@")) {
+                        if (part.startsWith('@')) {
                           return (
-                            <span key={index} className="font-medium text-primary bg-blue-50 px-1 rounded">
+                            <span
+                              key={index}
+                              className="font-medium text-primary bg-blue-50 px-1 rounded"
+                            >
                               {part}
                             </span>
                           );
@@ -266,7 +278,10 @@ export function CommentsSection({ leadId }: CommentsSectionProps) {
                   {comment.mentions && comment.mentions.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {comment.mentions.map((mention, index) => (
-                        <span key={index} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
+                        <span
+                          key={index}
+                          className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded"
+                        >
                           @{mention}
                         </span>
                       ))}

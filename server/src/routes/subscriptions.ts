@@ -53,10 +53,12 @@ router.put('/change-plan', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const { planType, billingCycle } = z.object({
-      planType: z.nativeEnum(PlanType),
-      billingCycle: z.nativeEnum(BillingCycle).optional(),
-    }).parse(req.body);
+    const { planType, billingCycle } = z
+      .object({
+        planType: z.nativeEnum(PlanType),
+        billingCycle: z.nativeEnum(BillingCycle).optional(),
+      })
+      .parse(req.body);
 
     const subscription = await subscriptionService.changePlan(
       req.user.tenantId,
@@ -102,4 +104,3 @@ router.post('/reactivate', async (req, res, next) => {
 });
 
 export default router;
-

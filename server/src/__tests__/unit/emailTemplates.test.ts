@@ -7,7 +7,10 @@ import { emailTemplates } from '../../services/emailService.js';
  */
 describe('emailTemplates (react-email)', () => {
   it('renders password reset with name and link', async () => {
-    const { subject, html } = await emailTemplates.passwordReset('Maria', 'https://app/reset?token=abc');
+    const { subject, html } = await emailTemplates.passwordReset(
+      'Maria',
+      'https://app/reset?token=abc'
+    );
     expect(subject).toContain('Recuperação de Senha');
     expect(html).toContain('Maria');
     expect(html).toContain('https://app/reset?token=abc');
@@ -23,7 +26,12 @@ describe('emailTemplates (react-email)', () => {
   });
 
   it('renders invitation with inviter, company and role', async () => {
-    const { subject, html } = await emailTemplates.invitation('Ana', 'Acme', 'https://app/inv?token=xyz', 'Administrador');
+    const { subject, html } = await emailTemplates.invitation(
+      'Ana',
+      'Acme',
+      'https://app/inv?token=xyz',
+      'Administrador'
+    );
     expect(subject).toContain('Acme');
     expect(html).toContain('Ana');
     expect(html).toContain('Acme');

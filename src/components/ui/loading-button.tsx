@@ -1,11 +1,10 @@
-import * as React from "react";
-import { Loader2 } from "lucide-react";
-import { Button, buttonVariants, type VariantProps } from "./button";
-import { cn } from "./utils";
+import * as React from 'react';
+import { Loader2 } from 'lucide-react';
+import { Button, buttonVariants, type VariantProps } from './button';
+import { cn } from './utils';
 
 interface LoadingButtonProps
-  extends React.ComponentProps<"button">,
-    VariantProps<typeof buttonVariants> {
+  extends React.ComponentProps<'button'>, VariantProps<typeof buttonVariants> {
   loading?: boolean;
   loadingText?: string;
 }
@@ -28,22 +27,10 @@ function LoadingButton({
       disabled={disabled || loading}
       {...props}
     >
-      {loading && (
-        <Loader2
-          className="mr-2 h-4 w-4 animate-spin"
-          aria-hidden="true"
-        />
-      )}
+      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
       {loading ? loadingText || children : children}
     </Button>
   );
 }
 
 export { LoadingButton };
-
-
-
-
-
-
-

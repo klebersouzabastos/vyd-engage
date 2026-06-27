@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   EmailConfig,
   EmailProvider as EmailProviderType,
@@ -7,17 +15,17 @@ import {
   PlanLimits,
   ProviderConfig,
   EmailStatusInfo,
-} from "../types/email";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
-import { getErrorMessage } from "../utils/errors";
-import { useAuth } from "./AuthContext";
+} from '../types/email';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
+import { getErrorMessage } from '../utils/errors';
+import { useAuth } from './AuthContext';
 
 interface EmailContextType {
   configs: EmailConfig[];
   currentPlan: PlanType;
   planLimits: PlanLimits;
-  addEmailConfig: (config: Omit<EmailConfig, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  addEmailConfig: (config: Omit<EmailConfig, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateEmailConfig: (id: string, updates: Partial<EmailConfig>) => Promise<void>;
   deleteEmailConfig: (id: string) => Promise<void>;
   setDefaultEmailConfig: (id: string) => Promise<void>;
@@ -66,22 +74,25 @@ export function EmailProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [configs, setConfigs] = useState<EmailConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPlan, setCurrentPlan] = useState<PlanType>("pro");
+  const [currentPlan, setCurrentPlan] = useState<PlanType>('pro');
   const planLimits = PLAN_LIMITS[currentPlan];
 
   // Carregar plano atual da API de assinatura
   useEffect(() => {
     if (!user) return;
-    apiClient.getCurrentSubscription().then((sub: Record<string, unknown>) => {
-      const subscription = sub?.subscription as Record<string, unknown> | undefined;
-      const plan = subscription?.plan as Record<string, unknown> | undefined;
-      const planType = (plan?.type as string)?.toLowerCase();
-      if (planType && ["starter", "pro", "enterprise"].includes(planType)) {
-        setCurrentPlan(planType as PlanType);
-      }
-    }).catch(() => {
-      // Manter default "pro" se API falhar
-    });
+    apiClient
+      .getCurrentSubscription()
+      .then((sub: Record<string, unknown>) => {
+        const subscription = sub?.subscription as Record<string, unknown> | undefined;
+        const plan = subscription?.plan as Record<string, unknown> | undefined;
+        const planType = (plan?.type as string)?.toLowerCase();
+        if (planType && ['starter', 'pro', 'enterprise'].includes(planType)) {
+          setCurrentPlan(planType as PlanType);
+        }
+      })
+      .catch(() => {
+        // Manter default "pro" se API falhar
+      });
   }, [user]);
 
   // Carregar configurações da API
@@ -108,10 +119,10 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         name: config.name,
         provider: config.provider.toLowerCase() as EmailProviderType,
         fromEmail: config.fromEmail,
-        fromName: config.fromName || "",
+        fromName: config.fromName || '',
         config: config.config || {},
         status: {
-          status: config.verified ? "verified" : "unverified" as EmailStatus,
+          status: config.verified ? 'verified' : ('unverified' as EmailStatus),
           lastTested: config.verifiedAt || undefined,
         },
         isDefault: false, // Backend doesn't have this field yet
@@ -121,8 +132,8 @@ export function EmailProvider({ children }: { children: ReactNode }) {
       }));
       setConfigs(transformedConfigs);
     } catch (error) {
-      console.error("Erro ao carregar configurações de email:", error);
-      toast.error("Erro ao carregar configurações de email");
+      console.error('Erro ao carregar configurações de email:', error);
+      toast.error('Erro ao carregar configurações de email');
     } finally {
       setLoading(false);
     }
@@ -145,7 +156,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
 
   // Adicionar nova configuração
   const addEmailConfig = useCallback(
-    async (configData: Omit<EmailConfig, "id" | "createdAt" | "updatedAt">) => {
+    async (configData: Omit<EmailConfig, 'id' | 'createdAt' | 'updatedAt'>) => {
       if (!canAddEmailConfig()) {
         throw new Error(
           `Limite de configurações atingido. Seu plano permite ${planLimits.maxConfigs} configuração(ões).`
@@ -166,10 +177,10 @@ export function EmailProvider({ children }: { children: ReactNode }) {
           name: result.name,
           provider: result.provider.toLowerCase() as EmailProviderType,
           fromEmail: result.fromEmail,
-          fromName: result.fromName || "",
+          fromName: result.fromName || '',
           config: result.config || {},
           status: {
-            status: result.verified ? "verified" : "unverified" as EmailStatus,
+            status: result.verified ? 'verified' : ('unverified' as EmailStatus),
             lastTested: result.verifiedAt || undefined,
           },
           isDefault: configs.length === 0,
@@ -179,9 +190,9 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         };
 
         setConfigs((prev) => [...prev, newConfig]);
-        toast.success("Configuração de email criada com sucesso!");
+        toast.success('Configuração de email criada com sucesso!');
       } catch (error) {
-        toast.error(getErrorMessage(error) ||"Erro ao criar configuração de email");
+        toast.error(getErrorMessage(error) || 'Erro ao criar configuração de email');
         throw error;
       }
     },
@@ -204,10 +215,10 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         name: result.name,
         provider: result.provider.toLowerCase() as EmailProviderType,
         fromEmail: result.fromEmail,
-        fromName: result.fromName || "",
+        fromName: result.fromName || '',
         config: result.config || {},
         status: {
-          status: result.verified ? "verified" : "unverified" as EmailStatus,
+          status: result.verified ? 'verified' : ('unverified' as EmailStatus),
           lastTested: result.verifiedAt || undefined,
         },
         isDefault: updates.isDefault ?? false,
@@ -228,9 +239,9 @@ export function EmailProvider({ children }: { children: ReactNode }) {
           return cfg;
         })
       );
-      toast.success("Configuração atualizada com sucesso!");
+      toast.success('Configuração atualizada com sucesso!');
     } catch (error) {
-      toast.error(getErrorMessage(error) ||"Erro ao atualizar configuração");
+      toast.error(getErrorMessage(error) || 'Erro ao atualizar configuração');
       throw error;
     }
   }, []);
@@ -244,23 +255,24 @@ export function EmailProvider({ children }: { children: ReactNode }) {
         // Se deletou a configuração padrão e ainda há outras, definir primeira como padrão
         const deletedWasDefault = prev.find((cfg) => cfg.id === id)?.isDefault;
         if (deletedWasDefault && filtered.length > 0) {
-          return filtered.map((cfg, index) =>
-            index === 0 ? { ...cfg, isDefault: true } : cfg
-          );
+          return filtered.map((cfg, index) => (index === 0 ? { ...cfg, isDefault: true } : cfg));
         }
         return filtered;
       });
-      toast.success("Configuração deletada com sucesso!");
+      toast.success('Configuração deletada com sucesso!');
     } catch (error) {
-      toast.error(getErrorMessage(error) ||"Erro ao deletar configuração");
+      toast.error(getErrorMessage(error) || 'Erro ao deletar configuração');
       throw error;
     }
   }, []);
 
   // Definir configuração padrão
-  const setDefaultEmailConfig = useCallback(async (id: string) => {
-    await updateEmailConfig(id, { isDefault: true });
-  }, [updateEmailConfig]);
+  const setDefaultEmailConfig = useCallback(
+    async (id: string) => {
+      await updateEmailConfig(id, { isDefault: true });
+    },
+    [updateEmailConfig]
+  );
 
   // Obter configuração padrão
   const getDefaultEmailConfig = useCallback(() => {
@@ -285,7 +297,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
             ...cfg,
             status,
             updatedAt: now,
-            lastUsedAt: status.status === "connected" ? now : cfg.lastUsedAt,
+            lastUsedAt: status.status === 'connected' ? now : cfg.lastUsedAt,
           };
         }
         return cfg;
@@ -307,45 +319,57 @@ export function EmailProvider({ children }: { children: ReactNode }) {
       try {
         const result = await apiClient.getEmailConfig(id);
         updateEmailConfigStatus(id, {
-          status: result.verified ? "verified" : "unverified" as EmailStatus,
+          status: result.verified ? 'verified' : ('unverified' as EmailStatus),
           lastTested: result.verifiedAt || undefined,
         });
       } catch (error) {
-        console.error("Erro ao atualizar status da configuração:", error);
-        toast.error("Erro ao atualizar status da configuração");
+        console.error('Erro ao atualizar status da configuração:', error);
+        toast.error('Erro ao atualizar status da configuração');
       }
     },
     [updateEmailConfigStatus]
   );
 
-  const value = useMemo(() => ({
-    configs,
-    currentPlan,
-    planLimits,
-    addEmailConfig,
-    updateEmailConfig,
-    deleteEmailConfig,
-    setDefaultEmailConfig,
-    getDefaultEmailConfig,
-    getEmailConfig,
-    updateEmailConfigStatus,
-    canAddEmailConfig,
-    getEmailConfigsByProvider,
-    refreshEmailConfigStatus,
-  }), [configs, currentPlan, planLimits, addEmailConfig, updateEmailConfig, deleteEmailConfig, setDefaultEmailConfig, getDefaultEmailConfig, getEmailConfig, updateEmailConfigStatus, canAddEmailConfig, getEmailConfigsByProvider, refreshEmailConfigStatus]);
-
-  return (
-    <EmailContext.Provider value={value}>
-      {children}
-    </EmailContext.Provider>
+  const value = useMemo(
+    () => ({
+      configs,
+      currentPlan,
+      planLimits,
+      addEmailConfig,
+      updateEmailConfig,
+      deleteEmailConfig,
+      setDefaultEmailConfig,
+      getDefaultEmailConfig,
+      getEmailConfig,
+      updateEmailConfigStatus,
+      canAddEmailConfig,
+      getEmailConfigsByProvider,
+      refreshEmailConfigStatus,
+    }),
+    [
+      configs,
+      currentPlan,
+      planLimits,
+      addEmailConfig,
+      updateEmailConfig,
+      deleteEmailConfig,
+      setDefaultEmailConfig,
+      getDefaultEmailConfig,
+      getEmailConfig,
+      updateEmailConfigStatus,
+      canAddEmailConfig,
+      getEmailConfigsByProvider,
+      refreshEmailConfigStatus,
+    ]
   );
+
+  return <EmailContext.Provider value={value}>{children}</EmailContext.Provider>;
 }
 
 export function useEmail() {
   const context = useContext(EmailContext);
   if (context === undefined) {
-    throw new Error("useEmail must be used within an EmailProvider");
+    throw new Error('useEmail must be used within an EmailProvider');
   }
   return context;
 }
-

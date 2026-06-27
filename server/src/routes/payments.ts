@@ -83,7 +83,10 @@ router.get('/:id/invoice', async (req, res, next) => {
 
     const pdf = await invoiceService.generatePDF(req.user.tenantId, req.params.id);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=invoice-${req.params.id.slice(0, 8)}.pdf`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=invoice-${req.params.id.slice(0, 8)}.pdf`
+    );
     res.send(pdf);
   } catch (error) {
     next(error);
@@ -105,11 +108,3 @@ router.get('/history', async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

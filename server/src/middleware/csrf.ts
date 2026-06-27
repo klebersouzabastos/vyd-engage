@@ -20,7 +20,7 @@ export function setCsrfCookie(res: Response): string {
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: false, // JS needs to read this to send in header
     secure: IS_PRODUCTION,
-    sameSite: IS_PRODUCTION ? 'none' as const : 'strict' as const,
+    sameSite: IS_PRODUCTION ? ('none' as const) : ('strict' as const),
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
   });

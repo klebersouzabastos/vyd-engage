@@ -55,7 +55,7 @@ function validateMercadoPagoSignature(req: Request): boolean {
 
   // Parse x-signature header (format: "ts=...,v1=...")
   const parts = Object.fromEntries(
-    xSignature.split(',').map(part => {
+    xSignature.split(',').map((part) => {
       const [key, value] = part.split('=');
       return [key.trim(), value.trim()];
     })
@@ -98,7 +98,9 @@ router.post('/mercadopago', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error processing Mercado Pago webhook', error);
     // Still return 200 to prevent Mercado Pago from retrying
-    res.status(200).json({ received: true, error: error instanceof Error ? error.message : 'Unknown error' });
+    res
+      .status(200)
+      .json({ received: true, error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -118,7 +120,10 @@ router.get('/whatsapp', (req: Request, res: Response) => {
     logger.info('WhatsApp webhook verified');
     res.status(200).send(challenge);
   } else {
-    logger.warn('WhatsApp webhook verification failed', { mode, tokenMatch: token === verifyToken });
+    logger.warn('WhatsApp webhook verification failed', {
+      mode,
+      tokenMatch: token === verifyToken,
+    });
     res.status(403).send('Forbidden');
   }
 });
@@ -136,10 +141,9 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
         return;
       }
 
-      const expectedSignature = 'sha256=' + crypto
-        .createHmac('sha256', appSecret)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
+      const expectedSignature =
+        'sha256=' +
+        crypto.createHmac('sha256', appSecret).update(JSON.stringify(req.body)).digest('hex');
 
       if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
         logger.warn('WhatsApp webhook: invalid signature');
@@ -151,7 +155,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
     logger.info('WhatsApp webhook received', { object: req.body?.object });
 
     // Process webhook asynchronously - always return 200 quickly
-    whatsappMessagingService.processWebhook(req.body).catch(error => {
+    whatsappMessagingService.processWebhook(req.body).catch((error) => {
       logger.error('Error processing WhatsApp webhook async', error);
     });
 
@@ -227,7 +231,7 @@ function validateResendWebhook(req: Request): boolean {
     const hmac = crypto.createHmac('sha256', rawSecret).update(toSign).digest('base64');
     const expected = `v1,${hmac}`;
     // svix-signature may contain multiple space-separated versions
-    return svixSignature.split(' ').some(sig => {
+    return svixSignature.split(' ').some((sig) => {
       if (sig.length !== expected.length) return false;
       return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
     });
@@ -245,7 +249,7 @@ router.post('/email/sendgrid', async (req: Request, res: Response) => {
       return;
     }
     logger.info('SendGrid webhook received');
-    emailMessagingService.processWebhook('sendgrid', req.body).catch(error => {
+    emailMessagingService.processWebhook('sendgrid', req.body).catch((error) => {
       logger.error('Error processing SendGrid webhook', error);
     });
     // Campaign bounce tracking (req 24) — best-effort, async.
@@ -266,7 +270,7 @@ router.post('/email/resend', async (req: Request, res: Response) => {
       return;
     }
     logger.info('Resend webhook received', { type: req.body?.type });
-    emailMessagingService.processWebhook('resend', req.body).catch(error => {
+    emailMessagingService.processWebhook('resend', req.body).catch((error) => {
       logger.error('Error processing Resend webhook', error);
     });
     // Campaign bounce tracking (req 24) — best-effort, async.
@@ -370,11 +374,3 @@ router.post('/capture/:apiKey', async (req: Request, res: Response) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

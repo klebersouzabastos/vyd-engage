@@ -1,4 +1,4 @@
-import { Facebook, Globe, Search } from "lucide-react";
+import { Facebook, Globe, Search } from 'lucide-react';
 
 interface LeadSourceBadgeProps {
   source: 'meta' | 'google' | 'organico' | 'manual';
@@ -30,9 +30,11 @@ const sourceConfig = {
 export function LeadSourceBadge({ source }: LeadSourceBadgeProps) {
   const config = sourceConfig[source];
   const Icon = config.icon;
-  
+
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${config.className}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${config.className}`}
+    >
       <Icon size={12} aria-hidden="true" />
       <span className="sr-only">Origem: </span>
       {config.label}

@@ -1,5 +1,5 @@
-import { Report } from "../types";
-import { prepareImageForExcel } from "./imageUtils";
+import { Report } from '../types';
+import { prepareImageForExcel } from './imageUtils';
 import ExcelJS from 'exceljs';
 import {
   getLeadsData,
@@ -8,7 +8,7 @@ import {
   getTasksData,
   getInteractionsData,
   getDefaultDateRange,
-} from "./reportData";
+} from './reportData';
 
 /**
  * Converte uma imagem base64 para Buffer
@@ -22,7 +22,7 @@ function base64ToBuffer(base64: string): Buffer {
  * Obtém informações da empresa
  */
 function getCompanyInfoForExport() {
-  return { logo: null, companyName: "VYD Engage" };
+  return { logo: null, companyName: 'VYD Engage' };
 }
 
 /**
@@ -30,7 +30,11 @@ function getCompanyInfoForExport() {
  * Linha 1: Nome da aplicação
  * Linha 2: Logo
  */
-async function addLogoToReportWorksheet(worksheet: ExcelJS.Worksheet, logo: string | null, companyName: string) {
+async function addLogoToReportWorksheet(
+  worksheet: ExcelJS.Worksheet,
+  logo: string | null,
+  companyName: string
+) {
   // Linha 1: Nome da aplicação
   const cellA1 = worksheet.getCell('A1');
   cellA1.value = companyName;
@@ -38,7 +42,7 @@ async function addLogoToReportWorksheet(worksheet: ExcelJS.Worksheet, logo: stri
   cellA1.alignment = { vertical: 'middle', horizontal: 'left' };
   worksheet.getRow(1).height = 30;
   worksheet.mergeCells('A1:D1'); // Mesclar células para o nome
-  
+
   // Linha 2: Logo
   if (logo) {
     try {
@@ -47,13 +51,13 @@ async function addLogoToReportWorksheet(worksheet: ExcelJS.Worksheet, logo: stri
         buffer: imageBuffer,
         extension: logo.startsWith('data:image/png') ? 'png' : 'jpeg',
       });
-      
+
       // Inserir imagem na linha 2 (row 1 porque é 0-indexed)
       worksheet.addImage(imageId, {
         tl: { col: 0, row: 1 },
         ext: { width: 80, height: 80 },
       });
-      
+
       worksheet.getRow(2).height = 80;
       worksheet.getColumn(1).width = 15;
     } catch (error) {
@@ -77,36 +81,36 @@ async function addLogoToReportWorksheet(worksheet: ExcelJS.Worksheet, logo: stri
 
 // Função auxiliar para obter logo e nome da empresa (usado apenas para PDF)
 function getCompanyInfo() {
-  return { logo: null, companyName: "VYD Engage" };
+  return { logo: null, companyName: 'VYD Engage' };
 }
 
 // Função auxiliar para obter dados reais baseado no widget
 function getWidgetData(widget: any, filters?: any) {
-  const dataSource = widget.dataSource || "leads";
-  
+  const dataSource = widget.dataSource || 'leads';
+
   // Converter filtros do widget para o formato esperado
-  let reportFilters: any = filters || {};
+  const reportFilters: any = filters || {};
   if (widget.dateRange) {
-    if (widget.dateRange.type === "custom" && widget.dateRange.start && widget.dateRange.end) {
+    if (widget.dateRange.type === 'custom' && widget.dateRange.start && widget.dateRange.end) {
       reportFilters.dateRange = {
         start: new Date(widget.dateRange.start),
         end: new Date(widget.dateRange.end),
       };
-    } else if (widget.dateRange.type !== "all") {
+    } else if (widget.dateRange.type !== 'all') {
       reportFilters.dateRange = getDefaultDateRange(widget.dateRange.type);
     }
   }
-  
+
   switch (dataSource) {
-    case "leads":
+    case 'leads':
       return getLeadsData(reportFilters);
-    case "pipeline":
+    case 'pipeline':
       return getPipelineData(reportFilters);
-    case "automations":
+    case 'automations':
       return getAutomationsData(reportFilters);
-    case "tasks":
+    case 'tasks':
       return getTasksData(reportFilters);
-    case "interactions":
+    case 'interactions':
       return getInteractionsData(reportFilters);
     default:
       return getLeadsData(reportFilters);
@@ -115,7 +119,7 @@ function getWidgetData(widget: any, filters?: any) {
 
 export function exportReportToPDF(report: Report) {
   const { logo, companyName } = getCompanyInfo();
-  
+
   // Criar conteúdo HTML formatado para PDF
   let htmlContent = `
     <!DOCTYPE html>
@@ -282,21 +286,25 @@ export function exportReportToPDF(report: Report) {
       
       <!-- Linha 2: Logo -->
       <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #2563EB;">
-        ${logo ? `
+        ${
+          logo
+            ? `
           <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; padding: 5px;">
             <img src="${logo}" alt="${companyName}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
           </div>
-        ` : `
+        `
+            : `
           <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #2563EB;">
             ${companyName.charAt(0).toUpperCase()}
           </div>
-        `}
+        `
+        }
       </div>
       
       <!-- Linha 3: Título do relatório -->
       <div style="margin-bottom: 10px;">
         <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #1F2937;">${report.name}</h2>
-        ${report.description ? `<p class="subtitle" style="margin: 5px 0 0 0; font-size: 14px; color: #6B7280;">${report.description}</p>` : ""}
+        ${report.description ? `<p class="subtitle" style="margin: 5px 0 0 0; font-size: 14px; color: #6B7280;">${report.description}</p>` : ''}
       </div>
 
       <div class="meta-info">
@@ -327,102 +335,119 @@ export function exportReportToPDF(report: Report) {
     const data = getWidgetData(widget, report.filters);
 
     switch (widget.type) {
-      case "metric":
-        const metric = widget.metric || "total";
-        let metricValue: string | number = "N/A";
-        
-        if (widget.dataSource === "leads") {
+      case 'metric': {
+        const metric = widget.metric || 'total';
+        let metricValue: string | number = 'N/A';
+
+        if (widget.dataSource === 'leads') {
           switch (metric) {
-            case "total":
+            case 'total':
               metricValue = data.total || 0;
               break;
-            case "conversionRate":
+            case 'conversionRate':
               metricValue = `${data.conversionRate || 0}%`;
               break;
-            case "avgResponseTime":
+            case 'avgResponseTime':
               metricValue = `${data.avgResponseTime || 0}h`;
               break;
-            case "newLeads":
+            case 'newLeads':
               metricValue = data.newLeads || 0;
               break;
-            case "closedLeads":
+            case 'closedLeads':
               metricValue = data.closedLeads || 0;
               break;
           }
-        } else if (widget.dataSource === "pipeline") {
-          metricValue = metric === "conversionRate" ? `${data.conversionRate || 0}%` : data.totalLeads || 0;
-        } else if (widget.dataSource === "automations") {
+        } else if (widget.dataSource === 'pipeline') {
+          metricValue =
+            metric === 'conversionRate' ? `${data.conversionRate || 0}%` : data.totalLeads || 0;
+        } else if (widget.dataSource === 'automations') {
           switch (metric) {
-            case "total":
+            case 'total':
               metricValue = data.total || 0;
               break;
-            case "active":
+            case 'active':
               metricValue = data.active || 0;
               break;
-            case "successRate":
+            case 'successRate':
               metricValue = `${data.successRate || 0}%`;
               break;
-            case "totalSentMessages":
+            case 'totalSentMessages':
               metricValue = data.totalSentMessages || 0;
               break;
           }
-        } else if (widget.dataSource === "tasks") {
+        } else if (widget.dataSource === 'tasks') {
           switch (metric) {
-            case "total":
+            case 'total':
               metricValue = data.total || 0;
               break;
-            case "completionRate":
+            case 'completionRate':
               metricValue = `${data.completionRate || 0}%`;
               break;
-            case "overdue":
+            case 'overdue':
               metricValue = data.overdue || 0;
               break;
-            case "dueToday":
+            case 'dueToday':
               metricValue = data.dueToday || 0;
               break;
           }
         }
-        
+
         htmlContent += `
           <div class="metric-value">${metricValue}</div>
           <div class="metric-label">${widget.title}</div>
         `;
         break;
+      }
 
-      case "chart":
+      case 'chart': {
         let chartData: any[] = [];
-        if (widget.dataSource === "leads") {
-          if (widget.config?.dataSource === "bySource" || widget.chartType === "pie") {
+        if (widget.dataSource === 'leads') {
+          if (widget.config?.dataSource === 'bySource' || widget.chartType === 'pie') {
             chartData = Object.entries(data.bySource || {}).map(([name, value]) => ({
-              name: name === "meta" ? "Meta Ads" : name === "google" ? "Google Ads" : name === "organico" ? "Orgânico" : "Manual",
+              name:
+                name === 'meta'
+                  ? 'Meta Ads'
+                  : name === 'google'
+                    ? 'Google Ads'
+                    : name === 'organico'
+                      ? 'Orgânico'
+                      : 'Manual',
               value: value as number,
             }));
           } else {
             chartData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
-              name: name === "novo" ? "Novo" : name === "contato" ? "Em Contato" : name === "fechado" ? "Fechado" : "Perdido",
+              name:
+                name === 'novo'
+                  ? 'Novo'
+                  : name === 'contato'
+                    ? 'Em Contato'
+                    : name === 'fechado'
+                      ? 'Fechado'
+                      : 'Perdido',
               value: value as number,
             }));
           }
-        } else if (widget.dataSource === "pipeline") {
+        } else if (widget.dataSource === 'pipeline') {
           chartData = (data.stages || []).map((stage: any) => ({
             name: stage.name,
             value: stage.count,
           }));
         }
-        
+
         if (chartData.length > 0) {
           htmlContent += `<table>`;
           htmlContent += `<thead><tr><th>Nome</th><th>Valor</th><th>Percentual</th></tr></thead><tbody>`;
           const total = chartData.reduce((sum, item) => sum + item.value, 0);
           chartData.forEach((item) => {
-            const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : "0";
+            const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
             htmlContent += `<tr><td>${item.name}</td><td>${item.value}</td><td>${percentage}%</td></tr>`;
           });
           htmlContent += `</tbody></table>`;
         }
         break;
+      }
 
-      case "funnel":
+      case 'funnel': {
         const stages = data.stages || [];
         const maxValue = Math.max(...stages.map((s: any) => s.count || 0), 1);
         htmlContent += `<div class="funnel-container">`;
@@ -439,16 +464,24 @@ export function exportReportToPDF(report: Report) {
         });
         htmlContent += `</div>`;
         break;
+      }
 
-      case "table":
+      case 'table': {
         let tableData: any[] = [];
-        if (widget.dataSource === "leads") {
+        if (widget.dataSource === 'leads') {
           tableData = Object.entries(data.bySource || {}).map(([name, value]) => ({
-            name: name === "meta" ? "Meta Ads" : name === "google" ? "Google Ads" : name === "organico" ? "Orgânico" : "Manual",
+            name:
+              name === 'meta'
+                ? 'Meta Ads'
+                : name === 'google'
+                  ? 'Google Ads'
+                  : name === 'organico'
+                    ? 'Orgânico'
+                    : 'Manual',
             value,
           }));
         }
-        
+
         if (tableData.length > 0) {
           htmlContent += `<table>`;
           htmlContent += `<thead><tr><th>Nome</th><th>Valor</th><th>Status</th></tr></thead><tbody>`;
@@ -458,19 +491,20 @@ export function exportReportToPDF(report: Report) {
           htmlContent += `</tbody></table>`;
         }
         break;
+      }
     }
 
     htmlContent += `</div>`;
   });
-  
+
   // Adicionar informações sobre filtros aplicados
   if (report.filters) {
     htmlContent += `
       <div class="meta-info" style="margin-top: 30px;">
         <div class="meta-label" style="font-weight: bold; margin-bottom: 10px;">Filtros Aplicados</div>
-        ${report.filters.dateRange ? `<div class="meta-item"><div class="meta-label">Período</div><div class="meta-value">${report.filters.dateRange.type || "Customizado"}</div></div>` : ""}
-        ${report.filters.status && report.filters.status.length > 0 ? `<div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">${report.filters.status.join(", ")}</div></div>` : ""}
-        ${report.filters.source && report.filters.source.length > 0 ? `<div class="meta-item"><div class="meta-label">Origem</div><div class="meta-value">${report.filters.source.join(", ")}</div></div>` : ""}
+        ${report.filters.dateRange ? `<div class="meta-item"><div class="meta-label">Período</div><div class="meta-value">${report.filters.dateRange.type || 'Customizado'}</div></div>` : ''}
+        ${report.filters.status && report.filters.status.length > 0 ? `<div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">${report.filters.status.join(', ')}</div></div>` : ''}
+        ${report.filters.source && report.filters.source.length > 0 ? `<div class="meta-item"><div class="meta-label">Origem</div><div class="meta-value">${report.filters.source.join(', ')}</div></div>` : ''}
       </div>
     `;
   }
@@ -499,22 +533,22 @@ export function exportReportToPDF(report: Report) {
 
 export async function exportReportToExcel(report: Report) {
   const { logo, companyName } = getCompanyInfoForExport();
-  
+
   // Usar ExcelJS para exportação com suporte a imagens
   try {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(report.name);
-    
+
     // Adicionar cabeçalho: nome na linha 1, logo na linha 2
     await addLogoToReportWorksheet(worksheet, logo, companyName);
-    
+
     // Adicionar título do relatório (linha 3)
     const cellA3 = worksheet.getCell('A3');
     cellA3.value = report.name;
     cellA3.font = { size: 18, bold: true, color: { argb: 'FF1F2937' } };
     worksheet.getRow(3).height = 25;
     worksheet.mergeCells('A3:D3');
-    
+
     // Descrição (linha 4)
     let currentRow = 4;
     if (report.description) {
@@ -528,93 +562,99 @@ export async function exportReportToExcel(report: Report) {
     } else {
       currentRow = 6;
     }
-    
+
     // Adicionar informações do relatório
     worksheet.getCell(`A${currentRow}`).value = 'Tipo';
-    worksheet.getCell(`B${currentRow}`).value = report.type.charAt(0).toUpperCase() + report.type.slice(1);
+    worksheet.getCell(`B${currentRow}`).value =
+      report.type.charAt(0).toUpperCase() + report.type.slice(1);
     currentRow++;
-    
+
     worksheet.getCell(`A${currentRow}`).value = 'Data de Criação';
-    worksheet.getCell(`B${currentRow}`).value = new Date(report.createdAt).toLocaleDateString('pt-BR');
+    worksheet.getCell(`B${currentRow}`).value = new Date(report.createdAt).toLocaleDateString(
+      'pt-BR'
+    );
     currentRow++;
-    
+
     worksheet.getCell(`A${currentRow}`).value = 'Última Atualização';
-    worksheet.getCell(`B${currentRow}`).value = new Date(report.updatedAt).toLocaleDateString('pt-BR');
+    worksheet.getCell(`B${currentRow}`).value = new Date(report.updatedAt).toLocaleDateString(
+      'pt-BR'
+    );
     currentRow++;
-    
+
     worksheet.getCell(`A${currentRow}`).value = 'Total de Widgets';
     worksheet.getCell(`B${currentRow}`).value = report.widgets.length;
     currentRow += 2;
-    
+
     // Adicionar widgets com dados reais
     report.widgets.forEach((widget, index) => {
       const widgetRow = currentRow;
       worksheet.getCell(`A${widgetRow}`).value = `Widget ${index + 1}: ${widget.title}`;
       worksheet.getCell(`A${widgetRow}`).font = { size: 16, bold: true };
       currentRow++;
-      
+
       worksheet.getCell(`A${currentRow}`).value = 'Tipo';
       worksheet.getCell(`B${currentRow}`).value = widget.type;
       currentRow++;
-      
+
       const data = getWidgetData(widget, report.filters);
-      
+
       if (widget.type === 'metric') {
-        const metric = widget.metric || "total";
-        let metricValue: string | number = "N/A";
-        
-        if (widget.dataSource === "leads") {
+        const metric = widget.metric || 'total';
+        let metricValue: string | number = 'N/A';
+
+        if (widget.dataSource === 'leads') {
           switch (metric) {
-            case "total":
+            case 'total':
               metricValue = data.total || 0;
               break;
-            case "conversionRate":
+            case 'conversionRate':
               metricValue = `${data.conversionRate || 0}%`;
               break;
-            case "avgResponseTime":
+            case 'avgResponseTime':
               metricValue = `${data.avgResponseTime || 0}h`;
               break;
-            case "newLeads":
+            case 'newLeads':
               metricValue = data.newLeads || 0;
               break;
-            case "closedLeads":
+            case 'closedLeads':
               metricValue = data.closedLeads || 0;
               break;
           }
-        } else if (widget.dataSource === "pipeline") {
-          metricValue = metric === "conversionRate" ? `${data.conversionRate || 0}%` : data.totalLeads || 0;
-        } else if (widget.dataSource === "automations") {
+        } else if (widget.dataSource === 'pipeline') {
+          metricValue =
+            metric === 'conversionRate' ? `${data.conversionRate || 0}%` : data.totalLeads || 0;
+        } else if (widget.dataSource === 'automations') {
           switch (metric) {
-            case "total":
+            case 'total':
               metricValue = data.total || 0;
               break;
-            case "active":
+            case 'active':
               metricValue = data.active || 0;
               break;
-            case "successRate":
+            case 'successRate':
               metricValue = `${data.successRate || 0}%`;
               break;
-            case "totalSentMessages":
+            case 'totalSentMessages':
               metricValue = data.totalSentMessages || 0;
               break;
           }
-        } else if (widget.dataSource === "tasks") {
+        } else if (widget.dataSource === 'tasks') {
           switch (metric) {
-            case "total":
+            case 'total':
               metricValue = data.total || 0;
               break;
-            case "completionRate":
+            case 'completionRate':
               metricValue = `${data.completionRate || 0}%`;
               break;
-            case "overdue":
+            case 'overdue':
               metricValue = data.overdue || 0;
               break;
-            case "dueToday":
+            case 'dueToday':
               metricValue = data.dueToday || 0;
               break;
           }
         }
-        
+
         worksheet.getCell(`A${currentRow}`).value = 'Métrica';
         worksheet.getCell(`B${currentRow}`).value = metric;
         currentRow++;
@@ -622,25 +662,39 @@ export async function exportReportToExcel(report: Report) {
         worksheet.getCell(`B${currentRow}`).value = metricValue;
       } else if (widget.type === 'chart' || widget.type === 'table') {
         let tableData: any[] = [];
-        if (widget.dataSource === "leads") {
-          if (widget.config?.dataSource === "bySource") {
+        if (widget.dataSource === 'leads') {
+          if (widget.config?.dataSource === 'bySource') {
             tableData = Object.entries(data.bySource || {}).map(([name, value]) => ({
-              name: name === "meta" ? "Meta Ads" : name === "google" ? "Google Ads" : name === "organico" ? "Orgânico" : "Manual",
+              name:
+                name === 'meta'
+                  ? 'Meta Ads'
+                  : name === 'google'
+                    ? 'Google Ads'
+                    : name === 'organico'
+                      ? 'Orgânico'
+                      : 'Manual',
               value,
             }));
           } else {
             tableData = Object.entries(data.byStatus || {}).map(([name, value]) => ({
-              name: name === "novo" ? "Novo" : name === "contato" ? "Em Contato" : name === "fechado" ? "Fechado" : "Perdido",
+              name:
+                name === 'novo'
+                  ? 'Novo'
+                  : name === 'contato'
+                    ? 'Em Contato'
+                    : name === 'fechado'
+                      ? 'Fechado'
+                      : 'Perdido',
               value,
             }));
           }
-        } else if (widget.dataSource === "pipeline") {
+        } else if (widget.dataSource === 'pipeline') {
           tableData = (data.stages || []).map((stage: any) => ({
             name: stage.name,
             value: stage.count,
           }));
         }
-        
+
         if (tableData.length > 0) {
           worksheet.getCell(`A${currentRow}`).value = 'Dados';
           worksheet.getCell(`A${currentRow}`).font = { bold: true };
@@ -649,7 +703,7 @@ export async function exportReportToExcel(report: Report) {
           worksheet.getCell(`B${currentRow}`).value = 'Valor';
           worksheet.getRow(currentRow).font = { bold: true };
           currentRow++;
-          
+
           tableData.forEach((item) => {
             worksheet.getCell(`A${currentRow}`).value = item.name;
             worksheet.getCell(`B${currentRow}`).value = item.value;
@@ -665,45 +719,45 @@ export async function exportReportToExcel(report: Report) {
         worksheet.getCell(`B${currentRow}`).value = 'Quantidade';
         worksheet.getRow(currentRow).font = { bold: true };
         currentRow++;
-        
+
         stages.forEach((stage: any) => {
           worksheet.getCell(`A${currentRow}`).value = stage.name;
           worksheet.getCell(`B${currentRow}`).value = stage.count || 0;
           currentRow++;
         });
       }
-      
+
       currentRow += 2;
     });
-    
+
     // Adicionar informações sobre filtros aplicados
     if (report.filters) {
       worksheet.getCell(`A${currentRow}`).value = 'Filtros Aplicados';
       worksheet.getCell(`A${currentRow}`).font = { size: 14, bold: true };
       currentRow++;
-      
+
       if (report.filters.dateRange) {
         worksheet.getCell(`A${currentRow}`).value = 'Período';
-        worksheet.getCell(`B${currentRow}`).value = report.filters.dateRange.type || "Customizado";
+        worksheet.getCell(`B${currentRow}`).value = report.filters.dateRange.type || 'Customizado';
         currentRow++;
       }
       if (report.filters.status && report.filters.status.length > 0) {
         worksheet.getCell(`A${currentRow}`).value = 'Status';
-        worksheet.getCell(`B${currentRow}`).value = report.filters.status.join(", ");
+        worksheet.getCell(`B${currentRow}`).value = report.filters.status.join(', ');
         currentRow++;
       }
       if (report.filters.source && report.filters.source.length > 0) {
         worksheet.getCell(`A${currentRow}`).value = 'Origem';
-        worksheet.getCell(`B${currentRow}`).value = report.filters.source.join(", ");
+        worksheet.getCell(`B${currentRow}`).value = report.filters.source.join(', ');
         currentRow++;
       }
       currentRow++;
     }
-    
+
     // Ajustar largura das colunas
     worksheet.getColumn(1).width = 20;
     worksheet.getColumn(2).width = 30;
-    
+
     // Adicionar rodapé
     const footerRow = currentRow + 1;
     worksheet.mergeCells(`A${footerRow}:B${footerRow}`);
@@ -711,10 +765,12 @@ export async function exportReportToExcel(report: Report) {
     footerCell.value = `${companyName} - Sistema de Gestão de Leads | Relatório gerado em ${new Date().toLocaleString('pt-BR')}`;
     footerCell.font = { size: 11, color: { argb: 'FF6B7280' } };
     footerCell.alignment = { horizontal: 'center' };
-    
+
     // Gerar arquivo e fazer download
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -728,10 +784,10 @@ export async function exportReportToExcel(report: Report) {
     console.error('Erro ao exportar com ExcelJS, usando método HTML:', error);
     // Fallback para método HTML antigo se houver erro
   }
-  
+
   // Método HTML antigo como fallback (sem imagem)
   const { logo: logoHtml, companyName: companyNameHtml } = getCompanyInfoForExport();
-  
+
   // Criar conteúdo HTML para Excel
   let htmlContent = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40" xmlns:v="urn:schemas-microsoft-com:vml">
@@ -791,21 +847,25 @@ export async function exportReportToExcel(report: Report) {
       
       <!-- Linha 2: Logo -->
       <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #2563EB;">
-        ${logoHtml ? `
+        ${
+          logoHtml
+            ? `
           <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; padding: 5px;">
             <img src="${logoHtml}" alt="${companyNameHtml}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
           </div>
-        ` : `
+        `
+            : `
           <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #2563EB;">
             ${companyNameHtml.charAt(0).toUpperCase()}
           </div>
-        `}
+        `
+        }
       </div>
       
       <!-- Linha 3: Título do relatório -->
       <div style="margin-bottom: 10px;">
         <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #1F2937;">${report.name}</h2>
-        ${report.description ? `<h3 style="margin: 5px 0 0 0; font-size: 14px; color: #6B7280;">${report.description}</h3>` : ""}
+        ${report.description ? `<h3 style="margin: 5px 0 0 0; font-size: 14px; color: #6B7280;">${report.description}</h3>` : ''}
       </div>
       
       <div class="info-section">
@@ -856,63 +916,64 @@ export async function exportReportToExcel(report: Report) {
 
     // Adicionar dados específicos baseado no tipo
     const data = getWidgetData(widget, report.filters);
-    
-    if (widget.type === "metric") {
-      const metric = widget.metric || "total";
-      let metricValue: string | number = "N/A";
-      
-      if (widget.dataSource === "leads") {
+
+    if (widget.type === 'metric') {
+      const metric = widget.metric || 'total';
+      let metricValue: string | number = 'N/A';
+
+      if (widget.dataSource === 'leads') {
         switch (metric) {
-          case "total":
+          case 'total':
             metricValue = data.total || 0;
             break;
-          case "conversionRate":
+          case 'conversionRate':
             metricValue = `${data.conversionRate || 0}%`;
             break;
-          case "avgResponseTime":
+          case 'avgResponseTime':
             metricValue = `${data.avgResponseTime || 0}h`;
             break;
-          case "newLeads":
+          case 'newLeads':
             metricValue = data.newLeads || 0;
             break;
-          case "closedLeads":
+          case 'closedLeads':
             metricValue = data.closedLeads || 0;
             break;
         }
-      } else if (widget.dataSource === "pipeline") {
-        metricValue = metric === "conversionRate" ? `${data.conversionRate || 0}%` : data.totalLeads || 0;
-      } else if (widget.dataSource === "automations") {
+      } else if (widget.dataSource === 'pipeline') {
+        metricValue =
+          metric === 'conversionRate' ? `${data.conversionRate || 0}%` : data.totalLeads || 0;
+      } else if (widget.dataSource === 'automations') {
         switch (metric) {
-          case "total":
+          case 'total':
             metricValue = data.total || 0;
             break;
-          case "active":
+          case 'active':
             metricValue = data.active || 0;
             break;
-          case "successRate":
+          case 'successRate':
             metricValue = `${data.successRate || 0}%`;
             break;
-          case "totalSentMessages":
+          case 'totalSentMessages':
             metricValue = data.totalSentMessages || 0;
             break;
         }
-      } else if (widget.dataSource === "tasks") {
+      } else if (widget.dataSource === 'tasks') {
         switch (metric) {
-          case "total":
+          case 'total':
             metricValue = data.total || 0;
             break;
-          case "completionRate":
+          case 'completionRate':
             metricValue = `${data.completionRate || 0}%`;
             break;
-          case "overdue":
+          case 'overdue':
             metricValue = data.overdue || 0;
             break;
-          case "dueToday":
+          case 'dueToday':
             metricValue = data.dueToday || 0;
             break;
         }
       }
-      
+
       htmlContent += `
         <tr>
           <td>Métrica</td>
@@ -923,15 +984,15 @@ export async function exportReportToExcel(report: Report) {
           <td>${metricValue}</td>
         </tr>
       `;
-    } else if (widget.type === "chart") {
+    } else if (widget.type === 'chart') {
       htmlContent += `
         <tr>
           <td>Tipo de Gráfico</td>
-          <td>${widget.config.chartType || "bar"}</td>
+          <td>${widget.config.chartType || 'bar'}</td>
         </tr>
         <tr>
           <td>Fonte de Dados</td>
-          <td>${widget.config.dataSource || "default"}</td>
+          <td>${widget.config.dataSource || 'default'}</td>
         </tr>
       `;
     }
@@ -959,4 +1020,3 @@ export async function exportReportToExcel(report: Report) {
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
 }
-

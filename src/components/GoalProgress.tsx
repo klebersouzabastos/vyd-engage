@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
-import { apiClient } from "../services/api/client";
-import { Progress } from "./ui/progress";
-import { Skeleton } from "./ui/skeleton";
-import { formatCurrency } from "../utils/format";
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router';
+import { apiClient } from '../services/api/client';
+import { Progress } from './ui/progress';
+import { Skeleton } from './ui/skeleton';
+import { formatCurrency } from '../utils/format';
 
 interface GoalProgressData {
   revenue: { current: number; target: number };
@@ -25,30 +25,29 @@ function pct(current: number, target: number): number {
 }
 
 function barColor(percentage: number): string {
-  if (percentage >= 100) return "bg-green-500";
-  if (percentage >= 50) return "bg-yellow-500";
-  return "bg-red-500";
+  if (percentage >= 100) return 'bg-green-500';
+  if (percentage >= 50) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 
 function badgeColor(percentage: number): string {
-  if (percentage >= 100) return "bg-green-100 text-green-700";
-  if (percentage >= 50) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-red-700";
+  if (percentage >= 100) return 'bg-green-100 text-green-700';
+  if (percentage >= 50) return 'bg-yellow-100 text-yellow-700';
+  return 'bg-red-100 text-red-700';
 }
 
 export function GoalProgress({ userId, month, year, compact = false }: GoalProgressProps) {
   const navigate = useNavigate();
   const params = new URLSearchParams({ month: String(month), year: String(year) });
-  if (userId) params.set("userId", userId);
+  if (userId) params.set('userId', userId);
 
   const { data, isLoading } = useQuery<GoalProgressData>({
-    queryKey: ["goals-progress", month, year, userId],
+    queryKey: ['goals-progress', month, year, userId],
     queryFn: async () => {
-      const response = await fetch(
-        `/api/v1/goals/progress?${params.toString()}`,
-        { credentials: "include" }
-      );
-      if (!response.ok) throw new Error("Falha ao carregar metas");
+      const response = await fetch(`/api/v1/goals/progress?${params.toString()}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Falha ao carregar metas');
       const json = await response.json();
       // Backend returns array [{userId, goal:{...}, actual:{...}, pct:{...}}]
       // Transform to flat format expected by this component
@@ -59,11 +58,22 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
       }> = json.data ?? [];
 
       if (!list.length) {
-        return { hasGoal: false, revenue: { current: 0, target: 0 }, deals: { current: 0, target: 0 }, leads: { current: 0, target: 0 } };
+        return {
+          hasGoal: false,
+          revenue: { current: 0, target: 0 },
+          deals: { current: 0, target: 0 },
+          leads: { current: 0, target: 0 },
+        };
       }
 
-      const entry = userId ? (list.find(e => e.userId === userId) ?? list[0]) : list[0];
-      if (!entry) return { hasGoal: false, revenue: { current: 0, target: 0 }, deals: { current: 0, target: 0 }, leads: { current: 0, target: 0 } };
+      const entry = userId ? (list.find((e) => e.userId === userId) ?? list[0]) : list[0];
+      if (!entry)
+        return {
+          hasGoal: false,
+          revenue: { current: 0, target: 0 },
+          deals: { current: 0, target: 0 },
+          leads: { current: 0, target: 0 },
+        };
 
       return {
         hasGoal: true,
@@ -76,7 +86,7 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
 
   if (isLoading) {
     return (
-      <div className={compact ? "space-y-2" : "space-y-4 p-4"}>
+      <div className={compact ? 'space-y-2' : 'space-y-4 p-4'}>
         <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-full" />
@@ -86,12 +96,12 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
 
   if (!data || !data.hasGoal) {
     return (
-      <div className={compact ? "py-2" : "p-4"}>
+      <div className={compact ? 'py-2' : 'p-4'}>
         <p className="text-sm text-gray-400 text-center">Sem meta definida</p>
         <div className="flex justify-center mt-2">
           <button
             className="text-xs text-gray-500 border border-gray-200 rounded px-3 py-1 hover:bg-gray-50 transition-colors"
-            onClick={() => navigate("/app/settings?tab=goals")}
+            onClick={() => navigate('/app/settings?tab=goals')}
           >
             Definir meta
           </button>
@@ -102,22 +112,22 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
 
   const metrics = [
     {
-      key: "revenue",
-      label: "Receita",
+      key: 'revenue',
+      label: 'Receita',
       current: data.revenue.current,
       target: data.revenue.target,
       format: (v: number) => formatCurrency(v),
     },
     {
-      key: "deals",
-      label: "Negócios",
+      key: 'deals',
+      label: 'Negócios',
       current: data.deals.current,
       target: data.deals.target,
       format: (v: number) => String(v),
     },
     {
-      key: "leads",
-      label: "Leads",
+      key: 'leads',
+      label: 'Leads',
       current: data.leads.current,
       target: data.leads.target,
       format: (v: number) => String(v),
@@ -125,7 +135,7 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
   ];
 
   return (
-    <div className={compact ? "space-y-2" : "space-y-4 p-4"}>
+    <div className={compact ? 'space-y-2' : 'space-y-4 p-4'}>
       {metrics.map((m) => {
         const percentage = pct(m.current, m.target);
         return (

@@ -21,7 +21,7 @@ describe('Funnel Service', () => {
       where: { tenantId: testTenantId },
       include: { columns: true },
     });
-    const columnIds = funnels.flatMap(f => f.columns.map(c => c.id));
+    const columnIds = funnels.flatMap((f) => f.columns.map((c) => c.id));
 
     if (columnIds.length > 0) {
       await prisma.lead.deleteMany({ where: { funnelColumnId: { in: columnIds } } });
@@ -108,9 +108,9 @@ describe('Funnel Service', () => {
     });
 
     it('should throw 404 for non-existent funnel', async () => {
-      await expect(
-        funnelService.findById(testTenantId, 'non-existent-id')
-      ).rejects.toThrow('Funnel not found');
+      await expect(funnelService.findById(testTenantId, 'non-existent-id')).rejects.toThrow(
+        'Funnel not found'
+      );
     });
   });
 
@@ -144,15 +144,15 @@ describe('Funnel Service', () => {
     it('should not delete default funnel', async () => {
       const funnel = await funnelService.create(testTenantId, { name: 'Default' });
 
-      await expect(
-        funnelService.delete(testTenantId, funnel.id)
-      ).rejects.toThrow('Cannot delete the default funnel');
+      await expect(funnelService.delete(testTenantId, funnel.id)).rejects.toThrow(
+        'Cannot delete the default funnel'
+      );
     });
 
     it('should throw 404 for non-existent funnel', async () => {
-      await expect(
-        funnelService.delete(testTenantId, 'non-existent')
-      ).rejects.toThrow('Funnel not found');
+      await expect(funnelService.delete(testTenantId, 'non-existent')).rejects.toThrow(
+        'Funnel not found'
+      );
     });
   });
 
@@ -209,11 +209,11 @@ describe('Funnel Service', () => {
 
     it('should not delete the default column', async () => {
       const funnel = await funnelService.create(testTenantId, { name: 'Test' });
-      const defaultColumn = funnel.columns.find(c => c.isDefault);
+      const defaultColumn = funnel.columns.find((c) => c.isDefault);
 
-      await expect(
-        funnelService.deleteColumn(testTenantId, defaultColumn!.id)
-      ).rejects.toThrow('Cannot delete the default column');
+      await expect(funnelService.deleteColumn(testTenantId, defaultColumn!.id)).rejects.toThrow(
+        'Cannot delete the default column'
+      );
     });
   });
 

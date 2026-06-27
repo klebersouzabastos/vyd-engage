@@ -47,7 +47,9 @@ const querySchema = z.object({
   maxValue: z.coerce.number().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
-  sort: z.enum(['createdAt', 'updatedAt', 'name', 'value', 'stage', 'expectedCloseDate']).optional(),
+  sort: z
+    .enum(['createdAt', 'updatedAt', 'name', 'value', 'stage', 'expectedCloseDate'])
+    .optional(),
   order: z.enum(['asc', 'desc']).optional(),
 });
 
@@ -262,7 +264,9 @@ router.put('/:id', async (req, res, next) => {
 
     const body = req.body;
     if (body.stage === 'LOST' && !body.lostReason) {
-      return res.status(400).json({ error: 'Informe o motivo da perda (lostReason) ao marcar um deal como perdido.' });
+      return res
+        .status(400)
+        .json({ error: 'Informe o motivo da perda (lostReason) ao marcar um deal como perdido.' });
     }
 
     const data = updateDealSchema.parse({
@@ -395,7 +399,10 @@ router.post('/:id/products', async (req, res, next) => {
     const newValue = allItems.reduce((sum, i) => {
       return sum + Number(i.quantity) * Number(i.unitPrice) * (1 - Number(i.discount) / 100);
     }, 0);
-    await prisma.deal.update({ where: { id: dealId }, data: { value: Math.round(newValue * 100) / 100 } });
+    await prisma.deal.update({
+      where: { id: dealId },
+      data: { value: Math.round(newValue * 100) / 100 },
+    });
 
     res.status(201).json({ status: 201, data: item });
   } catch (error) {
@@ -429,7 +436,10 @@ router.delete('/:id/products/:dealProductId', async (req, res, next) => {
     const newValue = remaining.reduce((sum, i) => {
       return sum + Number(i.quantity) * Number(i.unitPrice) * (1 - Number(i.discount) / 100);
     }, 0);
-    await prisma.deal.update({ where: { id: dealId }, data: { value: Math.round(newValue * 100) / 100 } });
+    await prisma.deal.update({
+      where: { id: dealId },
+      data: { value: Math.round(newValue * 100) / 100 },
+    });
 
     res.status(204).send();
   } catch (error) {

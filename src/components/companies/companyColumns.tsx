@@ -1,18 +1,18 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import { Building2, Globe, Users, Handshake, Pencil, Trash2 } from "lucide-react";
-import { Company, CompanySize } from "../../types";
+import type { ColumnDef } from '@tanstack/react-table';
+import { Building2, Globe, Users, Handshake, Pencil, Trash2 } from 'lucide-react';
+import { Company, CompanySize } from '../../types';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
-  MICRO: "Micro",
-  SMALL: "Pequena",
-  MEDIUM: "Média",
-  LARGE: "Grande",
-  ENTERPRISE: "Enterprise",
+  MICRO: 'Micro',
+  SMALL: 'Pequena',
+  MEDIUM: 'Média',
+  LARGE: 'Grande',
+  ENTERPRISE: 'Enterprise',
 };
 
 function formatDate(date: string | null | undefined): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("pt-BR");
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 /** Column definitions for the companies list (DataTable). */
@@ -22,8 +22,8 @@ export function getCompanyColumns(handlers: {
 }): ColumnDef<Company>[] {
   return [
     {
-      accessorKey: "name",
-      header: "Nome",
+      accessorKey: 'name',
+      header: 'Nome',
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Building2 size={16} className="text-gray-400 flex-shrink-0" />
@@ -32,8 +32,8 @@ export function getCompanyColumns(handlers: {
       ),
     },
     {
-      accessorKey: "domain",
-      header: "Domínio",
+      accessorKey: 'domain',
+      header: 'Domínio',
       cell: ({ row }) =>
         row.original.domain ? (
           <span className="flex items-center gap-1 text-sm text-gray-600">
@@ -45,20 +45,24 @@ export function getCompanyColumns(handlers: {
         ),
     },
     {
-      accessorKey: "industry",
-      header: "Indústria",
-      cell: ({ row }) => <span className="text-sm text-gray-600">{row.original.industry || "—"}</span>,
-    },
-    {
-      accessorKey: "size",
-      header: "Porte",
+      accessorKey: 'industry',
+      header: 'Indústria',
       cell: ({ row }) => (
-        <span className="text-sm text-gray-600">{row.original.size ? SIZE_LABELS[row.original.size] : "—"}</span>
+        <span className="text-sm text-gray-600">{row.original.industry || '—'}</span>
       ),
     },
     {
-      id: "leads",
-      header: "Leads",
+      accessorKey: 'size',
+      header: 'Porte',
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600">
+          {row.original.size ? SIZE_LABELS[row.original.size] : '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'leads',
+      header: 'Leads',
       enableSorting: false,
       cell: ({ row }) => (
         <span className="inline-flex items-center gap-1 text-sm text-gray-600">
@@ -68,8 +72,8 @@ export function getCompanyColumns(handlers: {
       ),
     },
     {
-      id: "deals",
-      header: "Deals",
+      id: 'deals',
+      header: 'Deals',
       enableSorting: false,
       cell: ({ row }) => (
         <span className="inline-flex items-center gap-1 text-sm text-gray-600">
@@ -79,17 +83,20 @@ export function getCompanyColumns(handlers: {
       ),
     },
     {
-      accessorKey: "createdAt",
-      header: "Criado em",
-      cell: ({ row }) => <span className="text-sm text-gray-600">{formatDate(row.original.createdAt)}</span>,
+      accessorKey: 'createdAt',
+      header: 'Criado em',
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600">{formatDate(row.original.createdAt)}</span>
+      ),
     },
     {
-      id: "actions",
+      id: 'actions',
       header: () => <span className="sr-only">Ações</span>,
       enableSorting: false,
       cell: ({ row }) => {
         const company = row.original;
         return (
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- wrapper apenas impede o clique nos botões de propagar para a linha; não é um controle interativo e não precisa de handler de teclado
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => handlers.onEdit(company)}

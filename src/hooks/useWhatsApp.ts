@@ -1,7 +1,7 @@
-import { useCallback } from "react";
-import { useWhatsApp as useWhatsAppContext } from "../contexts/WhatsAppContext";
-import { WhatsAppConnection, WhatsAppMessage, SendMessageResult } from "../types/whatsapp";
-import { sendMessage, getConnectionStatus } from "../utils/whatsapp/whatsappAdapter";
+import { useCallback } from 'react';
+import { useWhatsApp as useWhatsAppContext } from '../contexts/WhatsAppContext';
+import { WhatsAppConnection, WhatsAppMessage, SendMessageResult } from '../types/whatsapp';
+import { sendMessage, getConnectionStatus } from '../utils/whatsapp/whatsappAdapter';
 
 /**
  * Hook principal para gerenciar conexões WhatsApp
@@ -34,12 +34,16 @@ export function useTestConnection() {
   const { getConnection, updateConnectionStatus } = useWhatsAppContext();
 
   const testConnection = useCallback(
-    async (connectionId: string, testPhone: string, testMessage: string): Promise<SendMessageResult> => {
+    async (
+      connectionId: string,
+      testPhone: string,
+      testMessage: string
+    ): Promise<SendMessageResult> => {
       const connection = getConnection(connectionId);
       if (!connection) {
         return {
           success: false,
-          error: "Conexão não encontrada",
+          error: 'Conexão não encontrada',
         };
       }
 
@@ -55,14 +59,14 @@ export function useTestConnection() {
       if (result.success) {
         updateConnectionStatus(connectionId, {
           ...connection.status,
-          status: "connected",
+          status: 'connected',
           lastSync: new Date().toISOString(),
         });
       } else {
         updateConnectionStatus(connectionId, {
           ...connection.status,
-          status: "error",
-          errorMessage: result.error || "Erro ao enviar mensagem",
+          status: 'error',
+          errorMessage: result.error || 'Erro ao enviar mensagem',
         });
       }
 
@@ -81,23 +85,15 @@ export function useSendWhatsAppMessage() {
   const { getDefaultConnection, getConnection } = useWhatsAppContext();
 
   const sendMessageToLead = useCallback(
-    async (
-      phone: string,
-      message: string,
-      connectionId?: string
-    ): Promise<SendMessageResult> => {
-      let connection: WhatsAppConnection | null = null;
-
-      if (connectionId) {
-        connection = getConnection(connectionId);
-      } else {
-        connection = getDefaultConnection();
-      }
+    async (phone: string, message: string, connectionId?: string): Promise<SendMessageResult> => {
+      const connection: WhatsAppConnection | null = connectionId
+        ? getConnection(connectionId)
+        : getDefaultConnection();
 
       if (!connection) {
         return {
           success: false,
-          error: "Nenhuma conexão WhatsApp disponível",
+          error: 'Nenhuma conexão WhatsApp disponível',
         };
       }
 
@@ -128,11 +124,3 @@ export function useRefreshAllConnections() {
 
   return { refreshAll };
 }
-
-
-
-
-
-
-
-

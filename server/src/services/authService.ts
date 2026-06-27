@@ -109,7 +109,12 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
     }
   }
 
-  captureEvent({ distinctId: user.id, event: 'user_registered', tenantId: tenant.id, properties: { source: 'self_signup' } });
+  captureEvent({
+    distinctId: user.id,
+    event: 'user_registered',
+    tenantId: tenant.id,
+    properties: { source: 'self_signup' },
+  });
 
   // Generate tokens
   const tokenPayload: TokenPayload = {
@@ -256,9 +261,9 @@ export async function logoutAll(userId: string): Promise<void> {
 export async function requestPasswordReset(email: string): Promise<void> {
   // Normalize email (trim and lowercase)
   const normalizedEmail = email.trim().toLowerCase();
-  
+
   logger.info('Password reset requested', { email: normalizedEmail });
-  
+
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
@@ -268,7 +273,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     logger.info('User not found for password reset', { email: normalizedEmail });
     return;
   }
-  
+
   logger.info('User found for password reset', { userId: user.id, email: user.email });
 
   // Generate reset token — store hash, send plaintext to user
@@ -288,22 +293,22 @@ export async function requestPasswordReset(email: string): Promise<void> {
   // Send email
   const { sendEmail, emailTemplates } = await import('./emailService.js');
   const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
-  
+
   try {
-    logger.info('Attempting to send password reset email', { 
-      userId: user.id, 
+    logger.info('Attempting to send password reset email', {
+      userId: user.id,
       email: user.email,
-      resetLink 
+      resetLink,
     });
-    
+
     await sendEmail({
       to: user.email,
       ...(await emailTemplates.passwordReset(user.name, resetLink)),
     });
-    
-    logger.info('Password reset email sent successfully', { 
-      userId: user.id, 
-      email: user.email 
+
+    logger.info('Password reset email sent successfully', {
+      userId: user.id,
+      email: user.email,
     });
   } catch (error: any) {
     logger.error('Failed to send password reset email', error);
@@ -381,7 +386,7 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
   // Send email
   const { sendEmail, emailTemplates } = await import('./emailService.js');
   const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
-  
+
   try {
     await sendEmail({
       to: user.email,
@@ -431,4 +436,3 @@ export const authService = {
   sendVerificationEmail,
   verifyEmail,
 };
-

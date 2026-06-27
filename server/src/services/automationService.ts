@@ -59,12 +59,15 @@ export const automationService = {
     return automation;
   },
 
-  async findAll(tenantId: string, filters?: {
-    status?: AutomationStatus;
-    search?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async findAll(
+    tenantId: string,
+    filters?: {
+      status?: AutomationStatus;
+      search?: string;
+      page?: number;
+      limit?: number;
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
     const skip = (page - 1) * limit;
@@ -149,7 +152,13 @@ export const automationService = {
     message?: string,
     data?: any,
     error?: string,
-    extra?: { leadId?: string; stepOrder?: number; stepType?: AutomationStepType | null; executionId?: string; executeAt?: Date }
+    extra?: {
+      leadId?: string;
+      stepOrder?: number;
+      stepType?: AutomationStepType | null;
+      executionId?: string;
+      executeAt?: Date;
+    }
   ) {
     const log = await prisma.automationLog.create({
       data: {
@@ -196,11 +205,3 @@ export const automationService = {
     });
   },
 };
-
-
-
-
-
-
-
-

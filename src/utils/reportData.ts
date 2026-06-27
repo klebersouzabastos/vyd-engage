@@ -1,4 +1,4 @@
-import { apiClient } from "../services/api/client";
+import { apiClient } from '../services/api/client';
 
 export interface DateRange {
   start: Date;
@@ -91,39 +91,72 @@ export function clearMetricsCache(): void {
 }
 
 // Default empty data to prevent crashes when API hasn't loaded yet
-const emptyLeads: LeadsData = { total: 0, byStatus: {}, bySource: {}, conversionRate: 0, avgResponseTime: 0, newLeads: 0, closedLeads: 0 };
-const emptyPipeline: PipelineData = { stages: [], conversionRate: 0, avgTimeInStage: {}, totalLeads: 0 };
-const emptyAutomations: AutomationsData = { total: 0, active: 0, paused: 0, totalLeadsEnrolled: 0, totalSentMessages: 0, successRate: 0, byType: {}, byStatus: {} };
-const emptyTasks: TasksData = { total: 0, completed: 0, pending: 0, overdue: 0, dueToday: 0, completionRate: 0, avgCompletionTime: 0, byPriority: {} };
+const emptyLeads: LeadsData = {
+  total: 0,
+  byStatus: {},
+  bySource: {},
+  conversionRate: 0,
+  avgResponseTime: 0,
+  newLeads: 0,
+  closedLeads: 0,
+};
+const emptyPipeline: PipelineData = {
+  stages: [],
+  conversionRate: 0,
+  avgTimeInStage: {},
+  totalLeads: 0,
+};
+const emptyAutomations: AutomationsData = {
+  total: 0,
+  active: 0,
+  paused: 0,
+  totalLeadsEnrolled: 0,
+  totalSentMessages: 0,
+  successRate: 0,
+  byType: {},
+  byStatus: {},
+};
+const emptyTasks: TasksData = {
+  total: 0,
+  completed: 0,
+  pending: 0,
+  overdue: 0,
+  dueToday: 0,
+  completionRate: 0,
+  avgCompletionTime: 0,
+  byPriority: {},
+};
 const emptyInteractions: InteractionsData = { total: 0, byType: {}, byDay: [], avgPerLead: 0 };
 
-export function getDefaultDateRange(period: "today" | "week" | "month" | "quarter" | "year" | "all" = "month"): DateRange {
+export function getDefaultDateRange(
+  period: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' = 'month'
+): DateRange {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
 
   const start = new Date();
 
   switch (period) {
-    case "today":
+    case 'today':
       start.setHours(0, 0, 0, 0);
       break;
-    case "week":
+    case 'week':
       start.setDate(start.getDate() - 7);
       start.setHours(0, 0, 0, 0);
       break;
-    case "month":
+    case 'month':
       start.setMonth(start.getMonth() - 1);
       start.setHours(0, 0, 0, 0);
       break;
-    case "quarter":
+    case 'quarter':
       start.setMonth(start.getMonth() - 3);
       start.setHours(0, 0, 0, 0);
       break;
-    case "year":
+    case 'year':
       start.setFullYear(start.getFullYear() - 1);
       start.setHours(0, 0, 0, 0);
       break;
-    case "all":
+    case 'all':
       start.setFullYear(2020, 0, 1);
       break;
   }
@@ -155,13 +188,15 @@ export function getInteractionsData(_filters?: ReportFilters): InteractionsData 
 }
 
 export function getAggregatedData(_filters?: ReportFilters): AllMetricsData {
-  return getCachedMetrics() || {
-    leads: emptyLeads,
-    pipeline: emptyPipeline,
-    automations: emptyAutomations,
-    tasks: emptyTasks,
-    interactions: emptyInteractions,
-  };
+  return (
+    getCachedMetrics() || {
+      leads: emptyLeads,
+      pipeline: emptyPipeline,
+      automations: emptyAutomations,
+      tasks: emptyTasks,
+      interactions: emptyInteractions,
+    }
+  );
 }
 
 // Async function to fetch metrics from API
@@ -178,7 +213,7 @@ export async function fetchReportMetrics(filters?: ReportFilters): Promise<AllMe
     setCachedMetrics(data);
     return data;
   } catch (error) {
-    console.error("Erro ao buscar métricas:", error);
+    console.error('Erro ao buscar métricas:', error);
     return {
       leads: emptyLeads,
       pipeline: emptyPipeline,

@@ -1,30 +1,30 @@
-import { Notification } from "../types";
-import { X } from "lucide-react";
-import { Button } from "./ui/button";
-import { Link } from "react-router";
-import { useNotifications } from "../contexts/NotificationContext";
+import { Notification } from '../types';
+import { X } from 'lucide-react';
+import { Button } from './ui/button';
+import { Link } from 'react-router';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface NotificationItemProps {
   notification: Notification;
 }
 
-const getNotificationIcon = (type: Notification["type"]) => {
+const getNotificationIcon = (type: Notification['type']) => {
   switch (type) {
-    case "task_due":
-      return "📅";
-    case "task_overdue":
-      return "🔴";
-    case "lead_assigned":
-      return "👤";
-    case "automation_error":
-      return "⚠️";
-    case "payment_failed":
-      return "💳";
-    case "subscription_expiring":
-      return "⏰";
-    case "system":
+    case 'task_due':
+      return '📅';
+    case 'task_overdue':
+      return '🔴';
+    case 'lead_assigned':
+      return '👤';
+    case 'automation_error':
+      return '⚠️';
+    case 'payment_failed':
+      return '💳';
+    case 'subscription_expiring':
+      return '⏰';
+    case 'system':
     default:
-      return "🔔";
+      return '🔔';
   }
 };
 
@@ -43,39 +43,26 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   };
 
   const content = notification.link ? (
-    <Link
-      to={notification.link}
-      onClick={handleClick}
-      className="block flex-1"
-    >
+    <Link to={notification.link} onClick={handleClick} className="block flex-1">
       <div
         className={`
           p-3 rounded-lg transition-colors
-          ${notification.read
-            ? "bg-white hover:bg-gray-100"
-            : "bg-blue-50 hover:bg-blue-100"
-          }
+          ${notification.read ? 'bg-white hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
         `}
       >
         <div className="flex items-start gap-3">
-          <span className="text-xl flex-shrink-0">
-            {getNotificationIcon(notification.type)}
-          </span>
+          <span className="text-xl flex-shrink-0">{getNotificationIcon(notification.type)}</span>
           <div className="flex-1 min-w-0">
             <p
               className={`
                 text-sm font-medium mb-1
-                ${notification.read ? "text-gray-600" : "text-gray-900"}
+                ${notification.read ? 'text-gray-600' : 'text-gray-900'}
               `}
             >
               {notification.title}
             </p>
-            <p className="text-xs text-gray-600 line-clamp-2">
-              {notification.message}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {formatTime(notification.timestamp)}
-            </p>
+            <p className="text-xs text-gray-600 line-clamp-2">{notification.message}</p>
+            <p className="text-xs text-gray-400 mt-1">{formatTime(notification.timestamp)}</p>
           </div>
           {!notification.read && (
             <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2" />
@@ -85,34 +72,33 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     </Link>
   ) : (
     <div
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === ' ') e.preventDefault();
+          handleClick();
+        }
+      }}
       className={`
         p-3 rounded-lg transition-colors cursor-pointer
-        ${notification.read
-          ? "bg-white hover:bg-gray-100"
-          : "bg-blue-50 hover:bg-blue-100"
-        }
+        ${notification.read ? 'bg-white hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
       `}
     >
       <div className="flex items-start gap-3">
-        <span className="text-xl flex-shrink-0">
-          {getNotificationIcon(notification.type)}
-        </span>
+        <span className="text-xl flex-shrink-0">{getNotificationIcon(notification.type)}</span>
         <div className="flex-1 min-w-0">
           <p
             className={`
               text-sm font-medium mb-1
-              ${notification.read ? "text-gray-600" : "text-gray-900"}
+              ${notification.read ? 'text-gray-600' : 'text-gray-900'}
             `}
           >
             {notification.title}
           </p>
-          <p className="text-xs text-gray-600 line-clamp-2">
-            {notification.message}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            {formatTime(notification.timestamp)}
-          </p>
+          <p className="text-xs text-gray-600 line-clamp-2">{notification.message}</p>
+          <p className="text-xs text-gray-400 mt-1">{formatTime(notification.timestamp)}</p>
         </div>
         {!notification.read && (
           <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2" />
@@ -134,11 +120,3 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     </div>
   );
 }
-
-
-
-
-
-
-
-

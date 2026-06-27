@@ -1,21 +1,34 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router";
-import { TrendingUp, DollarSign, Target } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { apiClient } from "../../services/api/client";
-import { ForecastData } from "../../types";
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
+import { TrendingUp, DollarSign, Target } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { apiClient } from '../../services/api/client';
+import { ForecastData } from '../../types';
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
     maximumFractionDigits: 0,
   }).format(value);
 }
 
 function formatMonthLabel(month: string): string {
-  const [year, m] = month.split("-");
-  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const [year, m] = month.split('-');
+  const monthNames = [
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez',
+  ];
   return `${monthNames[Number(m) - 1]}/${year.slice(2)}`;
 }
 
@@ -58,10 +71,7 @@ export function ForecastWidget() {
             <TrendingUp size={18} className="text-purple-600" />
             Forecast de Receita
           </h3>
-          <Link
-            to="/app/forecast"
-            className="text-sm text-primary hover:underline"
-          >
+          <Link to="/app/forecast" className="text-sm text-primary hover:underline">
             Ver detalhes
           </Link>
         </div>
@@ -74,21 +84,27 @@ export function ForecastWidget() {
               <DollarSign size={14} className="text-blue-500" />
             </div>
             <p className="text-xs text-gray-500">Pipeline</p>
-            <p className="text-sm font-bold text-gray-900">{formatCurrency(data.summary.totalPipelineValue)}</p>
+            <p className="text-sm font-bold text-gray-900">
+              {formatCurrency(data.summary.totalPipelineValue)}
+            </p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center mb-1">
               <TrendingUp size={14} className="text-purple-500" />
             </div>
             <p className="text-xs text-gray-500">Forecast</p>
-            <p className="text-sm font-bold text-gray-900">{formatCurrency(data.summary.totalWeightedForecast)}</p>
+            <p className="text-sm font-bold text-gray-900">
+              {formatCurrency(data.summary.totalWeightedForecast)}
+            </p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center mb-1">
               <Target size={14} className="text-green-500" />
             </div>
             <p className="text-xs text-gray-500">Ticket Médio</p>
-            <p className="text-sm font-bold text-gray-900">{formatCurrency(data.summary.avgDealSize)}</p>
+            <p className="text-sm font-bold text-gray-900">
+              {formatCurrency(data.summary.avgDealSize)}
+            </p>
           </div>
         </div>
 
@@ -99,7 +115,7 @@ export function ForecastWidget() {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip
-                formatter={(value: number) => [formatCurrency(value), "Forecast"]}
+                formatter={(value: number) => [formatCurrency(value), 'Forecast']}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
               />
               <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />

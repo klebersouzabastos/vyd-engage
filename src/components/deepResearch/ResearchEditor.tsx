@@ -63,7 +63,7 @@ export function ResearchEditor({
 
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === selectedTemplateId) ?? null,
-    [templates, selectedTemplateId],
+    [templates, selectedTemplateId]
   );
 
   const placeholders = selectedTemplate?.placeholders ?? [];
@@ -110,7 +110,9 @@ export function ResearchEditor({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{research ? 'Editar pesquisa' : 'Nova pesquisa de inteligência'}</DialogTitle>
+          <DialogTitle>
+            {research ? 'Editar pesquisa' : 'Nova pesquisa de inteligência'}
+          </DialogTitle>
           <DialogDescription>
             Escolha o tipo, preencha as informações e solicite. Nossa inteligência monta a pesquisa
             e você recebe um relatório completo.
@@ -192,8 +194,7 @@ export function ResearchEditor({
               {outline.length > 0 && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                    <ListChecks className="h-4 w-4 text-primary" />
-                    O que você vai receber
+                    <ListChecks className="h-4 w-4 text-primary" />O que você vai receber
                   </p>
                   <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                     {outline.map((item) => (

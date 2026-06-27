@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { QrCode, Copy, CheckCircle, Clock } from "lucide-react";
-import { PixPaymentData } from "../../types/payment";
-import { copyToClipboard } from "../../utils/reportSharing";
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { QrCode, Copy, CheckCircle, Clock } from 'lucide-react';
+import { PixPaymentData } from '../../types/payment';
+import { copyToClipboard } from '../../utils/reportSharing';
 
 interface PixPaymentProps {
   pixData: PixPaymentData;
@@ -10,11 +10,7 @@ interface PixPaymentProps {
   isLoading?: boolean;
 }
 
-export function PixPayment({
-  pixData,
-  onCheckStatus,
-  isLoading = false,
-}: PixPaymentProps) {
+export function PixPayment({ pixData, onCheckStatus, isLoading = false }: PixPaymentProps) {
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
@@ -37,7 +33,7 @@ export function PixPayment({
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleCopyPix = async () => {
@@ -47,7 +43,7 @@ export function PixPayment({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (error) {
-        console.error("Erro ao copiar PIX:", error);
+        console.error('Erro ao copiar PIX:', error);
       }
     }
   };
@@ -60,12 +56,12 @@ export function PixPayment({
           <p className="text-sm font-medium text-blue-900">
             {timeLeft !== null && timeLeft > 0
               ? `Expira em ${formatTime(timeLeft)}`
-              : "QR Code expirado"}
+              : 'QR Code expirado'}
           </p>
         </div>
         <p className="text-xs text-blue-800">
-          Escaneie o QR Code ou copie o código PIX para pagar. O pagamento será
-          aprovado automaticamente em até 30 minutos.
+          Escaneie o QR Code ou copie o código PIX para pagar. O pagamento será aprovado
+          automaticamente em até 30 minutos.
         </p>
       </div>
 
@@ -95,22 +91,9 @@ export function PixPayment({
         <div>
           <Label className="text-sm mb-2 block">Código PIX (Copiar e Colar)</Label>
           <div className="flex gap-2">
-            <Input
-              value={pixData.copyPaste}
-              readOnly
-              className="flex-1 font-mono text-sm"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCopyPix}
-              disabled={copied}
-            >
-              {copied ? (
-                <CheckCircle size={16} className="text-green-600" />
-              ) : (
-                <Copy size={16} />
-              )}
+            <Input value={pixData.copyPaste} readOnly className="flex-1 font-mono text-sm" />
+            <Button type="button" variant="outline" onClick={handleCopyPix} disabled={copied}>
+              {copied ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} />}
             </Button>
           </div>
         </div>
@@ -121,20 +104,12 @@ export function PixPayment({
         disabled={isLoading || (timeLeft !== null && timeLeft === 0)}
         className="w-full bg-primary hover:bg-primary-dark"
       >
-        {isLoading ? "Verificando..." : "Verificar Pagamento"}
+        {isLoading ? 'Verificando...' : 'Verificar Pagamento'}
       </Button>
     </div>
   );
 }
 
 // Adicionar imports necessários
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
-
-
-
-
-
-
-
-
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';

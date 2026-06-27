@@ -1,24 +1,27 @@
-import { CustomField } from "../types";
+import { CustomField } from '../types';
 
 // Pure utility functions for custom fields (localStorage CRUD removed — use CustomFieldsContext/API)
 
-export function validateFieldValue(field: CustomField, value: unknown): { valid: boolean; error?: string } {
-  if (field.required && (value === null || value === undefined || value === "")) {
+export function validateFieldValue(
+  field: CustomField,
+  value: unknown
+): { valid: boolean; error?: string } {
+  if (field.required && (value === null || value === undefined || value === '')) {
     return { valid: false, error: `${field.name} é obrigatório` };
   }
 
   switch (field.type) {
-    case "number":
-      if (value !== null && value !== undefined && value !== "" && isNaN(Number(value))) {
+    case 'number':
+      if (value !== null && value !== undefined && value !== '' && isNaN(Number(value))) {
         return { valid: false, error: `${field.name} deve ser um número` };
       }
       break;
-    case "date":
+    case 'date':
       if (value && typeof value === 'string' && isNaN(Date.parse(value))) {
         return { valid: false, error: `${field.name} deve ser uma data válida` };
       }
       break;
-    case "select":
+    case 'select':
       if (value && typeof value === 'string' && field.options && !field.options.includes(value)) {
         return { valid: false, error: `${field.name} deve ser uma das opções disponíveis` };
       }
@@ -29,10 +32,10 @@ export function validateFieldValue(field: CustomField, value: unknown): { valid:
 }
 
 export function isCustomFieldEmpty(value: unknown): boolean {
-  if (value === null || value === undefined || value === "") {
+  if (value === null || value === undefined || value === '') {
     return true;
   }
-  if (typeof value === "boolean") {
+  if (typeof value === 'boolean') {
     return false;
   }
   if (Array.isArray(value) && value.length === 0) {
@@ -47,35 +50,36 @@ export function formatCustomFieldValue(field: CustomField, value: unknown): stri
   }
 
   switch (field.type) {
-    case "text":
-    case "textarea":
+    case 'text':
+    case 'textarea':
       return String(value);
 
-    case "number":
+    case 'number': {
       const numValue = Number(value);
       if (isNaN(numValue)) return String(value);
-      return new Intl.NumberFormat("pt-BR", {
+      return new Intl.NumberFormat('pt-BR', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }).format(numValue);
+    }
 
-    case "date":
+    case 'date':
       try {
         const date = new Date(String(value));
         if (isNaN(date.getTime())) return String(value);
-        return new Intl.DateTimeFormat("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
+        return new Intl.DateTimeFormat('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
         }).format(date);
       } catch {
         return String(value);
       }
 
-    case "checkbox":
-      return value ? "Sim" : "Não";
+    case 'checkbox':
+      return value ? 'Sim' : 'Não';
 
-    case "select":
+    case 'select':
       return String(value);
 
     default:

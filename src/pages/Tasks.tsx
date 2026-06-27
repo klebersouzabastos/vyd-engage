@@ -1,22 +1,40 @@
-import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
-import { useNavigate } from "react-router";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { useAuth } from "../contexts/AuthContext";
-import { Input } from "../components/ui/input";
-import { TaskCard, getPriorityColor, getPriorityLabel, getPriorityIcon, getStatusInfo } from "../components/TaskCard";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { useTasks } from "../hooks/useTasks";
-import { Task } from "../types";
-import { Plus, Calendar as CalendarIcon, AlertCircle, List, CalendarDays, CalendarRange, LayoutList, AlertTriangle, Edit2, Trash2, CheckSquare } from "lucide-react";
-import { useNotifications } from "../contexts/NotificationContext";
-import { EmptyState } from "../components/EmptyState";
-import { ExportButton } from "../components/ExportButton";
-import { apiClient } from "../services/api/client";
-import { useIsMobile } from "../components/ui/use-mobile";
-import { Checkbox } from "../components/ui/checkbox";
-import { toast } from "sonner";
-import { formatRelativeTime } from "../utils/interactions";
+import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react';
+import { useNavigate } from 'react-router';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { useAuth } from '../contexts/AuthContext';
+import { Input } from '../components/ui/input';
+import {
+  TaskCard,
+  getPriorityColor,
+  getPriorityLabel,
+  getPriorityIcon,
+  getStatusInfo,
+} from '../components/TaskCard';
+import { PageSkeleton } from '../components/PageSkeleton';
+import { useTasks } from '../hooks/useTasks';
+import { Task } from '../types';
+import {
+  Plus,
+  Calendar as CalendarIcon,
+  AlertCircle,
+  List,
+  CalendarDays,
+  CalendarRange,
+  LayoutList,
+  AlertTriangle,
+  Edit2,
+  Trash2,
+  CheckSquare,
+} from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
+import { EmptyState } from '../components/EmptyState';
+import { ExportButton } from '../components/ExportButton';
+import { apiClient } from '../services/api/client';
+import { useIsMobile } from '../components/ui/use-mobile';
+import { Checkbox } from '../components/ui/checkbox';
+import { toast } from 'sonner';
+import { formatRelativeTime } from '../utils/interactions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +44,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import type { CalendarViewMode } from "../components/calendar/calendarUtils";
+} from '../components/ui/alert-dialog';
+import type { CalendarViewMode } from '../components/calendar/calendarUtils';
 import {
   getDateRangeForView,
   formatMonthTitle,
@@ -39,33 +57,43 @@ import {
   subWeeks,
   addDays,
   subDays,
-} from "../components/calendar/calendarUtils";
-import { CalendarHeader } from "../components/calendar/CalendarHeader";
-import { CalendarMonthView } from "../components/calendar/CalendarMonthView";
-import { CalendarWeekView } from "../components/calendar/CalendarWeekView";
-import { CalendarAgendaView } from "../components/calendar/CalendarAgendaView";
-import { CalendarTaskPopover } from "../components/calendar/CalendarTaskPopover";
-import { CalendarQuickAdd } from "../components/calendar/CalendarQuickAdd";
+} from '../components/calendar/calendarUtils';
+import { CalendarHeader } from '../components/calendar/CalendarHeader';
+import { CalendarMonthView } from '../components/calendar/CalendarMonthView';
+import { CalendarWeekView } from '../components/calendar/CalendarWeekView';
+import { CalendarAgendaView } from '../components/calendar/CalendarAgendaView';
+import { CalendarTaskPopover } from '../components/calendar/CalendarTaskPopover';
+import { CalendarQuickAdd } from '../components/calendar/CalendarQuickAdd';
 
 export function Tasks() {
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { tasks, loading, createTask, updateTask, deleteTask, completeTask, uncompleteTask, refetch, fetchTasks } = useTasks();
+  const {
+    tasks,
+    loading,
+    createTask,
+    updateTask,
+    deleteTask,
+    completeTask,
+    uncompleteTask,
+    refetch,
+    fetchTasks,
+  } = useTasks();
   const [myTasksOnly, setMyTasksOnly] = useState(false);
-  const [viewMode, setViewMode] = useState<CalendarViewMode>(() => isMobile ? "agenda" : "list");
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(() => (isMobile ? 'agenda' : 'list'));
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddDate, setQuickAddDate] = useState<Date>(new Date());
   const [popoverTask, setPopoverTask] = useState<Task | null>(null);
-  const [filter, setFilter] = useState<
-    "all" | "overdue" | "today" | "pending" | "completed"
-  >("all");
+  const [filter, setFilter] = useState<'all' | 'overdue' | 'today' | 'pending' | 'completed'>(
+    'all'
+  );
   const [priorityFilter, setPriorityFilter] = useState<
-    "all" | "HIGH" | "MEDIUM" | "LOW" | "URGENT"
-  >("all");
-  const [searchQuery, setSearchQuery] = useState("");
+    'all' | 'HIGH' | 'MEDIUM' | 'LOW' | 'URGENT'
+  >('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [deletingTask, setDeletingTask] = useState<Task | undefined>();
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -92,39 +120,40 @@ export function Tasks() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-    // Filtro por status
-    if (filter === "overdue") {
-        const isOverdue = task.status !== 'COMPLETED' && task.dueDate && new Date(task.dueDate) < new Date();
-      if (!isOverdue) return false;
-    } else if (filter === "today") {
-      const today = getTasksDueToday();
-      if (!today.find((t) => t.id === task.id)) return false;
-    } else if (filter === "pending" && task.status === 'COMPLETED') return false;
-    else if (filter === "completed" && task.status !== 'COMPLETED') return false;
+      // Filtro por status
+      if (filter === 'overdue') {
+        const isOverdue =
+          task.status !== 'COMPLETED' && task.dueDate && new Date(task.dueDate) < new Date();
+        if (!isOverdue) return false;
+      } else if (filter === 'today') {
+        const today = getTasksDueToday();
+        if (!today.find((t) => t.id === task.id)) return false;
+      } else if (filter === 'pending' && task.status === 'COMPLETED') return false;
+      else if (filter === 'completed' && task.status !== 'COMPLETED') return false;
 
-    // Filtro por prioridade
-    if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+      // Filtro por prioridade
+      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
 
-    // Busca
-    if (
-      searchQuery &&
-      !task.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
+      // Busca
+      if (
+        searchQuery &&
+        !task.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+        return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
   }, [tasks, filter, priorityFilter, searchQuery, getTasksDueToday]);
 
   const groupedTasks = useMemo(() => {
     const overdue = getOverdueTasks();
-      const today = getTasksDueToday();
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-    
+    const today = getTasksDueToday();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
     return {
       overdue: filteredTasks.filter(
         (t) => t.status !== 'COMPLETED' && t.dueDate && new Date(t.dueDate) < new Date()
@@ -133,19 +162,19 @@ export function Tasks() {
       upcoming: filteredTasks.filter((t) => {
         if (t.status === 'COMPLETED' || !t.dueDate) return false;
         const dueDate = new Date(t.dueDate);
-      return dueDate >= tomorrow;
-    }),
-    completed: filteredTasks.filter((t) => t.status === 'COMPLETED'),
-  };
+        return dueDate >= tomorrow;
+      }),
+      completed: filteredTasks.filter((t) => t.status === 'COMPLETED'),
+    };
   }, [filteredTasks, getOverdueTasks, getTasksDueToday]);
 
   const handleToggle = async (task: Task) => {
     try {
-    if (task.status === 'COMPLETED') {
+      if (task.status === 'COMPLETED') {
         await uncompleteTask(task.id);
-    } else {
+      } else {
         await completeTask(task.id);
-    }
+      }
     } catch (error) {
       // Error already handled by hook — optimistic rollback in useTasks
     }
@@ -180,7 +209,7 @@ export function Tasks() {
   const handleSelectAll = () => {
     const pendingTasks = filteredTasks.filter((t) => t.status !== 'COMPLETED');
     const allSelected = pendingTasks.every((t) => selectedTasks.has(t.id));
-    
+
     if (allSelected) {
       setSelectedTasks(new Set());
     } else {
@@ -190,9 +219,9 @@ export function Tasks() {
 
   const handleCompleteSelected = async () => {
     try {
-      await Promise.all(Array.from(selectedTasks).map(taskId => completeTask(taskId)));
-    setSelectedTasks(new Set());
-    setIsSelectMode(false);
+      await Promise.all(Array.from(selectedTasks).map((taskId) => completeTask(taskId)));
+      setSelectedTasks(new Set());
+      setIsSelectMode(false);
       await refetch();
     } catch (error) {
       // Error already handled by hook
@@ -201,9 +230,9 @@ export function Tasks() {
 
   const handleUncompleteSelected = async () => {
     try {
-      await Promise.all(Array.from(selectedTasks).map(taskId => uncompleteTask(taskId)));
-    setSelectedTasks(new Set());
-    setIsSelectMode(false);
+      await Promise.all(Array.from(selectedTasks).map((taskId) => uncompleteTask(taskId)));
+      setSelectedTasks(new Set());
+      setIsSelectMode(false);
       await refetch();
     } catch (error) {
       // Error already handled by hook
@@ -213,53 +242,67 @@ export function Tasks() {
   // Refetch baseado no viewMode, calendarDate e myTasksOnly
   useEffect(() => {
     const assignedTo = myTasksOnly && user?.id ? user.id : undefined;
-    if (viewMode === "list") {
+    if (viewMode === 'list') {
       fetchTasks(assignedTo ? { assignedTo } : undefined, { silent: true });
     } else {
       const { startDate, endDate } = getDateRangeForView(viewMode, calendarDate);
-      fetchTasks({ startDate, endDate, limit: 200, ...(assignedTo ? { assignedTo } : {}) }, { silent: true });
+      fetchTasks(
+        { startDate, endDate, limit: 200, ...(assignedTo ? { assignedTo } : {}) },
+        { silent: true }
+      );
     }
   }, [viewMode, calendarDate, fetchTasks, myTasksOnly, user?.id]);
 
   // Navegação do calendário
-  const handleCalendarNavigate = useCallback((direction: "prev" | "next" | "today") => {
-    setCalendarDate(prev => {
-      if (direction === "today") return new Date();
-      if (viewMode === "month") return direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1);
-      if (viewMode === "week") return direction === "next" ? addWeeks(prev, 1) : subWeeks(prev, 1);
-      return direction === "next" ? addDays(prev, 14) : subDays(prev, 14);
-    });
-  }, [viewMode]);
+  const handleCalendarNavigate = useCallback(
+    (direction: 'prev' | 'next' | 'today') => {
+      setCalendarDate((prev) => {
+        if (direction === 'today') return new Date();
+        if (viewMode === 'month')
+          return direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1);
+        if (viewMode === 'week')
+          return direction === 'next' ? addWeeks(prev, 1) : subWeeks(prev, 1);
+        return direction === 'next' ? addDays(prev, 14) : subDays(prev, 14);
+      });
+    },
+    [viewMode]
+  );
 
   // Título do calendário
   const calendarTitle = useMemo(() => {
-    if (viewMode === "month") return formatMonthTitle(calendarDate);
-    if (viewMode === "week") return formatWeekTitle(startOfWeek(calendarDate, { weekStartsOn: 0 }));
-    return "Agenda";
+    if (viewMode === 'month') return formatMonthTitle(calendarDate);
+    if (viewMode === 'week') return formatWeekTitle(startOfWeek(calendarDate, { weekStartsOn: 0 }));
+    return 'Agenda';
   }, [viewMode, calendarDate]);
 
   // Drag-and-drop handler
-  const handleTaskDrop = useCallback(async (taskId: string, newDate: Date) => {
-    try {
-      await updateTask(taskId, { dueDate: newDate.toISOString() });
-      toast.success("Tarefa reagendada");
-    } catch {
-      // Error handled by hook
-    }
-  }, [updateTask]);
+  const handleTaskDrop = useCallback(
+    async (taskId: string, newDate: Date) => {
+      try {
+        await updateTask(taskId, { dueDate: newDate.toISOString() });
+        toast.success('Tarefa reagendada');
+      } catch {
+        // Error handled by hook
+      }
+    },
+    [updateTask]
+  );
 
   // Quick add handler
-  const handleQuickAdd = useCallback(async (data: { title: string; priority: string; dueDate: string }) => {
-    try {
-      await createTask({
-        title: data.title,
-        priority: data.priority as Task["priority"],
-        dueDate: data.dueDate,
-      });
-    } catch {
-      // Error handled by hook
-    }
-  }, [createTask]);
+  const handleQuickAdd = useCallback(
+    async (data: { title: string; priority: string; dueDate: string }) => {
+      try {
+        await createTask({
+          title: data.title,
+          priority: data.priority as Task['priority'],
+          dueDate: data.dueDate,
+        });
+      } catch {
+        // Error handled by hook
+      }
+    },
+    [createTask]
+  );
 
   // Calendar date click -> quick add
   const handleCalendarDateClick = useCallback((date: Date) => {
@@ -271,7 +314,6 @@ export function Tasks() {
   const handleCalendarTaskClick = useCallback((task: Task) => {
     setPopoverTask(task);
   }, []);
-
 
   // Mobile card renderer for tasks (compact, touch-friendly)
   const renderMobileTaskCard = (task: Task) => {
@@ -287,13 +329,14 @@ export function Tasks() {
         key={task.id}
         className={`
           border rounded-lg p-4 space-y-2 transition-all
-          ${isCompleted
-            ? "bg-gray-100 border-gray-300 opacity-60"
-            : isOverdue
-            ? "bg-red-50 border-red-200"
-            : isDueToday
-            ? "bg-yellow-50 border-yellow-200"
-            : "bg-gray-50 border-gray-300"
+          ${
+            isCompleted
+              ? 'bg-gray-100 border-gray-300 opacity-60'
+              : isOverdue
+                ? 'bg-red-50 border-red-200'
+                : isDueToday
+                  ? 'bg-yellow-50 border-yellow-200'
+                  : 'bg-gray-50 border-gray-300'
           }
         `}
       >
@@ -303,31 +346,43 @@ export function Tasks() {
               checked={isCompleted}
               onCheckedChange={() => handleToggle(task)}
               className="mt-0.5"
-              aria-label={isCompleted ? `Marcar tarefa "${task.title}" como pendente` : `Marcar tarefa "${task.title}" como concluída`}
+              aria-label={
+                isCompleted
+                  ? `Marcar tarefa "${task.title}" como pendente`
+                  : `Marcar tarefa "${task.title}" como concluída`
+              }
             />
-            <h3 className={`font-medium text-sm leading-tight ${isCompleted ? "text-gray-400 line-through" : "text-gray-900"}`}>
+            <h3
+              className={`font-medium text-sm leading-tight ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}
+            >
               {task.title}
             </h3>
           </div>
-          <span className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5 flex-shrink-0 ${getPriorityColor(task.priority)}`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5 flex-shrink-0 ${getPriorityColor(task.priority)}`}
+          >
             {getPriorityIcon(task.priority)}
             {getPriorityLabel(task.priority)}
           </span>
         </div>
 
         {task.description && (
-          <p className={`text-xs pl-7 ${isCompleted ? "text-gray-400" : "text-gray-500"}`}>
-            {task.description.length > 80 ? task.description.substring(0, 80) + "..." : task.description}
+          <p className={`text-xs pl-7 ${isCompleted ? 'text-gray-400' : 'text-gray-500'}`}>
+            {task.description.length > 80
+              ? task.description.substring(0, 80) + '...'
+              : task.description}
           </p>
         )}
 
         <div className="flex items-center gap-2 pl-7 flex-wrap">
           {/* Due date with a11y icon */}
-          <span className={`text-xs inline-flex items-center gap-1 ${isOverdue ? "text-red-600 font-medium" : isDueToday ? "text-yellow-600 font-medium" : "text-gray-500"}`}>
+          <span
+            className={`text-xs inline-flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : isDueToday ? 'text-yellow-600 font-medium' : 'text-gray-500'}`}
+          >
             {isOverdue ? (
               <>
                 <AlertTriangle size={12} aria-hidden="true" />
-                Vencida: {dueDate!.toLocaleDateString("pt-BR")}
+                Vencida: {dueDate!.toLocaleDateString('pt-BR')}
               </>
             ) : isDueToday ? (
               <>
@@ -348,7 +403,9 @@ export function Tasks() {
           </span>
 
           {/* Status badge with icon */}
-          <span className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5 ${statusInfo.className}`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-0.5 ${statusInfo.className}`}
+          >
             {statusInfo.icon}
             {statusInfo.label}
           </span>
@@ -382,7 +439,12 @@ export function Tasks() {
   };
 
   // Renders a task group section with desktop and mobile views
-  const renderTaskGroup = (title: string, taskList: Task[], titleClassName: string, icon?: ReactNode) => {
+  const renderTaskGroup = (
+    title: string,
+    taskList: Task[],
+    titleClassName: string,
+    icon?: ReactNode
+  ) => {
     if (taskList.length === 0) return null;
     return (
       <div>
@@ -441,43 +503,43 @@ export function Tasks() {
 
             <div className="flex gap-2 flex-wrap">
               <Button
-                variant={filter === "all" ? "default" : "outline"}
+                variant={filter === 'all' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter("all")}
+                onClick={() => setFilter('all')}
                 className="whitespace-nowrap"
               >
                 Todas
               </Button>
               <Button
-                variant={filter === "overdue" ? "default" : "outline"}
+                variant={filter === 'overdue' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter("overdue")}
-                className={`whitespace-nowrap ${filter === "overdue" ? "bg-red-600 hover:bg-red-700" : ""}`}
+                onClick={() => setFilter('overdue')}
+                className={`whitespace-nowrap ${filter === 'overdue' ? 'bg-red-600 hover:bg-red-700' : ''}`}
               >
                 <AlertCircle size={14} className="mr-1" />
                 Vencidas ({getOverdueTasks().length})
               </Button>
               <Button
-                variant={filter === "today" ? "default" : "outline"}
+                variant={filter === 'today' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter("today")}
+                onClick={() => setFilter('today')}
                 className="whitespace-nowrap"
               >
                 <CalendarIcon size={14} className="mr-1" />
                 Hoje ({getTasksDueToday().length})
               </Button>
               <Button
-                variant={filter === "pending" ? "default" : "outline"}
+                variant={filter === 'pending' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter("pending")}
+                onClick={() => setFilter('pending')}
                 className="whitespace-nowrap"
               >
                 Pendentes
               </Button>
               <Button
-                variant={filter === "completed" ? "default" : "outline"}
+                variant={filter === 'completed' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter("completed")}
+                onClick={() => setFilter('completed')}
                 className="whitespace-nowrap"
               >
                 Concluídas
@@ -486,9 +548,7 @@ export function Tasks() {
 
             <select
               value={priorityFilter}
-              onChange={(e) =>
-                setPriorityFilter(e.target.value as typeof priorityFilter)
-              }
+              onChange={(e) => setPriorityFilter(e.target.value as typeof priorityFilter)}
               className="px-3 py-2 border border-gray-300 rounded-md bg-white whitespace-nowrap"
               aria-label="Filtrar por prioridade"
             >
@@ -501,36 +561,36 @@ export function Tasks() {
 
             <div className="flex gap-2">
               <Button
-                variant={viewMode === "list" ? "default" : "outline"}
+                variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setViewMode("list")}
+                onClick={() => setViewMode('list')}
                 className="whitespace-nowrap"
               >
                 <List size={14} className="mr-1" />
                 Lista
               </Button>
               <Button
-                variant={viewMode === "month" ? "default" : "outline"}
+                variant={viewMode === 'month' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setViewMode("month")}
+                onClick={() => setViewMode('month')}
                 className="whitespace-nowrap"
               >
                 <CalendarDays size={14} className="mr-1" />
                 Mês
               </Button>
               <Button
-                variant={viewMode === "week" ? "default" : "outline"}
+                variant={viewMode === 'week' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setViewMode("week")}
+                onClick={() => setViewMode('week')}
                 className="whitespace-nowrap"
               >
                 <CalendarRange size={14} className="mr-1" />
                 Semana
               </Button>
               <Button
-                variant={viewMode === "agenda" ? "default" : "outline"}
+                variant={viewMode === 'agenda' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setViewMode("agenda")}
+                onClick={() => setViewMode('agenda')}
                 className="whitespace-nowrap"
               >
                 <LayoutList size={14} className="mr-1" />
@@ -585,19 +645,24 @@ export function Tasks() {
 
             <button
               type="button"
-              onClick={() => setMyTasksOnly(v => !v)}
-              className={"px-3 py-1.5 text-sm rounded-lg font-medium border transition-colors " + (myTasksOnly ? "bg-primary text-white border-primary" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50")}
+              onClick={() => setMyTasksOnly((v) => !v)}
+              className={
+                'px-3 py-1.5 text-sm rounded-lg font-medium border transition-colors ' +
+                (myTasksOnly
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50')
+              }
             >
-              {myTasksOnly ? "Minhas tarefas" : "Todas"}
+              {myTasksOnly ? 'Minhas tarefas' : 'Todas'}
             </button>
 
             <ExportButton
               onExport={async (format) => {
                 const filters: Record<string, string> = {};
-                if (filter === "overdue") filters.status = "PENDING";
-                else if (filter === "completed") filters.status = "COMPLETED";
-                else if (filter === "pending") filters.status = "PENDING";
-                if (priorityFilter !== "all") filters.priority = priorityFilter;
+                if (filter === 'overdue') filters.status = 'PENDING';
+                else if (filter === 'completed') filters.status = 'COMPLETED';
+                else if (filter === 'pending') filters.status = 'PENDING';
+                if (priorityFilter !== 'all') filters.priority = priorityFilter;
                 if (searchQuery) filters.search = searchQuery;
                 return apiClient.exportTasksDownload(format, filters);
               }}
@@ -606,7 +671,7 @@ export function Tasks() {
             />
 
             <Button
-              onClick={() => navigate("/app/tasks/new")}
+              onClick={() => navigate('/app/tasks/new')}
               className="bg-primary hover:bg-primary-dark whitespace-nowrap"
             >
               <Plus size={16} className="mr-2" />
@@ -616,46 +681,42 @@ export function Tasks() {
         </div>
 
         {/* Tasks View */}
-        {viewMode === "list" ? (
+        {viewMode === 'list' ? (
           <div className="space-y-6">
             {renderTaskGroup(
-              "Tarefas Vencidas",
+              'Tarefas Vencidas',
               groupedTasks.overdue,
-              "text-red-600",
+              'text-red-600',
               <AlertCircle size={20} />
             )}
 
             {renderTaskGroup(
-              "Vencem Hoje",
+              'Vencem Hoje',
               groupedTasks.today,
-              "text-gray-900",
+              'text-gray-900',
               <CalendarIcon size={20} />
             )}
 
-            {renderTaskGroup(
-              "Próximas",
-              groupedTasks.upcoming,
-              "text-gray-900"
-            )}
+            {renderTaskGroup('Próximas', groupedTasks.upcoming, 'text-gray-900')}
 
-            {renderTaskGroup(
-              "Concluídas",
-              groupedTasks.completed,
-              "text-gray-900"
-            )}
+            {renderTaskGroup('Concluídas', groupedTasks.completed, 'text-gray-900')}
 
             {filteredTasks.length === 0 && (
               <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300">
                 <EmptyState
                   icon={CheckSquare}
-                  title={filter !== "all" || searchQuery ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa criada"}
+                  title={
+                    filter !== 'all' || searchQuery
+                      ? 'Nenhuma tarefa encontrada'
+                      : 'Nenhuma tarefa criada'
+                  }
                   description={
-                    filter !== "all" || searchQuery
-                      ? "Tente ajustar os filtros ou termos de busca"
-                      : "Comece criando sua primeira tarefa para organizar suas atividades"
+                    filter !== 'all' || searchQuery
+                      ? 'Tente ajustar os filtros ou termos de busca'
+                      : 'Comece criando sua primeira tarefa para organizar suas atividades'
                   }
                   actionLabel="Nova Tarefa"
-                  onAction={() => navigate("/app/tasks/new")}
+                  onAction={() => navigate('/app/tasks/new')}
                 />
               </div>
             )}
@@ -668,7 +729,7 @@ export function Tasks() {
               onNavigate={handleCalendarNavigate}
             />
 
-            {viewMode === "month" && (
+            {viewMode === 'month' && (
               <CalendarMonthView
                 currentDate={calendarDate}
                 tasks={tasks}
@@ -678,7 +739,7 @@ export function Tasks() {
               />
             )}
 
-            {viewMode === "week" && (
+            {viewMode === 'week' && (
               <CalendarWeekView
                 weekStart={startOfWeek(calendarDate, { weekStartsOn: 0 })}
                 tasks={tasks}
@@ -688,7 +749,7 @@ export function Tasks() {
               />
             )}
 
-            {viewMode === "agenda" && (
+            {viewMode === 'agenda' && (
               <CalendarAgendaView
                 startDate={new Date()}
                 tasks={tasks}
@@ -703,7 +764,7 @@ export function Tasks() {
               onClose={() => setPopoverTask(null)}
               onEdit={(task) => navigate(`/app/tasks/${task.id}/edit`)}
               onComplete={async (task) => {
-                if (task.status === "COMPLETED") {
+                if (task.status === 'COMPLETED') {
                   await uncompleteTask(task.id);
                 } else {
                   await completeTask(task.id);
@@ -735,10 +796,7 @@ export function Tasks() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -747,4 +805,3 @@ export function Tasks() {
     </div>
   );
 }
-

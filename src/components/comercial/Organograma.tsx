@@ -1,13 +1,7 @@
 import './organograma.css';
 import { Trash2, UserRound } from 'lucide-react';
 import { Button } from '../ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
   STAKEHOLDER_ROLE_LABELS,
   STAKEHOLDER_POSTURE_LABELS,
@@ -28,7 +22,10 @@ const POSTURE_DOT: Record<StakeholderPosture, string> = {
 
 interface Props {
   stakeholders: RoadmapStakeholder[];
-  onUpdate: (leadId: string, patch: { roleInDecision?: StakeholderRole; posture?: StakeholderPosture }) => void;
+  onUpdate: (
+    leadId: string,
+    patch: { roleInDecision?: StakeholderRole; posture?: StakeholderPosture }
+  ) => void;
   onRemove: (leadId: string) => void;
 }
 
@@ -77,11 +74,15 @@ export function Organograma({ stakeholders, onUpdate, onRemove }: Props) {
                     title={STAKEHOLDER_POSTURE_LABELS[s.posture]}
                   />
                 </div>
-                {s.lead.position && <p className="truncate text-xs text-slate-500">{s.lead.position}</p>}
+                {s.lead.position && (
+                  <p className="truncate text-xs text-slate-500">{s.lead.position}</p>
+                )}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Select
                     value={s.roleInDecision}
-                    onValueChange={(v) => onUpdate(s.leadId, { roleInDecision: v as StakeholderRole })}
+                    onValueChange={(v) =>
+                      onUpdate(s.leadId, { roleInDecision: v as StakeholderRole })
+                    }
                   >
                     <SelectTrigger className="h-7 text-xs" style={{ width: 140 }}>
                       <SelectValue />

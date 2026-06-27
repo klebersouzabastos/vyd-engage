@@ -1,12 +1,12 @@
-import { useNavigate, Link } from "react-router";
-import { Checkbox } from "../ui/checkbox";
-import { LeadStatusBadge } from "../LeadStatusBadge";
-import { LeadSourceBadge } from "../LeadSourceBadge";
-import { LeadScoreBadge } from "../LeadScoreBadge";
-import { TagBadge } from "../TagBadge";
-import { Pencil, Trash2 } from "lucide-react";
-import { NextActionBadge } from "./NextActionBadge";
-import type { Lead, Tag } from "../../types";
+import { useNavigate, Link } from 'react-router';
+import { Checkbox } from '../ui/checkbox';
+import { LeadStatusBadge } from '../LeadStatusBadge';
+import { LeadSourceBadge } from '../LeadSourceBadge';
+import { LeadScoreBadge } from '../LeadScoreBadge';
+import { TagBadge } from '../TagBadge';
+import { Pencil, Trash2 } from 'lucide-react';
+import { NextActionBadge } from './NextActionBadge';
+import type { Lead, Tag } from '../../types';
 
 interface LeadMobileCardsProps {
   leads: Lead[];
@@ -30,10 +30,7 @@ export function LeadMobileCards({
   return (
     <div className="space-y-3 mb-4">
       {leads.map((lead) => (
-        <div
-          key={lead.id}
-          className="bg-white rounded-lg shadow-sm border border-gray-300 p-4"
-        >
+        <div key={lead.id} className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <Checkbox
@@ -68,12 +65,14 @@ export function LeadMobileCards({
             </div>
           </div>
           <div className="ml-7 space-y-1.5">
-            {lead.email && (
-              <p className="text-sm text-gray-600 truncate">{lead.email}</p>
-            )}
+            {lead.email && <p className="text-sm text-gray-600 truncate">{lead.email}</p>}
             <div className="flex items-center gap-2 flex-wrap">
               <LeadStatusBadge status={lead.status} />
-              <button type="button" onClick={() => onScoreClick(lead.id)} className="cursor-pointer">
+              <button
+                type="button"
+                onClick={() => onScoreClick(lead.id)}
+                className="cursor-pointer"
+              >
                 <LeadScoreBadge score={lead.score || 0} />
               </button>
               <LeadSourceBadge source={lead.source} />

@@ -82,13 +82,7 @@ router.get('/metrics', async (req, res, next) => {
     const hasDateFilter = Object.keys(dateFilter).length > 0;
 
     // Run all queries in parallel
-    const [
-      leads,
-      tasks,
-      interactions,
-      automations,
-      automationLogs,
-    ] = await Promise.all([
+    const [leads, tasks, interactions, automations, automationLogs] = await Promise.all([
       prisma.lead.findMany({
         where: {
           tenantId,
@@ -103,7 +97,14 @@ router.get('/metrics', async (req, res, next) => {
           deletedAt: null,
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
         },
-        select: { id: true, status: true, priority: true, dueDate: true, completedAt: true, createdAt: true },
+        select: {
+          id: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          completedAt: true,
+          createdAt: true,
+        },
       }),
       prisma.interaction.findMany({
         where: {
@@ -114,12 +115,22 @@ router.get('/metrics', async (req, res, next) => {
       }),
       prisma.automation.findMany({
         where: { tenantId },
-        select: { id: true, name: true, status: true, steps: true, runsCount: true, successCount: true, errorCount: true },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          steps: true,
+          runsCount: true,
+          successCount: true,
+          errorCount: true,
+        },
       }),
       prisma.automationLog.findMany({
         where: {
           automation: { tenantId },
-          createdAt: hasDateFilter ? dateFilter : { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          createdAt: hasDateFilter
+            ? dateFilter
+            : { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
         },
         select: { id: true, status: true, automationId: true, createdAt: true },
       }),
@@ -144,14 +155,24 @@ router.get('/metrics', async (req, res, next) => {
     // --- Pipeline metrics ---
     const stageOrder = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'];
     const stageColors: Record<string, string> = {
-      NEW: '#6B7280', CONTACTED: '#3B82F6', QUALIFIED: '#8B5CF6',
-      PROPOSAL: '#F59E0B', NEGOTIATION: '#F97316', WON: '#16A34A', LOST: '#DC2626',
+      NEW: '#6B7280',
+      CONTACTED: '#3B82F6',
+      QUALIFIED: '#8B5CF6',
+      PROPOSAL: '#F59E0B',
+      NEGOTIATION: '#F97316',
+      WON: '#16A34A',
+      LOST: '#DC2626',
     };
     const stageNames: Record<string, string> = {
-      NEW: 'Novo', CONTACTED: 'Contato', QUALIFIED: 'Qualificado',
-      PROPOSAL: 'Proposta', NEGOTIATION: 'Negociação', WON: 'Ganho', LOST: 'Perdido',
+      NEW: 'Novo',
+      CONTACTED: 'Contato',
+      QUALIFIED: 'Qualificado',
+      PROPOSAL: 'Proposta',
+      NEGOTIATION: 'Negociação',
+      WON: 'Ganho',
+      LOST: 'Perdido',
     };
-    const pipelineStages = stageOrder.map(s => ({
+    const pipelineStages = stageOrder.map((s) => ({
       name: stageNames[s] || s,
       count: leadsByStatus[s] || 0,
       color: stageColors[s] || '#6B7280',
@@ -172,7 +193,12 @@ router.get('/metrics', async (req, res, next) => {
       if (task.status === 'COMPLETED') completedTasks++;
       else if (task.status === 'PENDING' || task.status === 'IN_PROGRESS') pendingTasks++;
 
-      if (task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && task.dueDate && new Date(task.dueDate) < now) {
+      if (
+        task.status !== 'COMPLETED' &&
+        task.status !== 'CANCELLED' &&
+        task.dueDate &&
+        new Date(task.dueDate) < now
+      ) {
         overdueTasks++;
       }
       if (task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && task.dueDate) {
@@ -183,7 +209,8 @@ router.get('/metrics', async (req, res, next) => {
     }
 
     const totalTasks = tasks.length;
-    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 1000) / 10 : 0;
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 1000) / 10 : 0;
 
     // --- Interactions metrics ---
     const interactionsByType: Record<string, number> = {};
@@ -198,7 +225,10 @@ router.get('/metrics', async (req, res, next) => {
     }
 
     const totalInteractions = interactions.length;
-    const avgPerLead = interactionLeadIds.size > 0 ? Math.round((totalInteractions / interactionLeadIds.size) * 10) / 10 : 0;
+    const avgPerLead =
+      interactionLeadIds.size > 0
+        ? Math.round((totalInteractions / interactionLeadIds.size) * 10) / 10
+        : 0;
 
     const byDay = Object.entries(interactionsByDay)
       .map(([date, count]) => ({ date, count }))
@@ -206,17 +236,18 @@ router.get('/metrics', async (req, res, next) => {
 
     // --- Automations metrics ---
     const totalAutomations = automations.length;
-    const activeAutomations = automations.filter(a => a.status === 'ACTIVE').length;
-    const pausedAutomations = automations.filter(a => a.status === 'PAUSED').length;
+    const activeAutomations = automations.filter((a) => a.status === 'ACTIVE').length;
+    const pausedAutomations = automations.filter((a) => a.status === 'PAUSED').length;
     const totalRuns = automations.reduce((sum, a) => sum + a.runsCount, 0);
     const totalSuccess = automations.reduce((sum, a) => sum + a.successCount, 0);
-    const automationSuccessRate = totalRuns > 0 ? Math.round((totalSuccess / totalRuns) * 1000) / 10 : 0;
+    const automationSuccessRate =
+      totalRuns > 0 ? Math.round((totalSuccess / totalRuns) * 1000) / 10 : 0;
 
     let totalSentMessages = 0;
     for (const auto of automations) {
       const steps = auto.steps as any[];
       if (Array.isArray(steps)) {
-        const msgSteps = steps.filter(s => s.type === 'send_whatsapp' || s.type === 'send_email');
+        const msgSteps = steps.filter((s) => s.type === 'send_whatsapp' || s.type === 'send_email');
         totalSentMessages += msgSteps.length * auto.successCount;
       }
     }
@@ -227,11 +258,12 @@ router.get('/metrics', async (req, res, next) => {
       automationByStatus[auto.status] = (automationByStatus[auto.status] || 0) + 1;
       const steps = auto.steps as any[];
       if (Array.isArray(steps)) {
-        const hasWhatsapp = steps.some(s => s.type === 'send_whatsapp');
-        const hasEmail = steps.some(s => s.type === 'send_email');
+        const hasWhatsapp = steps.some((s) => s.type === 'send_whatsapp');
+        const hasEmail = steps.some((s) => s.type === 'send_email');
         if (hasWhatsapp) automationByType['whatsapp'] = (automationByType['whatsapp'] || 0) + 1;
         if (hasEmail) automationByType['email'] = (automationByType['email'] || 0) + 1;
-        if (!hasWhatsapp && !hasEmail) automationByType['other'] = (automationByType['other'] || 0) + 1;
+        if (!hasWhatsapp && !hasEmail)
+          automationByType['other'] = (automationByType['other'] || 0) + 1;
       }
     }
 
@@ -293,7 +325,9 @@ router.get('/team-performance', async (req, res, next) => {
     const tenantId = req.user.tenantId;
     const { from, to, funnelId } = req.query;
 
-    const fromDate = from ? new Date(from as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const fromDate = from
+      ? new Date(from as string)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
     // Fetch all users in this tenant
@@ -302,72 +336,75 @@ router.get('/team-performance', async (req, res, next) => {
       select: { id: true, name: true, email: true },
     });
 
-    const results = await Promise.all(users.map(async (user) => {
-      const closedFilter: any = {
-        tenantId,
-        assignedTo: user.id,
-        closedAt: { gte: fromDate, lte: toDate },
-        deletedAt: null,
-        ...(funnelId ? { funnelId: funnelId as string } : {}),
-      };
+    const results = await Promise.all(
+      users.map(async (user) => {
+        const closedFilter: any = {
+          tenantId,
+          assignedTo: user.id,
+          closedAt: { gte: fromDate, lte: toDate },
+          deletedAt: null,
+          ...(funnelId ? { funnelId: funnelId as string } : {}),
+        };
 
-      const [wonDeals, lostCount, openDeals, tasksDone, wonCycleDeals] = await Promise.all([
-        prisma.deal.aggregate({
-          where: { ...closedFilter, stage: 'WON' },
-          _count: { id: true },
-          _sum: { value: true },
-        }),
-        prisma.deal.count({ where: { ...closedFilter, stage: 'LOST' } }),
-        prisma.deal.aggregate({
-          where: {
-            tenantId,
-            assignedTo: user.id,
-            stage: { notIn: ['WON', 'LOST'] },
-            deletedAt: null,
-            ...(funnelId ? { funnelId: funnelId as string } : {}),
-          },
-          _sum: { value: true },
-        }),
-        prisma.task.count({
-          where: {
-            tenantId,
-            assignedTo: user.id,
-            status: 'COMPLETED',
-            completedAt: { gte: fromDate, lte: toDate },
-            deletedAt: null,
-          },
-        }),
-        prisma.deal.findMany({
-          where: { ...closedFilter, stage: 'WON', closedAt: { not: null } },
-          select: { createdAt: true, closedAt: true },
-        }),
-      ]);
+        const [wonDeals, lostCount, openDeals, tasksDone, wonCycleDeals] = await Promise.all([
+          prisma.deal.aggregate({
+            where: { ...closedFilter, stage: 'WON' },
+            _count: { id: true },
+            _sum: { value: true },
+          }),
+          prisma.deal.count({ where: { ...closedFilter, stage: 'LOST' } }),
+          prisma.deal.aggregate({
+            where: {
+              tenantId,
+              assignedTo: user.id,
+              stage: { notIn: ['WON', 'LOST'] },
+              deletedAt: null,
+              ...(funnelId ? { funnelId: funnelId as string } : {}),
+            },
+            _sum: { value: true },
+          }),
+          prisma.task.count({
+            where: {
+              tenantId,
+              assignedTo: user.id,
+              status: 'COMPLETED',
+              completedAt: { gte: fromDate, lte: toDate },
+              deletedAt: null,
+            },
+          }),
+          prisma.deal.findMany({
+            where: { ...closedFilter, stage: 'WON', closedAt: { not: null } },
+            select: { createdAt: true, closedAt: true },
+          }),
+        ]);
 
-      const wonCount = wonDeals._count.id;
-      const revenueWon = Number(wonDeals._sum.value || 0);
-      const closedCount = wonCount + lostCount;
-      const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 1000) / 10 : 0;
+        const wonCount = wonDeals._count.id;
+        const revenueWon = Number(wonDeals._sum.value || 0);
+        const closedCount = wonCount + lostCount;
+        const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 1000) / 10 : 0;
 
-      const cycleTimes = wonCycleDeals.map(
-        (d) => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const avgCycleDays = cycleTimes.length > 0
-        ? Math.round(cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length * 10) / 10
-        : 0;
+        const cycleTimes = wonCycleDeals.map(
+          (d) => (d.closedAt!.getTime() - d.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const avgCycleDays =
+          cycleTimes.length > 0
+            ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10
+            : 0;
 
-      return {
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        dealsWon: wonCount,
-        revenueWon: Math.round(revenueWon * 100) / 100,
-        dealsLost: lostCount,
-        winRate,
-        avgCycleDays,
-        pipelineValue: Math.round(Number(openDeals._sum.value || 0) * 100) / 100,
-        tasksDone,
-      };
-    }));
+        return {
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          dealsWon: wonCount,
+          revenueWon: Math.round(revenueWon * 100) / 100,
+          dealsLost: lostCount,
+          winRate,
+          avgCycleDays,
+          pipelineValue: Math.round(Number(openDeals._sum.value || 0) * 100) / 100,
+          tasksDone,
+        };
+      })
+    );
 
     results.sort((a, b) => b.revenueWon - a.revenueWon);
     res.json({ status: 200, data: results });
@@ -383,7 +420,9 @@ router.get('/win-loss', async (req, res, next) => {
     const tenantId = req.user.tenantId;
     const { from, to } = req.query;
 
-    const fromDate = from ? new Date(from as string) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const fromDate = from
+      ? new Date(from as string)
+      : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
     const closedDeals = await prisma.deal.findMany({
@@ -414,14 +453,23 @@ router.get('/win-loss', async (req, res, next) => {
       .sort((a, b) => b.count - a.count);
 
     // Monthly trend
-    const monthMap = new Map<string, { month: string; won: number; lost: number; wonValue: number; lostValue: number }>();
+    const monthMap = new Map<
+      string,
+      { month: string; won: number; lost: number; wonValue: number; lostValue: number }
+    >();
     for (const deal of closedDeals) {
       if (!deal.closedAt) continue;
       const key = `${deal.closedAt.getFullYear()}-${String(deal.closedAt.getMonth() + 1).padStart(2, '0')}`;
-      if (!monthMap.has(key)) monthMap.set(key, { month: key, won: 0, lost: 0, wonValue: 0, lostValue: 0 });
+      if (!monthMap.has(key))
+        monthMap.set(key, { month: key, won: 0, lost: 0, wonValue: 0, lostValue: 0 });
       const bucket = monthMap.get(key)!;
-      if (deal.stage === 'WON') { bucket.won++; bucket.wonValue += Number(deal.value); }
-      else { bucket.lost++; bucket.lostValue += Number(deal.value); }
+      if (deal.stage === 'WON') {
+        bucket.won++;
+        bucket.wonValue += Number(deal.value);
+      } else {
+        bucket.lost++;
+        bucket.lostValue += Number(deal.value);
+      }
     }
     const monthlyTrend = Array.from(monthMap.values())
       .sort((a, b) => a.month.localeCompare(b.month))

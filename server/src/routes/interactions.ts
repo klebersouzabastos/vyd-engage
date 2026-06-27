@@ -58,10 +58,12 @@ router.get('/inbox', async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 30;
 
-    const conversations = await interactionService.getInboxConversations(
-      req.user.tenantId,
-      { channel, search, page, limit }
-    );
+    const conversations = await interactionService.getInboxConversations(req.user.tenantId, {
+      channel,
+      search,
+      page,
+      limit,
+    });
 
     res.json({ status: 200, data: conversations });
   } catch (error) {

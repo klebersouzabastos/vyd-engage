@@ -61,7 +61,7 @@ async function callMetaAPI(
     const response = await fetch(url, {
       method,
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -102,7 +102,11 @@ export const whatsappMessagingService = {
     });
 
     if (!connection) {
-      throw createError('WhatsApp connection not found or not connected', 400, 'WHATSAPP_NOT_CONNECTED');
+      throw createError(
+        'WhatsApp connection not found or not connected',
+        400,
+        'WHATSAPP_NOT_CONNECTED'
+      );
     }
 
     const config = safeDecryptConfig(connection.config) as any;
@@ -110,11 +114,15 @@ export const whatsappMessagingService = {
     const accessToken = config.accessToken;
 
     if (!phoneNumberId || !accessToken) {
-      throw createError('WhatsApp connection missing phoneNumberId or accessToken', 400, 'WHATSAPP_CONFIG_INVALID');
+      throw createError(
+        'WhatsApp connection missing phoneNumberId or accessToken',
+        400,
+        'WHATSAPP_CONFIG_INVALID'
+      );
     }
 
     // Build message payload
-    let messagePayload: any = {
+    const messagePayload: any = {
       messaging_product: 'whatsapp',
       to: data.to,
     };
@@ -130,12 +138,14 @@ export const whatsappMessagingService = {
         messagePayload.template = {
           name: data.templateName,
           language: { code: 'pt_BR' },
-          components: data.templateParams ? [
-            {
-              type: 'body',
-              parameters: data.templateParams.map(p => ({ type: 'text', text: p })),
-            },
-          ] : undefined,
+          components: data.templateParams
+            ? [
+                {
+                  type: 'body',
+                  parameters: data.templateParams.map((p) => ({ type: 'text', text: p })),
+                },
+              ]
+            : undefined,
         };
         break;
 
@@ -226,7 +236,7 @@ export const whatsappMessagingService = {
             where: { status: 'CONNECTED' },
           });
 
-          const connection = connections.find(c => {
+          const connection = connections.find((c) => {
             const config = safeDecryptConfig(c.config) as any;
             return config.phoneNumberId === phoneNumberId;
           });
@@ -263,14 +273,25 @@ export const whatsappMessagingService = {
     const messageType = message.type;
     const timestamp = message.timestamp;
 
-    let content = '';
+    let content: string;
     switch (messageType) {
-      case 'text': content = message.text?.body || ''; break;
-      case 'image': content = '[Imagem recebida]'; break;
-      case 'document': content = '[Documento recebido]'; break;
-      case 'audio': content = '[Audio recebido]'; break;
-      case 'video': content = '[Video recebido]'; break;
-      default: content = `[${messageType}]`;
+      case 'text':
+        content = message.text?.body || '';
+        break;
+      case 'image':
+        content = '[Imagem recebida]';
+        break;
+      case 'document':
+        content = '[Documento recebido]';
+        break;
+      case 'audio':
+        content = '[Audio recebido]';
+        break;
+      case 'video':
+        content = '[Video recebido]';
+        break;
+      default:
+        content = `[${messageType}]`;
     }
 
     // Update connection stats
@@ -333,7 +354,7 @@ export const whatsappMessagingService = {
       take: 100,
     });
 
-    const interaction = interactions.find(i => {
+    const interaction = interactions.find((i) => {
       const meta = i.metadata as any;
       return meta?.messageId === messageId;
     });
@@ -377,11 +398,7 @@ export const whatsappMessagingService = {
     }
 
     try {
-      const result = await callMetaAPI(
-        `/${wabaId}/message_templates`,
-        'GET',
-        accessToken
-      );
+      const result = await callMetaAPI(`/${wabaId}/message_templates`, 'GET', accessToken);
       return result.data || [];
     } catch (error) {
       logger.error('Failed to fetch WhatsApp templates', error as any);

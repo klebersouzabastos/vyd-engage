@@ -1,8 +1,8 @@
-import { GitBranch, X } from "lucide-react";
-import { CONDITION_OPERATORS } from "../../utils/automationFlowConverter";
-import type { FlowNode } from "../../utils/automationFlowConverter";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { GitBranch, X } from 'lucide-react';
+import { CONDITION_OPERATORS } from '../../utils/automationFlowConverter';
+import type { FlowNode } from '../../utils/automationFlowConverter';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface ConditionNodeProps {
   node: FlowNode;
@@ -37,7 +37,7 @@ function ConditionConfigPanel({
         <div>
           <Label className="text-xs">Campo</Label>
           <select
-            value={config.field || "status"}
+            value={config.field || 'status'}
             onChange={(e) => onUpdate({ ...config, field: e.target.value })}
             className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
           >
@@ -54,7 +54,7 @@ function ConditionConfigPanel({
         <div>
           <Label className="text-xs">Operador</Label>
           <select
-            value={config.operator || "equals"}
+            value={config.operator || 'equals'}
             onChange={(e) => onUpdate({ ...config, operator: e.target.value })}
             className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
           >
@@ -65,11 +65,11 @@ function ConditionConfigPanel({
             ))}
           </select>
         </div>
-        {config.operator !== "is_empty" && config.operator !== "is_not_empty" && (
+        {config.operator !== 'is_empty' && config.operator !== 'is_not_empty' && (
           <div>
             <Label className="text-xs">Valor</Label>
             <Input
-              value={config.value || ""}
+              value={config.value || ''}
               onChange={(e) => onUpdate({ ...config, value: e.target.value })}
               placeholder="Valor para comparar"
               className="mt-1 text-sm"
@@ -80,21 +80,21 @@ function ConditionConfigPanel({
           <Label className="text-xs">Lógica (múltiplas condições)</Label>
           <div className="flex gap-2 mt-1">
             <button
-              onClick={() => onUpdate({ ...config, logic: "AND" })}
+              onClick={() => onUpdate({ ...config, logic: 'AND' })}
               className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors ${
-                (config.logic || "AND") === "AND"
-                  ? "bg-amber-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                (config.logic || 'AND') === 'AND'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               E (AND)
             </button>
             <button
-              onClick={() => onUpdate({ ...config, logic: "OR" })}
+              onClick={() => onUpdate({ ...config, logic: 'OR' })}
               className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors ${
-                config.logic === "OR"
-                  ? "bg-amber-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                config.logic === 'OR'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               OU (OR)
@@ -127,20 +127,30 @@ export function ConditionNode({
   onToggleConfig,
 }: ConditionNodeProps) {
   const config = node.data.config;
-  const field = config.field || "status";
-  const op = CONDITION_OPERATORS.find((o) => o.value === (config.operator || "equals"))?.label || config.operator;
-  const value = config.value || "...";
+  const field = config.field || 'status';
+  const op =
+    CONDITION_OPERATORS.find((o) => o.value === (config.operator || 'equals'))?.label ||
+    config.operator;
+  const value = config.value || '...';
 
   return (
     <div className="relative group">
       <div
         className={`w-72 rounded-lg border-2 cursor-pointer transition-all shadow-sm ${
           selected
-            ? "border-amber-500 shadow-amber-100 shadow-md"
-            : "border-amber-300 hover:border-amber-400 hover:shadow-md"
+            ? 'border-amber-500 shadow-amber-100 shadow-md'
+            : 'border-amber-300 hover:border-amber-400 hover:shadow-md'
         }`}
         onClick={onSelect}
         onDoubleClick={onToggleConfig}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') e.preventDefault();
+            onSelect();
+          }
+        }}
       >
         <div className="bg-amber-50 border-b border-amber-200 rounded-t-lg px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -1,17 +1,17 @@
-import { useNavigate } from "react-router";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Plus, Upload, Copy } from "lucide-react";
-import { FilterPopover } from "./FilterPopover";
-import { CustomFieldsFilter } from "./CustomFieldsFilter";
-import { ExportButton } from "../ExportButton";
-import type { Tag, CustomField } from "../../types";
+import { useNavigate } from 'react-router';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Plus, Upload, Copy } from 'lucide-react';
+import { FilterPopover } from './FilterPopover';
+import { CustomFieldsFilter } from './CustomFieldsFilter';
+import { ExportButton } from '../ExportButton';
+import type { Tag, CustomField } from '../../types';
 
 interface Automation {
   id: number;
   name: string;
-  type: "whatsapp" | "email";
-  status: "active" | "paused";
+  type: 'whatsapp' | 'email';
+  status: 'active' | 'paused';
 }
 
 interface LeadFiltersProps {
@@ -77,10 +77,10 @@ export function LeadFilters({
           allLabel="Todos os status"
           countSuffix="status"
           options={[
-            { value: "novo", label: "Novo" },
-            { value: "contato", label: "Em Contato" },
-            { value: "fechado", label: "Fechado" },
-            { value: "perdido", label: "Perdido" },
+            { value: 'novo', label: 'Novo' },
+            { value: 'contato', label: 'Em Contato' },
+            { value: 'fechado', label: 'Fechado' },
+            { value: 'perdido', label: 'Perdido' },
           ]}
           selected={filterStatus}
           onChange={onFilterStatusChange}
@@ -92,10 +92,10 @@ export function LeadFilters({
           allLabel="Todas as origens"
           countSuffix="origem(s)"
           options={[
-            { value: "meta", label: "Meta Ads" },
-            { value: "google", label: "Google Ads" },
-            { value: "organico", label: "Orgânico" },
-            { value: "manual", label: "Manual" },
+            { value: 'meta', label: 'Meta Ads' },
+            { value: 'google', label: 'Google Ads' },
+            { value: 'organico', label: 'Orgânico' },
+            { value: 'manual', label: 'Manual' },
           ]}
           selected={filterSource}
           onChange={onFilterSourceChange}
@@ -107,9 +107,9 @@ export function LeadFilters({
           allLabel="Todas as automações"
           countSuffix="automação(ões)"
           options={[
-            { value: "with", label: "Com automações" },
-            { value: "without", label: "Sem automações" },
-            ...availableAutomations.map(a => ({ value: a.id.toString(), label: a.name }))
+            { value: 'with', label: 'Com automações' },
+            { value: 'without', label: 'Sem automações' },
+            ...availableAutomations.map((a) => ({ value: a.id.toString(), label: a.name })),
           ]}
           selected={filterAutomation}
           onChange={onFilterAutomationChange}
@@ -121,7 +121,7 @@ export function LeadFilters({
           label="Filtrar por Tag"
           allLabel="Todas as tags"
           countSuffix="tag(s)"
-          options={tags.map(t => ({ value: t.id, label: t.name }))}
+          options={tags.map((t) => ({ value: t.id, label: t.name }))}
           selected={filterTag}
           onChange={onFilterTagChange}
         />
@@ -132,7 +132,11 @@ export function LeadFilters({
           onFilterChange={onFilterCustomFieldsChange}
         />
 
-        <Button variant="outline" className="gap-2" onClick={() => navigate("/app/leads/duplicates")}>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => navigate('/app/leads/duplicates')}
+        >
           <Copy size={16} />
           Duplicados
         </Button>
@@ -143,11 +147,7 @@ export function LeadFilters({
         </Button>
 
         {onExportServer ? (
-          <ExportButton
-            onExport={onExportServer}
-            filename="leads-export"
-            label="Exportar"
-          />
+          <ExportButton onExport={onExportServer} filename="leads-export" label="Exportar" />
         ) : (
           <ExportButton
             onExport={async () => {
@@ -161,7 +161,7 @@ export function LeadFilters({
 
         <Button
           className="bg-primary hover:bg-primary-dark gap-2"
-          onClick={() => navigate("/app/leads/new")}
+          onClick={() => navigate('/app/leads/new')}
           data-tour="create-lead-btn"
         >
           <Plus size={16} />

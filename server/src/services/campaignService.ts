@@ -68,6 +68,7 @@ export function sanitizeUrl(raw: string | undefined | null): string {
   if (!url) return '#';
   // Strip whitespace/control chars (0x00-0x20) that can smuggle a scheme.
   // Valid URLs do not contain raw control characters.
+  // eslint-disable-next-line no-control-regex -- remoção intencional de chars de controle (segurança)
   const cleaned = url.replace(new RegExp('[\u0000-\u0020]', 'g'), '');
   if (/^https?:\/\//i.test(cleaned)) return cleaned;
   if (/^mailto:/i.test(cleaned)) return cleaned;
@@ -83,7 +84,10 @@ export function sanitizeUrl(raw: string | undefined | null): string {
 export function sanitizeHtml(html: string): string {
   let out = html;
   // Drop dangerous element blocks entirely (including their content).
-  out = out.replace(/<\s*(script|style|iframe|object|embed|link|meta)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '');
+  out = out.replace(
+    /<\s*(script|style|iframe|object|embed|link|meta)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
+    ''
+  );
   out = out.replace(/<\s*(script|style|iframe|object|embed|link|meta)\b[^>]*\/?>/gi, '');
   // Strip inline event handlers (onclick=, onerror=, ...).
   out = out.replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
@@ -134,7 +138,10 @@ function renderBlock(block: Block, ctx: MergeTagContext): string {
   switch (block.type) {
     case 'text': {
       // Merge-tag + escape the raw content, preserve line breaks.
-      const content = applyMergeTagsHtml(escapeHtml(block.content ?? ''), ctx).replace(/\n/g, '<br/>');
+      const content = applyMergeTagsHtml(escapeHtml(block.content ?? ''), ctx).replace(
+        /\n/g,
+        '<br/>'
+      );
       return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1f2937;margin:0 0 16px;">${content}</div>`;
     }
     case 'image': {
@@ -184,7 +191,11 @@ export function getTrackingBaseUrl(): string {
 
 /** base64url-encode a string (for the click ?u= original-URL param). */
 export function base64UrlEncode(value: string): string {
-  return Buffer.from(value, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return Buffer.from(value, 'utf8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 /** Decode a base64url string back to UTF-8. */
@@ -240,7 +251,10 @@ export function rewriteLinksForTracking(html: string, token: string, baseUrl?: s
  * Always excludes leads with unsubscribed = true (LGPD — req 14) and
  * soft-deleted leads. Requires a non-null email (campaigns send email).
  */
-export async function buildAudienceLeadIds(tenantId: string, filters: AudienceFilters): Promise<string[]> {
+export async function buildAudienceLeadIds(
+  tenantId: string,
+  filters: AudienceFilters
+): Promise<string[]> {
   const where: Prisma.LeadWhereInput = {
     tenantId,
     deletedAt: null,
@@ -342,15 +356,27 @@ function round(n: number): number {
  * Opened/clicked are UNIQUE counts (per recipient). Timeline = opens per hour
  * for the first 48h after sentAt.
  */
-export async function getCampaignStats(tenantId: string, campaignId: string): Promise<CampaignStats> {
+export async function getCampaignStats(
+  tenantId: string,
+  campaignId: string
+): Promise<CampaignStats> {
   const campaign = await prisma.campaign.findFirst({
     where: { id: campaignId, tenantId },
     select: { id: true, sentAt: true },
   });
   if (!campaign) {
     return {
-      sent: 0, delivered: 0, opened: 0, clicked: 0, unsubscribed: 0, bounced: 0,
-      openRate: 0, ctr: 0, unsubRate: 0, timeline: [], recipients: [],
+      sent: 0,
+      delivered: 0,
+      opened: 0,
+      clicked: 0,
+      unsubscribed: 0,
+      bounced: 0,
+      openRate: 0,
+      ctr: 0,
+      unsubRate: 0,
+      timeline: [],
+      recipients: [],
     };
   }
 
@@ -387,7 +413,10 @@ export async function getCampaignStats(tenantId: string, campaignId: string): Pr
   const delivered = Math.max(0, sent - bounced);
 
   // Timeline: opens per hour for first 48h after send.
-  const timeline: Array<{ hour: number; opens: number }> = Array.from({ length: 48 }, (_, hour) => ({ hour, opens: 0 }));
+  const timeline: Array<{ hour: number; opens: number }> = Array.from(
+    { length: 48 },
+    (_, hour) => ({ hour, opens: 0 })
+  );
   if (campaign.sentAt) {
     const start = campaign.sentAt.getTime();
     for (const e of events) {
@@ -426,7 +455,14 @@ export async function getCampaignStats(tenantId: string, campaignId: string): Pr
 export async function recordOpen(token: string): Promise<void> {
   const recipient = await prisma.campaignRecipient.findUnique({
     where: { token },
-    select: { id: true, campaignId: true, tenantId: true, leadId: true, openedAt: true, status: true },
+    select: {
+      id: true,
+      campaignId: true,
+      tenantId: true,
+      leadId: true,
+      openedAt: true,
+      status: true,
+    },
   });
   if (!recipient) return;
 
@@ -452,7 +488,9 @@ export async function recordOpen(token: string): Promise<void> {
     data: {
       openedAt: recipient.openedAt ?? new Date(),
       // Don't downgrade a CLICKED/UNSUBSCRIBED/BOUNCED recipient back to OPENED.
-      ...(recipient.status === 'SENT' || recipient.status === 'PENDING' ? { status: 'OPENED' } : {}),
+      ...(recipient.status === 'SENT' || recipient.status === 'PENDING'
+        ? { status: 'OPENED' }
+        : {}),
     },
   });
 }
@@ -479,7 +517,9 @@ export async function recordClick(token: string, url: string): Promise<void> {
   await prisma.campaignRecipient.update({
     where: { id: recipient.id },
     data: {
-      ...(recipient.status === 'UNSUBSCRIBED' || recipient.status === 'BOUNCED' ? {} : { status: 'CLICKED' }),
+      ...(recipient.status === 'UNSUBSCRIBED' || recipient.status === 'BOUNCED'
+        ? {}
+        : { status: 'CLICKED' }),
     },
   });
 }

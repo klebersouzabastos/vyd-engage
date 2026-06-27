@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 import {
   useNodesState,
   useEdgesState,
@@ -6,30 +6,30 @@ import {
   type Node,
   type Edge,
   type Connection,
-} from "@xyflow/react";
-import { NodePalette } from "./NodePalette";
-import { FlowCanvas } from "./FlowCanvas";
-import { layoutFlow } from "./flowLayout";
+} from '@xyflow/react';
+import { NodePalette } from './NodePalette';
+import { FlowCanvas } from './FlowCanvas';
+import { layoutFlow } from './flowLayout';
 import {
   generateNodeId,
   generateEdgeId,
   TRIGGER_TYPES,
   ACTION_TYPES,
   flowToAutomation,
-} from "../../utils/automationFlowConverter";
-import type { FlowNode, FlowData } from "../../utils/automationFlowConverter";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+} from '../../utils/automationFlowConverter';
+import type { FlowNode, FlowData } from '../../utils/automationFlowConverter';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Switch } from '../ui/switch';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 
 /** Aplica rótulo Sim/Não e cor às arestas que saem dos ramos da condição. */
 function decorateEdge<T extends Edge | Connection>(edge: T): T {
-  if (edge.sourceHandle === "true") {
-    return { ...edge, label: "Sim", style: { stroke: "#22c55e" } } as T;
+  if (edge.sourceHandle === 'true') {
+    return { ...edge, label: 'Sim', style: { stroke: '#22c55e' } } as T;
   }
-  if (edge.sourceHandle === "false") {
-    return { ...edge, label: "Não", style: { stroke: "#ef4444" } } as T;
+  if (edge.sourceHandle === 'false') {
+    return { ...edge, label: 'Não', style: { stroke: '#ef4444' } } as T;
   }
   return edge;
 }
@@ -71,17 +71,21 @@ export function AutomationBuilder({
   const [name, setName] = useState(initialName);
   const [description] = useState(initialDescription);
   const [isActive, setIsActive] = useState(initialActive);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialFlowData.nodes as unknown as Node[]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlowData.edges as unknown as Edge[]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    initialFlowData.nodes as unknown as Node[]
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    initialFlowData.edges as unknown as Edge[]
+  );
 
-  const hasTrigger = nodes.some((n) => n.type === "trigger");
+  const hasTrigger = nodes.some((n) => n.type === 'trigger');
 
   // Menu do connect-to-create (aberto ao soltar uma conexão em área vazia).
   const [createMenu, setCreateMenu] = useState<CreateMenuState | null>(null);
 
   const onConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(decorateEdge(connection), eds)),
-    [setEdges],
+    [setEdges]
   );
 
   const handleConnectToCreate = useCallback(
@@ -89,23 +93,23 @@ export function AutomationBuilder({
       const sh = params.sourceHandleId;
       // Ramo de condição (true/false) já conectado: não abre menu (cap 1:1).
       if (
-        (sh === "true" || sh === "false") &&
+        (sh === 'true' || sh === 'false') &&
         edges.some((e) => e.source === params.sourceNodeId && e.sourceHandle === sh)
       ) {
         return;
       }
       setCreateMenu(params);
     },
-    [edges],
+    [edges]
   );
 
   const createConnectedNode = useCallback(
-    (type: "action" | "condition", nodeType: string) => {
+    (type: 'action' | 'condition', nodeType: string) => {
       if (!createMenu) return;
       const id = generateNodeId();
       const label =
-        type === "condition"
-          ? "Condição"
+        type === 'condition'
+          ? 'Condição'
           : ACTION_TYPES.find((a) => a.value === nodeType)?.label || nodeType;
 
       const newNode: Node = {
@@ -117,15 +121,15 @@ export function AutomationBuilder({
           nodeType,
           label,
           config:
-            type === "condition"
-              ? { field: "status", operator: "equals", value: "", logic: "AND" }
+            type === 'condition'
+              ? { field: 'status', operator: 'equals', value: '', logic: 'AND' }
               : {},
         },
       };
 
       const sh = createMenu.sourceHandleId;
       const edge = decorateEdge({
-        id: `${generateEdgeId(createMenu.sourceNodeId, id)}${sh ? `_${sh}` : ""}`,
+        id: `${generateEdgeId(createMenu.sourceNodeId, id)}${sh ? `_${sh}` : ''}`,
         source: createMenu.sourceNodeId,
         target: id,
         sourceHandle: sh ?? undefined,
@@ -135,22 +139,22 @@ export function AutomationBuilder({
       setEdges((eds) => addEdge(edge, eds));
       setCreateMenu(null);
     },
-    [createMenu, setNodes, setEdges],
+    [createMenu, setNodes, setEdges]
   );
 
   const handleAddNode = useCallback(
-    (type: "trigger" | "action" | "condition", nodeType: string) => {
+    (type: 'trigger' | 'action' | 'condition', nodeType: string) => {
       const maxY = nodes.length > 0 ? Math.max(...nodes.map((n) => n.position.y)) : -80;
       const centerX = 300;
       const nodeId = generateNodeId();
 
       let label = nodeType;
-      if (type === "trigger") {
+      if (type === 'trigger') {
         label = TRIGGER_TYPES.find((t) => t.value === nodeType)?.label || nodeType;
-      } else if (type === "action") {
+      } else if (type === 'action') {
         label = ACTION_TYPES.find((a) => a.value === nodeType)?.label || nodeType;
-      } else if (type === "condition") {
-        label = "Condição";
+      } else if (type === 'condition') {
+        label = 'Condição';
       }
 
       const newNode: Node = {
@@ -160,9 +164,10 @@ export function AutomationBuilder({
         data: {
           nodeType,
           label,
-          config: type === "condition"
-            ? { field: "status", operator: "equals", value: "", logic: "AND" }
-            : {},
+          config:
+            type === 'condition'
+              ? { field: 'status', operator: 'equals', value: '', logic: 'AND' }
+              : {},
         },
       };
 
@@ -172,17 +177,28 @@ export function AutomationBuilder({
       if (nodes.length > 0) {
         const lastNode = nodes[nodes.length - 1];
         const lastNodeEdges = edges.filter((e) => e.source === lastNode.id);
-        if (lastNode.type !== "condition" && lastNodeEdges.length === 0) {
-          setEdges((eds) => [...eds, { id: generateEdgeId(lastNode.id, nodeId), source: lastNode.id, target: nodeId }]);
-        } else if (lastNode.type === "condition") {
-          const trueEdge = lastNodeEdges.find((e) => e.sourceHandle === "true");
+        if (lastNode.type !== 'condition' && lastNodeEdges.length === 0) {
+          setEdges((eds) => [
+            ...eds,
+            { id: generateEdgeId(lastNode.id, nodeId), source: lastNode.id, target: nodeId },
+          ]);
+        } else if (lastNode.type === 'condition') {
+          const trueEdge = lastNodeEdges.find((e) => e.sourceHandle === 'true');
           if (!trueEdge) {
-            setEdges((eds) => [...eds, { id: generateEdgeId(lastNode.id, nodeId), source: lastNode.id, target: nodeId, sourceHandle: "true" }]);
+            setEdges((eds) => [
+              ...eds,
+              {
+                id: generateEdgeId(lastNode.id, nodeId),
+                source: lastNode.id,
+                target: nodeId,
+                sourceHandle: 'true',
+              },
+            ]);
           }
         }
       }
     },
-    [nodes, edges, setNodes, setEdges],
+    [nodes, edges, setNodes, setEdges]
   );
 
   const handleDeleteNode = useCallback(
@@ -190,7 +206,7 @@ export function AutomationBuilder({
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
     },
-    [setNodes, setEdges],
+    [setNodes, setEdges]
   );
 
   const handleUpdateNodeConfig = useCallback(
@@ -199,17 +215,24 @@ export function AutomationBuilder({
         nds.map((n) => {
           if (n.id !== nodeId) return n;
           // _nodeType / _label are special keys used when a node changes its type
-          const data = n.data as { nodeType: string; label: string; config: Record<string, unknown> };
+          const data = n.data as {
+            nodeType: string;
+            label: string;
+            config: Record<string, unknown>;
+          };
           const newNodeType = (config._nodeType as string) || data.nodeType;
           const newLabel = (config._label as string) || data.label;
           const cleanConfig = { ...config };
           delete cleanConfig._nodeType;
           delete cleanConfig._label;
-          return { ...n, data: { ...data, nodeType: newNodeType, label: newLabel, config: cleanConfig } };
-        }),
+          return {
+            ...n,
+            data: { ...data, nodeType: newNodeType, label: newLabel, config: cleanConfig },
+          };
+        })
       );
     },
-    [setNodes],
+    [setNodes]
   );
 
   const handleAutoLayout = useCallback(() => {
@@ -221,16 +244,16 @@ export function AutomationBuilder({
     const flowData: FlowData = {
       nodes: nodes.map((n) => ({
         id: n.id,
-        type: (n.type || "action") as FlowNode["type"],
+        type: (n.type || 'action') as FlowNode['type'],
         position: n.position,
-        data: n.data as unknown as FlowNode["data"],
+        data: n.data as unknown as FlowNode['data'],
       })),
       edges: edges.map((e) => ({
         id: e.id,
         source: e.source,
         target: e.target,
         sourceHandle: e.sourceHandle ?? undefined,
-        label: typeof e.label === "string" ? e.label : undefined,
+        label: typeof e.label === 'string' ? e.label : undefined,
       })),
     };
     const { trigger, steps, conditions } = flowToAutomation(flowData);
@@ -257,7 +280,7 @@ export function AutomationBuilder({
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">{isActive ? "Ativo" : "Inativo"}</span>
+            <span className="text-sm text-gray-600">{isActive ? 'Ativo' : 'Inativo'}</span>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
           <Button onClick={handleSave} disabled={saving || !name.trim()} className="gap-2">
@@ -286,7 +309,19 @@ export function AutomationBuilder({
       {/* Connect-to-create: menu de tipos ao soltar uma conexão no vazio */}
       {createMenu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setCreateMenu(null)} />
+          <div
+            className="fixed inset-0 z-40"
+            role="button"
+            tabIndex={0}
+            aria-label="Fechar menu"
+            onClick={() => setCreateMenu(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === ' ') e.preventDefault();
+                setCreateMenu(null);
+              }
+            }}
+          />
           <div
             className="fixed z-50 w-56 max-h-80 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-1"
             style={{ left: createMenu.screen.x, top: createMenu.screen.y }}
@@ -297,7 +332,7 @@ export function AutomationBuilder({
             {ACTION_TYPES.map((a) => (
               <button
                 key={a.value}
-                onClick={() => createConnectedNode("action", a.value)}
+                onClick={() => createConnectedNode('action', a.value)}
                 className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
               >
                 {a.label}
@@ -307,7 +342,7 @@ export function AutomationBuilder({
               Lógica
             </div>
             <button
-              onClick={() => createConnectedNode("condition", "condition")}
+              onClick={() => createConnectedNode('condition', 'condition')}
               className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700"
             >
               Condição (Se/Senão)

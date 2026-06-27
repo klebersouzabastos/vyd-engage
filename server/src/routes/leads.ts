@@ -85,7 +85,9 @@ router.patch('/bulk', async (req, res, next) => {
     const tenantId = req.user.tenantId;
 
     // Verify all leads belong to tenant
-    const count = await prisma.lead.count({ where: { id: { in: ids }, tenantId, deletedAt: null } });
+    const count = await prisma.lead.count({
+      where: { id: { in: ids }, tenantId, deletedAt: null },
+    });
     if (count !== ids.length) {
       return next(createError('Some leads not found', 404));
     }
@@ -105,9 +107,11 @@ router.patch('/bulk', async (req, res, next) => {
       case 'add_tag': {
         const tagId = z.string().uuid().parse(payload?.tagId);
         for (const leadId of ids) {
-          await prisma.leadTag.create({
-            data: { leadId, tagId },
-          }).catch(() => {}); // Skip if already connected (unique constraint)
+          await prisma.leadTag
+            .create({
+              data: { leadId, tagId },
+            })
+            .catch(() => {}); // Skip if already connected (unique constraint)
         }
         affected = ids.length;
         break;
@@ -157,7 +161,7 @@ router.get('/duplicates', async (req, res, next) => {
     const tenantId = req.user.tenantId;
 
     // Find duplicate emails
-    const emailDupes = await prisma.$queryRaw`
+    const emailDupes = (await prisma.$queryRaw`
       SELECT email, array_agg(id) as lead_ids, count(*) as cnt
       FROM "Lead"
       WHERE "tenantId" = ${tenantId} AND email IS NOT NULL AND email != ''
@@ -165,10 +169,10 @@ router.get('/duplicates', async (req, res, next) => {
       HAVING count(*) > 1
       ORDER BY count(*) DESC
       LIMIT 100
-    ` as any[];
+    `) as any[];
 
     // Find duplicate phones (only where email is null, to avoid double-counting)
-    const phoneDupes = await prisma.$queryRaw`
+    const phoneDupes = (await prisma.$queryRaw`
       SELECT phone, array_agg(id) as lead_ids, count(*) as cnt
       FROM "Lead"
       WHERE "tenantId" = ${tenantId} AND phone IS NOT NULL AND phone != ''
@@ -177,7 +181,7 @@ router.get('/duplicates', async (req, res, next) => {
       HAVING count(*) > 1
       ORDER BY count(*) DESC
       LIMIT 100
-    ` as any[];
+    `) as any[];
 
     // Collect all lead IDs
     const allIds = new Set<string>();
@@ -186,23 +190,26 @@ router.get('/duplicates', async (req, res, next) => {
     }
 
     // Fetch full lead data
-    const leads = allIds.size > 0 ? await prisma.lead.findMany({
-      where: { id: { in: Array.from(allIds) }, deletedAt: null },
-      include: { tags: { include: { tag: true } } },
-    }) : [];
+    const leads =
+      allIds.size > 0
+        ? await prisma.lead.findMany({
+            where: { id: { in: Array.from(allIds) }, deletedAt: null },
+            include: { tags: { include: { tag: true } } },
+          })
+        : [];
 
-    const leadMap = new Map(leads.map(l => [l.id, l]));
+    const leadMap = new Map(leads.map((l) => [l.id, l]));
 
     const groups = [
-      ...emailDupes.map(g => ({
+      ...emailDupes.map((g) => ({
         matchField: 'email' as const,
         matchValue: g.email,
-        leads: (g.lead_ids as string[]).map(id => leadMap.get(id)).filter(Boolean),
+        leads: (g.lead_ids as string[]).map((id) => leadMap.get(id)).filter(Boolean),
       })),
-      ...phoneDupes.map(g => ({
+      ...phoneDupes.map((g) => ({
         matchField: 'phone' as const,
         matchValue: g.phone,
-        leads: (g.lead_ids as string[]).map(id => leadMap.get(id)).filter(Boolean),
+        leads: (g.lead_ids as string[]).map((id) => leadMap.get(id)).filter(Boolean),
       })),
     ];
 
@@ -226,7 +233,9 @@ router.post('/merge', async (req, res, next) => {
 
     // Verify all leads belong to tenant
     const allIds = [primaryId, ...duplicateIds];
-    const count = await prisma.lead.count({ where: { id: { in: allIds }, tenantId, deletedAt: null } });
+    const count = await prisma.lead.count({
+      where: { id: { in: allIds }, tenantId, deletedAt: null },
+    });
     if (count !== allIds.length) return next(createError('Some leads not found', 404));
 
     // Use transaction for atomicity
@@ -262,7 +271,8 @@ router.post('/merge', async (req, res, next) => {
 
     res.json({ status: 200, data: { primary, mergedCount: duplicateIds.length } });
   } catch (error) {
-    if (error instanceof z.ZodError) return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    if (error instanceof z.ZodError)
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     next(error);
   }
 });
@@ -273,9 +283,11 @@ router.get('/export', async (req, res, next) => {
     if (!req.user) return next(createError('Authentication required', 401));
 
     const { exportLeads } = await import('../services/exportService.js');
-    const format = (['csv', 'xlsx', 'json'].includes(String(req.query.format || '').toLowerCase())
-      ? String(req.query.format).toLowerCase()
-      : 'json') as 'json' | 'csv' | 'xlsx';
+    const format = (
+      ['csv', 'xlsx', 'json'].includes(String(req.query.format || '').toLowerCase())
+        ? String(req.query.format).toLowerCase()
+        : 'json'
+    ) as 'json' | 'csv' | 'xlsx';
 
     const filters = {
       status: req.query.status as string | undefined,
@@ -462,14 +474,16 @@ router.post('/', async (req, res, next) => {
     const lead = await leadService.create(req.user.tenantId, data);
 
     // Notify the creator that the lead was created
-    notificationService.create(req.user.tenantId, {
-      userId: req.user.userId,
-      type: NotificationType.LEAD_ASSIGNED,
-      title: 'Novo lead criado',
-      message: `Lead "${lead.name}" foi criado com sucesso.`,
-      link: `/app/leads/${lead.id}`,
-      metadata: { leadId: lead.id, leadName: lead.name },
-    }).catch(() => {});
+    notificationService
+      .create(req.user.tenantId, {
+        userId: req.user.userId,
+        type: NotificationType.LEAD_ASSIGNED,
+        title: 'Novo lead criado',
+        message: `Lead "${lead.name}" foi criado com sucesso.`,
+        link: `/app/leads/${lead.id}`,
+        metadata: { leadId: lead.id, leadName: lead.name },
+      })
+      .catch(() => {});
 
     res.status(201).json(lead);
   } catch (error) {
@@ -544,13 +558,34 @@ router.delete('/:id', async (req, res, next) => {
 // POST /api/leads/import - Bulk import leads from CSV data
 const importLeadSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email().optional().or(z.literal('')).transform(v => v || undefined),
-  phone: z.string().optional().or(z.literal('')).transform(v => v || undefined),
-  company: z.string().optional().or(z.literal('')).transform(v => v || undefined),
-  position: z.string().optional().or(z.literal('')).transform(v => v || undefined),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
+  phone: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
+  company: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
+  position: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
   status: z.nativeEnum(LeadStatus).optional(),
   source: z.nativeEnum(LeadSource).optional(),
-  notes: z.string().optional().or(z.literal('')).transform(v => v || undefined),
+  notes: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
 });
 
 const importSchema = z.object({
@@ -583,14 +618,20 @@ router.post('/import', async (req, res, next) => {
         where: { tenantId, email: { not: null }, deletedAt: null },
         select: { email: true },
       });
-      existingEmails = new Set(existing.map((l: { email: string | null }) => l.email!.toLowerCase()));
+      existingEmails = new Set(
+        existing.map((l: { email: string | null }) => l.email!.toLowerCase())
+      );
     }
 
     for (let i = 0; i < leads.length; i++) {
       const leadData = leads[i];
       try {
         // Skip duplicate emails
-        if (skipDuplicateEmails && leadData.email && existingEmails.has(leadData.email.toLowerCase())) {
+        if (
+          skipDuplicateEmails &&
+          leadData.email &&
+          existingEmails.has(leadData.email.toLowerCase())
+        ) {
           skipped++;
           continue;
         }
@@ -631,4 +672,3 @@ router.post('/import', async (req, res, next) => {
 });
 
 export default router;
-

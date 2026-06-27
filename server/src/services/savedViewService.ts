@@ -31,10 +31,7 @@ export const savedViewService = {
     const where: Record<string, unknown> = {
       tenantId,
       deletedAt: null,
-      OR: [
-        { userId },
-        { isShared: true },
-      ],
+      OR: [{ userId }, { isShared: true }],
     };
 
     if (page) {
@@ -43,10 +40,7 @@ export const savedViewService = {
 
     const views = await prisma.savedView.findMany({
       where,
-      orderBy: [
-        { isDefault: 'desc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       include: {
         user: {
           select: { id: true, name: true },
@@ -85,7 +79,11 @@ export const savedViewService = {
     // Validate page value
     const validPages = ['leads', 'deals', 'tasks', 'companies'];
     if (!validPages.includes(data.page)) {
-      throw createError(`Invalid page: ${data.page}. Must be one of: ${validPages.join(', ')}`, 400, 'VALIDATION_ERROR');
+      throw createError(
+        `Invalid page: ${data.page}. Must be one of: ${validPages.join(', ')}`,
+        400,
+        'VALIDATION_ERROR'
+      );
     }
 
     // If setting as default, unset other defaults for this user+page
@@ -103,7 +101,7 @@ export const savedViewService = {
         name: data.name,
         page: data.page,
         filters: data.filters as any,
-        columns: data.columns as any || undefined,
+        columns: (data.columns as any) || undefined,
         isDefault: data.isDefault ?? false,
         isShared: data.isShared ?? false,
         sortBy: data.sortBy || null,
@@ -138,7 +136,14 @@ export const savedViewService = {
     // If setting as default, unset other defaults for this user+page
     if (data.isDefault) {
       await prisma.savedView.updateMany({
-        where: { tenantId, userId, page: existing.page, isDefault: true, deletedAt: null, NOT: { id } },
+        where: {
+          tenantId,
+          userId,
+          page: existing.page,
+          isDefault: true,
+          deletedAt: null,
+          NOT: { id },
+        },
         data: { isDefault: false },
       });
     }

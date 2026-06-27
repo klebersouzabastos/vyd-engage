@@ -77,7 +77,14 @@ export const platformService = {
           },
         },
         users: {
-          select: { id: true, email: true, name: true, role: true, status: true, isPlatformAdmin: true },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            status: true,
+            isPlatformAdmin: true,
+          },
           orderBy: { createdAt: 'asc' },
         },
       },

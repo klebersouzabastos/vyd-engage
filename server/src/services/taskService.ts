@@ -72,18 +72,21 @@ export const taskService = {
     return task;
   },
 
-  async findAll(tenantId: string, filters?: {
-    status?: TaskStatus;
-    priority?: TaskPriority;
-    assignedTo?: string;
-    leadId?: string;
-    overdue?: boolean;
-    dueToday?: boolean;
-    startDate?: Date;
-    endDate?: Date;
-    page?: number;
-    limit?: number;
-  }) {
+  async findAll(
+    tenantId: string,
+    filters?: {
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      assignedTo?: string;
+      leadId?: string;
+      overdue?: boolean;
+      dueToday?: boolean;
+      startDate?: Date;
+      endDate?: Date;
+      page?: number;
+      limit?: number;
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
     const skip = (page - 1) * limit;
@@ -145,11 +148,7 @@ export const taskService = {
             },
           },
         },
-        orderBy: [
-          { priority: 'desc' },
-          { dueDate: 'asc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
       }),
@@ -237,11 +236,3 @@ export const taskService = {
     });
   },
 };
-
-
-
-
-
-
-
-

@@ -61,14 +61,18 @@ export const invoiceService = {
       doc.text(`ID: ${tenant.id.slice(0, 8)}`, 50, infoY + 32);
 
       doc.font('Helvetica-Bold').text('Data:', 350, infoY);
-      doc.font('Helvetica').text(
-        (payment.paidAt || payment.createdAt).toLocaleDateString('pt-BR'),
-        350, infoY + 16
-      );
+      doc
+        .font('Helvetica')
+        .text((payment.paidAt || payment.createdAt).toLocaleDateString('pt-BR'), 350, infoY + 16);
       doc.font('Helvetica-Bold').text('Status:', 350, infoY + 36);
-      const statusLabel = payment.status === 'PAID' ? 'Pago' :
-        payment.status === 'PENDING' ? 'Pendente' :
-        payment.status === 'REFUNDED' ? 'Reembolsado' : payment.status;
+      const statusLabel =
+        payment.status === 'PAID'
+          ? 'Pago'
+          : payment.status === 'PENDING'
+            ? 'Pendente'
+            : payment.status === 'REFUNDED'
+              ? 'Reembolsado'
+              : payment.status;
       doc.font('Helvetica').text(statusLabel, 350, infoY + 52);
 
       // Table header
@@ -91,7 +95,10 @@ export const invoiceService = {
       doc.text(periodText, 300, rowY);
 
       const amount = Number(payment.amount);
-      doc.text(`R$ ${amount.toFixed(2).replace('.', ',')}`, 460, rowY, { align: 'right', width: 75 });
+      doc.text(`R$ ${amount.toFixed(2).replace('.', ',')}`, 460, rowY, {
+        align: 'right',
+        width: 75,
+      });
 
       // Divider before total
       const totalDividerY = rowY + 30;
@@ -101,7 +108,10 @@ export const invoiceService = {
       const totalY = totalDividerY + 10;
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#111827');
       doc.text('Total:', 350, totalY);
-      doc.text(`R$ ${amount.toFixed(2).replace('.', ',')}`, 460, totalY, { align: 'right', width: 75 });
+      doc.text(`R$ ${amount.toFixed(2).replace('.', ',')}`, 460, totalY, {
+        align: 'right',
+        width: 75,
+      });
 
       // Payment method
       const methodY = totalY + 40;
@@ -118,8 +128,14 @@ export const invoiceService = {
       const footerY = 750;
       doc.moveTo(50, footerY).lineTo(545, footerY).stroke('#e5e7eb');
       doc.fontSize(8).fillColor('#9ca3af').font('Helvetica');
-      doc.text('VYD Engage - Parte do ecossistema VYD (Value Your Day)', 50, footerY + 10, { align: 'center', width: 495 });
-      doc.text('Este documento é uma fatura gerada automaticamente.', 50, footerY + 22, { align: 'center', width: 495 });
+      doc.text('VYD Engage - Parte do ecossistema VYD (Value Your Day)', 50, footerY + 10, {
+        align: 'center',
+        width: 495,
+      });
+      doc.text('Este documento é uma fatura gerada automaticamente.', 50, footerY + 22, {
+        align: 'center',
+        width: 495,
+      });
 
       doc.end();
     });

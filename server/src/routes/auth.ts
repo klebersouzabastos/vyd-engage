@@ -329,10 +329,12 @@ router.put('/change-password', authenticate, async (req, res, next) => {
 const updateTenantSchema = z.object({
   name: z.string().min(2).optional(),
   logo: z.string().nullable().optional(),
-  settings: z.object({
-    slackWebhookUrl: z.string().url().optional().nullable(),
-    teamsWebhookUrl: z.string().url().optional().nullable(),
-  }).optional(),
+  settings: z
+    .object({
+      slackWebhookUrl: z.string().url().optional().nullable(),
+      teamsWebhookUrl: z.string().url().optional().nullable(),
+    })
+    .optional(),
 });
 
 router.get('/tenant', authenticate, async (req, res, next) => {
@@ -363,7 +365,7 @@ router.put('/tenant', authenticate, async (req, res, next) => {
         where: { id: req.user.tenantId },
         select: { settings: true },
       });
-      updateData.settings = { ...(current?.settings as object ?? {}), ...data.settings };
+      updateData.settings = { ...((current?.settings as object) ?? {}), ...data.settings };
     }
     // Remove undefined keys
     updateData = Object.fromEntries(Object.entries(updateData).filter(([, v]) => v !== undefined));
@@ -456,4 +458,3 @@ router.get('/2fa/status', authenticate, async (req, res, next) => {
 });
 
 export default router;
-

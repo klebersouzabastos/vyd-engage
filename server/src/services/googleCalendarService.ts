@@ -6,8 +6,12 @@ import { logger } from '../utils/logger.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/integrations/google/callback';
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/userinfo.email'];
+const GOOGLE_REDIRECT_URI =
+  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/integrations/google/callback';
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/userinfo.email',
+];
 
 /**
  * Lazy-load googleapis to avoid crash if not installed.
@@ -15,7 +19,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.
  */
 async function loadGoogle() {
   try {
-    // @ts-ignore — googleapis é dependência opcional (lazy-load); ausente em dev/build sem Calendar feature
+    // @ts-expect-error — googleapis é dependência opcional (lazy-load); ausente em dev/build sem Calendar feature
     const { google } = await import('googleapis');
     return google;
   } catch {
@@ -227,19 +231,22 @@ export const googleCalendarService = {
   /**
    * Create or update a Google Calendar event from a Task
    */
-  async syncTask(task: {
-    id: string;
-    title: string;
-    description?: string | null;
-    dueDate?: Date | null;
-    status?: string;
-    googleEventId?: string | null;
-  }, connection: {
-    id: string;
-    accessToken: string;
-    refreshToken: string;
-    calendarId: string;
-  }) {
+  async syncTask(
+    task: {
+      id: string;
+      title: string;
+      description?: string | null;
+      dueDate?: Date | null;
+      status?: string;
+      googleEventId?: string | null;
+    },
+    connection: {
+      id: string;
+      accessToken: string;
+      refreshToken: string;
+      calendarId: string;
+    }
+  ) {
     // Only sync tasks that have a dueDate
     if (!task.dueDate) return;
 
@@ -307,7 +314,9 @@ export const googleCalendarService = {
     } catch (err: any) {
       // Retry logic with exponential backoff (max 3 attempts)
       if (err?.code === 429 || err?.code === 503) {
-        logger.warn(`Google Calendar rate limited for task ${task.id}, will retry`, { code: err.code });
+        logger.warn(`Google Calendar rate limited for task ${task.id}, will retry`, {
+          code: err.code,
+        });
         await this.retryWithBackoff(async () => {
           if (task.googleEventId) {
             await calendar.events.update({
@@ -331,12 +340,15 @@ export const googleCalendarService = {
   /**
    * Delete a Google Calendar event
    */
-  async deleteEvent(googleEventId: string, connection: {
-    id: string;
-    accessToken: string;
-    refreshToken: string;
-    calendarId: string;
-  }) {
+  async deleteEvent(
+    googleEventId: string,
+    connection: {
+      id: string;
+      accessToken: string;
+      refreshToken: string;
+      calendarId: string;
+    }
+  ) {
     const google = await loadGoogle();
     if (!google) return;
 
@@ -364,14 +376,18 @@ export const googleCalendarService = {
   /**
    * Fire-and-forget sync for a task — called from taskService hooks
    */
-  async syncTaskForUser(userId: string, tenantId: string, task: {
-    id: string;
-    title: string;
-    description?: string | null;
-    dueDate?: Date | null;
-    status?: string;
-    googleEventId?: string | null;
-  }) {
+  async syncTaskForUser(
+    userId: string,
+    tenantId: string,
+    task: {
+      id: string;
+      title: string;
+      description?: string | null;
+      dueDate?: Date | null;
+      status?: string;
+      googleEventId?: string | null;
+    }
+  ) {
     try {
       const connection = await prisma.calendarConnection.findUnique({
         where: {
@@ -394,7 +410,11 @@ export const googleCalendarService = {
   /**
    * Fire-and-forget delete for a task — called from taskService hooks
    */
-  async deleteEventForUser(userId: string, tenantId: string, googleEventId: string | null | undefined) {
+  async deleteEventForUser(
+    userId: string,
+    tenantId: string,
+    googleEventId: string | null | undefined
+  ) {
     if (!googleEventId) return;
 
     try {

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 import {
   DndContext,
   DragOverlay,
@@ -13,15 +13,32 @@ import {
   closestCorners,
   type DragEndEvent,
   type DragStartEvent,
-} from "@dnd-kit/core";
-import { Header } from "../components/Header";
-import { Button, buttonVariants } from "../components/ui/button";
-import { LeadSourceBadge } from "../components/LeadSourceBadge";
-import { Plus, Phone, Mail, Clock, Edit2, Trash2, X, Check, ChevronDown, Filter, Funnel as FunnelIcon, Settings, ArrowUp, ArrowDown, AlertTriangle, RefreshCw } from "lucide-react";
-import { useTags } from "../contexts/TagsContext";
-import { TagBadge } from "../components/TagBadge";
-import { Input } from "../components/ui/input";
-import { Checkbox } from "../components/ui/checkbox";
+} from '@dnd-kit/core';
+import { Header } from '../components/Header';
+import { Button, buttonVariants } from '../components/ui/button';
+import { LeadSourceBadge } from '../components/LeadSourceBadge';
+import {
+  Plus,
+  Phone,
+  Mail,
+  Clock,
+  Edit2,
+  Trash2,
+  X,
+  Check,
+  ChevronDown,
+  Filter,
+  Funnel as FunnelIcon,
+  Settings,
+  ArrowUp,
+  ArrowDown,
+  AlertTriangle,
+  RefreshCw,
+} from 'lucide-react';
+import { useTags } from '../contexts/TagsContext';
+import { TagBadge } from '../components/TagBadge';
+import { Input } from '../components/ui/input';
+import { Checkbox } from '../components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,25 +48,25 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../components/ui/dialog";
-import { LeadModal } from "../components/LeadModal";
-import { LeadScoreBadge } from "../components/LeadScoreBadge";
-import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
-import { cn } from "../components/ui/utils";
-import { apiClient } from "../services/api/client";
-import { useFunnels, type FunnelLead } from "../hooks/useFunnels";
-import { mapStatusFromBackend, mapSourceFromBackend } from "../utils/leadEnums";
-import { PageSkeleton } from "../components/PageSkeleton";
+} from '../components/ui/dialog';
+import { LeadModal } from '../components/LeadModal';
+import { LeadScoreBadge } from '../components/LeadScoreBadge';
+import { ScoreBreakdownModal } from '../components/ScoreBreakdownModal';
+import { cn } from '../components/ui/utils';
+import { apiClient } from '../services/api/client';
+import { useFunnels, type FunnelLead } from '../hooks/useFunnels';
+import { mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 // Pipeline column colors stored in DB as hex — cannot use CSS var() references here
-const PIPELINE_COLUMN_COLORS = ["#3B82F6", "#EAB308", "#16A34A", "#8B5CF6", "#EC4899", "#6366F1"];
+const PIPELINE_COLUMN_COLORS = ['#3B82F6', '#EAB308', '#16A34A', '#8B5CF6', '#EC4899', '#6366F1'];
 
 export function Pipeline() {
   const navigate = useNavigate();
@@ -76,17 +93,24 @@ export function Pipeline() {
 
   // UI state
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
-  const [editingColumnTitle, setEditingColumnTitle] = useState("");
+  const [editingColumnTitle, setEditingColumnTitle] = useState('');
   const [deleteColumnId, setDeleteColumnId] = useState<string | null>(null);
   const [createColumnOpen, setCreateColumnOpen] = useState(false);
-  const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [newColumnTitle, setNewColumnTitle] = useState('');
   const [createFunnelOpen, setCreateFunnelOpen] = useState(false);
-  const [newFunnelName, setNewFunnelName] = useState("");
+  const [newFunnelName, setNewFunnelName] = useState('');
   const [deleteFunnelId, setDeleteFunnelId] = useState<string | null>(null);
   const [editingFunnelId, setEditingFunnelId] = useState<string | null>(null);
-  const [editingFunnelName, setEditingFunnelName] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [filterSources, setFilterSources] = useState<string[]>(["WEBSITE", "SOCIAL_MEDIA", "REFERRAL", "EMAIL", "PHONE", "OTHER"]);
+  const [editingFunnelName, setEditingFunnelName] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [filterSources, setFilterSources] = useState<string[]>([
+    'WEBSITE',
+    'SOCIAL_MEDIA',
+    'REFERRAL',
+    'EMAIL',
+    'PHONE',
+    'OTHER',
+  ]);
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
@@ -101,7 +125,7 @@ export function Pipeline() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor)
   );
 
   // Close popover on outside click
@@ -126,22 +150,23 @@ export function Pipeline() {
 
   // Source options
   const sourceOptions = [
-    { value: "SOCIAL_MEDIA", label: "Meta Ads" },
-    { value: "WEBSITE", label: "Google / Orgânico" },
-    { value: "REFERRAL", label: "Indicação" },
-    { value: "EMAIL", label: "Email" },
-    { value: "PHONE", label: "Telefone" },
-    { value: "OTHER", label: "Manual / Outro" },
+    { value: 'SOCIAL_MEDIA', label: 'Meta Ads' },
+    { value: 'WEBSITE', label: 'Google / Orgânico' },
+    { value: 'REFERRAL', label: 'Indicação' },
+    { value: 'EMAIL', label: 'Email' },
+    { value: 'PHONE', label: 'Telefone' },
+    { value: 'OTHER', label: 'Manual / Outro' },
   ];
 
   // Filter columns by selected sources
   const filteredColumns = columns.map((column) => ({
     ...column,
-    leads: filterSources.length === 0
-      ? []
-      : filterSources.length === sourceOptions.length
-      ? column.leads
-      : column.leads.filter((lead) => filterSources.includes(lead.source)),
+    leads:
+      filterSources.length === 0
+        ? []
+        : filterSources.length === sourceOptions.length
+          ? column.leads
+          : column.leads.filter((lead) => filterSources.includes(lead.source)),
   }));
 
   const handleSourceToggle = (source: string) => {
@@ -178,20 +203,22 @@ export function Pipeline() {
 
     // Suppress the trailing click so the drop doesn't also open the lead modal.
     justDraggedRef.current = true;
-    setTimeout(() => { justDraggedRef.current = false; }, 50);
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 50);
 
     const leadId = data.lead.id;
-    const targetColumn = columns.find(c => c.id === targetColumnId);
+    const targetColumn = columns.find((c) => c.id === targetColumnId);
     const position = targetColumn ? targetColumn.leads.length : 0;
 
     // Create interaction for status change
     try {
-      const fromTitle = columns.find(c => c.id === fromColumnId)?.title || "";
-      const toTitle = targetColumn?.title || "";
+      const fromTitle = columns.find((c) => c.id === fromColumnId)?.title || '';
+      const toTitle = targetColumn?.title || '';
       await apiClient.createInteraction({
         leadId,
-        type: "STATUS_CHANGE",
-        direction: "OUTBOUND",
+        type: 'STATUS_CHANGE',
+        direction: 'OUTBOUND',
         content: `Status alterado de "${fromTitle}" para "${toTitle}"`,
         metadata: {
           oldColumn: fromColumnId,
@@ -252,44 +279,43 @@ export function Pipeline() {
       return;
     }
 
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       await updateColumnApi(editingColumnId, { title: trimmedTitle });
     } catch {
-      setErrorMessage("Erro ao renomear coluna.");
+      setErrorMessage('Erro ao renomear coluna.');
     }
     setEditingColumnId(null);
-    setEditingColumnTitle("");
+    setEditingColumnTitle('');
   };
 
   const handleCancelEdit = () => {
     setEditingColumnId(null);
-    setEditingColumnTitle("");
-    setErrorMessage("");
+    setEditingColumnTitle('');
+    setErrorMessage('');
   };
 
   const handleCreateColumn = async () => {
     if (!newColumnTitle.trim()) return;
 
     const trimmedTitle = newColumnTitle.trim();
-    const duplicate = columns.find(
-      (col) => col.title.toLowerCase() === trimmedTitle.toLowerCase()
-    );
+    const duplicate = columns.find((col) => col.title.toLowerCase() === trimmedTitle.toLowerCase());
 
     if (duplicate) {
       setErrorMessage(`Já existe uma coluna com o nome "${duplicate.title}".`);
       return;
     }
 
-    setErrorMessage("");
-    const randomColor = PIPELINE_COLUMN_COLORS[Math.floor(Math.random() * PIPELINE_COLUMN_COLORS.length)];
+    setErrorMessage('');
+    const randomColor =
+      PIPELINE_COLUMN_COLORS[Math.floor(Math.random() * PIPELINE_COLUMN_COLORS.length)];
 
     try {
       await addColumnApi(trimmedTitle, randomColor);
-      setNewColumnTitle("");
+      setNewColumnTitle('');
       setCreateColumnOpen(false);
     } catch {
-      setErrorMessage("Erro ao criar coluna.");
+      setErrorMessage('Erro ao criar coluna.');
     }
   };
 
@@ -300,7 +326,7 @@ export function Pipeline() {
     if (!column) return;
 
     if (column.isDefault) {
-      setErrorMessage("Não é possível deletar a coluna padrão.");
+      setErrorMessage('Não é possível deletar a coluna padrão.');
       setDeleteColumnId(null);
       return;
     }
@@ -310,7 +336,7 @@ export function Pipeline() {
     try {
       await deleteColumnApi(deleteColumnId);
     } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao deletar coluna.");
+      setErrorMessage(err.message || 'Erro ao deletar coluna.');
     }
     setDeleteColumnId(null);
   };
@@ -320,25 +346,23 @@ export function Pipeline() {
     if (!newFunnelName.trim()) return;
 
     const trimmedName = newFunnelName.trim();
-    const duplicate = funnels.find(
-      (f) => f.name.toLowerCase() === trimmedName.toLowerCase()
-    );
+    const duplicate = funnels.find((f) => f.name.toLowerCase() === trimmedName.toLowerCase());
 
     if (duplicate) {
       setErrorMessage(`Já existe um funil com o nome "${duplicate.name}".`);
       return;
     }
 
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       const newFunnel = await createFunnelApi(trimmedName);
-      setNewFunnelName("");
+      setNewFunnelName('');
       setCreateFunnelOpen(false);
       if (newFunnel) {
         switchFunnel(newFunnel.id);
       }
     } catch {
-      setErrorMessage("Erro ao criar funil.");
+      setErrorMessage('Erro ao criar funil.');
     }
   };
 
@@ -349,7 +373,7 @@ export function Pipeline() {
     if (!funnel) return;
 
     if (funnel.isDefault) {
-      setErrorMessage("Não é possível deletar o Funil de Venda.");
+      setErrorMessage('Não é possível deletar o Funil de Venda.');
       setDeleteFunnelId(null);
       return;
     }
@@ -357,7 +381,7 @@ export function Pipeline() {
     try {
       await deleteFunnelApi(deleteFunnelId);
     } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao deletar funil.");
+      setErrorMessage(err.message || 'Erro ao deletar funil.');
     }
     setDeleteFunnelId(null);
   };
@@ -380,20 +404,20 @@ export function Pipeline() {
       return;
     }
 
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       await updateFunnelApi(editingFunnelId, { name: trimmedName });
     } catch {
-      setErrorMessage("Erro ao renomear funil.");
+      setErrorMessage('Erro ao renomear funil.');
     }
     setEditingFunnelId(null);
-    setEditingFunnelName("");
+    setEditingFunnelName('');
   };
 
   const handleCancelEditFunnel = () => {
     setEditingFunnelId(null);
-    setEditingFunnelName("");
-    setErrorMessage("");
+    setEditingFunnelName('');
+    setErrorMessage('');
   };
 
   const handleFunnelChange = (funnelId: string) => {
@@ -403,14 +427,14 @@ export function Pipeline() {
   // Helper to get source label for display
   const getSourceLabel = (source: string) => {
     const map: Record<string, string> = {
-      WEBSITE: "organico",
-      SOCIAL_MEDIA: "meta",
-      REFERRAL: "organico",
-      EMAIL: "manual",
-      PHONE: "manual",
-      OTHER: "manual",
+      WEBSITE: 'organico',
+      SOCIAL_MEDIA: 'meta',
+      REFERRAL: 'organico',
+      EMAIL: 'manual',
+      PHONE: 'manual',
+      OTHER: 'manual',
     };
-    return map[source] || "manual";
+    return map[source] || 'manual';
   };
 
   if (loading) {
@@ -451,39 +475,52 @@ export function Pipeline() {
                       value={editingFunnelName}
                       onChange={(e) => {
                         setEditingFunnelName(e.target.value);
-                        setErrorMessage("");
+                        setErrorMessage('');
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveEditFunnel();
-                        if (e.key === "Escape") handleCancelEditFunnel();
+                        if (e.key === 'Enter') handleSaveEditFunnel();
+                        if (e.key === 'Escape') handleCancelEditFunnel();
                       }}
-                      className={`h-8 text-sm flex-1 ${errorMessage ? "border-red-500" : ""}`}
+                      className={`h-8 text-sm flex-1 ${errorMessage ? 'border-red-500' : ''}`}
+                      // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao entrar no modo de edição
                       autoFocus
                     />
-                    <Button size="sm" variant="ghost" onClick={handleSaveEditFunnel} className="h-8 w-8 p-0">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleSaveEditFunnel}
+                      className="h-8 w-8 p-0"
+                    >
                       <Check size={14} />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={handleCancelEditFunnel} className="h-8 w-8 p-0">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCancelEditFunnel}
+                      className="h-8 w-8 p-0"
+                    >
                       <X size={14} />
                     </Button>
                   </div>
                 ) : (
                   <>
                     <select
-                      value={currentFunnelId || ""}
+                      value={currentFunnelId || ''}
                       onChange={(e) => handleFunnelChange(e.target.value)}
                       className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       {funnels.map((funnel) => (
                         <option key={funnel.id} value={funnel.id}>
-                          {funnel.name} {funnel.isDefault ? "(Padrão)" : ""}
+                          {funnel.name} {funnel.isDefault ? '(Padrão)' : ''}
                         </option>
                       ))}
                     </select>
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleStartEditFunnel(currentFunnelId!, currentFunnel?.name || "")}
+                      onClick={() =>
+                        handleStartEditFunnel(currentFunnelId!, currentFunnel?.name || '')
+                      }
                       className="h-8 w-8 p-0 hover:bg-gray-200"
                       title="Renomear funil"
                     >
@@ -512,7 +549,7 @@ export function Pipeline() {
                 variant="outline"
                 className="gap-2"
                 onClick={() => {
-                  setSettingsColumnOrder(columns.map(c => c.id));
+                  setSettingsColumnOrder(columns.map((c) => c.id));
                   setSettingsOpen(true);
                 }}
               >
@@ -537,8 +574,8 @@ export function Pipeline() {
             <button
               type="button"
               className={cn(
-                buttonVariants({ variant: "outline" }),
-                "gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer"
+                buttonVariants({ variant: 'outline' }),
+                'gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer'
               )}
               aria-expanded={filterPopoverOpen}
               aria-haspopup="true"
@@ -550,34 +587,59 @@ export function Pipeline() {
               <Filter size={16} />
               <span>
                 {filterSources.length === 0
-                  ? "Nenhuma origem"
+                  ? 'Nenhuma origem'
                   : filterSources.length === sourceOptions.length
-                  ? "Todas as origens"
-                  : `${filterSources.length} origem${filterSources.length > 1 ? "s" : ""}`}
+                    ? 'Todas as origens'
+                    : `${filterSources.length} origem${filterSources.length > 1 ? 's' : ''}`}
               </span>
-              <ChevronDown size={16} className={filterPopoverOpen ? "rotate-180 transition-transform duration-200" : "transition-transform duration-200"} />
+              <ChevronDown
+                size={16}
+                className={
+                  filterPopoverOpen
+                    ? 'rotate-180 transition-transform duration-200'
+                    : 'transition-transform duration-200'
+                }
+              />
             </button>
             {filterPopoverOpen && (
               <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white rounded-md border border-gray-300 shadow-lg p-3">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-300">
                     <span className="text-sm font-medium text-gray-900">Filtrar por Origem</span>
-                    <Button variant="ghost" size="sm" onClick={handleSelectAll} className="h-6 px-2 text-xs">
-                      {filterSources.length === sourceOptions.length ? "Desmarcar" : "Selecionar todas"}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSelectAll}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {filterSources.length === sourceOptions.length
+                        ? 'Desmarcar'
+                        : 'Selecionar todas'}
                     </Button>
                   </div>
                   {sourceOptions.map((option) => (
                     <div
                       key={option.value}
+                      role="button"
+                      tabIndex={0}
                       className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-md -mx-2"
                       onClick={() => handleSourceToggle(option.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSourceToggle(option.value);
+                        }
+                      }}
                     >
                       <Checkbox
                         id={`source-${option.value}`}
                         checked={filterSources.includes(option.value)}
                         onCheckedChange={() => handleSourceToggle(option.value)}
                       />
-                      <label htmlFor={`source-${option.value}`} className="text-sm text-gray-900 cursor-pointer flex-1">
+                      <label
+                        htmlFor={`source-${option.value}`}
+                        className="text-sm text-gray-900 cursor-pointer flex-1"
+                      >
                         {option.label}
                       </label>
                     </div>
@@ -598,7 +660,7 @@ export function Pipeline() {
             </Button>
             <Button
               className="bg-primary hover:bg-primary-dark gap-2"
-              onClick={() => navigate("/app/leads/new")}
+              onClick={() => navigate('/app/leads/new')}
             >
               <Plus size={16} />
               Novo Lead
@@ -613,153 +675,175 @@ export function Pipeline() {
           onDragStart={handleDndDragStart}
           onDragEnd={handleDndDragEnd}
         >
-        <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          <div className="flex gap-6 min-w-max">
-            {filteredColumns.map((column) => (
-              <DroppableColumn key={column.id} columnId={column.id} isActiveDrag={!!activeLead}>
-              {/* Column Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: column.color }}></div>
-                  {editingColumnId === column.id ? (
-                    <div className="flex flex-col gap-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={editingColumnTitle}
-                          onChange={(e) => {
-                            setEditingColumnTitle(e.target.value);
-                            setErrorMessage("");
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSaveEdit();
-                            if (e.key === "Escape") handleCancelEdit();
-                          }}
-                          className={`h-8 text-sm ${errorMessage ? "border-red-500" : ""}`}
-                          autoFocus
-                        />
-                        <Button size="sm" variant="ghost" onClick={handleSaveEdit} className="h-8 w-8 p-0">
-                          <Check size={14} />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 w-8 p-0">
-                          <X size={14} />
-                        </Button>
-                      </div>
-                      {errorMessage && (
-                        <p className="text-xs text-red-600 mt-1">{errorMessage}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className="text-gray-900">{column.title}</h3>
-                      <span className="text-sm text-gray-600 bg-white px-2 py-0.5 rounded">
-                        {column.leads.length}
-                      </span>
-                    </>
-                  )}
-                </div>
-                {editingColumnId !== column.id && (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleStartEdit(column.id, column.title)}
-                      className="h-7 w-7 p-0 hover:bg-gray-200"
-                      title="Renomear coluna"
-                    >
-                      <Edit2 size={14} className="text-gray-600" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setDeleteColumnId(column.id)}
-                      disabled={column.leads.length > 0 || column.isDefault}
-                      className="h-7 w-7 p-0 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={
-                        column.isDefault
-                          ? "Não é possível deletar a coluna padrão"
-                          : column.leads.length > 0
-                          ? "Não é possível deletar coluna com leads"
-                          : "Deletar coluna"
-                      }
-                    >
-                      <Trash2 size={14} className="text-gray-600" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Cards */}
-              <div className="space-y-3">
-                {column.leads.map((lead) => (
-                  <DraggableLeadCard key={lead.id} lead={lead} columnId={column.id} onCardClick={handleCardClick}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-1">{lead.name}</h4>
-                        <LeadSourceBadge source={getSourceLabel(lead.source)} />
-                      </div>
-                      <button
-                        type="button"
-                        className="cursor-pointer flex-shrink-0"
-                        onClick={(e) => { e.stopPropagation(); setScoreLeadId(lead.id); }}
-                      >
-                        <LeadScoreBadge score={lead.score || 0} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 mb-3">
-                      {lead.phone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone size={14} />
-                          <span>{lead.phone}</span>
+          <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex gap-6 min-w-max">
+              {filteredColumns.map((column) => (
+                <DroppableColumn key={column.id} columnId={column.id} isActiveDrag={!!activeLead}>
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 flex-1">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: column.color }}
+                      ></div>
+                      {editingColumnId === column.id ? (
+                        <div className="flex flex-col gap-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editingColumnTitle}
+                              onChange={(e) => {
+                                setEditingColumnTitle(e.target.value);
+                                setErrorMessage('');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit();
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              className={`h-8 text-sm ${errorMessage ? 'border-red-500' : ''}`}
+                              // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao entrar no modo de edição
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleSaveEdit}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Check size={14} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleCancelEdit}
+                              className="h-8 w-8 p-0"
+                            >
+                              <X size={14} />
+                            </Button>
+                          </div>
+                          {errorMessage && (
+                            <p className="text-xs text-red-600 mt-1">{errorMessage}</p>
+                          )}
                         </div>
-                      )}
-                      {lead.email && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail size={14} />
-                          <span className="truncate">{lead.email}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {lead.tags && lead.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {lead.tags.slice(0, 2).map((tagRelation) => {
-                          const tag = tagRelation.tag;
-                          if (!tag) return null;
-                          return <TagBadge key={tag.id} tag={tag} size="sm" />;
-                        })}
-                        {lead.tags.length > 2 && (
-                          <span className="text-xs text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded">
-                            +{lead.tags.length - 2}
+                      ) : (
+                        <>
+                          <h3 className="text-gray-900">{column.title}</h3>
+                          <span className="text-sm text-gray-600 bg-white px-2 py-0.5 rounded">
+                            {column.leads.length}
                           </span>
-                        )}
+                        </>
+                      )}
+                    </div>
+                    {editingColumnId !== column.id && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleStartEdit(column.id, column.title)}
+                          className="h-7 w-7 p-0 hover:bg-gray-200"
+                          title="Renomear coluna"
+                        >
+                          <Edit2 size={14} className="text-gray-600" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeleteColumnId(column.id)}
+                          disabled={column.leads.length > 0 || column.isDefault}
+                          className="h-7 w-7 p-0 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={
+                            column.isDefault
+                              ? 'Não é possível deletar a coluna padrão'
+                              : column.leads.length > 0
+                                ? 'Não é possível deletar coluna com leads'
+                                : 'Deletar coluna'
+                          }
+                        >
+                          <Trash2 size={14} className="text-gray-600" />
+                        </Button>
                       </div>
                     )}
-
-                    <div className="flex items-center gap-2 text-xs text-gray-600 pt-3 border-t border-gray-300">
-                      <Clock size={12} />
-                      <span>{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                  </DraggableLeadCard>
-                ))}
-
-                {column.leads.length === 0 && (
-                  <div className="text-center py-8 text-gray-600">
-                    <p className="text-sm">Nenhum lead nesta etapa</p>
                   </div>
-                )}
-              </div>
-            </DroppableColumn>
-            ))}
-          </div>
-        </div>
-        <DragOverlay>
-          {activeLead ? (
-            <div className="bg-white rounded-lg p-4 shadow-lg border-2 border-primary w-[288px]">
-              <h4 className="font-medium text-gray-900">{activeLead.name}</h4>
+
+                  {/* Cards */}
+                  <div className="space-y-3">
+                    {column.leads.map((lead) => (
+                      <DraggableLeadCard
+                        key={lead.id}
+                        lead={lead}
+                        columnId={column.id}
+                        onCardClick={handleCardClick}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-medium text-gray-900 mb-1">{lead.name}</h4>
+                            <LeadSourceBadge source={getSourceLabel(lead.source)} />
+                          </div>
+                          <button
+                            type="button"
+                            className="cursor-pointer flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setScoreLeadId(lead.id);
+                            }}
+                          >
+                            <LeadScoreBadge score={lead.score || 0} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-2 mb-3">
+                          {lead.phone && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Phone size={14} />
+                              <span>{lead.phone}</span>
+                            </div>
+                          )}
+                          {lead.email && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Mail size={14} />
+                              <span className="truncate">{lead.email}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {lead.tags && lead.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {lead.tags.slice(0, 2).map((tagRelation) => {
+                              const tag = tagRelation.tag;
+                              if (!tag) return null;
+                              return <TagBadge key={tag.id} tag={tag} size="sm" />;
+                            })}
+                            {lead.tags.length > 2 && (
+                              <span className="text-xs text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded">
+                                +{lead.tags.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 text-xs text-gray-600 pt-3 border-t border-gray-300">
+                          <Clock size={12} />
+                          <span>{new Date(lead.createdAt).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      </DraggableLeadCard>
+                    ))}
+
+                    {column.leads.length === 0 && (
+                      <div className="text-center py-8 text-gray-600">
+                        <p className="text-sm">Nenhum lead nesta etapa</p>
+                      </div>
+                    )}
+                  </div>
+                </DroppableColumn>
+              ))}
             </div>
-          ) : null}
-        </DragOverlay>
+          </div>
+          <DragOverlay>
+            {activeLead ? (
+              <div className="bg-white rounded-lg p-4 shadow-lg border-2 border-primary w-[288px]">
+                <h4 className="font-medium text-gray-900">{activeLead.name}</h4>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
 
         {/* Stats Summary */}
@@ -774,15 +858,11 @@ export function Pipeline() {
             </div>
             <div>
               <p className="text-sm text-gray-600 mb-1">Colunas</p>
-              <p className="text-2xl font-semibold text-primary">
-                {columns.length}
-              </p>
+              <p className="text-2xl font-semibold text-primary">{columns.length}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600 mb-1">Funil Ativo</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {currentFunnel?.name || "-"}
-              </p>
+              <p className="text-2xl font-semibold text-gray-900">{currentFunnel?.name || '-'}</p>
             </div>
           </div>
         </div>
@@ -792,29 +872,34 @@ export function Pipeline() {
       <Dialog open={createColumnOpen} onOpenChange={setCreateColumnOpen}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader className="text-left space-y-0 pb-4">
-            <DialogTitle className="text-lg font-semibold text-gray-900">Criar Nova Coluna</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-gray-900">
+              Criar Nova Coluna
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-2 block">
+              <label
+                htmlFor="new-column-title"
+                className="text-sm font-medium text-gray-900 mb-2 block"
+              >
                 Nome da Coluna
               </label>
               <Input
+                id="new-column-title"
                 value={newColumnTitle}
                 onChange={(e) => {
                   setNewColumnTitle(e.target.value);
-                  setErrorMessage("");
+                  setErrorMessage('');
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateColumn();
+                  if (e.key === 'Enter') handleCreateColumn();
                 }}
                 placeholder="Ex: Proposta Enviada"
-                className={errorMessage ? "border-red-500" : ""}
+                className={errorMessage ? 'border-red-500' : ''}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao abrir o diálogo
                 autoFocus
               />
-              {errorMessage && (
-                <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
-              )}
+              {errorMessage && <p className="text-xs text-red-600 mt-2">{errorMessage}</p>}
             </div>
           </div>
           <DialogFooter className="mt-6">
@@ -822,8 +907,8 @@ export function Pipeline() {
               variant="outline"
               onClick={() => {
                 setCreateColumnOpen(false);
-                setNewColumnTitle("");
-                setErrorMessage("");
+                setNewColumnTitle('');
+                setErrorMessage('');
               }}
             >
               Cancelar
@@ -840,46 +925,54 @@ export function Pipeline() {
       </Dialog>
 
       {/* Delete Column Alert Dialog */}
-      <AlertDialog open={deleteColumnId !== null} onOpenChange={(open) => !open && setDeleteColumnId(null)}>
+      <AlertDialog
+        open={deleteColumnId !== null}
+        onOpenChange={(open) => !open && setDeleteColumnId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Coluna</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteColumnId && (() => {
-                const column = columns.find((col) => col.id === deleteColumnId);
-                if (column?.isDefault) {
-                  return (
-                    <span className="text-red-600">
-                      Não é possível deletar a coluna padrão &quot;{column.title}&quot;.
-                    </span>
-                  );
-                }
-                if (column && column.leads.length > 0) {
-                  return (
-                    <span className="text-red-600">
-                      Não é possível deletar esta coluna pois ela contém {column.leads.length} lead(s).
-                    </span>
-                  );
-                }
-                return `Tem certeza que deseja deletar a coluna "${column?.title}"?`;
-              })()}
+              {deleteColumnId &&
+                (() => {
+                  const column = columns.find((col) => col.id === deleteColumnId);
+                  if (column?.isDefault) {
+                    return (
+                      <span className="text-red-600">
+                        Não é possível deletar a coluna padrão &quot;{column.title}&quot;.
+                      </span>
+                    );
+                  }
+                  if (column && column.leads.length > 0) {
+                    return (
+                      <span className="text-red-600">
+                        Não é possível deletar esta coluna pois ela contém {column.leads.length}{' '}
+                        lead(s).
+                      </span>
+                    );
+                  }
+                  return `Tem certeza que deseja deletar a coluna "${column?.title}"?`;
+                })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteColumnId(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            {deleteColumnId && (() => {
-              const column = columns.find((col) => col.id === deleteColumnId);
-              return column && !column.isDefault && column.leads.length === 0 && (
-                <AlertDialogAction
-                  onClick={handleDeleteColumn}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Deletar
-                </AlertDialogAction>
-              );
-            })()}
+            <AlertDialogCancel onClick={() => setDeleteColumnId(null)}>Cancelar</AlertDialogCancel>
+            {deleteColumnId &&
+              (() => {
+                const column = columns.find((col) => col.id === deleteColumnId);
+                return (
+                  column &&
+                  !column.isDefault &&
+                  column.leads.length === 0 && (
+                    <AlertDialogAction
+                      onClick={handleDeleteColumn}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Deletar
+                    </AlertDialogAction>
+                  )
+                );
+              })()}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -888,29 +981,34 @@ export function Pipeline() {
       <Dialog open={createFunnelOpen} onOpenChange={setCreateFunnelOpen}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader className="text-left space-y-0 pb-4">
-            <DialogTitle className="text-lg font-semibold text-gray-900">Criar Novo Funil</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-gray-900">
+              Criar Novo Funil
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-2 block">
+              <label
+                htmlFor="new-funnel-name"
+                className="text-sm font-medium text-gray-900 mb-2 block"
+              >
                 Nome do Funil
               </label>
               <Input
+                id="new-funnel-name"
                 value={newFunnelName}
                 onChange={(e) => {
                   setNewFunnelName(e.target.value);
-                  setErrorMessage("");
+                  setErrorMessage('');
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateFunnel();
+                  if (e.key === 'Enter') handleCreateFunnel();
                 }}
                 placeholder="Ex: Funil de Marketing"
-                className={errorMessage ? "border-red-500" : ""}
+                className={errorMessage ? 'border-red-500' : ''}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao abrir o diálogo
                 autoFocus
               />
-              {errorMessage && (
-                <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
-              )}
+              {errorMessage && <p className="text-xs text-red-600 mt-2">{errorMessage}</p>}
               <p className="text-xs text-gray-600 mt-2">
                 O funil será criado com colunas padrão baseadas no status do lead.
               </p>
@@ -921,8 +1019,8 @@ export function Pipeline() {
               variant="outline"
               onClick={() => {
                 setCreateFunnelOpen(false);
-                setNewFunnelName("");
-                setErrorMessage("");
+                setNewFunnelName('');
+                setErrorMessage('');
               }}
             >
               Cancelar
@@ -939,49 +1037,51 @@ export function Pipeline() {
       </Dialog>
 
       {/* Delete Funnel Alert Dialog */}
-      <AlertDialog open={deleteFunnelId !== null} onOpenChange={(open) => !open && setDeleteFunnelId(null)}>
+      <AlertDialog
+        open={deleteFunnelId !== null}
+        onOpenChange={(open) => !open && setDeleteFunnelId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Funil</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteFunnelId && (() => {
-                const funnel = funnels.find((f) => f.id === deleteFunnelId);
-                if (funnel?.isDefault) {
-                  return (
-                    <span className="text-red-600">
-                      Não é possível deletar o Funil de Venda. Ele é obrigatório no sistema.
-                    </span>
-                  );
-                }
-                return `Tem certeza que deseja deletar o funil "${funnel?.name}"?`;
-              })()}
+              {deleteFunnelId &&
+                (() => {
+                  const funnel = funnels.find((f) => f.id === deleteFunnelId);
+                  if (funnel?.isDefault) {
+                    return (
+                      <span className="text-red-600">
+                        Não é possível deletar o Funil de Venda. Ele é obrigatório no sistema.
+                      </span>
+                    );
+                  }
+                  return `Tem certeza que deseja deletar o funil "${funnel?.name}"?`;
+                })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteFunnelId(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            {deleteFunnelId && (() => {
-              const funnel = funnels.find((f) => f.id === deleteFunnelId);
-              return funnel && !funnel.isDefault && (
-                <AlertDialogAction
-                  onClick={handleDeleteFunnel}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Deletar
-                </AlertDialogAction>
-              );
-            })()}
+            <AlertDialogCancel onClick={() => setDeleteFunnelId(null)}>Cancelar</AlertDialogCancel>
+            {deleteFunnelId &&
+              (() => {
+                const funnel = funnels.find((f) => f.id === deleteFunnelId);
+                return (
+                  funnel &&
+                  !funnel.isDefault && (
+                    <AlertDialogAction
+                      onClick={handleDeleteFunnel}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Deletar
+                    </AlertDialogAction>
+                  )
+                );
+              })()}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Lead Modal */}
-      <LeadModal
-        open={modalOpen}
-        onClose={handleCloseModal}
-        lead={selectedLead}
-      />
+      <LeadModal open={modalOpen} onClose={handleCloseModal} lead={selectedLead} />
 
       {/* Score Breakdown Modal */}
       <ScoreBreakdownModal
@@ -1002,14 +1102,22 @@ export function Pipeline() {
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-3">Ordem das Colunas</h4>
-              <p className="text-xs text-gray-500 mb-3">Reordene as colunas do funil usando as setas</p>
+              <p className="text-xs text-gray-500 mb-3">
+                Reordene as colunas do funil usando as setas
+              </p>
               <div className="space-y-2">
                 {settingsColumnOrder.map((colId, index) => {
-                  const col = columns.find(c => c.id === colId);
+                  const col = columns.find((c) => c.id === colId);
                   if (!col) return null;
                   return (
-                    <div key={colId} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
-                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: col.color }} />
+                    <div
+                      key={colId}
+                      className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: col.color }}
+                      />
                       <span className="flex-1 text-sm font-medium text-gray-900">{col.title}</span>
                       <span className="text-xs text-gray-400">{col.leads.length} leads</span>
                       <div className="flex gap-1">
@@ -1017,7 +1125,10 @@ export function Pipeline() {
                           onClick={() => {
                             if (index === 0) return;
                             const newOrder = [...settingsColumnOrder];
-                            [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+                            [newOrder[index - 1], newOrder[index]] = [
+                              newOrder[index],
+                              newOrder[index - 1],
+                            ];
                             setSettingsColumnOrder(newOrder);
                           }}
                           disabled={index === 0}
@@ -1029,7 +1140,10 @@ export function Pipeline() {
                           onClick={() => {
                             if (index === settingsColumnOrder.length - 1) return;
                             const newOrder = [...settingsColumnOrder];
-                            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                            [newOrder[index], newOrder[index + 1]] = [
+                              newOrder[index + 1],
+                              newOrder[index],
+                            ];
                             setSettingsColumnOrder(newOrder);
                           }}
                           disabled={index === settingsColumnOrder.length - 1}
@@ -1047,9 +1161,18 @@ export function Pipeline() {
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2">Informações do Funil</h4>
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-sm space-y-1">
-                <p className="text-gray-600">Nome: <span className="font-medium text-gray-900">{currentFunnel?.name}</span></p>
-                <p className="text-gray-600">Colunas: <span className="font-medium text-gray-900">{columns.length}</span></p>
-                <p className="text-gray-600">Total de leads: <span className="font-medium text-gray-900">{columns.reduce((acc, col) => acc + col.leads.length, 0)}</span></p>
+                <p className="text-gray-600">
+                  Nome: <span className="font-medium text-gray-900">{currentFunnel?.name}</span>
+                </p>
+                <p className="text-gray-600">
+                  Colunas: <span className="font-medium text-gray-900">{columns.length}</span>
+                </p>
+                <p className="text-gray-600">
+                  Total de leads:{' '}
+                  <span className="font-medium text-gray-900">
+                    {columns.reduce((acc, col) => acc + col.leads.length, 0)}
+                  </span>
+                </p>
               </div>
             </div>
           </div>
@@ -1060,7 +1183,7 @@ export function Pipeline() {
             </Button>
             <Button
               onClick={async () => {
-                const currentOrder = columns.map(c => c.id);
+                const currentOrder = columns.map((c) => c.id);
                 const hasChanged = settingsColumnOrder.some((id, i) => currentOrder[i] !== id);
                 if (hasChanged) {
                   await reorderColumnsApi(settingsColumnOrder);
@@ -1099,6 +1222,7 @@ function DraggableLeadCard({
     opacity: isDragging ? 0.4 : 1,
   };
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- dnd-kit já fornece role/tabIndex via {...attributes} e o teclado via {...listeners} (drag por teclado); adicionar onKeyDown próprio quebraria o KeyboardSensor
     <div
       ref={setNodeRef}
       style={style}
@@ -1106,8 +1230,8 @@ function DraggableLeadCard({
       {...listeners}
       onClick={(e) => onCardClick(e, lead)}
       className={cn(
-        "bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150",
-        isDragging && "shadow-2xl ring-2 ring-primary/60 scale-[1.02] z-50 rotate-1",
+        'bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150',
+        isDragging && 'shadow-2xl ring-2 ring-primary/60 scale-[1.02] z-50 rotate-1'
       )}
     >
       {children}
@@ -1116,15 +1240,23 @@ function DraggableLeadCard({
 }
 
 /** A funnel column that accepts dropped lead cards. */
-function DroppableColumn({ columnId, children, isActiveDrag }: { columnId: string; children: ReactNode; isActiveDrag?: boolean }) {
+function DroppableColumn({
+  columnId,
+  children,
+  isActiveDrag,
+}: {
+  columnId: string;
+  children: ReactNode;
+  isActiveDrag?: boolean;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: columnId });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0 transition-all duration-200",
-        isOver && "ring-2 ring-primary/40 bg-primary/5",
-        isActiveDrag && !isOver && "opacity-60",
+        'bg-gray-100 rounded-lg p-4 min-w-[320px] max-w-[320px] flex-shrink-0 transition-all duration-200',
+        isOver && 'ring-2 ring-primary/40 bg-primary/5',
+        isActiveDrag && !isOver && 'opacity-60'
       )}
     >
       {children}

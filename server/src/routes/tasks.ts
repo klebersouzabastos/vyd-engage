@@ -89,14 +89,16 @@ router.post('/', async (req, res, next) => {
 
     // Notify assignee if task is assigned to someone other than the creator
     if (data.assignedTo && data.assignedTo !== req.user.userId) {
-      notificationService.create(req.user.tenantId, {
-        userId: data.assignedTo,
-        type: NotificationType.TASK_DUE,
-        title: 'Nova tarefa atribuída',
-        message: `A tarefa "${task.title}" foi atribuída a você.${task.dueDate ? ` Vencimento: ${new Date(task.dueDate).toLocaleDateString('pt-BR')}.` : ''}`,
-        link: `/app/tasks`,
-        metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
-      }).catch(() => {});
+      notificationService
+        .create(req.user.tenantId, {
+          userId: data.assignedTo,
+          type: NotificationType.TASK_DUE,
+          title: 'Nova tarefa atribuída',
+          message: `A tarefa "${task.title}" foi atribuída a você.${task.dueDate ? ` Vencimento: ${new Date(task.dueDate).toLocaleDateString('pt-BR')}.` : ''}`,
+          link: `/app/tasks`,
+          metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+        })
+        .catch(() => {});
     }
 
     // Google Calendar sync (fire-and-forget)
@@ -128,14 +130,16 @@ router.put('/:id', async (req, res, next) => {
 
     // Notify new assignee if task was reassigned to someone else
     if (data.assignedTo && data.assignedTo !== req.user.userId) {
-      notificationService.create(req.user.tenantId, {
-        userId: data.assignedTo,
-        type: NotificationType.TASK_DUE,
-        title: 'Tarefa atribuída a você',
-        message: `A tarefa "${task.title}" foi atribuída a você.${task.dueDate ? ` Vencimento: ${new Date(task.dueDate).toLocaleDateString('pt-BR')}.` : ''}`,
-        link: `/app/tasks`,
-        metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
-      }).catch(() => {});
+      notificationService
+        .create(req.user.tenantId, {
+          userId: data.assignedTo,
+          type: NotificationType.TASK_DUE,
+          title: 'Tarefa atribuída a você',
+          message: `A tarefa "${task.title}" foi atribuída a você.${task.dueDate ? ` Vencimento: ${new Date(task.dueDate).toLocaleDateString('pt-BR')}.` : ''}`,
+          link: `/app/tasks`,
+          metadata: { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+        })
+        .catch(() => {});
     }
 
     // Google Calendar sync (fire-and-forget)
@@ -167,7 +171,9 @@ router.delete('/:id', async (req, res, next) => {
 
     // Google Calendar cleanup (fire-and-forget)
     if (googleEventId) {
-      googleCalendarService.deleteEventForUser(req.user.userId, req.user.tenantId, googleEventId).catch(() => {});
+      googleCalendarService
+        .deleteEventForUser(req.user.userId, req.user.tenantId, googleEventId)
+        .catch(() => {});
     }
 
     // Emit Socket.IO event for real-time cache updates
@@ -180,4 +186,3 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 export default router;
-

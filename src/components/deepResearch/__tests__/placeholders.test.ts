@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  extractPlaceholders,
-  applyPlaceholders,
-  unfilledPlaceholders,
-} from '../placeholders';
+import { extractPlaceholders, applyPlaceholders, unfilledPlaceholders } from '../placeholders';
 
 describe('extractPlaceholders', () => {
   it('extrai placeholders únicos na ordem de aparição', () => {
@@ -29,7 +25,7 @@ describe('extractPlaceholders', () => {
 describe('applyPlaceholders', () => {
   it('substitui os valores preenchidos e mantém os vazios', () => {
     expect(applyPlaceholders('Sobre [EMPRESA] em [ANO]', { EMPRESA: 'ACME' })).toBe(
-      'Sobre ACME em [ANO]',
+      'Sobre ACME em [ANO]'
     );
   });
 

@@ -149,7 +149,8 @@ function cellToString(value: ExcelJS.CellValue): string {
     const obj = value as unknown as Record<string, unknown>;
     // Rich text / hyperlink / formula result shapes from ExcelJS.
     if ('text' in obj && typeof obj.text === 'string') return obj.text;
-    if ('result' in obj) return obj.result === null || obj.result === undefined ? '' : String(obj.result);
+    if ('result' in obj)
+      return obj.result === null || obj.result === undefined ? '' : String(obj.result);
     if ('richText' in obj && Array.isArray(obj.richText)) {
       return (obj.richText as Array<{ text?: string }>).map((part) => part.text ?? '').join('');
     }
@@ -264,7 +265,9 @@ export async function parseImportFile(file: File): Promise<ParsedFile> {
   } else if (ext === 'xls') {
     parsed = await parseXls(file);
   } else {
-    throw new ImportParseError('Formato não suportado. Envie um arquivo .csv (UTF-8), .xlsx ou .xls.');
+    throw new ImportParseError(
+      'Formato não suportado. Envie um arquivo .csv (UTF-8), .xlsx ou .xls.'
+    );
   }
 
   if (parsed.rowCount > MAX_ROWS) {
@@ -274,7 +277,9 @@ export async function parseImportFile(file: File): Promise<ParsedFile> {
   }
 
   if (parsed.headers.length === 0 || parsed.headers.every((h) => h === '')) {
-    throw new ImportParseError('Não foi possível identificar as colunas do arquivo. Verifique o cabeçalho.');
+    throw new ImportParseError(
+      'Não foi possível identificar as colunas do arquivo. Verifique o cabeçalho.'
+    );
   }
 
   return parsed;

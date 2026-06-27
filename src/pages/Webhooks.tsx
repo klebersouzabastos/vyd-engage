@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Switch } from "../components/ui/switch";
-import { Checkbox } from "../components/ui/checkbox";
-import { PageSkeleton } from "../components/PageSkeleton";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Switch } from '../components/ui/switch';
+import { Checkbox } from '../components/ui/checkbox';
+import { PageSkeleton } from '../components/PageSkeleton';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from '../components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,12 +25,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../components/ui/collapsible";
+} from '../components/ui/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import {
   Plus,
   Trash2,
@@ -44,8 +40,13 @@ import {
   Clock,
   Webhook,
   Loader2,
-} from "lucide-react";
-import { apiClient, ApiError, type OutgoingWebhook, type OutgoingWebhookLog } from "../services/api/client";
+} from 'lucide-react';
+import {
+  apiClient,
+  ApiError,
+  type OutgoingWebhook,
+  type OutgoingWebhookLog,
+} from '../services/api/client';
 
 interface TestResult {
   success: boolean;
@@ -57,22 +58,22 @@ interface TestResult {
 // The 9 selectable events (req 10). Used as fallback if the events endpoint
 // is unavailable; otherwise the server list is authoritative.
 const SELECTABLE_EVENTS = [
-  "lead.created",
-  "lead.updated",
-  "lead.deleted",
-  "deal.created",
-  "deal.updated",
-  "deal.won",
-  "deal.lost",
-  "task.completed",
-  "automation.triggered",
+  'lead.created',
+  'lead.updated',
+  'lead.deleted',
+  'deal.created',
+  'deal.updated',
+  'deal.won',
+  'deal.lost',
+  'task.completed',
+  'automation.triggered',
 ];
 
 // Event label formatting
 function formatEventLabel(event: string): string {
   return event
-    .replace(/\./g, " > ")
-    .replace(/_/g, " ")
+    .replace(/\./g, ' > ')
+    .replace(/_/g, ' ')
     .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
@@ -90,16 +91,16 @@ export function Webhooks() {
   const [saving, setSaving] = useState(false);
 
   // Form state
-  const [formUrl, setFormUrl] = useState("");
+  const [formUrl, setFormUrl] = useState('');
   const [formEvents, setFormEvents] = useState<string[]>([]);
-  const [formSecret, setFormSecret] = useState("");
+  const [formSecret, setFormSecret] = useState('');
 
   const fetchWebhooks = useCallback(async () => {
     try {
       const data = await apiClient.getOutgoingWebhooks();
       setWebhooks(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar webhooks");
+      toast.error(error instanceof Error ? error.message : 'Erro ao carregar webhooks');
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ export function Webhooks() {
       const data = await apiClient.getWebhookLogs(webhookId);
       setWebhookLogs((prev) => ({ ...prev, [webhookId]: data }));
     } catch {
-      toast.error("Erro ao carregar logs");
+      toast.error('Erro ao carregar logs');
     }
   };
 
@@ -140,9 +141,9 @@ export function Webhooks() {
   };
 
   const openCreate = () => {
-    setFormUrl("");
+    setFormUrl('');
     setFormEvents([]);
-    setFormSecret("");
+    setFormSecret('');
     setEditingWebhook(null);
     setIsCreateOpen(true);
   };
@@ -150,23 +151,23 @@ export function Webhooks() {
   const openEdit = (webhook: OutgoingWebhook) => {
     setFormUrl(webhook.url);
     setFormEvents([...webhook.events]);
-    setFormSecret("");
+    setFormSecret('');
     setEditingWebhook(webhook);
     setIsCreateOpen(true);
   };
 
   const handleSave = async () => {
     if (!formUrl.trim()) {
-      toast.error("URL e obrigatoria");
+      toast.error('URL e obrigatoria');
       return;
     }
     if (formEvents.length === 0) {
-      toast.error("Selecione ao menos um evento");
+      toast.error('Selecione ao menos um evento');
       return;
     }
     // Secret required on creation (req 9 edge case). Updates keep the existing secret.
     if (!editingWebhook && !formSecret.trim()) {
-      toast.error("O secret e obrigatorio para assinatura HMAC");
+      toast.error('O secret e obrigatorio para assinatura HMAC');
       return;
     }
 
@@ -177,14 +178,14 @@ export function Webhooks() {
           url: formUrl.trim(),
           events: formEvents,
         });
-        toast.success("Webhook atualizado");
+        toast.success('Webhook atualizado');
       } else {
         await apiClient.createOutgoingWebhook({
           url: formUrl.trim(),
           events: formEvents,
           secret: formSecret.trim(),
         });
-        toast.success("Webhook criado");
+        toast.success('Webhook criado');
       }
       setIsCreateOpen(false);
       fetchWebhooks();
@@ -192,14 +193,14 @@ export function Webhooks() {
       // Tenant reached the 10-webhook limit (req 15 / edge case → HTTP 422).
       if (
         error instanceof ApiError &&
-        (error.statusCode === 422 || error.code === "WEBHOOK_LIMIT_REACHED")
+        (error.statusCode === 422 || error.code === 'WEBHOOK_LIMIT_REACHED')
       ) {
         toast.error(
           error.message ||
-            "Limite de 10 webhooks atingido. Remova um webhook existente para criar outro."
+            'Limite de 10 webhooks atingido. Remova um webhook existente para criar outro.'
         );
       } else {
-        toast.error(error instanceof Error ? error.message : "Erro ao salvar webhook");
+        toast.error(error instanceof Error ? error.message : 'Erro ao salvar webhook');
       }
     } finally {
       setSaving(false);
@@ -210,11 +211,11 @@ export function Webhooks() {
     if (!deletingWebhook) return;
     try {
       await apiClient.deleteOutgoingWebhook(deletingWebhook.id);
-      toast.success("Webhook removido");
+      toast.success('Webhook removido');
       setDeletingWebhook(null);
       fetchWebhooks();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao remover webhook");
+      toast.error(error instanceof Error ? error.message : 'Erro ao remover webhook');
     }
   };
 
@@ -223,7 +224,7 @@ export function Webhooks() {
       await apiClient.updateOutgoingWebhook(webhook.id, { active: !webhook.active });
       fetchWebhooks();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao alterar status");
+      toast.error(error instanceof Error ? error.message : 'Erro ao alterar status');
     }
   };
 
@@ -236,14 +237,14 @@ export function Webhooks() {
       if (result.success) {
         toast.success(`Teste OK — ${result.statusCode} em ${result.responseTime}ms`);
       } else {
-        toast.error(`Teste falhou — ${result.statusCode ?? "Erro desconhecido"}`);
+        toast.error(`Teste falhou — ${result.statusCode ?? 'Erro desconhecido'}`);
       }
       fetchWebhooks();
       if (expandedWebhook === webhook.id) {
         fetchLogs(webhook.id);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao testar webhook");
+      toast.error(error instanceof Error ? error.message : 'Erro ao testar webhook');
     } finally {
       setTestingId(null);
     }
@@ -257,7 +258,7 @@ export function Webhooks() {
 
   const copySecret = (secret: string) => {
     navigator.clipboard.writeText(secret);
-    toast.success("Secret copiado");
+    toast.success('Secret copiado');
   };
 
   if (loading) return <PageSkeleton />;
@@ -271,9 +272,7 @@ export function Webhooks() {
           {/* Toolbar */}
           <div className="p-4 md:p-6 border-b border-gray-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Webhooks ({webhooks.length})
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900">Webhooks ({webhooks.length})</h2>
               <p className="text-sm text-gray-500">
                 Envie notificacoes em tempo real para URLs externas quando eventos acontecerem.
               </p>
@@ -313,8 +312,8 @@ export function Webhooks() {
                           <span className="font-mono text-sm text-gray-900 truncate">
                             {webhook.url}
                           </span>
-                          <Badge variant={webhook.active ? "default" : "secondary"}>
-                            {webhook.active ? "Ativo" : "Inativo"}
+                          <Badge variant={webhook.active ? 'default' : 'secondary'}>
+                            {webhook.active ? 'Ativo' : 'Inativo'}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -336,7 +335,7 @@ export function Webhooks() {
                           {webhook.lastTriggeredAt && (
                             <span className="flex items-center gap-1">
                               <Clock size={12} />
-                              Ultimo: {new Date(webhook.lastTriggeredAt).toLocaleString("pt-BR")}
+                              Ultimo: {new Date(webhook.lastTriggeredAt).toLocaleString('pt-BR')}
                             </span>
                           )}
                         </div>
@@ -404,9 +403,7 @@ export function Webhooks() {
                   {/* Logs section */}
                   <CollapsibleContent>
                     <div className="border-t border-gray-200 bg-gray-50 p-4 md:px-6">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">
-                        Entregas recentes
-                      </h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Entregas recentes</h4>
                       {!webhookLogs[webhook.id] ? (
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Loader2 size={14} className="animate-spin" />
@@ -441,10 +438,13 @@ export function Webhooks() {
                                 <span className="text-xs text-gray-500">{log.durationMs}ms</span>
                               )}
                               <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
-                                {new Date(log.createdAt).toLocaleString("pt-BR")}
+                                {new Date(log.createdAt).toLocaleString('pt-BR')}
                               </span>
                               {log.error && (
-                                <span className="text-xs text-red-500 truncate max-w-[200px]" title={log.error}>
+                                <span
+                                  className="text-xs text-red-500 truncate max-w-[200px]"
+                                  title={log.error}
+                                >
                                   {log.error}
                                 </span>
                               )}
@@ -464,17 +464,14 @@ export function Webhooks() {
             <div
               className={`mx-4 md:mx-6 mb-4 p-3 rounded-lg text-sm ${
                 testResult.success
-                  ? "bg-green-50 border border-green-200 text-green-800"
-                  : "bg-red-50 border border-red-200 text-red-800"
+                  ? 'bg-green-50 border border-green-200 text-green-800'
+                  : 'bg-red-50 border border-red-200 text-red-800'
               }`}
             >
               {testResult.success
                 ? `Teste bem-sucedido — Status ${testResult.statusCode} em ${testResult.responseTime}ms`
                 : `Teste falhou — ${testResult.error || `Status ${testResult.statusCode}`}`}
-              <button
-                onClick={() => setTestResult(null)}
-                className="ml-2 underline text-xs"
-              >
+              <button onClick={() => setTestResult(null)} className="ml-2 underline text-xs">
                 Fechar
               </button>
             </div>
@@ -486,9 +483,7 @@ export function Webhooks() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {editingWebhook ? "Editar Webhook" : "Criar Webhook"}
-            </DialogTitle>
+            <DialogTitle>{editingWebhook ? 'Editar Webhook' : 'Criar Webhook'}</DialogTitle>
             <DialogDescription>
               Configure a URL e os eventos que disparam este webhook.
             </DialogDescription>
@@ -555,7 +550,7 @@ export function Webhooks() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
-              {editingWebhook ? "Salvar" : "Criar"}
+              {editingWebhook ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -567,7 +562,8 @@ export function Webhooks() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover webhook?</AlertDialogTitle>
             <AlertDialogDescription>
-              O webhook para <strong>{deletingWebhook?.url}</strong> sera removido permanentemente. Esta acao nao pode ser desfeita.
+              O webhook para <strong>{deletingWebhook?.url}</strong> sera removido permanentemente.
+              Esta acao nao pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

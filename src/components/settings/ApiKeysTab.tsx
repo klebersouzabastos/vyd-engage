@@ -1,38 +1,56 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
-import { Plus, Trash2, Copy, Key, Loader2, AlertTriangle } from "lucide-react";
-import { apiClient, type ApiKeyListItem } from "../../services/api/client";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import { Plus, Trash2, Copy, Key, Loader2, AlertTriangle } from 'lucide-react';
+import { apiClient, type ApiKeyListItem } from '../../services/api/client';
 
 // Available scopes grouped by resource (req 17, 18).
 const SCOPE_GROUPS: { resource: string; scopes: { value: string; label: string }[] }[] = [
-  { resource: "Leads", scopes: [{ value: "leads:read", label: "Ler" }, { value: "leads:write", label: "Escrever" }] },
-  { resource: "Deals", scopes: [{ value: "deals:read", label: "Ler" }, { value: "deals:write", label: "Escrever" }] },
-  { resource: "Tarefas", scopes: [{ value: "tasks:read", label: "Ler" }, { value: "tasks:write", label: "Escrever" }] },
-  { resource: "Contatos", scopes: [{ value: "contacts:read", label: "Ler" }] },
-  { resource: "Relatórios", scopes: [{ value: "reports:read", label: "Ler" }] },
-  { resource: "Webhooks", scopes: [{ value: "webhooks:manage", label: "Gerenciar" }] },
+  {
+    resource: 'Leads',
+    scopes: [
+      { value: 'leads:read', label: 'Ler' },
+      { value: 'leads:write', label: 'Escrever' },
+    ],
+  },
+  {
+    resource: 'Deals',
+    scopes: [
+      { value: 'deals:read', label: 'Ler' },
+      { value: 'deals:write', label: 'Escrever' },
+    ],
+  },
+  {
+    resource: 'Tarefas',
+    scopes: [
+      { value: 'tasks:read', label: 'Ler' },
+      { value: 'tasks:write', label: 'Escrever' },
+    ],
+  },
+  { resource: 'Contatos', scopes: [{ value: 'contacts:read', label: 'Ler' }] },
+  { resource: 'Relatórios', scopes: [{ value: 'reports:read', label: 'Ler' }] },
+  { resource: 'Webhooks', scopes: [{ value: 'webhooks:manage', label: 'Gerenciar' }] },
 ];
 
 const SCOPE_LABELS: Record<string, string> = {
-  "leads:read": "Leads: Ler",
-  "leads:write": "Leads: Escrever",
-  "deals:read": "Deals: Ler",
-  "deals:write": "Deals: Escrever",
-  "tasks:read": "Tarefas: Ler",
-  "tasks:write": "Tarefas: Escrever",
-  "contacts:read": "Contatos: Ler",
-  "reports:read": "Relatórios: Ler",
-  "webhooks:manage": "Webhooks: Gerenciar",
+  'leads:read': 'Leads: Ler',
+  'leads:write': 'Leads: Escrever',
+  'deals:read': 'Deals: Ler',
+  'deals:write': 'Deals: Escrever',
+  'tasks:read': 'Tarefas: Ler',
+  'tasks:write': 'Tarefas: Escrever',
+  'contacts:read': 'Contatos: Ler',
+  'reports:read': 'Relatórios: Ler',
+  'webhooks:manage': 'Webhooks: Gerenciar',
 };
 
 export function ApiKeysTab() {
   const [keys, setKeys] = useState<ApiKeyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formExpiry, setFormExpiry] = useState("");
+  const [formName, setFormName] = useState('');
+  const [formExpiry, setFormExpiry] = useState('');
   const [formScopes, setFormScopes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [newFullKey, setNewFullKey] = useState<string | null>(null);
@@ -48,11 +66,13 @@ export function ApiKeysTab() {
     }
   }, []);
 
-  useEffect(() => { loadKeys(); }, [loadKeys]);
+  useEffect(() => {
+    loadKeys();
+  }, [loadKeys]);
 
   const handleCreate = async () => {
     if (!formName.trim()) {
-      toast.error("Informe um nome para a chave");
+      toast.error('Informe um nome para a chave');
       return;
     }
     setSaving(true);
@@ -65,14 +85,14 @@ export function ApiKeysTab() {
       });
       // The API returns the full key only once
       setNewFullKey(data.key);
-      toast.success("Chave API criada");
+      toast.success('Chave API criada');
       setShowForm(false);
-      setFormName("");
-      setFormExpiry("");
+      setFormName('');
+      setFormExpiry('');
       setFormScopes([]);
       await loadKeys();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar chave");
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar chave');
     } finally {
       setSaving(false);
     }
@@ -81,10 +101,10 @@ export function ApiKeysTab() {
   const handleRevoke = async (id: string) => {
     try {
       await apiClient.deleteApiKey(id);
-      toast.success("Chave revogada");
+      toast.success('Chave revogada');
       await loadKeys();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao revogar chave");
+      toast.error(error instanceof Error ? error.message : 'Erro ao revogar chave');
     }
   };
 
@@ -96,7 +116,7 @@ export function ApiKeysTab() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copiado para a area de transferencia");
+    toast.success('Copiado para a area de transferencia');
   };
 
   if (loading) {
@@ -137,11 +157,7 @@ export function ApiKeysTab() {
                 <code className="text-xs bg-white px-3 py-2 rounded border border-yellow-300 font-mono flex-1 break-all">
                   {newFullKey}
                 </code>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(newFullKey)}
-                >
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(newFullKey)}>
                   <Copy size={14} />
                 </Button>
               </div>
@@ -162,8 +178,11 @@ export function ApiKeysTab() {
       {showForm && (
         <div className="p-4 border border-gray-300 rounded-lg bg-gray-50 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Chave</label>
+            <label htmlFor="apikey-name" className="block text-sm font-medium text-gray-700 mb-1">
+              Nome da Chave
+            </label>
             <input
+              id="apikey-name"
               type="text"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
@@ -172,29 +191,41 @@ export function ApiKeysTab() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="apikey-expiry" className="block text-sm font-medium text-gray-700 mb-1">
               Data de Expiracao <span className="text-gray-400">(opcional)</span>
             </label>
             <input
+              id="apikey-expiry"
               type="date"
               value={formExpiry}
               onChange={(e) => setFormExpiry(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
+              min={new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
           {/* Scopes selector — checkboxes grouped by resource (req 17). */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- rotula um grupo de checkboxes (role=group) via aria-labelledby, não um único controle */}
+            <label
+              id="apikey-scopes-label"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Scopes <span className="text-gray-400">(deixe vazio para acesso total)</span>
             </label>
-            <div className="space-y-3 max-h-52 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+            <div
+              role="group"
+              aria-labelledby="apikey-scopes-label"
+              className="space-y-3 max-h-52 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white"
+            >
               {SCOPE_GROUPS.map((group) => (
                 <div key={group.resource}>
                   <p className="text-xs font-semibold text-gray-700 mb-1">{group.resource}</p>
                   <div className="grid grid-cols-2 gap-1">
                     {group.scopes.map((scope) => (
-                      <label key={scope.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <label
+                        key={scope.value}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
                         <Checkbox
                           checked={formScopes.includes(scope.value)}
                           onCheckedChange={() => toggleScope(scope.value)}
@@ -208,7 +239,16 @@ export function ApiKeysTab() {
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setFormName(""); setFormExpiry(""); setFormScopes([]); }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowForm(false);
+                setFormName('');
+                setFormExpiry('');
+                setFormScopes([]);
+              }}
+            >
               Cancelar
             </Button>
             <Button size="sm" onClick={handleCreate} disabled={saving}>
@@ -230,18 +270,22 @@ export function ApiKeysTab() {
             <div
               key={apiKey.id}
               className={`p-4 border rounded-lg flex items-center justify-between gap-4 ${
-                apiKey.active ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50 opacity-60"
+                apiKey.active ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'
               }`}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className={`p-2 rounded-lg ${apiKey.active ? "bg-primary/10" : "bg-gray-200"}`}>
-                  <Key size={16} className={apiKey.active ? "text-primary" : "text-gray-400"} />
+                <div
+                  className={`p-2 rounded-lg ${apiKey.active ? 'bg-primary/10' : 'bg-gray-200'}`}
+                >
+                  <Key size={16} className={apiKey.active ? 'text-primary' : 'text-gray-400'} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm text-gray-900">{apiKey.name}</p>
                     {!apiKey.active && (
-                      <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">Revogada</span>
+                      <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
+                        Revogada
+                      </span>
                     )}
                   </div>
                   <code className="text-xs text-gray-500 font-mono">{apiKey.key}</code>
@@ -249,22 +293,31 @@ export function ApiKeysTab() {
                   <div className="flex flex-wrap items-center gap-1 mt-1">
                     {apiKey.scopes && apiKey.scopes.length > 0 ? (
                       apiKey.scopes.map((scope) => (
-                        <span key={scope} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                        <span
+                          key={scope}
+                          className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
+                        >
                           {SCOPE_LABELS[scope] || scope}
                         </span>
                       ))
                     ) : (
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Acesso total</span>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                        Acesso total
+                      </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                    <span>Criada em {new Date(apiKey.createdAt).toLocaleDateString("pt-BR")}</span>
+                    <span>Criada em {new Date(apiKey.createdAt).toLocaleDateString('pt-BR')}</span>
                     {apiKey.lastUsedAt && (
-                      <span>Ultimo uso: {new Date(apiKey.lastUsedAt).toLocaleDateString("pt-BR")}</span>
+                      <span>
+                        Ultimo uso: {new Date(apiKey.lastUsedAt).toLocaleDateString('pt-BR')}
+                      </span>
                     )}
                     {apiKey.expiresAt && (
-                      <span className={new Date(apiKey.expiresAt) < new Date() ? "text-red-500" : ""}>
-                        Expira: {new Date(apiKey.expiresAt).toLocaleDateString("pt-BR")}
+                      <span
+                        className={new Date(apiKey.expiresAt) < new Date() ? 'text-red-500' : ''}
+                      >
+                        Expira: {new Date(apiKey.expiresAt).toLocaleDateString('pt-BR')}
                       </span>
                     )}
                   </div>
@@ -290,7 +343,9 @@ export function ApiKeysTab() {
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <h4 className="text-sm font-medium text-blue-900 mb-2">Como usar</h4>
         <p className="text-sm text-blue-800 mb-2">
-          Inclua a chave no header <code className="bg-white px-1 py-0.5 rounded text-xs">X-API-Key</code> de cada requisicao.
+          Inclua a chave no header{' '}
+          <code className="bg-white px-1 py-0.5 rounded text-xs">X-API-Key</code> de cada
+          requisicao.
         </p>
         <code className="text-xs bg-white px-3 py-2 rounded border border-blue-200 font-mono block">
           curl -H "X-API-Key: fcrm_sua_chave" /api/v1/leads

@@ -1,32 +1,41 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { ArrowLeft, ArrowRight, Check, FileText, Zap, TrendingUp, BarChart3, Users } from "lucide-react";
-import { REPORT_TEMPLATES, createReportFromTemplate } from "../utils/reportTemplates";
-import { Report } from "../types";
-import { generateId } from "../utils/id";
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  FileText,
+  Zap,
+  TrendingUp,
+  BarChart3,
+  Users,
+} from 'lucide-react';
+import { REPORT_TEMPLATES, createReportFromTemplate } from '../utils/reportTemplates';
+import { Report } from '../types';
+import { generateId } from '../utils/id';
 
 const PERIOD_OPTIONS = [
-  { value: "today", label: "Hoje" },
-  { value: "week", label: "Últimos 7 dias" },
-  { value: "month", label: "Último mês" },
-  { value: "quarter", label: "Último trimestre" },
-  { value: "year", label: "Último ano" },
-  { value: "all", label: "Todo o período" },
+  { value: 'today', label: 'Hoje' },
+  { value: 'week', label: 'Últimos 7 dias' },
+  { value: 'month', label: 'Último mês' },
+  { value: 'quarter', label: 'Último trimestre' },
+  { value: 'year', label: 'Último ano' },
+  { value: 'all', label: 'Todo o período' },
 ];
 
 const getTemplateIcon = (category: string) => {
   switch (category) {
-    case "leads":
+    case 'leads':
       return Users;
-    case "sales":
+    case 'sales':
       return TrendingUp;
-    case "automations":
+    case 'automations':
       return Zap;
-    case "tasks":
+    case 'tasks':
       return BarChart3;
     default:
       return FileText;
@@ -41,9 +50,11 @@ interface ReportWizardProps {
 export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [reportName, setReportName] = useState("");
+  const [reportName, setReportName] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [period, setPeriod] = useState<"today" | "week" | "month" | "quarter" | "year" | "all">("month");
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'>(
+    'month'
+  );
   // advancedMode removed — was dead state (setter never called)
 
   const totalSteps = 4;
@@ -75,8 +86,8 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
       report = {
         id: generateId(),
         name: reportName,
-        description: "",
-        type: "custom",
+        description: '',
+        type: 'custom',
         widgets: [],
         filters: {
           dateRange: {
@@ -85,7 +96,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
         },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        createdBy: "current-user",
+        createdBy: 'current-user',
       };
     }
 
@@ -112,19 +123,20 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
 
   const handleQuickCreate = () => {
     if (!reportName.trim()) {
-      setReportName("Relatório Rápido");
+      setReportName('Relatório Rápido');
     }
 
     // Usar template padrão (executivo) ou o primeiro disponível
-    const defaultTemplate = REPORT_TEMPLATES.find(t => t.id === "executive-dashboard") || REPORT_TEMPLATES[0];
-    
+    const defaultTemplate =
+      REPORT_TEMPLATES.find((t) => t.id === 'executive-dashboard') || REPORT_TEMPLATES[0];
+
     if (defaultTemplate) {
-      const report = createReportFromTemplate(defaultTemplate.id, reportName || "Relatório Rápido");
+      const report = createReportFromTemplate(defaultTemplate.id, reportName || 'Relatório Rápido');
 
       // Aplicar período padrão
       report.filters = {
         dateRange: {
-          type: "month",
+          type: 'month',
         },
       };
 
@@ -132,7 +144,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
       if (onComplete) {
         onComplete(report);
       } else {
-        navigate("/app/reports");
+        navigate('/app/reports');
       }
     }
   };
@@ -141,7 +153,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
     if (onCancel) {
       onCancel();
     } else {
-      navigate("/app/reports");
+      navigate('/app/reports');
     }
   };
 
@@ -177,26 +189,20 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                 <div className="flex flex-col items-center flex-1">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
-                      step >= s
-                        ? "bg-primary text-white"
-                        : "bg-gray-300 text-gray-600"
+                      step >= s ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'
                     }`}
                   >
                     {step > s ? <Check size={20} /> : s}
                   </div>
                   <span className="text-xs mt-2 text-gray-600 text-center">
-                    {s === 1 && "Nome"}
-                    {s === 2 && "Template"}
-                    {s === 3 && "Período"}
-                    {s === 4 && "Revisão"}
+                    {s === 1 && 'Nome'}
+                    {s === 2 && 'Template'}
+                    {s === 3 && 'Período'}
+                    {s === 4 && 'Revisão'}
                   </span>
                 </div>
                 {s < 4 && (
-                  <div
-                    className={`h-1 flex-1 mx-2 ${
-                      step > s ? "bg-primary" : "bg-gray-300"
-                    }`}
-                  />
+                  <div className={`h-1 flex-1 mx-2 ${step > s ? 'bg-primary' : 'bg-gray-300'}`} />
                 )}
               </div>
             ))}
@@ -220,6 +226,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                   onChange={(e) => setReportName(e.target.value)}
                   className="mt-1.5"
                   placeholder="Ex: Relatório Semanal de Vendas"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional
                   autoFocus
                 />
               </div>
@@ -234,18 +241,28 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                 <p className="text-sm text-gray-600 mb-6">
                   Selecione um template pré-configurado ou crie um relatório personalizado
                 </p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {REPORT_TEMPLATES.map((template) => {
                     const Icon = getTemplateIcon(template.category);
                     return (
                       <div
                         key={template.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedTemplateId(template.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            if (e.key === ' ') {
+                              e.preventDefault();
+                            }
+                            setSelectedTemplateId(template.id);
+                          }
+                        }}
                         className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                           selectedTemplateId === template.id
-                            ? "border-primary bg-primary-50"
-                            : "border-gray-300 hover:border-primary hover:shadow-md"
+                            ? 'border-primary bg-primary-50'
+                            : 'border-gray-300 hover:border-primary hover:shadow-md'
                         }`}
                       >
                         <div className="flex items-start justify-between mb-2">
@@ -266,13 +283,23 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                       </div>
                     );
                   })}
-                  
+
                   <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedTemplateId(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === ' ') {
+                          e.preventDefault();
+                        }
+                        setSelectedTemplateId(null);
+                      }
+                    }}
                     className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-all flex items-center justify-center min-h-[140px] ${
                       selectedTemplateId === null
-                        ? "border-primary bg-primary-50"
-                        : "border-gray-300 hover:border-primary"
+                        ? 'border-primary bg-primary-50'
+                        : 'border-gray-300 hover:border-primary'
                     }`}
                   >
                     <div className="text-center">
@@ -325,26 +352,27 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
                 <p className="text-sm text-gray-600 mb-6">
                   Revise as configurações antes de criar o relatório
                 </p>
-                
+
                 <div className="bg-gray-100 rounded-lg p-6 space-y-4">
                   <div>
                     <span className="text-sm font-medium text-gray-600">Nome:</span>
                     <p className="text-gray-900 mt-1">{reportName}</p>
                   </div>
-                  
+
                   <div>
                     <span className="text-sm font-medium text-gray-600">Template:</span>
                     <p className="text-gray-900 mt-1">
                       {selectedTemplateId
-                        ? REPORT_TEMPLATES.find(t => t.id === selectedTemplateId)?.name || "Personalizado"
-                        : "Personalizado"}
+                        ? REPORT_TEMPLATES.find((t) => t.id === selectedTemplateId)?.name ||
+                          'Personalizado'
+                        : 'Personalizado'}
                     </p>
                   </div>
-                  
+
                   <div>
                     <span className="text-sm font-medium text-gray-600">Período:</span>
                     <p className="text-gray-900 mt-1">
-                      {PERIOD_OPTIONS.find(p => p.value === period)?.label || "Último mês"}
+                      {PERIOD_OPTIONS.find((p) => p.value === period)?.label || 'Último mês'}
                     </p>
                   </div>
                 </div>
@@ -355,27 +383,19 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            className="gap-2"
-          >
+          <Button variant="outline" onClick={handleCancel} className="gap-2">
             <ArrowLeft size={16} />
             Cancelar
           </Button>
 
           <div className="flex items-center gap-3">
             {step > 1 && (
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                className="gap-2"
-              >
+              <Button variant="outline" onClick={handlePrevious} className="gap-2">
                 <ArrowLeft size={16} />
                 Anterior
               </Button>
             )}
-            
+
             {step < totalSteps ? (
               <Button
                 onClick={handleNext}
@@ -422,4 +442,3 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
     </div>
   );
 }
-

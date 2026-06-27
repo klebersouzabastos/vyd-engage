@@ -141,13 +141,10 @@ export function renderTemplate(template: string, context: TemplateContext): stri
   );
 
   // Process simple {{variable}} placeholders
-  rendered = rendered.replace(
-    /\{\{(\w+)\}\}/g,
-    (_match, varName: string) => {
-      const value = (context as any)[varName];
-      return value !== undefined && value !== null ? String(value) : '';
-    }
-  );
+  rendered = rendered.replace(/\{\{(\w+)\}\}/g, (_match, varName: string) => {
+    const value = (context as any)[varName];
+    return value !== undefined && value !== null ? String(value) : '';
+  });
 
   // Clean up empty lines from removed blocks
   rendered = rendered.replace(/\n{3,}/g, '\n\n');

@@ -19,9 +19,7 @@ const availabilitySchema = z.object({
   title: z.string().min(1).max(200),
   duration: z.number().int().min(5).max(480),
   bufferMinutes: z.number().int().min(0).max(120).optional(),
-  availableHours: z.record(
-    z.array(z.object({ start: z.string(), end: z.string() }))
-  ),
+  availableHours: z.record(z.array(z.object({ start: z.string(), end: z.string() }))),
 });
 
 // GET /schedule — list this user's availability configs

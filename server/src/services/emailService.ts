@@ -15,9 +15,11 @@ function getResendClient(): Resend {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  
+
   if (!apiKey) {
-    throw new Error('RESEND_API_KEY is not configured. Please set it in your environment variables.');
+    throw new Error(
+      'RESEND_API_KEY is not configured. Please set it in your environment variables.'
+    );
   }
 
   resendClient = new Resend(apiKey);
@@ -35,14 +37,14 @@ export interface EmailOptions {
 export async function sendEmail(options: EmailOptions): Promise<void> {
   try {
     const resend = getResendClient();
-    
+
     // Resend requires verified domain or uses onboarding@resend.dev for testing
     // Format: "Name <email@domain.com>" or just "email@domain.com"
     const fromEmail = options.from || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-    
+
     // Resend accepts array of recipients
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
-    
+
     // Extract text from HTML if not provided
     const textContent = options.text || options.html.replace(/<[^>]*>/g, '');
 
@@ -65,7 +67,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       throw new Error(`Failed to send email: ${error.message || 'Unknown error'}`);
     }
 
-    logger.info('Email sent successfully', { 
+    logger.info('Email sent successfully', {
       messageId: data?.id,
       to: options.to,
       subject: options.subject,
@@ -73,7 +75,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     });
   } catch (error: any) {
     logger.error('Error sending email', error);
-    throw new Error(`Failed to send email: ${error.message}`);
+    throw new Error(`Failed to send email: ${error.message}`, { cause: error });
   }
 }
 
@@ -97,14 +99,9 @@ export const emailTemplates = {
   async invitation(inviterName: string, companyName: string, invitationLink: string, role: string) {
     return {
       subject: `Convite para ${companyName} - VYD Engage`,
-      html: await render(createElement(InvitationEmail, { inviterName, companyName, invitationLink, role })),
+      html: await render(
+        createElement(InvitationEmail, { inviterName, companyName, invitationLink, role })
+      ),
     };
   },
 };
-
-
-
-
-
-
-

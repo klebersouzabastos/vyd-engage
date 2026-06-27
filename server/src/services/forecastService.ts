@@ -99,7 +99,14 @@ export const forecastService = {
     for (let i = 0; i < months; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthMap.set(key, { month: key, totalValue: 0, weightedValue: 0, dealCount: 0, conservative: 0, optimistic: 0 });
+      monthMap.set(key, {
+        month: key,
+        totalValue: 0,
+        weightedValue: 0,
+        dealCount: 0,
+        conservative: 0,
+        optimistic: 0,
+      });
     }
 
     let noDateTotal = 0;
@@ -147,8 +154,7 @@ export const forecastService = {
       (sum, d) => sum + Number(d.value) * (d.probability / 100),
       0
     );
-    const avgDealSize =
-      allActiveDeals.length > 0 ? totalPipelineValue / allActiveDeals.length : 0;
+    const avgDealSize = allActiveDeals.length > 0 ? totalPipelineValue / allActiveDeals.length : 0;
 
     // Conservative: weighted value for high-probability deals only (>= 70%)
     const conservativeTotal = allActiveDeals.reduce((sum, d) => {

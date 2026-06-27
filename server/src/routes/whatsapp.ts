@@ -144,11 +144,3 @@ router.get('/:id/templates', async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

@@ -1,15 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  Sparkles,
-  ChevronDown,
-  RefreshCw,
-  Loader2,
-  AlertCircle,
-  Clock,
-} from "lucide-react";
-import { apiClient, ApiError } from "../../services/api/client";
-import { useAIStatus } from "../../hooks/useAIStatus";
-import type { AISummary } from "../../types";
+import { useCallback, useEffect, useState } from 'react';
+import { Sparkles, ChevronDown, RefreshCw, Loader2, AlertCircle, Clock } from 'lucide-react';
+import { apiClient, ApiError } from '../../services/api/client';
+import { useAIStatus } from '../../hooks/useAIStatus';
+import type { AISummary } from '../../types';
 
 interface AISummaryCardProps {
   leadId: string;
@@ -34,11 +27,7 @@ function readCache(leadId: string): CachedSummary | null {
     const raw = localStorage.getItem(cacheKey(leadId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedSummary;
-    if (
-      !parsed ||
-      typeof parsed.summary !== "string" ||
-      typeof parsed.cachedAt !== "number"
-    ) {
+    if (!parsed || typeof parsed.summary !== 'string' || typeof parsed.cachedAt !== 'number') {
       return null;
     }
     if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) return null;
@@ -57,20 +46,20 @@ function writeCache(leadId: string, summary: string): void {
   }
 }
 
-type ErrorKind = "rate_limit" | "provider" | "generic";
+type ErrorKind = 'rate_limit' | 'provider' | 'generic';
 
 function classifyError(err: unknown): ErrorKind {
   if (err instanceof ApiError) {
-    if (err.statusCode === 429) return "rate_limit";
-    if (err.statusCode === 503) return "provider";
+    if (err.statusCode === 429) return 'rate_limit';
+    if (err.statusCode === 503) return 'provider';
   }
-  return "generic";
+  return 'generic';
 }
 
 const ERROR_MESSAGES: Record<ErrorKind, string> = {
-  rate_limit: "Limite atingido, tente em instantes.",
-  provider: "O assistente de IA está indisponível no momento. Tente novamente.",
-  generic: "Não foi possível gerar o resumo. Tente novamente.",
+  rate_limit: 'Limite atingido, tente em instantes.',
+  provider: 'O assistente de IA está indisponível no momento. Tente novamente.',
+  generic: 'Não foi possível gerar o resumo. Tente novamente.',
 };
 
 /**
@@ -119,7 +108,7 @@ export function AISummaryCard({ leadId }: AISummaryCardProps) {
         setLoading(false);
       }
     },
-    [leadId],
+    [leadId]
   );
 
   // Reset state when the lead changes so a stale summary never leaks across leads.
@@ -176,7 +165,7 @@ export function AISummaryCard({ leadId }: AISummaryCardProps) {
           </span>
           <ChevronDown
             size={16}
-            className={`text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
           />
         </button>
         <button
@@ -186,7 +175,7 @@ export function AISummaryCard({ leadId }: AISummaryCardProps) {
           className="flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-800 disabled:opacity-50 transition-colors"
           title="Forçar novo resumo"
         >
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           Atualizar
         </button>
       </div>
@@ -214,9 +203,7 @@ export function AISummaryCard({ leadId }: AISummaryCardProps) {
               </div>
             </div>
           ) : summary ? (
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {summary}
-            </p>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{summary}</p>
           ) : (
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <Clock size={14} />

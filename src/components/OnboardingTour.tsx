@@ -1,56 +1,56 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router";
-import { Button } from "./ui/button";
-import { X, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router';
+import { Button } from './ui/button';
+import { X, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 
 interface TourStep {
   target?: string; // CSS selector — omit for welcome overlay
   title: string;
   description: string;
   route?: string; // Navigate to this route before showing
-  position?: "top" | "bottom" | "left" | "right" | "center";
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
 }
 
 const TOUR_STEPS: TourStep[] = [
   {
-    title: "Bem-vindo ao VYD Engage!",
+    title: 'Bem-vindo ao VYD Engage!',
     description:
-      "Vamos fazer um tour rápido para você conhecer as principais funcionalidades do seu CRM. Leva menos de 1 minuto.",
-    position: "center",
+      'Vamos fazer um tour rápido para você conhecer as principais funcionalidades do seu CRM. Leva menos de 1 minuto.',
+    position: 'center',
   },
   {
     target: "[data-tour='dashboard-stats']",
-    title: "Painel de Controle",
+    title: 'Painel de Controle',
     description:
-      "Aqui você vê o resumo do seu CRM — total de leads, tarefas pendentes e métricas importantes.",
-    route: "/app",
-    position: "bottom",
+      'Aqui você vê o resumo do seu CRM — total de leads, tarefas pendentes e métricas importantes.',
+    route: '/app',
+    position: 'bottom',
   },
   {
     target: "[data-tour='sidebar-leads']",
-    title: "Gerenciamento de Leads",
+    title: 'Gerenciamento de Leads',
     description:
-      "Acesse a lista de leads para cadastrar, organizar e acompanhar seus contatos e oportunidades.",
-    position: "right",
+      'Acesse a lista de leads para cadastrar, organizar e acompanhar seus contatos e oportunidades.',
+    position: 'right',
   },
   {
     target: "[data-tour='create-lead-btn']",
-    title: "Crie seu Primeiro Lead",
+    title: 'Crie seu Primeiro Lead',
     description:
-      "Clique aqui para adicionar seu primeiro lead e começar a gerenciar seus contatos.",
-    route: "/app/leads",
-    position: "bottom",
+      'Clique aqui para adicionar seu primeiro lead e começar a gerenciar seus contatos.',
+    route: '/app/leads',
+    position: 'bottom',
   },
   {
     target: "[data-tour='sidebar-tasks']",
-    title: "Tarefas e Follow-ups",
+    title: 'Tarefas e Follow-ups',
     description:
-      "Organize suas tarefas e lembretes vinculados aos leads para nunca perder um follow-up importante.",
-    position: "right",
+      'Organize suas tarefas e lembretes vinculados aos leads para nunca perder um follow-up importante.',
+    position: 'right',
   },
 ];
 
-const TOUR_STORAGE_KEY = "vyd-engage-tour-completed";
+const TOUR_STORAGE_KEY = 'vyd-engage-tour-completed';
 
 export function OnboardingTour() {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ export function OnboardingTour() {
 
   useEffect(() => {
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
-    if (!completed && location.pathname.startsWith("/app")) {
+    if (!completed && location.pathname.startsWith('/app')) {
       const timer = setTimeout(() => setIsActive(true), 1200);
       return () => clearTimeout(timer);
     }
@@ -72,12 +72,12 @@ export function OnboardingTour() {
     const step = TOUR_STEPS[currentStep];
 
     // Center position = welcome overlay, no target needed
-    if (step.position === "center" || !step.target) {
+    if (step.position === 'center' || !step.target) {
       setTooltipStyle({
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
         zIndex: 10001,
       });
       return;
@@ -86,34 +86,35 @@ export function OnboardingTour() {
     const el = document.querySelector(step.target);
     if (!el) {
       // Element not found yet — retry shortly (e.g. page still loading)
+      // eslint-disable-next-line react-hooks/immutability -- recursão intencional de retry; preserva comportamento
       const retry = setTimeout(() => positionTooltip(), 300);
       return () => clearTimeout(retry);
     }
 
     const rect = el.getBoundingClientRect();
-    const pos = step.position || "bottom";
-    const style: React.CSSProperties = { position: "fixed", zIndex: 10001 };
+    const pos = step.position || 'bottom';
+    const style: React.CSSProperties = { position: 'fixed', zIndex: 10001 };
 
     switch (pos) {
-      case "bottom":
+      case 'bottom':
         style.top = rect.bottom + 12;
         style.left = rect.left + rect.width / 2;
-        style.transform = "translateX(-50%)";
+        style.transform = 'translateX(-50%)';
         break;
-      case "top":
+      case 'top':
         style.bottom = window.innerHeight - rect.top + 12;
         style.left = rect.left + rect.width / 2;
-        style.transform = "translateX(-50%)";
+        style.transform = 'translateX(-50%)';
         break;
-      case "right":
+      case 'right':
         style.top = rect.top + rect.height / 2;
         style.left = rect.right + 12;
-        style.transform = "translateY(-50%)";
+        style.transform = 'translateY(-50%)';
         break;
-      case "left":
+      case 'left':
         style.top = rect.top + rect.height / 2;
         style.right = window.innerWidth - rect.left + 12;
-        style.transform = "translateY(-50%)";
+        style.transform = 'translateY(-50%)';
         break;
     }
 
@@ -124,10 +125,11 @@ export function OnboardingTour() {
   useEffect(() => {
     if (!isActive) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") completeTour();
+      // eslint-disable-next-line react-hooks/immutability -- completeTour é declarada abaixo; preserva comportamento
+      if (e.key === 'Escape') completeTour();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isActive]);
 
   // Handle route navigation and tooltip positioning
@@ -152,8 +154,8 @@ export function OnboardingTour() {
     }
 
     positionTooltip();
-    window.addEventListener("resize", positionTooltip);
-    return () => window.removeEventListener("resize", positionTooltip);
+    window.addEventListener('resize', positionTooltip);
+    return () => window.removeEventListener('resize', positionTooltip);
   }, [isActive, currentStep, location.pathname, navigate, positionTooltip, waitingForRoute]);
 
   const handleNext = () => {
@@ -171,33 +173,40 @@ export function OnboardingTour() {
   };
 
   const completeTour = () => {
-    localStorage.setItem(TOUR_STORAGE_KEY, "true");
+    localStorage.setItem(TOUR_STORAGE_KEY, 'true');
     setIsActive(false);
   };
 
   if (!isActive) return null;
 
   const step = TOUR_STEPS[currentStep];
-  const isWelcome = step.position === "center";
+  const isWelcome = step.position === 'center';
 
   return (
     <>
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-black/50 z-[10000]"
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar tour"
         onClick={completeTour}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') e.preventDefault();
+            completeTour();
+          }
+        }}
       />
 
       {/* Highlight target element (skip for welcome/center step) */}
-      {!isWelcome && step.target && (
-        <HighlightElement selector={step.target} />
-      )}
+      {!isWelcome && step.target && <HighlightElement selector={step.target} />}
 
       {/* Tooltip */}
       <div
         style={tooltipStyle}
         className={`bg-white rounded-lg shadow-xl border border-gray-300 p-5 z-[10001] ${
-          isWelcome ? "w-96 text-center" : "w-80"
+          isWelcome ? 'w-96 text-center' : 'w-80'
         }`}
       >
         {/* Welcome icon */}
@@ -209,8 +218,10 @@ export function OnboardingTour() {
           </div>
         )}
 
-        <div className={`flex items-start justify-between mb-2 ${isWelcome ? "justify-center" : ""}`}>
-          <h4 className={`font-semibold text-gray-900 ${isWelcome ? "text-lg" : ""}`}>
+        <div
+          className={`flex items-start justify-between mb-2 ${isWelcome ? 'justify-center' : ''}`}
+        >
+          <h4 className={`font-semibold text-gray-900 ${isWelcome ? 'text-lg' : ''}`}>
             {step.title}
           </h4>
           {!isWelcome && (
@@ -223,7 +234,7 @@ export function OnboardingTour() {
             </button>
           )}
         </div>
-        <p className={`text-sm text-gray-600 mb-4 ${isWelcome ? "mb-6" : ""}`}>
+        <p className={`text-sm text-gray-600 mb-4 ${isWelcome ? 'mb-6' : ''}`}>
           {step.description}
         </p>
 
@@ -247,7 +258,7 @@ export function OnboardingTour() {
                   Começar <ArrowRight size={14} className="ml-1" />
                 </>
               ) : currentStep === TOUR_STEPS.length - 1 ? (
-                "Concluir"
+                'Concluir'
               ) : (
                 <>
                   Próximo <ArrowRight size={14} className="ml-1" />
@@ -271,16 +282,16 @@ function HighlightElement({ selector }: { selector: string }) {
 
       const rect = el.getBoundingClientRect();
       setStyle({
-        position: "fixed",
+        position: 'fixed',
         top: rect.top - 4,
         left: rect.left - 4,
         width: rect.width + 8,
         height: rect.height + 8,
         borderRadius: 8,
-        boxShadow: "0 0 0 9999px rgba(0,0,0,0.5)",
+        boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
         zIndex: 10000,
-        pointerEvents: "none",
-        background: "transparent",
+        pointerEvents: 'none',
+        background: 'transparent',
       });
     };
 

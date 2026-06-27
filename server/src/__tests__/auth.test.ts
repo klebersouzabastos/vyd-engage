@@ -146,9 +146,7 @@ describe('Auth Service', () => {
     });
 
     it('should request password reset successfully', async () => {
-      await expect(
-        authService.requestPasswordReset(resetEmail)
-      ).resolves.not.toThrow();
+      await expect(authService.requestPasswordReset(resetEmail)).resolves.not.toThrow();
     });
 
     it('should not reveal if email exists', async () => {

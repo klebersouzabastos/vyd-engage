@@ -1,19 +1,19 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Upload, X } from "lucide-react";
-import { useCompany } from "../../contexts/CompanyContext";
-import { resizeImage, isValidImageFile, isValidFileSize } from "../../utils/imageUtils";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Upload, X } from 'lucide-react';
+import { useCompany } from '../../contexts/CompanyContext';
+import { resizeImage, isValidImageFile, isValidFileSize } from '../../utils/imageUtils';
 
 export function CompanyTab() {
   const { logo, companyName, setLogo, setCompanyName } = useCompany();
   const [logoPreview, setLogoPreview] = useState<string | null>(logo);
   const [companyData, setCompanyData] = useState({
     name: companyName,
-    website: "https://minhaempresa.com",
-    primaryColor: "#2563EB",
+    website: 'https://minhaempresa.com',
+    primaryColor: '#2563EB',
   });
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function CompanyTab() {
   }, [logo]);
 
   useEffect(() => {
-    setCompanyData(prev => ({ ...prev, name: companyName }));
+    setCompanyData((prev) => ({ ...prev, name: companyName }));
   }, [companyName]);
 
   return (
@@ -116,6 +116,7 @@ export function CompanyTab() {
                     e.target.value = '';
                   }}
                 />
+                {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- o htmlFor já associa o label ao input file; o onClick/onKeyDown apenas reespelham o disparo nativo do input */}
                 <label
                   htmlFor="logo-upload"
                   className="cursor-pointer inline-block"
@@ -123,10 +124,16 @@ export function CompanyTab() {
                     e.preventDefault();
                     document.getElementById('logo-upload')?.click();
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      document.getElementById('logo-upload')?.click();
+                    }
+                  }}
                 >
                   <Button variant="outline" type="button" className="gap-2">
                     <Upload size={16} />
-                    {logoPreview ? "Alterar Logo" : "Upload de Logo"}
+                    {logoPreview ? 'Alterar Logo' : 'Upload de Logo'}
                   </Button>
                 </label>
               </div>
@@ -150,10 +157,7 @@ export function CompanyTab() {
                 defaultValue="#2563EB"
                 className="w-20 h-10 p-1"
               />
-              <Input
-                defaultValue="#2563EB"
-                className="flex-1"
-              />
+              <Input defaultValue="#2563EB" className="flex-1" />
             </div>
           </div>
         </div>
@@ -169,7 +173,7 @@ export function CompanyTab() {
             if (companyData.name !== companyName) {
               setCompanyName(companyData.name);
             }
-            toast.success("Configuracoes salvas com sucesso!");
+            toast.success('Configuracoes salvas com sucesso!');
           }}
         >
           Salvar Alteracoes

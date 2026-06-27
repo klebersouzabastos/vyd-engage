@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { ArrowLeft, CheckCircle2, Copy, Loader2 } from "lucide-react";
-import { apiClient } from "../services/api/client";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { ArrowLeft, CheckCircle2, Copy, Loader2 } from 'lucide-react';
+import { apiClient } from '../services/api/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 
 interface DuplicateLead {
   id: string;
@@ -29,27 +29,27 @@ interface DuplicateLead {
 }
 
 interface DuplicateGroup {
-  matchField: "email" | "phone";
+  matchField: 'email' | 'phone';
   matchValue: string;
   leads: DuplicateLead[];
 }
 
 const statusLabels: Record<string, string> = {
-  NEW: "Novo",
-  CONTACTED: "Contatado",
-  QUALIFIED: "Qualificado",
-  PROPOSAL: "Proposta",
-  NEGOTIATION: "Negociação",
-  WON: "Ganho",
-  LOST: "Perdido",
+  NEW: 'Novo',
+  CONTACTED: 'Contatado',
+  QUALIFIED: 'Qualificado',
+  PROPOSAL: 'Proposta',
+  NEGOTIATION: 'Negociação',
+  WON: 'Ganho',
+  LOST: 'Perdido',
 };
 
 function formatDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   } catch {
     return dateStr;
@@ -88,8 +88,8 @@ export function LeadDuplicates() {
       });
       setSelectedPrimary(defaults);
     } catch (error) {
-      console.error("Erro ao buscar duplicados:", error);
-      toast.error("Erro ao buscar leads duplicados. Tente novamente.");
+      console.error('Erro ao buscar duplicados:', error);
+      toast.error('Erro ao buscar leads duplicados. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -106,9 +106,7 @@ export function LeadDuplicates() {
     try {
       setMerging(groupIndex);
       await apiClient.mergeLeads(primaryId, duplicateIds);
-      toast.success(
-        `${duplicateIds.length} lead(s) mesclado(s) com sucesso!`
-      );
+      toast.success(`${duplicateIds.length} lead(s) mesclado(s) com sucesso!`);
       // Remove merged group from list
       setGroups((prev) => prev.filter((_, idx) => idx !== groupIndex));
       // Reindex selectedPrimary
@@ -124,8 +122,8 @@ export function LeadDuplicates() {
         return newMap;
       });
     } catch (error) {
-      console.error("Erro ao mesclar leads:", error);
-      toast.error("Erro ao mesclar leads. Tente novamente.");
+      console.error('Erro ao mesclar leads:', error);
+      toast.error('Erro ao mesclar leads. Tente novamente.');
     } finally {
       setMerging(null);
       setConfirmGroup(null);
@@ -141,11 +139,7 @@ export function LeadDuplicates() {
 
       <div className="p-8">
         {/* Back button */}
-        <Button
-          variant="outline"
-          className="gap-2 mb-6"
-          onClick={() => navigate("/app/leads")}
-        >
+        <Button variant="outline" className="gap-2 mb-6" onClick={() => navigate('/app/leads')}>
           <ArrowLeft size={16} />
           Voltar para Leads
         </Button>
@@ -165,23 +159,19 @@ export function LeadDuplicates() {
               <p className="text-gray-700 font-medium">
                 {groups.length > 0
                   ? `${groups.length} grupo(s) de duplicados encontrado(s)`
-                  : "Nenhum duplicado encontrado"}
+                  : 'Nenhum duplicado encontrado'}
               </p>
             </div>
 
             {/* Empty state */}
             {groups.length === 0 && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-12 text-center">
-                <CheckCircle2
-                  size={48}
-                  className="mx-auto text-green-500 mb-4"
-                />
+                <CheckCircle2 size={48} className="mx-auto text-green-500 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Nenhum duplicado encontrado
                 </h3>
                 <p className="text-gray-600">
-                  Sua base de leads esta limpa. Nenhum lead duplicado foi
-                  detectado.
+                  Sua base de leads esta limpa. Nenhum lead duplicado foi detectado.
                 </p>
               </div>
             )}
@@ -198,15 +188,10 @@ export function LeadDuplicates() {
                     <div className="flex items-center gap-2">
                       <Copy size={16} className="text-gray-500" />
                       <span className="font-medium text-gray-900">
-                        Duplicados por{" "}
-                        {group.matchField === "email" ? "email" : "telefone"}:{" "}
-                        <span className="text-primary">
-                          {group.matchValue}
-                        </span>
+                        Duplicados por {group.matchField === 'email' ? 'email' : 'telefone'}:{' '}
+                        <span className="text-primary">{group.matchValue}</span>
                       </span>
-                      <span className="text-sm text-gray-500">
-                        ({group.leads.length} leads)
-                      </span>
+                      <span className="text-sm text-gray-500">({group.leads.length} leads)</span>
                     </div>
                     <Button
                       size="sm"
@@ -258,18 +243,14 @@ export function LeadDuplicates() {
                         <tr
                           key={lead.id}
                           className={`hover:bg-gray-50 transition-colors ${
-                            selectedPrimary[groupIndex] === lead.id
-                              ? "bg-blue-50"
-                              : ""
+                            selectedPrimary[groupIndex] === lead.id ? 'bg-blue-50' : ''
                           }`}
                         >
                           <td className="px-6 py-4">
                             <input
                               type="radio"
                               name={`primary-${groupIndex}`}
-                              checked={
-                                selectedPrimary[groupIndex] === lead.id
-                              }
+                              checked={selectedPrimary[groupIndex] === lead.id}
                               onChange={() =>
                                 setSelectedPrimary((prev) => ({
                                   ...prev,
@@ -279,29 +260,17 @@ export function LeadDuplicates() {
                               className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
                             />
                           </td>
-                          <td className="px-6 py-4 font-medium text-gray-900">
-                            {lead.name}
-                          </td>
-                          <td className="px-6 py-4 text-gray-600">
-                            {lead.email || "-"}
-                          </td>
-                          <td className="px-6 py-4 text-gray-600">
-                            {lead.phone || "-"}
-                          </td>
-                          <td className="px-6 py-4 text-gray-600">
-                            {lead.company || "-"}
-                          </td>
+                          <td className="px-6 py-4 font-medium text-gray-900">{lead.name}</td>
+                          <td className="px-6 py-4 text-gray-600">{lead.email || '-'}</td>
+                          <td className="px-6 py-4 text-gray-600">{lead.phone || '-'}</td>
+                          <td className="px-6 py-4 text-gray-600">{lead.company || '-'}</td>
                           <td className="px-6 py-4">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                               {statusLabels[lead.status] || lead.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-gray-600">
-                            {lead.score ?? 0}
-                          </td>
-                          <td className="px-6 py-4 text-gray-600">
-                            {formatDate(lead.createdAt)}
-                          </td>
+                          <td className="px-6 py-4 text-gray-600">{lead.score ?? 0}</td>
+                          <td className="px-6 py-4 text-gray-600">{formatDate(lead.createdAt)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -324,17 +293,15 @@ export function LeadDuplicates() {
             <AlertDialogDescription>
               {confirmGroup !== null && groups[confirmGroup] && (
                 <>
-                  Os leads duplicados serao removidos e suas interacoes,
-                  tarefas e logs de automacao serao transferidos para o lead
-                  principal selecionado. Esta acao nao pode ser desfeita.
+                  Os leads duplicados serao removidos e suas interacoes, tarefas e logs de automacao
+                  serao transferidos para o lead principal selecionado. Esta acao nao pode ser
+                  desfeita.
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmGroup(null)}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmGroup(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmGroup !== null) handleMerge(confirmGroup);

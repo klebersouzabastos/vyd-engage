@@ -24,7 +24,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 // Mapeamento de valores alternativos para os status padrão
 const statusMapping: Record<string, string> = {
   'em contato': 'contato',
-  'em_contato': 'contato',
+  em_contato: 'contato',
 };
 
 export function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
@@ -34,9 +34,11 @@ export function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
     label: status || 'Desconhecido',
     className: 'bg-gray-100 text-gray-700',
   };
-  
+
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}
+    >
       <span className="sr-only">Status: </span>
       {config.label}
     </span>

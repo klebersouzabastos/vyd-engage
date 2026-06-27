@@ -1,14 +1,8 @@
-import { useState } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Plus, Trash2, ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { useState } from 'react';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Plus, Trash2, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 
 export interface FilterCondition {
   id: string;
@@ -20,15 +14,15 @@ export interface FilterCondition {
 export interface FieldDefinition {
   key: string;
   label: string;
-  type: "text" | "number" | "date" | "select" | "boolean";
+  type: 'text' | 'number' | 'date' | 'select' | 'boolean';
   options?: { value: string; label: string }[];
 }
 
 interface AdvancedFilterPanelProps {
   conditions: FilterCondition[];
   onConditionsChange: (conditions: FilterCondition[]) => void;
-  logic: "AND" | "OR";
-  onLogicChange: (logic: "AND" | "OR") => void;
+  logic: 'AND' | 'OR';
+  onLogicChange: (logic: 'AND' | 'OR') => void;
   fields: FieldDefinition[];
   onApply: () => void;
   onClear: () => void;
@@ -36,38 +30,36 @@ interface AdvancedFilterPanelProps {
 
 const OPERATORS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
   text: [
-    { value: "equals", label: "Igual a" },
-    { value: "contains", label: "Contem" },
-    { value: "starts_with", label: "Comeca com" },
-    { value: "ends_with", label: "Termina com" },
-    { value: "not_equals", label: "Diferente de" },
-    { value: "is_empty", label: "Esta vazio" },
-    { value: "is_not_empty", label: "Nao esta vazio" },
+    { value: 'equals', label: 'Igual a' },
+    { value: 'contains', label: 'Contem' },
+    { value: 'starts_with', label: 'Comeca com' },
+    { value: 'ends_with', label: 'Termina com' },
+    { value: 'not_equals', label: 'Diferente de' },
+    { value: 'is_empty', label: 'Esta vazio' },
+    { value: 'is_not_empty', label: 'Nao esta vazio' },
   ],
   number: [
-    { value: "equals", label: "Igual a" },
-    { value: "not_equals", label: "Diferente de" },
-    { value: "greater_than", label: "Maior que" },
-    { value: "less_than", label: "Menor que" },
-    { value: "greater_or_equal", label: "Maior ou igual" },
-    { value: "less_or_equal", label: "Menor ou igual" },
-    { value: "is_empty", label: "Esta vazio" },
+    { value: 'equals', label: 'Igual a' },
+    { value: 'not_equals', label: 'Diferente de' },
+    { value: 'greater_than', label: 'Maior que' },
+    { value: 'less_than', label: 'Menor que' },
+    { value: 'greater_or_equal', label: 'Maior ou igual' },
+    { value: 'less_or_equal', label: 'Menor ou igual' },
+    { value: 'is_empty', label: 'Esta vazio' },
   ],
   date: [
-    { value: "equals", label: "Igual a" },
-    { value: "before", label: "Antes de" },
-    { value: "after", label: "Depois de" },
-    { value: "between", label: "Entre" },
-    { value: "is_empty", label: "Esta vazio" },
+    { value: 'equals', label: 'Igual a' },
+    { value: 'before', label: 'Antes de' },
+    { value: 'after', label: 'Depois de' },
+    { value: 'between', label: 'Entre' },
+    { value: 'is_empty', label: 'Esta vazio' },
   ],
   select: [
-    { value: "equals", label: "Igual a" },
-    { value: "not_equals", label: "Diferente de" },
-    { value: "is_empty", label: "Esta vazio" },
+    { value: 'equals', label: 'Igual a' },
+    { value: 'not_equals', label: 'Diferente de' },
+    { value: 'is_empty', label: 'Esta vazio' },
   ],
-  boolean: [
-    { value: "equals", label: "Igual a" },
-  ],
+  boolean: [{ value: 'equals', label: 'Igual a' }],
 };
 
 function generateId(): string {
@@ -91,9 +83,9 @@ export function AdvancedFilterPanel({
       ...conditions,
       {
         id: generateId(),
-        field: firstField?.key || "",
-        operator: "contains",
-        value: "",
+        field: firstField?.key || '',
+        operator: 'contains',
+        value: '',
       },
     ]);
     if (!expanded) setExpanded(true);
@@ -111,10 +103,10 @@ export function AdvancedFilterPanel({
         // Reset operator and value when field changes
         if (updates.field && updates.field !== c.field) {
           const fieldDef = fields.find((f) => f.key === updates.field);
-          const fieldType = fieldDef?.type || "text";
+          const fieldType = fieldDef?.type || 'text';
           const ops = OPERATORS_BY_TYPE[fieldType] || OPERATORS_BY_TYPE.text;
-          updated.operator = ops[0]?.value || "equals";
-          updated.value = "";
+          updated.operator = ops[0]?.value || 'equals';
+          updated.value = '';
         }
         return updated;
       })
@@ -123,7 +115,7 @@ export function AdvancedFilterPanel({
 
   const getFieldType = (fieldKey: string): string => {
     const field = fields.find((f) => f.key === fieldKey);
-    return field?.type || "text";
+    return field?.type || 'text';
   };
 
   const getOperators = (fieldKey: string) => {
@@ -137,7 +129,7 @@ export function AdvancedFilterPanel({
   };
 
   const needsValueInput = (operator: string) => {
-    return !["is_empty", "is_not_empty"].includes(operator);
+    return !['is_empty', 'is_not_empty'].includes(operator);
   };
 
   const handleClear = () => {
@@ -173,21 +165,17 @@ export function AdvancedFilterPanel({
               <span className="text-xs text-gray-500">Combinar com:</span>
               <div className="flex items-center border border-gray-300 rounded-md p-0.5 bg-gray-50">
                 <button
-                  onClick={() => onLogicChange("AND")}
+                  onClick={() => onLogicChange('AND')}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    logic === "AND"
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    logic === 'AND' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   E (AND)
                 </button>
                 <button
-                  onClick={() => onLogicChange("OR")}
+                  onClick={() => onLogicChange('OR')}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    logic === "OR"
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    logic === 'OR' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   OU (OR)
@@ -204,25 +192,18 @@ export function AdvancedFilterPanel({
               const fieldOptions = getFieldOptions(condition.field);
 
               return (
-                <div
-                  key={condition.id}
-                  className="flex items-center gap-2 flex-wrap"
-                >
+                <div key={condition.id} className="flex items-center gap-2 flex-wrap">
                   {index > 0 && (
                     <span className="text-xs text-gray-400 w-8 text-center flex-shrink-0">
-                      {logic === "AND" ? "E" : "OU"}
+                      {logic === 'AND' ? 'E' : 'OU'}
                     </span>
                   )}
-                  {index === 0 && conditions.length > 1 && (
-                    <span className="w-8 flex-shrink-0" />
-                  )}
+                  {index === 0 && conditions.length > 1 && <span className="w-8 flex-shrink-0" />}
 
                   {/* Field selector */}
                   <Select
                     value={condition.field}
-                    onValueChange={(val) =>
-                      updateCondition(condition.id, { field: val })
-                    }
+                    onValueChange={(val) => updateCondition(condition.id, { field: val })}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Campo" />
@@ -239,9 +220,7 @@ export function AdvancedFilterPanel({
                   {/* Operator selector */}
                   <Select
                     value={condition.operator}
-                    onValueChange={(val) =>
-                      updateCondition(condition.id, { operator: val })
-                    }
+                    onValueChange={(val) => updateCondition(condition.id, { operator: val })}
                   >
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Operador" />
@@ -258,12 +237,10 @@ export function AdvancedFilterPanel({
                   {/* Value input */}
                   {needsValueInput(condition.operator) && (
                     <>
-                      {fieldType === "select" ? (
+                      {fieldType === 'select' ? (
                         <Select
                           value={condition.value}
-                          onValueChange={(val) =>
-                            updateCondition(condition.id, { value: val })
-                          }
+                          onValueChange={(val) => updateCondition(condition.id, { value: val })}
                         >
                           <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Valor" />
@@ -276,12 +253,10 @@ export function AdvancedFilterPanel({
                             ))}
                           </SelectContent>
                         </Select>
-                      ) : fieldType === "boolean" ? (
+                      ) : fieldType === 'boolean' ? (
                         <Select
                           value={condition.value}
-                          onValueChange={(val) =>
-                            updateCondition(condition.id, { value: val })
-                          }
+                          onValueChange={(val) => updateCondition(condition.id, { value: val })}
                         >
                           <SelectTrigger className="w-[120px]">
                             <SelectValue placeholder="Valor" />
@@ -293,7 +268,13 @@ export function AdvancedFilterPanel({
                         </Select>
                       ) : (
                         <Input
-                          type={fieldType === "number" ? "number" : fieldType === "date" ? "date" : "text"}
+                          type={
+                            fieldType === 'number'
+                              ? 'number'
+                              : fieldType === 'date'
+                                ? 'date'
+                                : 'text'
+                          }
                           placeholder="Valor..."
                           value={condition.value}
                           onChange={(e) =>

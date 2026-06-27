@@ -1,18 +1,37 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { EmailFormatToolbar, useEmailFormatter } from "../components/email/EmailFormatToolbar";
-import { GrapesEmailBuilder } from "../components/email/GrapesEmailBuilder";
-import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { EmailFormatToolbar, useEmailFormatter } from '../components/email/EmailFormatToolbar';
+import { GrapesEmailBuilder } from '../components/email/GrapesEmailBuilder';
+import { Input } from '../components/ui/input';
 import {
-  ArrowLeft, Mail, Send, Users, FileText, Save, Trash2,
-  Loader2, Search, CheckCircle, XCircle, Eye, AlertTriangle,
-  Clock, Calendar, X
-} from "lucide-react";
-import { apiClient, type EmailTemplateDetail } from "../services/api/client";
-import { toast } from "sonner";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import {
+  ArrowLeft,
+  Mail,
+  Send,
+  Users,
+  FileText,
+  Save,
+  Trash2,
+  Loader2,
+  Search,
+  CheckCircle,
+  XCircle,
+  Eye,
+  AlertTriangle,
+  Clock,
+  Calendar,
+  X,
+} from 'lucide-react';
+import { apiClient, type EmailTemplateDetail } from '../services/api/client';
+import { toast } from 'sonner';
 
 interface EmailConfig {
   id: string;
@@ -34,7 +53,7 @@ interface Lead {
 type EmailTemplate = EmailTemplateDetail;
 
 // Scheduled campaigns localStorage
-const SCHEDULED_CAMPAIGNS_KEY = "vyd_scheduled_campaigns";
+const SCHEDULED_CAMPAIGNS_KEY = 'vyd_scheduled_campaigns';
 
 interface ScheduledCampaign {
   id: string;
@@ -42,17 +61,19 @@ interface ScheduledCampaign {
   subject: string;
   recipientCount: number;
   scheduledAt: string;
-  status: "scheduled" | "sent" | "cancelled";
+  status: 'scheduled' | 'sent' | 'cancelled';
   createdAt: string;
 }
 
 function loadScheduledCampaigns(): ScheduledCampaign[] {
   try {
-    const campaigns = JSON.parse(localStorage.getItem(SCHEDULED_CAMPAIGNS_KEY) || "[]");
+    const campaigns = JSON.parse(localStorage.getItem(SCHEDULED_CAMPAIGNS_KEY) || '[]');
     // Filter out old campaigns (> 7 days)
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return campaigns.filter((c: ScheduledCampaign) => new Date(c.createdAt).getTime() > cutoff);
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function saveScheduledCampaigns(campaigns: ScheduledCampaign[]) {
@@ -60,10 +81,10 @@ function saveScheduledCampaigns(campaigns: ScheduledCampaign[]) {
 }
 
 const VARIABLE_OPTIONS = [
-  { label: "Nome do Lead", value: "{{name}}" },
-  { label: "Email do Lead", value: "{{email}}" },
-  { label: "Empresa", value: "{{company}}" },
-  { label: "Telefone", value: "{{phone}}" },
+  { label: 'Nome do Lead', value: '{{name}}' },
+  { label: 'Email do Lead', value: '{{email}}' },
+  { label: 'Empresa', value: '{{company}}' },
+  { label: 'Telefone', value: '{{phone}}' },
 ];
 
 export function EmailCampaigns() {
@@ -71,24 +92,24 @@ export function EmailCampaigns() {
 
   // Email configs
   const [configs, setConfigs] = useState<EmailConfig[]>([]);
-  const [selectedConfigId, setSelectedConfigId] = useState("");
+  const [selectedConfigId, setSelectedConfigId] = useState('');
   const [loadingConfigs, setLoadingConfigs] = useState(true);
 
   // Leads / recipients
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
-  const [leadSearch, setLeadSearch] = useState("");
-  const [leadFilter, setLeadFilter] = useState<string>("all");
+  const [leadSearch, setLeadSearch] = useState('');
+  const [leadFilter, setLeadFilter] = useState<string>('all');
 
   // Compose
-  const [subject, setSubject] = useState("");
-  const [htmlBody, setHtmlBody] = useState("");
+  const [subject, setSubject] = useState('');
+  const [htmlBody, setHtmlBody] = useState('');
 
   // Templates
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [templateName, setTemplateName] = useState("");
+  const [templateName, setTemplateName] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
 
   // Send state
@@ -96,16 +117,17 @@ export function EmailCampaigns() {
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
 
   // Scheduling
-  const [sendMode, setSendMode] = useState<"now" | "schedule">("now");
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
-  const [scheduledCampaigns, setScheduledCampaigns] = useState<ScheduledCampaign[]>(loadScheduledCampaigns());
+  const [sendMode, setSendMode] = useState<'now' | 'schedule'>('now');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduledCampaigns, setScheduledCampaigns] =
+    useState<ScheduledCampaign[]>(loadScheduledCampaigns());
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
 
   // Editor mode toggle
-  const [editorMode, setEditorMode] = useState<"basic" | "visual">("basic");
+  const [editorMode, setEditorMode] = useState<'basic' | 'visual'>('basic');
 
   // Format toolbar
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -121,9 +143,9 @@ export function EmailCampaigns() {
     setLoadingTemplates(true);
     try {
       const data = await apiClient.getEmailTemplates();
-      setTemplates(Array.isArray(data) ? data : (data as any)?.data ?? []);
+      setTemplates(Array.isArray(data) ? data : ((data as any)?.data ?? []));
     } catch {
-      console.error("Erro ao carregar templates");
+      console.error('Erro ao carregar templates');
     } finally {
       setLoadingTemplates(false);
     }
@@ -134,10 +156,10 @@ export function EmailCampaigns() {
       const result = await apiClient.getEmailConfigs();
       const data = (result?.data || result || []) as EmailConfig[];
       setConfigs(data);
-      const verified = data.find(c => c.isVerified) || data[0];
+      const verified = data.find((c) => c.isVerified) || data[0];
       if (verified) setSelectedConfigId(verified.id);
     } catch {
-      console.error("Erro ao carregar configs de email");
+      console.error('Erro ao carregar configs de email');
     } finally {
       setLoadingConfigs(false);
     }
@@ -147,26 +169,28 @@ export function EmailCampaigns() {
     try {
       const result = await apiClient.getLeads();
       const data = (result?.data || result || []) as Lead[];
-      setAllLeads(data.filter(l => l.email));
+      setAllLeads(data.filter((l) => l.email));
     } catch {
-      console.error("Erro ao carregar leads");
+      console.error('Erro ao carregar leads');
     } finally {
       setLoadingLeads(false);
     }
   };
 
-  const filteredLeads = allLeads.filter(lead => {
-    const matchesSearch = !leadSearch ||
+  const filteredLeads = allLeads.filter((lead) => {
+    const matchesSearch =
+      !leadSearch ||
       lead.name.toLowerCase().includes(leadSearch.toLowerCase()) ||
       (lead.email && lead.email.toLowerCase().includes(leadSearch.toLowerCase()));
-    const matchesFilter = leadFilter === "all" || lead.status === leadFilter;
+    const matchesFilter = leadFilter === 'all' || lead.status === leadFilter;
     return matchesSearch && matchesFilter;
   });
 
   const toggleLead = (id: string) => {
-    setSelectedLeadIds(prev => {
+    setSelectedLeadIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -175,18 +199,18 @@ export function EmailCampaigns() {
     if (selectedLeadIds.size === filteredLeads.length) {
       setSelectedLeadIds(new Set());
     } else {
-      setSelectedLeadIds(new Set(filteredLeads.map(l => l.id)));
+      setSelectedLeadIds(new Set(filteredLeads.map((l) => l.id)));
     }
   };
 
   const insertVariable = (variable: string) => {
-    setHtmlBody(prev => prev + variable);
+    setHtmlBody((prev) => prev + variable);
   };
 
   // Templates (backed by API)
   const saveTemplate = async () => {
     if (!templateName.trim() || !subject.trim()) {
-      toast.error("Preencha o nome do template e o assunto");
+      toast.error('Preencha o nome do template e o assunto');
       return;
     }
     try {
@@ -196,11 +220,11 @@ export function EmailCampaigns() {
         html: htmlBody,
       });
       const tmpl = (created as any)?.data ?? created;
-      setTemplates(prev => [tmpl, ...prev]);
-      setTemplateName("");
-      toast.success("Template salvo");
+      setTemplates((prev) => [tmpl, ...prev]);
+      setTemplateName('');
+      toast.success('Template salvo');
     } catch {
-      toast.error("Erro ao salvar template");
+      toast.error('Erro ao salvar template');
     }
   };
 
@@ -221,41 +245,53 @@ export function EmailCampaigns() {
       setShowTemplates(false);
       toast.success(`Template "${tmpl.name}" carregado`);
     } catch {
-      toast.error("Erro ao carregar template");
+      toast.error('Erro ao carregar template');
     }
   };
 
   const deleteTemplate = async (id: string) => {
     try {
       await apiClient.deleteEmailTemplate(id);
-      setTemplates(prev => prev.filter(t => t.id !== id));
-      toast.success("Template removido");
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      toast.success('Template removido');
     } catch {
-      toast.error("Erro ao remover template");
+      toast.error('Erro ao remover template');
     }
   };
 
   // Build recipients list
   const buildRecipients = useCallback(() => {
-    const selectedLeads = allLeads.filter(l => selectedLeadIds.has(l.id));
-    return selectedLeads.map(lead => ({
+    const selectedLeads = allLeads.filter((l) => selectedLeadIds.has(l.id));
+    return selectedLeads.map((lead) => ({
       email: lead.email!,
       leadId: lead.id,
       variables: {
-        name: lead.name || "",
-        email: lead.email || "",
-        company: "",
-        phone: "",
+        name: lead.name || '',
+        email: lead.email || '',
+        company: '',
+        phone: '',
       },
     }));
   }, [allLeads, selectedLeadIds]);
 
   // Validate before send/schedule
   const validateCampaign = useCallback(() => {
-    if (!selectedConfigId) { toast.error("Selecione uma configuração de email"); return false; }
-    if (selectedLeadIds.size === 0) { toast.error("Selecione pelo menos um destinatário"); return false; }
-    if (!subject.trim()) { toast.error("Preencha o assunto"); return false; }
-    if (!htmlBody.trim()) { toast.error("Preencha o corpo do email"); return false; }
+    if (!selectedConfigId) {
+      toast.error('Selecione uma configuração de email');
+      return false;
+    }
+    if (selectedLeadIds.size === 0) {
+      toast.error('Selecione pelo menos um destinatário');
+      return false;
+    }
+    if (!subject.trim()) {
+      toast.error('Preencha o assunto');
+      return false;
+    }
+    if (!htmlBody.trim()) {
+      toast.error('Preencha o corpo do email');
+      return false;
+    }
     return true;
   }, [selectedConfigId, selectedLeadIds, subject, htmlBody]);
 
@@ -280,23 +316,31 @@ export function EmailCampaigns() {
       setSendResult({ sent: data?.sent || recipients.length, failed: data?.failed || 0 });
       toast.success(`Campanha enviada: ${data?.sent || recipients.length} emails`);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar campanha");
+      toast.error(error.message || 'Erro ao enviar campanha');
     } finally {
       setSending(false);
     }
-  }, [selectedConfigId, selectedLeadIds, subject, htmlBody, allLeads, validateCampaign, buildRecipients]);
+  }, [
+    selectedConfigId,
+    selectedLeadIds,
+    subject,
+    htmlBody,
+    allLeads,
+    validateCampaign,
+    buildRecipients,
+  ]);
 
   // Schedule campaign for later
   const handleSchedule = useCallback(async () => {
     if (!validateCampaign()) return;
     if (!scheduleDate || !scheduleTime) {
-      toast.error("Selecione data e hora para agendar");
+      toast.error('Selecione data e hora para agendar');
       return;
     }
 
     const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`);
     if (scheduledAt.getTime() <= Date.now()) {
-      toast.error("A data de agendamento deve ser no futuro");
+      toast.error('A data de agendamento deve ser no futuro');
       return;
     }
 
@@ -317,50 +361,64 @@ export function EmailCampaigns() {
       const data = result?.data || result;
       const newCampaign: ScheduledCampaign = {
         id: Date.now().toString(),
-        campaignId: data?.campaignId || "",
+        campaignId: data?.campaignId || '',
         subject,
         recipientCount: recipients.length,
         scheduledAt: scheduledAt.toISOString(),
-        status: "scheduled",
+        status: 'scheduled',
         createdAt: new Date().toISOString(),
       };
       const updated = [newCampaign, ...scheduledCampaigns];
       setScheduledCampaigns(updated);
       saveScheduledCampaigns(updated);
 
-      toast.success(`Campanha agendada para ${scheduledAt.toLocaleString("pt-BR")}`);
-      setScheduleDate("");
-      setScheduleTime("");
-      setSendMode("now");
+      toast.success(`Campanha agendada para ${scheduledAt.toLocaleString('pt-BR')}`);
+      setScheduleDate('');
+      setScheduleTime('');
+      setSendMode('now');
     } catch (error: any) {
-      toast.error(error.message || "Erro ao agendar campanha");
+      toast.error(error.message || 'Erro ao agendar campanha');
     } finally {
       setSending(false);
     }
-  }, [selectedConfigId, selectedLeadIds, subject, htmlBody, allLeads, scheduleDate, scheduleTime, scheduledCampaigns, validateCampaign, buildRecipients]);
+  }, [
+    selectedConfigId,
+    selectedLeadIds,
+    subject,
+    htmlBody,
+    allLeads,
+    scheduleDate,
+    scheduleTime,
+    scheduledCampaigns,
+    validateCampaign,
+    buildRecipients,
+  ]);
 
   // Cancel scheduled campaign
-  const handleCancelScheduled = useCallback(async (campaign: ScheduledCampaign) => {
-    try {
-      await apiClient.cancelScheduledCampaign(campaign.campaignId);
-      const updated = scheduledCampaigns.map(c =>
-        c.id === campaign.id ? { ...c, status: "cancelled" as const } : c
-      );
-      setScheduledCampaigns(updated);
-      saveScheduledCampaigns(updated);
-      toast.success("Campanha agendada cancelada");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao cancelar campanha");
-    }
-  }, [scheduledCampaigns]);
+  const handleCancelScheduled = useCallback(
+    async (campaign: ScheduledCampaign) => {
+      try {
+        await apiClient.cancelScheduledCampaign(campaign.campaignId);
+        const updated = scheduledCampaigns.map((c) =>
+          c.id === campaign.id ? { ...c, status: 'cancelled' as const } : c
+        );
+        setScheduledCampaigns(updated);
+        saveScheduledCampaigns(updated);
+        toast.success('Campanha agendada cancelada');
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao cancelar campanha');
+      }
+    },
+    [scheduledCampaigns]
+  );
 
   // Preview with variable substitution
   const getPreviewHtml = () => {
     let preview = htmlBody;
-    preview = preview.replace(/\{\{name\}\}/g, "João Silva");
-    preview = preview.replace(/\{\{email\}\}/g, "joao@exemplo.com");
-    preview = preview.replace(/\{\{company\}\}/g, "Empresa XYZ");
-    preview = preview.replace(/\{\{phone\}\}/g, "(11) 99999-0000");
+    preview = preview.replace(/\{\{name\}\}/g, 'João Silva');
+    preview = preview.replace(/\{\{email\}\}/g, 'joao@exemplo.com');
+    preview = preview.replace(/\{\{company\}\}/g, 'Empresa XYZ');
+    preview = preview.replace(/\{\{phone\}\}/g, '(11) 99999-0000');
     return preview;
   };
 
@@ -382,11 +440,15 @@ export function EmailCampaigns() {
       <div className="p-8">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-6">
-          <Button variant="outline" onClick={() => navigate("/app/settings")} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/app/settings')} className="gap-2">
             <ArrowLeft size={16} /> Voltar
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowTemplates(!showTemplates)} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplates(!showTemplates)}
+              className="gap-2"
+            >
               <FileText size={16} /> Templates ({templates.length})
             </Button>
           </div>
@@ -395,9 +457,13 @@ export function EmailCampaigns() {
         {configs.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-lg border border-gray-300">
             <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma configuração de email</h3>
-            <p className="text-gray-500 mb-4">Configure um provedor de email nas Configurações para enviar campanhas</p>
-            <Button onClick={() => navigate("/app/settings")}>Ir para Configurações</Button>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhuma configuração de email
+            </h3>
+            <p className="text-gray-500 mb-4">
+              Configure um provedor de email nas Configurações para enviar campanhas
+            </p>
+            <Button onClick={() => navigate('/app/settings')}>Ir para Configurações</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -414,11 +480,14 @@ export function EmailCampaigns() {
                 </div>
                 <div className="flex gap-2 mb-2">
                   <div className="relative flex-1">
-                    <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search
+                      size={14}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
                     <Input
                       placeholder="Buscar..."
                       value={leadSearch}
-                      onChange={e => setLeadSearch(e.target.value)}
+                      onChange={(e) => setLeadSearch(e.target.value)}
                       className="pl-7 h-8 text-sm"
                     />
                   </div>
@@ -437,22 +506,25 @@ export function EmailCampaigns() {
                     </SelectContent>
                   </Select>
                   <Button variant="outline" size="sm" onClick={selectAll} className="text-xs h-8">
-                    {selectedLeadIds.size === filteredLeads.length ? "Desmarcar" : "Todos"}
+                    {selectedLeadIds.size === filteredLeads.length ? 'Desmarcar' : 'Todos'}
                   </Button>
                 </div>
               </div>
 
               <div className="max-h-[400px] overflow-y-auto">
                 {filteredLeads.length === 0 ? (
-                  <p className="text-center text-gray-400 text-sm py-8">Nenhum lead com email encontrado</p>
+                  <p className="text-center text-gray-400 text-sm py-8">
+                    Nenhum lead com email encontrado
+                  </p>
                 ) : (
-                  filteredLeads.map(lead => (
+                  filteredLeads.map((lead) => (
                     <label
                       key={lead.id}
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
                     >
                       <input
                         type="checkbox"
+                        aria-label={`Selecionar ${lead.name} (${lead.email})`}
                         checked={selectedLeadIds.has(lead.id)}
                         onChange={() => toggleLead(lead.id)}
                         className="rounded border-gray-300"
@@ -471,16 +543,23 @@ export function EmailCampaigns() {
             <div className="lg:col-span-2 space-y-4">
               {/* Config selector */}
               <div className="bg-white rounded-lg border border-gray-300 p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Configuração de Email</label>
+                <label
+                  htmlFor="email-config"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Configuração de Email
+                </label>
                 <Select value={selectedConfigId} onValueChange={setSelectedConfigId}>
-                  <SelectTrigger>
+                  <SelectTrigger id="email-config">
                     <SelectValue placeholder="Selecione uma configuração" />
                   </SelectTrigger>
                   <SelectContent>
-                    {configs.map(config => (
+                    {configs.map((config) => (
                       <SelectItem key={config.id} value={config.id}>
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${config.isVerified ? "bg-green-500" : "bg-gray-400"}`} />
+                          <div
+                            className={`w-2 h-2 rounded-full ${config.isVerified ? 'bg-green-500' : 'bg-gray-400'}`}
+                          />
                           {config.name} ({config.fromEmail})
                         </div>
                       </SelectItem>
@@ -491,21 +570,29 @@ export function EmailCampaigns() {
 
               {/* Subject */}
               <div className="bg-white rounded-lg border border-gray-300 p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Assunto</label>
+                <label
+                  htmlFor="email-subject"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Assunto
+                </label>
                 <Input
+                  id="email-subject"
                   placeholder="Assunto do email... Use {{name}} para personalizar"
                   value={subject}
-                  onChange={e => setSubject(e.target.value)}
+                  onChange={(e) => setSubject(e.target.value)}
                 />
               </div>
 
               {/* Body editor */}
               <div className="bg-white rounded-lg border border-gray-300 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Corpo do Email (HTML)</label>
+                  <label htmlFor="email-body" className="block text-sm font-medium text-gray-700">
+                    Corpo do Email (HTML)
+                  </label>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
-                      {VARIABLE_OPTIONS.map(v => (
+                      {VARIABLE_OPTIONS.map((v) => (
                         <button
                           key={v.value}
                           onClick={() => insertVariable(v.value)}
@@ -518,36 +605,34 @@ export function EmailCampaigns() {
                     </div>
                     <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs">
                       <button
-                        className={`px-3 py-1 transition-colors ${editorMode === "basic" ? "bg-gray-800 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
-                        onClick={() => setEditorMode("basic")}
+                        className={`px-3 py-1 transition-colors ${editorMode === 'basic' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        onClick={() => setEditorMode('basic')}
                       >
                         Básico
                       </button>
                       <button
-                        className={`px-3 py-1 transition-colors ${editorMode === "visual" ? "bg-gray-800 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
-                        onClick={() => setEditorMode("visual")}
+                        className={`px-3 py-1 transition-colors ${editorMode === 'visual' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        onClick={() => setEditorMode('visual')}
                       >
                         Visual
                       </button>
                     </div>
                   </div>
                 </div>
-                {editorMode === "basic" ? (
+                {editorMode === 'basic' ? (
                   <>
                     <EmailFormatToolbar onFormat={handleEmailFormat} />
                     <textarea
+                      id="email-body"
                       ref={bodyTextareaRef}
                       className="w-full h-48 border border-gray-300 rounded-b-md border-t-0 p-3 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       placeholder={`<h1>Olá {{name}},</h1>\n<p>Temos uma novidade especial para você...</p>`}
                       value={htmlBody}
-                      onChange={e => setHtmlBody(e.target.value)}
+                      onChange={(e) => setHtmlBody(e.target.value)}
                     />
                   </>
                 ) : (
-                  <GrapesEmailBuilder
-                    initialHtml={htmlBody || undefined}
-                    onChange={setHtmlBody}
-                  />
+                  <GrapesEmailBuilder initialHtml={htmlBody || undefined} onChange={setHtmlBody} />
                 )}
               </div>
 
@@ -557,13 +642,17 @@ export function EmailCampaigns() {
                   <Input
                     placeholder="Nome do template..."
                     value={templateName}
-                    onChange={e => setTemplateName(e.target.value)}
+                    onChange={(e) => setTemplateName(e.target.value)}
                     className="flex-1"
                   />
                   <Button variant="outline" onClick={saveTemplate} className="gap-2">
                     <Save size={16} /> Salvar Template
                   </Button>
-                  <Button variant="outline" onClick={() => setShowPreview(!showPreview)} className="gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="gap-2"
+                  >
                     <Eye size={16} /> Preview
                   </Button>
                 </div>
@@ -572,9 +661,13 @@ export function EmailCampaigns() {
               {/* Preview */}
               {showPreview && (
                 <div className="bg-white rounded-lg border border-gray-300 p-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Preview (com dados de exemplo)</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Preview (com dados de exemplo)
+                  </h4>
                   <div className="border border-gray-200 rounded p-4 bg-gray-50">
-                    <p className="text-sm font-medium mb-2">Assunto: {subject.replace(/\{\{name\}\}/g, "João Silva")}</p>
+                    <p className="text-sm font-medium mb-2">
+                      Assunto: {subject.replace(/\{\{name\}\}/g, 'João Silva')}
+                    </p>
                     <div
                       className="prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
@@ -585,7 +678,9 @@ export function EmailCampaigns() {
 
               {/* Send result */}
               {sendResult && (
-                <div className={`rounded-lg p-4 border ${sendResult.failed > 0 ? "bg-yellow-50 border-yellow-200" : "bg-green-50 border-green-200"}`}>
+                <div
+                  className={`rounded-lg p-4 border ${sendResult.failed > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}
+                >
                   <div className="flex items-center gap-2">
                     {sendResult.failed > 0 ? (
                       <AlertTriangle size={16} className="text-yellow-600" />
@@ -593,8 +688,10 @@ export function EmailCampaigns() {
                       <CheckCircle size={16} className="text-green-600" />
                     )}
                     <span className="text-sm font-medium">
-                      {sendResult.sent} email{sendResult.sent !== 1 ? "s" : ""} enviado{sendResult.sent !== 1 ? "s" : ""}
-                      {sendResult.failed > 0 && `, ${sendResult.failed} falha${sendResult.failed !== 1 ? "s" : ""}`}
+                      {sendResult.sent} email{sendResult.sent !== 1 ? 's' : ''} enviado
+                      {sendResult.sent !== 1 ? 's' : ''}
+                      {sendResult.failed > 0 &&
+                        `, ${sendResult.failed} falha${sendResult.failed !== 1 ? 's' : ''}`}
                     </span>
                   </div>
                 </div>
@@ -605,21 +702,21 @@ export function EmailCampaigns() {
                 {/* Mode toggle */}
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setSendMode("now")}
+                    onClick={() => setSendMode('now')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      sendMode === "now"
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      sendMode === 'now'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     <Send size={14} /> Enviar Agora
                   </button>
                   <button
-                    onClick={() => setSendMode("schedule")}
+                    onClick={() => setSendMode('schedule')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      sendMode === "schedule"
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      sendMode === 'schedule'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     <Clock size={14} /> Agendar
@@ -627,21 +724,21 @@ export function EmailCampaigns() {
                 </div>
 
                 {/* Schedule date/time picker */}
-                {sendMode === "schedule" && (
+                {sendMode === 'schedule' && (
                   <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-md border border-blue-200">
                     <Calendar size={16} className="text-blue-600 shrink-0" />
                     <div className="flex items-center gap-2 flex-1">
                       <input
                         type="date"
                         value={scheduleDate}
-                        onChange={e => setScheduleDate(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setScheduleDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
                         className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       />
                       <input
                         type="time"
                         value={scheduleTime}
-                        onChange={e => setScheduleTime(e.target.value)}
+                        onChange={(e) => setScheduleTime(e.target.value)}
                         className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       />
                     </div>
@@ -652,31 +749,48 @@ export function EmailCampaigns() {
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-500">
                     {selectedLeadIds.size > 0
-                      ? `${selectedLeadIds.size} destinatário${selectedLeadIds.size !== 1 ? "s" : ""} selecionado${selectedLeadIds.size !== 1 ? "s" : ""}`
-                      : "Nenhum destinatário selecionado"}
+                      ? `${selectedLeadIds.size} destinatário${selectedLeadIds.size !== 1 ? 's' : ''} selecionado${selectedLeadIds.size !== 1 ? 's' : ''}`
+                      : 'Nenhum destinatário selecionado'}
                   </p>
-                  {sendMode === "now" ? (
+                  {sendMode === 'now' ? (
                     <Button
                       onClick={handleSend}
-                      disabled={sending || selectedLeadIds.size === 0 || !subject.trim() || !htmlBody.trim()}
+                      disabled={
+                        sending || selectedLeadIds.size === 0 || !subject.trim() || !htmlBody.trim()
+                      }
                       className="gap-2"
                     >
                       {sending ? (
-                        <><Loader2 size={16} className="animate-spin" /> Enviando...</>
+                        <>
+                          <Loader2 size={16} className="animate-spin" /> Enviando...
+                        </>
                       ) : (
-                        <><Send size={16} /> Enviar Campanha</>
+                        <>
+                          <Send size={16} /> Enviar Campanha
+                        </>
                       )}
                     </Button>
                   ) : (
                     <Button
                       onClick={handleSchedule}
-                      disabled={sending || selectedLeadIds.size === 0 || !subject.trim() || !htmlBody.trim() || !scheduleDate || !scheduleTime}
+                      disabled={
+                        sending ||
+                        selectedLeadIds.size === 0 ||
+                        !subject.trim() ||
+                        !htmlBody.trim() ||
+                        !scheduleDate ||
+                        !scheduleTime
+                      }
                       className="gap-2 bg-blue-600 hover:bg-blue-700"
                     >
                       {sending ? (
-                        <><Loader2 size={16} className="animate-spin" /> Agendando...</>
+                        <>
+                          <Loader2 size={16} className="animate-spin" /> Agendando...
+                        </>
                       ) : (
-                        <><Clock size={16} /> Agendar Campanha</>
+                        <>
+                          <Clock size={16} /> Agendar Campanha
+                        </>
                       )}
                     </Button>
                   )}
@@ -690,35 +804,44 @@ export function EmailCampaigns() {
                     <Clock size={14} /> Campanhas Agendadas
                   </h4>
                   <div className="space-y-2">
-                    {scheduledCampaigns.map(campaign => (
+                    {scheduledCampaigns.map((campaign) => (
                       <div
                         key={campaign.id}
                         className={`flex items-center justify-between p-3 rounded-md border ${
-                          campaign.status === "cancelled"
-                            ? "bg-gray-50 border-gray-200"
-                            : campaign.status === "sent"
-                            ? "bg-green-50 border-green-200"
-                            : "bg-blue-50 border-blue-200"
+                          campaign.status === 'cancelled'
+                            ? 'bg-gray-50 border-gray-200'
+                            : campaign.status === 'sent'
+                              ? 'bg-green-50 border-green-200'
+                              : 'bg-blue-50 border-blue-200'
                         }`}
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">{campaign.subject}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {campaign.subject}
+                          </p>
                           <p className="text-xs text-gray-500">
-                            {campaign.recipientCount} destinatário{campaign.recipientCount !== 1 ? "s" : ""} &bull;{" "}
-                            {new Date(campaign.scheduledAt).toLocaleString("pt-BR")}
+                            {campaign.recipientCount} destinatário
+                            {campaign.recipientCount !== 1 ? 's' : ''} &bull;{' '}
+                            {new Date(campaign.scheduledAt).toLocaleString('pt-BR')}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 ml-3">
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            campaign.status === "scheduled"
-                              ? "bg-blue-100 text-blue-700"
-                              : campaign.status === "sent"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-500"
-                          }`}>
-                            {campaign.status === "scheduled" ? "Agendada" : campaign.status === "sent" ? "Enviada" : "Cancelada"}
+                          <span
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              campaign.status === 'scheduled'
+                                ? 'bg-blue-100 text-blue-700'
+                                : campaign.status === 'sent'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-500'
+                            }`}
+                          >
+                            {campaign.status === 'scheduled'
+                              ? 'Agendada'
+                              : campaign.status === 'sent'
+                                ? 'Enviada'
+                                : 'Cancelada'}
                           </span>
-                          {campaign.status === "scheduled" && (
+                          {campaign.status === 'scheduled' && (
                             <button
                               onClick={() => handleCancelScheduled(campaign)}
                               className="p-1 text-gray-400 hover:text-red-500 transition-colors"
@@ -739,12 +862,32 @@ export function EmailCampaigns() {
 
         {/* Templates sidebar */}
         {showTemplates && (
-          <div className="fixed inset-0 bg-black/30 z-50 flex justify-end" onClick={() => setShowTemplates(false)}>
-            <div className="w-96 bg-white h-full shadow-xl overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 bg-black/30 z-50 flex justify-end"
+            role="button"
+            tabIndex={0}
+            onClick={() => setShowTemplates(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === ' ') e.preventDefault();
+                setShowTemplates(false);
+              }
+            }}
+          >
+            <div
+              className="w-96 bg-white h-full shadow-xl overflow-y-auto"
+              role="button"
+              tabIndex={0}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
               <div className="p-4 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-gray-900">Templates Salvos</h3>
-                  <button onClick={() => setShowTemplates(false)} className="text-gray-400 hover:text-gray-600">
+                  <button
+                    onClick={() => setShowTemplates(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
                     <XCircle size={20} />
                   </button>
                 </div>
@@ -752,7 +895,7 @@ export function EmailCampaigns() {
               {templates.length === 0 ? (
                 <p className="text-center text-gray-400 text-sm py-8">Nenhum template salvo</p>
               ) : (
-                templates.map(t => (
+                templates.map((t) => (
                   <div key={t.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
                     <div className="flex items-start justify-between mb-1">
                       <h4 className="font-medium text-sm text-gray-900">{t.name}</h4>
@@ -765,9 +908,14 @@ export function EmailCampaigns() {
                     </div>
                     <p className="text-xs text-gray-500 mb-2 truncate">{t.subject}</p>
                     <p className="text-xs text-gray-400 mb-2">
-                      {new Date(t.createdAt).toLocaleDateString("pt-BR")}
+                      {new Date(t.createdAt).toLocaleDateString('pt-BR')}
                     </p>
-                    <Button variant="outline" size="sm" onClick={() => loadTemplate(t)} className="text-xs">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadTemplate(t)}
+                      className="text-xs"
+                    >
                       Usar Template
                     </Button>
                   </div>

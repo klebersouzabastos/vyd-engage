@@ -77,9 +77,9 @@ describe('Task Service', () => {
     });
 
     it('should throw 404 for non-existent task', async () => {
-      await expect(
-        taskService.findById(testTenantId, 'non-existent-id')
-      ).rejects.toThrow('Task not found');
+      await expect(taskService.findById(testTenantId, 'non-existent-id')).rejects.toThrow(
+        'Task not found'
+      );
     });
 
     it('should enforce tenant isolation', async () => {
@@ -92,9 +92,9 @@ describe('Task Service', () => {
       });
 
       try {
-        await expect(
-          taskService.findById(otherTenant.id, task.id)
-        ).rejects.toThrow('Task not found');
+        await expect(taskService.findById(otherTenant.id, task.id)).rejects.toThrow(
+          'Task not found'
+        );
       } finally {
         await prisma.tenant.delete({ where: { id: otherTenant.id } });
       }
@@ -103,9 +103,21 @@ describe('Task Service', () => {
 
   describe('findAll', () => {
     beforeEach(async () => {
-      await taskService.create(testTenantId, { title: 'Task A', status: 'PENDING', priority: 'HIGH' });
-      await taskService.create(testTenantId, { title: 'Task B', status: 'COMPLETED', priority: 'LOW' });
-      await taskService.create(testTenantId, { title: 'Task C', status: 'PENDING', priority: 'MEDIUM' });
+      await taskService.create(testTenantId, {
+        title: 'Task A',
+        status: 'PENDING',
+        priority: 'HIGH',
+      });
+      await taskService.create(testTenantId, {
+        title: 'Task B',
+        status: 'COMPLETED',
+        priority: 'LOW',
+      });
+      await taskService.create(testTenantId, {
+        title: 'Task C',
+        status: 'PENDING',
+        priority: 'MEDIUM',
+      });
     });
 
     it('should list all tasks for tenant', async () => {
@@ -117,7 +129,7 @@ describe('Task Service', () => {
     it('should filter by status', async () => {
       const result = await taskService.findAll(testTenantId, { status: 'PENDING' });
       expect(result.tasks.length).toBe(2);
-      result.tasks.forEach(t => expect(t.status).toBe('PENDING'));
+      result.tasks.forEach((t) => expect(t.status).toBe('PENDING'));
     });
 
     it('should filter by priority', async () => {
@@ -187,15 +199,13 @@ describe('Task Service', () => {
       const task = await taskService.create(testTenantId, { title: 'Delete Me' });
       await taskService.delete(testTenantId, task.id);
 
-      await expect(
-        taskService.findById(testTenantId, task.id)
-      ).rejects.toThrow('Task not found');
+      await expect(taskService.findById(testTenantId, task.id)).rejects.toThrow('Task not found');
     });
 
     it('should throw 404 for non-existent task', async () => {
-      await expect(
-        taskService.delete(testTenantId, 'non-existent')
-      ).rejects.toThrow('Task not found');
+      await expect(taskService.delete(testTenantId, 'non-existent')).rejects.toThrow(
+        'Task not found'
+      );
     });
   });
 

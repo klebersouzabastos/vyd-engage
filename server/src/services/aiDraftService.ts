@@ -90,7 +90,9 @@ async function checkRateLimit(tenantId: string): Promise<void> {
     }
   } catch (err: any) {
     if (err.statusCode === 429) throw err;
-    logger.warn('Redis unavailable for AI rate limit, using in-memory fallback', { error: err.message });
+    logger.warn('Redis unavailable for AI rate limit, using in-memory fallback', {
+      error: err.message,
+    });
   }
 
   // Fallback: in-memory (resets on server restart — acceptable for single-server dev)
@@ -188,7 +190,7 @@ export const aiDraftService = {
     tenantId: string,
     userId: string,
     leadId?: string,
-    dealId?: string,
+    dealId?: string
   ): Promise<Partial<DraftContext>> {
     const context: Partial<DraftContext> = {};
 
@@ -273,7 +275,7 @@ export const aiDraftService = {
     templateType: TemplateType,
     leadId?: string,
     dealId?: string,
-    customInstructions?: string,
+    customInstructions?: string
   ): Promise<EmailDraft> {
     // Rate limit check
     await checkRateLimit(tenantId);
@@ -302,7 +304,7 @@ export const aiDraftService = {
         const model = getModel(
           providerConfig.provider,
           providerConfig.apiKey,
-          providerConfig.model,
+          providerConfig.model
         );
 
         if (model) {

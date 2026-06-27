@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import {
   DndContext,
   DragOverlay,
@@ -12,20 +12,24 @@ import {
   closestCenter,
   type DragStartEvent,
   type DragEndEvent,
-} from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { Deal, DealStage } from "../../types";
-import { DealCard } from "./DealCard";
-import { formatCurrency } from "../../utils/format";
-import type { DealFunnelColumn, PipelineDeal } from "../../hooks/useDealsPipeline";
-import { cn } from "../ui/utils";
+} from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { Deal, DealStage } from '../../types';
+import { DealCard } from './DealCard';
+import { formatCurrency } from '../../utils/format';
+import type { DealFunnelColumn, PipelineDeal } from '../../hooks/useDealsPipeline';
+import { cn } from '../ui/utils';
 
 // Fallback stages used when no funnel columns are provided (legacy mode)
 const PIPELINE_STAGES: { stage: DealStage; label: string; color: string }[] = [
-  { stage: "QUALIFICATION", label: "Qualificação", color: "var(--color-stage-qualification-accent)" },
-  { stage: "PROPOSAL", label: "Proposta", color: "var(--color-stage-proposal-accent)" },
-  { stage: "NEGOTIATION", label: "Negociação", color: "var(--color-stage-negotiation-accent)" },
-  { stage: "CLOSING", label: "Fechamento", color: "var(--color-stage-closing-accent)" },
+  {
+    stage: 'QUALIFICATION',
+    label: 'Qualificação',
+    color: 'var(--color-stage-qualification-accent)',
+  },
+  { stage: 'PROPOSAL', label: 'Proposta', color: 'var(--color-stage-proposal-accent)' },
+  { stage: 'NEGOTIATION', label: 'Negociação', color: 'var(--color-stage-negotiation-accent)' },
+  { stage: 'CLOSING', label: 'Fechamento', color: 'var(--color-stage-closing-accent)' },
 ];
 
 interface DealPipelineBoardProps {
@@ -38,15 +42,23 @@ interface DealPipelineBoardProps {
 }
 
 // Droppable column shell — highlights when a card is dragged over it
-function DroppableColumn({ id, children, isEmpty }: { id: string; children: ReactNode; isEmpty: boolean }) {
+function DroppableColumn({
+  id,
+  children,
+  isEmpty,
+}: {
+  id: string;
+  children: ReactNode;
+  isEmpty: boolean;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "p-2 space-y-2 min-h-[200px] rounded-b-lg transition-colors duration-150",
-        isOver && isEmpty && "border-2 border-dashed border-primary bg-primary/5",
-        isOver && !isEmpty && "bg-primary/5",
+        'p-2 space-y-2 min-h-[200px] rounded-b-lg transition-colors duration-150',
+        isOver && isEmpty && 'border-2 border-dashed border-primary bg-primary/5',
+        isOver && !isEmpty && 'bg-primary/5'
       )}
     >
       {children}
@@ -86,8 +98,8 @@ function DraggableCard({
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={cn("touch-none", isDragging && "opacity-40")}
-      style={{ transition: "opacity 200ms ease-out" }}
+      className={cn('touch-none', isDragging && 'opacity-40')}
+      style={{ transition: 'opacity 200ms ease-out' }}
     >
       <DealCard deal={deal} onClick={onClick} onEdit={onEdit} isStale={isStale} />
     </div>
@@ -98,10 +110,10 @@ function DraggableCard({
 function pipelineDealToDeal(d: PipelineDeal): Deal {
   return {
     id: d.id,
-    tenantId: "",
+    tenantId: '',
     name: d.name,
-    value: typeof d.value === "number" ? d.value : Number(d.value),
-    stage: (d.stage as DealStage) || "QUALIFICATION",
+    value: typeof d.value === 'number' ? d.value : Number(d.value),
+    stage: (d.stage as DealStage) || 'QUALIFICATION',
     probability: d.probability,
     expectedCloseDate: d.expectedCloseDate,
     leadId: d.leadId,
@@ -134,7 +146,7 @@ export function DealPipelineBoard({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragStart = ({ active }: DragStartEvent) => {
@@ -163,7 +175,7 @@ export function DealPipelineBoard({
       try {
         await onMoveDeal(dealId, targetId, targetColumn.deals.length);
       } catch {
-        toast.error("Erro ao mover deal. Tente novamente.");
+        toast.error('Erro ao mover deal. Tente novamente.');
       }
     } else {
       const deal = deals.find((d) => d.id === dealId);
@@ -171,22 +183,26 @@ export function DealPipelineBoard({
       try {
         await onStageChange(dealId, targetId as DealStage);
       } catch {
-        toast.error("Erro ao mover deal. Tente novamente.");
+        toast.error('Erro ao mover deal. Tente novamente.');
       }
     }
   };
 
-  const wonDeals = deals.filter((d) => d.stage === "WON");
-  const lostDeals = deals.filter((d) => d.stage === "LOST");
+  const wonDeals = deals.filter((d) => d.stage === 'WON');
+  const lostDeals = deals.filter((d) => d.stage === 'LOST');
   const wonTotal = wonDeals.reduce((s, d) => s + d.value, 0);
   const lostTotal = lostDeals.reduce((s, d) => s + d.value, 0);
 
   if (useFunnelMode) {
     const allColumnDeals = funnelColumns!.flatMap((c) => c.deals);
-    const funnelWonTotal = allColumnDeals.filter((d) => d.stage === "WON").reduce((s, d) => s + Number(d.value), 0);
-    const funnelLostTotal = allColumnDeals.filter((d) => d.stage === "LOST").reduce((s, d) => s + Number(d.value), 0);
-    const funnelWonCount = allColumnDeals.filter((d) => d.stage === "WON").length;
-    const funnelLostCount = allColumnDeals.filter((d) => d.stage === "LOST").length;
+    const funnelWonTotal = allColumnDeals
+      .filter((d) => d.stage === 'WON')
+      .reduce((s, d) => s + Number(d.value), 0);
+    const funnelLostTotal = allColumnDeals
+      .filter((d) => d.stage === 'LOST')
+      .reduce((s, d) => s + Number(d.value), 0);
+    const funnelWonCount = allColumnDeals.filter((d) => d.stage === 'WON').length;
+    const funnelLostCount = allColumnDeals.filter((d) => d.stage === 'LOST').length;
 
     return (
       <DndContext
@@ -199,11 +215,15 @@ export function DealPipelineBoard({
         <div className="flex gap-4 mb-4">
           <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
             <span className="text-sm font-medium text-green-700">Ganhos ({funnelWonCount})</span>
-            <span className="text-sm font-bold text-green-700">{formatCurrency(funnelWonTotal)}</span>
+            <span className="text-sm font-bold text-green-700">
+              {formatCurrency(funnelWonTotal)}
+            </span>
           </div>
           <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
             <span className="text-sm font-medium text-red-700">Perdidos ({funnelLostCount})</span>
-            <span className="text-sm font-bold text-red-700">{formatCurrency(funnelLostTotal)}</span>
+            <span className="text-sm font-bold text-red-700">
+              {formatCurrency(funnelLostTotal)}
+            </span>
           </div>
         </div>
 
@@ -220,7 +240,10 @@ export function DealPipelineBoard({
                 {/* Column header */}
                 <div className="p-3 border-b border-gray-200">
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: column.color }} />
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: column.color }}
+                    />
                     <span className="text-sm font-semibold text-gray-900">{column.title}</span>
                     <span className="ml-auto text-xs text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">
                       {column.deals.length}
@@ -248,16 +271,9 @@ export function DealPipelineBoard({
         </div>
 
         {/* Ghost card follows cursor during drag */}
-        <DragOverlay
-          dropAnimation={{ duration: 200, easing: "ease-out" }}
-        >
+        <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
           {activeDeal ? (
-            <DealCard
-              deal={activeDeal}
-              onClick={() => {}}
-              onEdit={() => {}}
-              isOverlay
-            />
+            <DealCard deal={activeDeal} onClick={() => {}} onEdit={() => {}} isOverlay />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -323,16 +339,9 @@ export function DealPipelineBoard({
       </div>
 
       {/* Ghost card follows cursor during drag */}
-      <DragOverlay
-        dropAnimation={{ duration: 200, easing: "ease-out" }}
-      >
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
         {activeDeal ? (
-          <DealCard
-            deal={activeDeal}
-            onClick={() => {}}
-            onEdit={() => {}}
-            isOverlay
-          />
+          <DealCard deal={activeDeal} onClick={() => {}} onEdit={() => {}} isOverlay />
         ) : null}
       </DragOverlay>
     </DndContext>

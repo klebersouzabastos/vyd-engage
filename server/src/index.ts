@@ -35,7 +35,9 @@ function getAllowedOrigins(): string[] | false {
     ];
   }
   // Production: explicit allow-list required; reject all if not configured
-  const fromEnv = process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean);
+  const fromEnv = process.env.CORS_ORIGINS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   if (fromEnv && fromEnv.length > 0) return fromEnv;
   if (process.env.FRONTEND_URL) return [process.env.FRONTEND_URL];
   return false; // fail-closed: no origins configured = reject all
@@ -47,29 +49,35 @@ const corsOrigins = getAllowedOrigins();
 initSocketIO(httpServer, corsOrigins);
 
 // Middleware
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
-}));
+app.use(
+  cors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
+  })
+);
 app.use(cookieParser());
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginEmbedderPolicy: false,
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // HTTP access logging (pino-http) — structured JSON in prod, with secret redaction.
 // Single source of access logs; requestLogger only feeds Sentry breadcrumbs now.
-app.use(pinoHttp({
-  logger: baseLogger,
-  autoLogging: {
-    ignore: (req) => req.url === '/health',
-  },
-}));
+app.use(
+  pinoHttp({
+    logger: baseLogger,
+    autoLogging: {
+      ignore: (req) => req.url === '/health',
+    },
+  })
+);
 
 // Sentry breadcrumbs for each request
 app.use(requestLogger);
@@ -107,17 +115,21 @@ if (process.env.ENABLE_AUTOMATION_ENGINE === 'true') {
 }
 
 // Initialize task notification checker (always active — lightweight, no Redis needed)
-import('./jobs/taskNotificationChecker.js').then(({ initializeTaskNotificationChecker }) => {
-  initializeTaskNotificationChecker();
-}).catch((error) => {
-  logger.error('Failed to initialize task notification checker', error);
-});
+import('./jobs/taskNotificationChecker.js')
+  .then(({ initializeTaskNotificationChecker }) => {
+    initializeTaskNotificationChecker();
+  })
+  .catch((error) => {
+    logger.error('Failed to initialize task notification checker', error);
+  });
 
-import('./jobs/staleDeals.js').then(({ initializeStaleDealsChecker }) => {
-  initializeStaleDealsChecker();
-}).catch((error) => {
-  logger.error('Failed to initialize stale deals checker', error);
-});
+import('./jobs/staleDeals.js')
+  .then(({ initializeStaleDealsChecker }) => {
+    initializeStaleDealsChecker();
+  })
+  .catch((error) => {
+    logger.error('Failed to initialize stale deals checker', error);
+  });
 
 // Initialize backup job (opt-in — requires ENABLE_BACKUP_JOB=true)
 if (process.env.ENABLE_BACKUP_JOB === 'true') {
@@ -130,20 +142,24 @@ if (process.env.ENABLE_BACKUP_JOB === 'true') {
 
 // Initialize scheduled reports (opt-in — requires ENABLE_SCHEDULED_REPORTS=true)
 if (process.env.ENABLE_SCHEDULED_REPORTS === 'true') {
-  import('./jobs/scheduledReports.js').then(({ initializeScheduledReports }) => {
-    initializeScheduledReports();
-  }).catch((error) => {
-    logger.error('Failed to initialize scheduled reports job', error);
-  });
+  import('./jobs/scheduledReports.js')
+    .then(({ initializeScheduledReports }) => {
+      initializeScheduledReports();
+    })
+    .catch((error) => {
+      logger.error('Failed to initialize scheduled reports job', error);
+    });
 }
 
 // Initialize Deep Research poller (opt-in — requires ENABLE_DEEP_RESEARCH_API=true + OPENAI_API_KEY)
 if (process.env.ENABLE_DEEP_RESEARCH_API === 'true') {
-  import('./jobs/deepResearchPoller.js').then(({ initializeDeepResearchPoller }) => {
-    initializeDeepResearchPoller();
-  }).catch((error) => {
-    logger.error('Failed to initialize Deep Research poller', error);
-  });
+  import('./jobs/deepResearchPoller.js')
+    .then(({ initializeDeepResearchPoller }) => {
+      initializeDeepResearchPoller();
+    })
+    .catch((error) => {
+      logger.error('Failed to initialize Deep Research poller', error);
+    });
 }
 
 // Health check
@@ -374,8 +390,12 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
     const data = captureLeadSchema.parse(req.body);
 
     const sourceMap: Record<string, string> = {
-      website: 'WEBSITE', social_media: 'SOCIAL_MEDIA', referral: 'REFERRAL',
-      email: 'EMAIL', phone: 'PHONE', other: 'OTHER',
+      website: 'WEBSITE',
+      social_media: 'SOCIAL_MEDIA',
+      referral: 'REFERRAL',
+      email: 'EMAIL',
+      phone: 'PHONE',
+      other: 'OTHER',
     };
     const leadSource = sourceMap[String(data.source || '').toLowerCase()] || 'WEBSITE';
 
@@ -406,13 +426,15 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
     }
 
     // Notify tenant admins about new public lead capture
-    notificationService.notifyTenantAdmins(tenant.id, {
-      type: NotificationType.LEAD_ASSIGNED,
-      title: 'Novo lead via formulário',
-      message: `${data.name}${data.email ? ` (${data.email})` : ''} preencheu o formulário público.`,
-      link: `/app/leads/${lead.id}`,
-      metadata: { leadId: lead.id, leadName: data.name, source: 'public_form' },
-    }).catch(() => {});
+    notificationService
+      .notifyTenantAdmins(tenant.id, {
+        type: NotificationType.LEAD_ASSIGNED,
+        title: 'Novo lead via formulário',
+        message: `${data.name}${data.email ? ` (${data.email})` : ''} preencheu o formulário público.`,
+        link: `/app/leads/${lead.id}`,
+        metadata: { leadId: lead.id, leadName: data.name, source: 'public_form' },
+      })
+      .catch(() => {});
 
     // Dispatch automation triggers (form_submitted + lead_created) — this route
     // bypasses leadService.create, so we fire both here.
@@ -430,7 +452,11 @@ publicRouter.post('/capture/:tenantSlug', async (req, res, next) => {
     // for external integrations. Fire-and-forget.
     webhookDispatcher.emitLeadEvent(tenant.id, 'lead.created', lead);
 
-    notifyLeadCaptured(tenant.id, { name: data.name, email: data.email, company: data.company }).catch(() => {});
+    notifyLeadCaptured(tenant.id, {
+      name: data.name,
+      email: data.email,
+      company: data.company,
+    }).catch(() => {});
 
     res.status(201).json({ status: 201, message: 'Lead captured successfully', leadId: lead.id });
   } catch (error: any) {
@@ -468,7 +494,14 @@ publicRouter.get('/schedule/:slug', async (req, res, next) => {
   try {
     const avail = await prisma.meetingAvailability.findUnique({
       where: { slug: req.params.slug },
-      select: { id: true, slug: true, title: true, duration: true, bufferMinutes: true, availableHours: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        duration: true,
+        bufferMinutes: true,
+        availableHours: true,
+      },
     });
     if (!avail) return res.status(404).json({ error: 'Link not found' });
     res.json({ status: 200, data: avail });
@@ -574,4 +607,3 @@ if (isMainModule) {
 
 export default app;
 export { app, httpServer };
-

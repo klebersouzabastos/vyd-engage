@@ -33,7 +33,12 @@ async function postSlack(webhookUrl: string, blocks: SlackBlock[]): Promise<void
   }
 }
 
-async function postTeams(webhookUrl: string, title: string, text: string, facts: Array<{ name: string; value: string }>): Promise<void> {
+async function postTeams(
+  webhookUrl: string,
+  title: string,
+  text: string,
+  facts: Array<{ name: string; value: string }>
+): Promise<void> {
   const body = {
     '@type': 'MessageCard',
     '@context': 'http://schema.org/extensions',
@@ -60,7 +65,9 @@ async function postTeams(webhookUrl: string, title: string, text: string, facts:
 export async function notifyDealWon(tenantId: string, deal: Record<string, any>): Promise<void> {
   try {
     const settings = await getTenantSettings(tenantId);
-    const value = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(deal.value ?? 0));
+    const value = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+      Number(deal.value ?? 0)
+    );
 
     if (settings.slackWebhookUrl) {
       await postSlack(settings.slackWebhookUrl, [
@@ -83,7 +90,7 @@ export async function notifyDealWon(tenantId: string, deal: Record<string, any>)
         [
           { name: 'Valor', value },
           { name: 'Cliente', value: deal.lead?.name ?? deal.company?.name ?? '—' },
-        ],
+        ]
       );
     }
   } catch (err: any) {
@@ -112,7 +119,7 @@ export async function notifyDealLost(tenantId: string, deal: Record<string, any>
         settings.teamsWebhookUrl,
         '❌ Deal perdido',
         `O deal "${deal.name}" foi marcado como perdido.`,
-        deal.lostReason ? [{ name: 'Motivo', value: deal.lostReason }] : [],
+        deal.lostReason ? [{ name: 'Motivo', value: deal.lostReason }] : []
       );
     }
   } catch (err: any) {
@@ -120,7 +127,10 @@ export async function notifyDealLost(tenantId: string, deal: Record<string, any>
   }
 }
 
-export async function notifyLeadCaptured(tenantId: string, lead: Record<string, any>): Promise<void> {
+export async function notifyLeadCaptured(
+  tenantId: string,
+  lead: Record<string, any>
+): Promise<void> {
   try {
     const settings = await getTenantSettings(tenantId);
 
@@ -145,7 +155,7 @@ export async function notifyLeadCaptured(tenantId: string, lead: Record<string, 
         [
           { name: 'Email', value: lead.email ?? '—' },
           { name: 'Empresa', value: lead.company ?? '—' },
-        ],
+        ]
       );
     }
   } catch (err: any) {
@@ -153,7 +163,10 @@ export async function notifyLeadCaptured(tenantId: string, lead: Record<string, 
   }
 }
 
-export async function notifyTaskOverdue(tenantId: string, task: Record<string, any>): Promise<void> {
+export async function notifyTaskOverdue(
+  tenantId: string,
+  task: Record<string, any>
+): Promise<void> {
   try {
     const settings = await getTenantSettings(tenantId);
 
@@ -174,7 +187,7 @@ export async function notifyTaskOverdue(tenantId: string, task: Record<string, a
         settings.teamsWebhookUrl,
         '⏰ Tarefa atrasada',
         `A tarefa "${task.title}" está atrasada.`,
-        task.assignedUser?.name ? [{ name: 'Responsável', value: task.assignedUser.name }] : [],
+        task.assignedUser?.name ? [{ name: 'Responsável', value: task.assignedUser.name }] : []
       );
     }
   } catch (err: any) {

@@ -94,19 +94,21 @@ async function checkStaleDeals() {
           ? Math.floor((Date.now() - lastActivity.getTime()) / (24 * 60 * 60 * 1000))
           : staleDays;
 
-        await prisma.notification.create({
-          data: {
-            tenantId: tenant.id,
-            userId: deal.assignedTo,
-            type: NotificationType.DEAL_AT_RISK,
-            title: 'Deal em risco',
-            message: `O deal "${deal.name}" está sem atividade há ${daysSinceActivity} dias.`,
-            link: `/app/deals/${deal.id}`,
-            metadata: { dealId: deal.id },
-          },
-        }).catch((err) => {
-          logger.error(`Failed to create DEAL_AT_RISK notification for deal ${deal.id}`, err);
-        });
+        await prisma.notification
+          .create({
+            data: {
+              tenantId: tenant.id,
+              userId: deal.assignedTo,
+              type: NotificationType.DEAL_AT_RISK,
+              title: 'Deal em risco',
+              message: `O deal "${deal.name}" está sem atividade há ${daysSinceActivity} dias.`,
+              link: `/app/deals/${deal.id}`,
+              metadata: { dealId: deal.id },
+            },
+          })
+          .catch((err) => {
+            logger.error(`Failed to create DEAL_AT_RISK notification for deal ${deal.id}`, err);
+          });
 
         emitToTenant(tenant.id, 'deal:at-risk', {
           dealId: deal.id,

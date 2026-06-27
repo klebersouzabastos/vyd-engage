@@ -81,10 +81,12 @@ router.put('/:id', requireRole('ADMIN'), async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const { role, status } = z.object({
-      role: z.nativeEnum(UserRole).optional(),
-      status: z.nativeEnum(UserStatus).optional(),
-    }).parse(req.body);
+    const { role, status } = z
+      .object({
+        role: z.nativeEnum(UserRole).optional(),
+        status: z.nativeEnum(UserStatus).optional(),
+      })
+      .parse(req.body);
 
     const user = await prisma.user.findFirst({
       where: {
@@ -122,11 +124,3 @@ router.put('/:id', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

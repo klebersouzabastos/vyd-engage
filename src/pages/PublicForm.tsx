@@ -1,37 +1,37 @@
-import { useState, useMemo } from "react";
-import { useParams, useSearchParams } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { CheckCircle } from "lucide-react";
-import { FieldError } from "../components/register/FieldError";
-import { publicFormSchema } from "../utils/validation/formSchemas";
-import { useFormValidation } from "../hooks/useFormValidation";
-import { useAutoFocus } from "../hooks/useFocusManagement";
+import { useState, useMemo } from 'react';
+import { useParams, useSearchParams } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { CheckCircle } from 'lucide-react';
+import { FieldError } from '../components/register/FieldError';
+import { publicFormSchema } from '../utils/validation/formSchemas';
+import { useFormValidation } from '../hooks/useFormValidation';
+import { useAutoFocus } from '../hooks/useFocusManagement';
 
 export function PublicForm() {
   const { formId } = useParams();
   const [searchParams] = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    company: "",
-    message: "",
+    name: '',
+    phone: '',
+    email: '',
+    company: '',
+    message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const validation = useFormValidation({ schema: publicFormSchema });
   const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   // Detect source from UTM params
   const utmSource = useMemo(() => {
-    const src = searchParams.get("utm_source");
+    const src = searchParams.get('utm_source');
     if (src) return src;
-    const ref = searchParams.get("ref");
+    const ref = searchParams.get('ref');
     if (ref) return ref;
     return null;
   }, [searchParams]);
@@ -40,32 +40,32 @@ export function PublicForm() {
     e.preventDefault();
     if (!validation.validateAll(formData)) return;
     setIsSubmitting(true);
-    setError("");
+    setError('');
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       const response = await fetch(`${apiUrl}/api/public/capture/${formId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email || undefined,
           phone: formData.phone || undefined,
           company: formData.company || undefined,
           message: formData.message || undefined,
-          source: utmSource || "WEBSITE",
+          source: utmSource || 'WEBSITE',
         }),
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Erro ao enviar formulário");
+        throw new Error(data.error || 'Erro ao enviar formulário');
       }
 
       setSubmitted(true);
     } catch (err: any) {
-      console.error("Erro ao submeter formulário:", err);
-      setError(err.message || "Erro ao enviar formulário. Tente novamente.");
+      console.error('Erro ao submeter formulário:', err);
+      setError(err.message || 'Erro ao enviar formulário. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -105,12 +105,7 @@ export function PublicForm() {
           <p className="text-gray-600">Preencha o formulário abaixo e retornaremos em breve</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4"
-          ref={autoFocusRef}
-          noValidate
-        >
+        <form onSubmit={handleSubmit} className="space-y-4" ref={autoFocusRef} noValidate>
           <div>
             <Label htmlFor="name">Nome completo *</Label>
             <Input
@@ -124,9 +119,17 @@ export function PublicForm() {
               placeholder="João Silva"
               className="mt-1.5"
               error={validation.touchedFields.name ? validation.fieldErrors.name : undefined}
-              aria-describedby={validation.fieldErrors.name && validation.touchedFields.name ? "public-name-error" : undefined}
+              aria-describedby={
+                validation.fieldErrors.name && validation.touchedFields.name
+                  ? 'public-name-error'
+                  : undefined
+              }
             />
-            <FieldError id="public-name-error" error={validation.fieldErrors.name as string} touched={validation.touchedFields.name} />
+            <FieldError
+              id="public-name-error"
+              error={validation.fieldErrors.name as string}
+              touched={validation.touchedFields.name}
+            />
           </div>
 
           <div>
@@ -143,9 +146,17 @@ export function PublicForm() {
               placeholder="seu@email.com"
               className="mt-1.5"
               error={validation.touchedFields.email ? validation.fieldErrors.email : undefined}
-              aria-describedby={validation.fieldErrors.email && validation.touchedFields.email ? "public-email-error" : undefined}
+              aria-describedby={
+                validation.fieldErrors.email && validation.touchedFields.email
+                  ? 'public-email-error'
+                  : undefined
+              }
             />
-            <FieldError id="public-email-error" error={validation.fieldErrors.email as string} touched={validation.touchedFields.email} />
+            <FieldError
+              id="public-email-error"
+              error={validation.fieldErrors.email as string}
+              touched={validation.touchedFields.email}
+            />
           </div>
 
           <div>
@@ -162,9 +173,17 @@ export function PublicForm() {
               placeholder="(11) 99999-9999"
               className="mt-1.5"
               error={validation.touchedFields.phone ? validation.fieldErrors.phone : undefined}
-              aria-describedby={validation.fieldErrors.phone && validation.touchedFields.phone ? "public-phone-error" : undefined}
+              aria-describedby={
+                validation.fieldErrors.phone && validation.touchedFields.phone
+                  ? 'public-phone-error'
+                  : undefined
+              }
             />
-            <FieldError id="public-phone-error" error={validation.fieldErrors.phone as string} touched={validation.touchedFields.phone} />
+            <FieldError
+              id="public-phone-error"
+              error={validation.fieldErrors.phone as string}
+              touched={validation.touchedFields.phone}
+            />
           </div>
 
           <div>
@@ -190,16 +209,14 @@ export function PublicForm() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary-dark"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Enviando..." : "Enviar"}
+            {isSubmitting ? 'Enviando...' : 'Enviar'}
           </Button>
         </form>
 

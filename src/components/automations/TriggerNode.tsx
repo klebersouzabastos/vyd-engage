@@ -8,12 +8,12 @@ import {
   CheckSquare,
   FileText,
   X,
-} from "lucide-react";
-import { TRIGGER_TYPES } from "../../utils/automationFlowConverter";
-import type { FlowNode } from "../../utils/automationFlowConverter";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import type { ReactNode } from "react";
+} from 'lucide-react';
+import { TRIGGER_TYPES } from '../../utils/automationFlowConverter';
+import type { FlowNode } from '../../utils/automationFlowConverter';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import type { ReactNode } from 'react';
 
 interface TriggerNodeProps {
   node: FlowNode;
@@ -76,11 +76,11 @@ function TriggerConfigPanel({
           </select>
         </div>
 
-        {nodeType === "status_changed" && (
+        {nodeType === 'status_changed' && (
           <div>
             <Label className="text-xs">Status específico</Label>
             <select
-              value={config.status || ""}
+              value={config.status || ''}
               onChange={(e) => onUpdate({ ...config, status: e.target.value || undefined })}
               className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
             >
@@ -96,11 +96,11 @@ function TriggerConfigPanel({
           </div>
         )}
 
-        {nodeType === "lead_created" && (
+        {nodeType === 'lead_created' && (
           <div>
             <Label className="text-xs">Fonte do lead</Label>
             <select
-              value={config.source || ""}
+              value={config.source || ''}
               onChange={(e) => onUpdate({ ...config, source: e.target.value || undefined })}
               className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
             >
@@ -114,11 +114,11 @@ function TriggerConfigPanel({
           </div>
         )}
 
-        {nodeType === "tag_added" && (
+        {nodeType === 'tag_added' && (
           <div>
             <Label className="text-xs">Tag específica</Label>
             <Input
-              value={config.tagId || ""}
+              value={config.tagId || ''}
               onChange={(e) => onUpdate({ ...config, tagId: e.target.value || undefined })}
               placeholder="ID da tag (vazio = qualquer)"
               className="mt-1 text-sm"
@@ -126,11 +126,11 @@ function TriggerConfigPanel({
           </div>
         )}
 
-        {nodeType === "deal_stage_changed" && (
+        {nodeType === 'deal_stage_changed' && (
           <div>
             <Label className="text-xs">Estágio específico</Label>
             <Input
-              value={config.stageName || ""}
+              value={config.stageName || ''}
               onChange={(e) => onUpdate({ ...config, stageName: e.target.value || undefined })}
               placeholder="Nome do estágio (vazio = qualquer)"
               className="mt-1 text-sm"
@@ -152,27 +152,35 @@ export function TriggerNode({
   onToggleConfig,
 }: TriggerNodeProps) {
   const icon = ICONS[node.data.nodeType] || <Zap size={18} />;
-  const label = node.data.label || "Gatilho";
+  const label = node.data.label || 'Gatilho';
 
   // Build a brief summary of config
   const configSummary = (() => {
     const c = node.data.config;
-    if (node.data.nodeType === "status_changed" && c.status) return `→ ${c.status}`;
-    if (node.data.nodeType === "lead_created" && c.source) return `Fonte: ${c.source}`;
-    if (node.data.nodeType === "tag_added" && c.tagId) return `Tag: ${c.tagId}`;
-    return "";
+    if (node.data.nodeType === 'status_changed' && c.status) return `→ ${c.status}`;
+    if (node.data.nodeType === 'lead_created' && c.source) return `Fonte: ${c.source}`;
+    if (node.data.nodeType === 'tag_added' && c.tagId) return `Tag: ${c.tagId}`;
+    return '';
   })();
 
   return (
     <div className="relative group">
       <div
+        role="button"
+        tabIndex={0}
         className={`w-72 rounded-lg border-2 cursor-pointer transition-all shadow-sm ${
           selected
-            ? "border-green-500 shadow-green-100 shadow-md"
-            : "border-green-300 hover:border-green-400 hover:shadow-md"
+            ? 'border-green-500 shadow-green-100 shadow-md'
+            : 'border-green-300 hover:border-green-400 hover:shadow-md'
         }`}
         onClick={onSelect}
         onDoubleClick={onToggleConfig}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') e.preventDefault();
+            onSelect();
+          }
+        }}
       >
         <div className="bg-green-50 border-b border-green-200 rounded-t-lg px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -193,19 +201,13 @@ export function TriggerNode({
         </div>
         <div className="bg-white rounded-b-lg px-4 py-3">
           <p className="text-sm font-medium text-gray-900">{label}</p>
-          {configSummary && (
-            <p className="text-xs text-gray-500 mt-1">{configSummary}</p>
-          )}
+          {configSummary && <p className="text-xs text-gray-500 mt-1">{configSummary}</p>}
           <p className="text-xs text-gray-400 mt-1">Clique duplo para configurar</p>
         </div>
       </div>
 
       {showConfig && (
-        <TriggerConfigPanel
-          node={node}
-          onUpdate={onUpdate}
-          onClose={onToggleConfig}
-        />
+        <TriggerConfigPanel node={node} onUpdate={onUpdate} onClose={onToggleConfig} />
       )}
     </div>
   );

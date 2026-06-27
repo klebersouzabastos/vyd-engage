@@ -144,9 +144,10 @@ router.get('/:id/stats', async (req, res, next) => {
     if (!req.user) return next(createError('Authentication required', 401));
 
     const automation = await automationService.findById(req.user.tenantId, req.params.id);
-    const successRate = automation.runsCount > 0
-      ? Math.round((automation.successCount / automation.runsCount) * 100)
-      : 0;
+    const successRate =
+      automation.runsCount > 0
+        ? Math.round((automation.successCount / automation.runsCount) * 100)
+        : 0;
 
     res.json({
       status: 200,
@@ -207,11 +208,3 @@ router.get('/:id/logs', async (req, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

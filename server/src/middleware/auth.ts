@@ -5,6 +5,7 @@ import prisma from '../config/database.js';
 
 // Extend Express Request to include user (+ flag de super-admin da plataforma)
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- augmentação de tipos do Express exige namespace
   namespace Express {
     interface Request {
       user?: TokenPayload & { isPlatformAdmin?: boolean };
@@ -12,16 +13,13 @@ declare global {
   }
 }
 
-export async function authenticate(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Read token from httpOnly cookie (primary) or Authorization header (fallback)
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.accessToken;
-    const token = cookieToken || (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null);
+    const token =
+      cookieToken || (authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null);
 
     if (!token) {
       throw createError('No token provided', 401, 'NO_TOKEN');
@@ -92,11 +90,3 @@ export function requirePlatformAdmin(req: Request, res: Response, next: NextFunc
   }
   next();
 }
-
-
-
-
-
-
-
-

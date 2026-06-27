@@ -36,7 +36,7 @@ export const AppProviders = composeProviders(
   PlanProvider,
   PaymentProvider,
   WhatsAppProvider,
-  EmailProvider,
+  EmailProvider
 );
 
 // Re-export for convenience

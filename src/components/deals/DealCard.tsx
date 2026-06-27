@@ -1,12 +1,12 @@
-import { Deal } from "../../types";
-import { User, Calendar } from "lucide-react";
-import { formatCurrency } from "../../utils/format";
-import { cn } from "../ui/utils";
-import { DealAIScore } from "./DealAIScore";
+import { Deal } from '../../types';
+import { User, Calendar } from 'lucide-react';
+import { formatCurrency } from '../../utils/format';
+import { cn } from '../ui/utils';
+import { DealAIScore } from './DealAIScore';
 
 function formatDate(date: string | null | undefined): string {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
 interface DealCardProps {
@@ -20,10 +20,18 @@ interface DealCardProps {
 export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }: DealCardProps) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === ' ') e.preventDefault();
+          onClick();
+        }
+      }}
       className={cn(
-        "relative bg-white rounded-lg border p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none",
-        isOverlay ? "shadow-lg border-primary ring-2 ring-primary/20" : "border-gray-200",
+        'relative bg-white rounded-lg border p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none',
+        isOverlay ? 'shadow-lg border-primary ring-2 ring-primary/20' : 'border-gray-200'
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -60,7 +68,7 @@ export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }:
         {deal.assignedUser && (
           <span className="flex items-center gap-1">
             <User size={10} />
-            {deal.assignedUser.name.split(" ")[0]}
+            {deal.assignedUser.name.split(' ')[0]}
           </span>
         )}
         {deal.expectedCloseDate && (

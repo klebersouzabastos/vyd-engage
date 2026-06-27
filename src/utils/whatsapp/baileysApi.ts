@@ -4,7 +4,7 @@ import {
   SendMessageResult,
   ConnectionTestResult,
   ConnectionStatusInfo,
-} from "../../types/whatsapp";
+} from '../../types/whatsapp';
 
 /**
  * Valida credenciais da Baileys/WPPConnect API
@@ -14,7 +14,7 @@ export async function validateBaileysCredentials(
 ): Promise<ConnectionTestResult> {
   try {
     const response = await fetch(`${config.apiUrl}/api/${config.instanceName}/status`, {
-      method: "GET",
+      method: 'GET',
       headers: {
         apikey: config.apiKey,
       },
@@ -23,21 +23,21 @@ export async function validateBaileysCredentials(
     if (!response.ok) {
       return {
         success: false,
-        message: "Erro ao validar credenciais da Baileys API",
-        error: "Credenciais inválidas",
+        message: 'Erro ao validar credenciais da Baileys API',
+        error: 'Credenciais inválidas',
       };
     }
 
     return {
       success: true,
-      message: "Credenciais válidas",
+      message: 'Credenciais válidas',
       responseTime: Date.now(),
     };
   } catch (error) {
     return {
       success: false,
-      message: `Erro de conexão: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -63,24 +63,21 @@ export async function sendBaileysMessage(
       };
     }
 
-    const response = await fetch(
-      `${config.apiUrl}/api/${config.instanceName}/send-message`,
-      {
-        method: "POST",
-        headers: {
-          apikey: config.apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/${config.instanceName}/send-message`, {
+      method: 'POST',
+      headers: {
+        apikey: config.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
     const data = await response.json();
 
     if (!response.ok || data.error) {
       return {
         success: false,
-        error: data.error?.message || "Erro ao enviar mensagem",
+        error: data.error?.message || 'Erro ao enviar mensagem',
         providerResponse: data,
       };
     }
@@ -93,7 +90,7 @@ export async function sendBaileysMessage(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -101,12 +98,10 @@ export async function sendBaileysMessage(
 /**
  * Obtém status da conexão Baileys
  */
-export async function getBaileysStatus(
-  config: BaileysConfig
-): Promise<ConnectionStatusInfo> {
+export async function getBaileysStatus(config: BaileysConfig): Promise<ConnectionStatusInfo> {
   try {
     const response = await fetch(`${config.apiUrl}/api/${config.instanceName}/status`, {
-      method: "GET",
+      method: 'GET',
       headers: {
         apikey: config.apiKey,
       },
@@ -114,13 +109,13 @@ export async function getBaileysStatus(
 
     if (!response.ok) {
       return {
-        status: "error",
-        errorMessage: "Não foi possível verificar o status",
+        status: 'error',
+        errorMessage: 'Não foi possível verificar o status',
       };
     }
 
     const data = await response.json();
-    const status = data.status === "connected" ? "connected" : "disconnected";
+    const status = data.status === 'connected' ? 'connected' : 'disconnected';
 
     return {
       status,
@@ -129,8 +124,8 @@ export async function getBaileysStatus(
     };
   } catch (error) {
     return {
-      status: "error",
-      errorMessage: error instanceof Error ? error.message : "Erro desconhecido",
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -142,15 +137,12 @@ export async function getBaileysQRCode(
   config: BaileysConfig
 ): Promise<{ qrCode: string; expiresAt: string } | null> {
   try {
-    const response = await fetch(
-      `${config.apiUrl}/api/${config.instanceName}/qr-code`,
-      {
-        method: "GET",
-        headers: {
-          apikey: config.apiKey,
-        },
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/${config.instanceName}/qr-code`, {
+      method: 'GET',
+      headers: {
+        apikey: config.apiKey,
+      },
+    });
 
     if (!response.ok) {
       return null;
@@ -159,16 +151,14 @@ export async function getBaileysQRCode(
     const data = await response.json();
     if (data.qrcode) {
       return {
-        qrCode: data.qrcode.base64
-          ? `data:image/png;base64,${data.qrcode.base64}`
-          : data.qrcode,
+        qrCode: data.qrcode.base64 ? `data:image/png;base64,${data.qrcode.base64}` : data.qrcode,
         expiresAt: new Date(Date.now() + 60 * 1000).toISOString(), // 1 minuto
       };
     }
 
     return null;
   } catch (error) {
-    console.error("Erro ao obter QR Code:", error);
+    console.error('Erro ao obter QR Code:', error);
     return null;
   }
 }
@@ -180,16 +170,13 @@ export async function startBaileysConnection(
   config: BaileysConfig
 ): Promise<{ qrCode: string; expiresAt: string } | null> {
   try {
-    const response = await fetch(
-      `${config.apiUrl}/api/${config.instanceName}/start`,
-      {
-        method: "POST",
-        headers: {
-          apikey: config.apiKey,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/${config.instanceName}/start`, {
+      method: 'POST',
+      headers: {
+        apikey: config.apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
 
     if (!response.ok) {
       return null;
@@ -198,24 +185,14 @@ export async function startBaileysConnection(
     const data = await response.json();
     if (data.qrcode) {
       return {
-        qrCode: data.qrcode.base64
-          ? `data:image/png;base64,${data.qrcode.base64}`
-          : data.qrcode,
+        qrCode: data.qrcode.base64 ? `data:image/png;base64,${data.qrcode.base64}` : data.qrcode,
         expiresAt: new Date(Date.now() + 60 * 1000).toISOString(),
       };
     }
 
     return null;
   } catch (error) {
-    console.error("Erro ao iniciar conexão:", error);
+    console.error('Erro ao iniciar conexão:', error);
     return null;
   }
 }
-
-
-
-
-
-
-
-

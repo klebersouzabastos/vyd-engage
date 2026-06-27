@@ -1,7 +1,8 @@
 export const errorMessagesMap: Record<string, string> = {
   USER_EXISTS: 'Este email já está cadastrado. Faça login ou recupere sua senha.',
   INVALID_EMAIL: 'Email inválido. Verifique o formato e tente novamente.',
-  WEAK_PASSWORD: 'Senha muito fraca. Use letras maiúsculas, minúsculas, números e caracteres especiais.',
+  WEAK_PASSWORD:
+    'Senha muito fraca. Use letras maiúsculas, minúsculas, números e caracteres especiais.',
   NETWORK_ERROR: 'Erro de conexão. Verifique sua internet e tente novamente.',
   TIMEOUT: 'A requisição demorou muito. Tente novamente.',
   VALIDATION_ERROR: 'Dados inválidos. Verifique os campos e tente novamente.',
@@ -62,10 +63,3 @@ export function getErrorMessage(error: any): string {
 
   return errorMessagesMap.UNKNOWN_ERROR;
 }
-
-
-
-
-
-
-

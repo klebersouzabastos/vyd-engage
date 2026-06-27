@@ -1,15 +1,19 @@
-import { DealStats } from "../../types";
-import { DollarSign, TrendingUp, Trophy, Percent } from "lucide-react";
+import { DealStats } from '../../types';
+import { DollarSign, TrendingUp, Trophy, Percent } from 'lucide-react';
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  QUALIFICATION: "Qualificação",
-  PROPOSAL: "Proposta",
-  NEGOTIATION: "Negociação",
-  CLOSING: "Fechamento",
+  QUALIFICATION: 'Qualificação',
+  PROPOSAL: 'Proposta',
+  NEGOTIATION: 'Negociação',
+  CLOSING: 'Fechamento',
 };
 
 interface DealAnalyticsProps {
@@ -22,10 +26,30 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
     // Compact mode for Dashboard integration
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<DollarSign size={18} />} label="Pipeline" value={formatCurrency(stats.totalPipelineValue)} color="blue" />
-        <StatCard icon={<TrendingUp size={18} />} label="Forecast" value={formatCurrency(stats.weightedValue)} color="purple" />
-        <StatCard icon={<Trophy size={18} />} label="Ganhos" value={formatCurrency(stats.wonValue)} color="green" />
-        <StatCard icon={<Percent size={18} />} label="Win Rate" value={`${stats.winRate}%`} color="orange" />
+        <StatCard
+          icon={<DollarSign size={18} />}
+          label="Pipeline"
+          value={formatCurrency(stats.totalPipelineValue)}
+          color="blue"
+        />
+        <StatCard
+          icon={<TrendingUp size={18} />}
+          label="Forecast"
+          value={formatCurrency(stats.weightedValue)}
+          color="purple"
+        />
+        <StatCard
+          icon={<Trophy size={18} />}
+          label="Ganhos"
+          value={formatCurrency(stats.wonValue)}
+          color="green"
+        />
+        <StatCard
+          icon={<Percent size={18} />}
+          label="Win Rate"
+          value={`${stats.winRate}%`}
+          color="orange"
+        />
       </div>
     );
   }
@@ -34,10 +58,30 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
     <div className="space-y-6">
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<DollarSign size={18} />} label="Pipeline Total" value={formatCurrency(stats.totalPipelineValue)} color="blue" />
-        <StatCard icon={<TrendingUp size={18} />} label="Forecast Ponderado" value={formatCurrency(stats.weightedValue)} color="purple" />
-        <StatCard icon={<Trophy size={18} />} label="Valor Ganho" value={formatCurrency(stats.wonValue)} color="green" />
-        <StatCard icon={<Percent size={18} />} label="Win Rate" value={`${stats.winRate}%`} color="orange" />
+        <StatCard
+          icon={<DollarSign size={18} />}
+          label="Pipeline Total"
+          value={formatCurrency(stats.totalPipelineValue)}
+          color="blue"
+        />
+        <StatCard
+          icon={<TrendingUp size={18} />}
+          label="Forecast Ponderado"
+          value={formatCurrency(stats.weightedValue)}
+          color="purple"
+        />
+        <StatCard
+          icon={<Trophy size={18} />}
+          label="Valor Ganho"
+          value={formatCurrency(stats.wonValue)}
+          color="green"
+        />
+        <StatCard
+          icon={<Percent size={18} />}
+          label="Win Rate"
+          value={`${stats.winRate}%`}
+          color="orange"
+        />
       </div>
 
       {/* Forecast by Stage Table */}
@@ -48,24 +92,40 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Stage</th>
-              <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Deals</th>
-              <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Total</th>
-              <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">Ponderado</th>
+              <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                Stage
+              </th>
+              <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                Deals
+              </th>
+              <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                Total
+              </th>
+              <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500 uppercase">
+                Ponderado
+              </th>
             </tr>
           </thead>
           <tbody>
             {stats.byStage.map((row) => (
               <tr key={row.stage} className="border-b border-gray-100">
-                <td className="py-2.5 px-4 text-sm text-gray-900">{STAGE_LABELS[row.stage] || row.stage}</td>
+                <td className="py-2.5 px-4 text-sm text-gray-900">
+                  {STAGE_LABELS[row.stage] || row.stage}
+                </td>
                 <td className="py-2.5 px-4 text-sm text-gray-600 text-right">{row.count}</td>
-                <td className="py-2.5 px-4 text-sm text-gray-600 text-right">{formatCurrency(row.totalValue)}</td>
-                <td className="py-2.5 px-4 text-sm font-medium text-gray-900 text-right">{formatCurrency(row.weightedValue)}</td>
+                <td className="py-2.5 px-4 text-sm text-gray-600 text-right">
+                  {formatCurrency(row.totalValue)}
+                </td>
+                <td className="py-2.5 px-4 text-sm font-medium text-gray-900 text-right">
+                  {formatCurrency(row.weightedValue)}
+                </td>
               </tr>
             ))}
             {stats.byStage.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center py-6 text-gray-400 text-sm">Nenhum deal ativo</td>
+                <td colSpan={4} className="text-center py-6 text-gray-400 text-sm">
+                  Nenhum deal ativo
+                </td>
               </tr>
             )}
           </tbody>
@@ -76,7 +136,9 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Tamanho Médio</span>
-          <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(stats.avgDealSize)}</p>
+          <p className="text-lg font-bold text-gray-900 mt-1">
+            {formatCurrency(stats.avgDealSize)}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Ciclo Médio</span>
@@ -91,20 +153,28 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: string;
+}) {
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
-    green: "bg-green-50 text-green-600",
-    orange: "bg-orange-50 text-orange-600",
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    green: 'bg-green-50 text-green-600',
+    orange: 'bg-orange-50 text-orange-600',
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
-          {icon}
-        </div>
+        <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div>
           <p className="text-xs text-gray-500">{label}</p>
           <p className="text-lg font-bold text-gray-900">{value}</p>

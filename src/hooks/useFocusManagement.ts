@@ -19,9 +19,9 @@ export function useAutoFocus<T extends HTMLElement = HTMLFormElement>(
       if (!containerRef.current) return;
       const focusable = containerRef.current.querySelector<HTMLElement>(
         'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), ' +
-        'textarea:not([disabled]):not([tabindex="-1"]), ' +
-        'select:not([disabled]):not([tabindex="-1"]), ' +
-        '[tabindex]:not([tabindex="-1"]):not([disabled])'
+          'textarea:not([disabled]):not([tabindex="-1"]), ' +
+          'select:not([disabled]):not([tabindex="-1"]), ' +
+          '[tabindex]:not([tabindex="-1"]):not([disabled])'
       );
       if (focusable) {
         focusable.focus();

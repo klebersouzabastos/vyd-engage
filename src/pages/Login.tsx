@@ -1,49 +1,52 @@
-import React, { useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { ArrowLeft, Eye, EyeOff, Shield } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { toast } from "sonner";
-import { FieldError } from "../components/register/FieldError";
-import { getErrorMessage, getErrorCode, getErrorStatusCode } from "../utils/errors";
-import { useAutoFocus } from "../hooks/useFocusManagement";
+import React, { useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { ArrowLeft, Eye, EyeOff, Shield } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
+import { FieldError } from '../components/register/FieldError';
+import { getErrorMessage, getErrorCode, getErrorStatusCode } from '../utils/errors';
+import { useAutoFocus } from '../hooks/useFocusManagement';
 
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
-  const [totpCode, setTotpCode] = useState("");
+  const [totpCode, setTotpCode] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [touchedFields, setTouchedFields] = useState<{ email?: boolean; password?: boolean }>({});
   const autoFocusRef = useAutoFocus<HTMLFormElement>();
 
   const validateEmail = useCallback((value: string): string | undefined => {
-    if (!value.trim()) return "E-mail é obrigatório";
+    if (!value.trim()) return 'E-mail é obrigatório';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value.trim())) return "Formato de e-mail inválido";
+    if (!emailRegex.test(value.trim())) return 'Formato de e-mail inválido';
     return undefined;
   }, []);
 
   const validatePassword = useCallback((value: string): string | undefined => {
-    if (!value) return "Senha é obrigatória";
-    if (value.length < 6) return "Senha deve ter no mínimo 6 caracteres";
+    if (!value) return 'Senha é obrigatória';
+    if (value.length < 6) return 'Senha deve ter no mínimo 6 caracteres';
     return undefined;
   }, []);
 
-  const handleFieldBlur = useCallback((field: "email" | "password") => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }));
-    const value = field === "email" ? email : password;
-    const error = field === "email" ? validateEmail(value) : validatePassword(value);
-    setFieldErrors((prev) => ({ ...prev, [field]: error }));
-  }, [email, password, validateEmail, validatePassword]);
+  const handleFieldBlur = useCallback(
+    (field: 'email' | 'password') => {
+      setTouchedFields((prev) => ({ ...prev, [field]: true }));
+      const value = field === 'email' ? email : password;
+      const error = field === 'email' ? validateEmail(value) : validatePassword(value);
+      setFieldErrors((prev) => ({ ...prev, [field]: error }));
+    },
+    [email, password, validateEmail, validatePassword]
+  );
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +58,7 @@ export function Login() {
         setLoading(false);
         return;
       }
-      toast.success("Login realizado com sucesso!");
+      toast.success('Login realizado com sucesso!');
       navigate('/app');
     } catch (error: unknown) {
       const code = getErrorCode(error);
@@ -63,18 +66,18 @@ export function Login() {
       let errorMessage = getErrorMessage(error);
 
       if (code === 'INVALID_TOTP_CODE') {
-        errorMessage = "Código 2FA inválido. Tente novamente.";
-        setTotpCode("");
+        errorMessage = 'Código 2FA inválido. Tente novamente.';
+        setTotpCode('');
       } else if (code === 'NETWORK_ERROR') {
-        errorMessage = "Erro de conexão. Verifique se o servidor está rodando.";
+        errorMessage = 'Erro de conexão. Verifique se o servidor está rodando.';
       } else if (code === 'INVALID_CREDENTIALS') {
-        errorMessage = "Email ou senha incorretos.";
+        errorMessage = 'Email ou senha incorretos.';
       } else if (statusCode === 401) {
-        errorMessage = "Credenciais inválidas.";
+        errorMessage = 'Credenciais inválidas.';
       }
 
       toast.error(errorMessage);
-      console.error("Erro de login:", error);
+      console.error('Erro de login:', error);
     } finally {
       setLoading(false);
     }
@@ -84,13 +87,13 @@ export function Login() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
-      
+
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
           {/* Back Button */}
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 sm:mb-8"
           >
             <ArrowLeft size={20} />
@@ -118,7 +121,10 @@ export function Login() {
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6" ref={autoFocusRef}>
             <div className="space-y-2.5">
-              <Label htmlFor="email" className="text-gray-900 text-base sm:text-lg font-medium block">
+              <Label
+                htmlFor="email"
+                className="text-gray-900 text-base sm:text-lg font-medium block"
+              >
                 E-mail
               </Label>
               <Input
@@ -132,10 +138,10 @@ export function Login() {
                     setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
                   }
                 }}
-                onBlur={() => handleFieldBlur("email")}
-                className={`w-full h-12 sm:h-14 px-4 py-3 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touchedFields.email && fieldErrors.email ? "border-red-500" : "border-gray-300"}`}
+                onBlur={() => handleFieldBlur('email')}
+                className={`w-full h-12 sm:h-14 px-4 py-3 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touchedFields.email && fieldErrors.email ? 'border-red-500' : 'border-gray-300'}`}
                 required
-                aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
               <FieldError
                 id="email-error"
@@ -145,25 +151,31 @@ export function Login() {
             </div>
 
             <div className="space-y-2.5">
-              <Label htmlFor="password" className="text-gray-900 text-base sm:text-lg font-medium block">
+              <Label
+                htmlFor="password"
+                className="text-gray-900 text-base sm:text-lg font-medium block"
+              >
                 Senha
               </Label>
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (touchedFields.password) {
-                      setFieldErrors((prev) => ({ ...prev, password: validatePassword(e.target.value) }));
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        password: validatePassword(e.target.value),
+                      }));
                     }
                   }}
-                  onBlur={() => handleFieldBlur("password")}
-                  className={`w-full h-12 sm:h-14 px-4 py-3 pr-14 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touchedFields.password && fieldErrors.password ? "border-red-500" : "border-gray-300"}`}
+                  onBlur={() => handleFieldBlur('password')}
+                  className={`w-full h-12 sm:h-14 px-4 py-3 pr-14 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touchedFields.password && fieldErrors.password ? 'border-red-500' : 'border-gray-300'}`}
                   required
-                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                 />
                 <button
                   type="button"
@@ -173,7 +185,7 @@ export function Login() {
                     setShowPassword(!showPassword);
                   }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   tabIndex={0}
                 >
                   {showPassword ? (
@@ -194,7 +206,9 @@ export function Login() {
               <div className="space-y-3 p-4 rounded-lg border border-primary/30 bg-primary/5">
                 <div className="flex items-center gap-2 text-primary">
                   <Shield size={18} />
-                  <span className="font-medium text-sm sm:text-base">Autenticação de dois fatores</span>
+                  <span className="font-medium text-sm sm:text-base">
+                    Autenticação de dois fatores
+                  </span>
                 </div>
                 <p className="text-sm text-gray-600">
                   Insira o código do seu aplicativo autenticador.
@@ -205,8 +219,9 @@ export function Login() {
                   maxLength={6}
                   placeholder="000000"
                   value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className="w-full h-12 sm:h-14 text-center text-xl tracking-widest border border-gray-300 rounded-lg"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional no campo TOTP quando o passo de 2FA aparece
                   autoFocus
                   aria-label="Código de autenticação de dois fatores"
                 />
@@ -234,15 +249,15 @@ export function Login() {
               disabled={requires2FA && totpCode.length !== 6}
               className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6"
             >
-              {requires2FA ? "Verificar" : "Entrar"}
+              {requires2FA ? 'Verificar' : 'Entrar'}
             </Button>
           </form>
 
           {/* Sign up link */}
           <p className="mt-8 sm:mt-10 text-center text-gray-600 text-base sm:text-lg">
-            Não tem uma conta?{" "}
-            <Link 
-              to="/register" 
+            Não tem uma conta?{' '}
+            <Link
+              to="/register"
               className="text-primary hover:text-primary-dark font-medium transition-colors"
             >
               Criar conta gratuita
@@ -266,7 +281,8 @@ export function Login() {
               Organize seus leads e automatize follow-ups
             </h3>
             <p className="text-sm lg:text-base xl:text-lg opacity-90">
-              Capture, organize e converta mais leads com automação inteligente via WhatsApp e e-mail.
+              Capture, organize e converta mais leads com automação inteligente via WhatsApp e
+              e-mail.
             </p>
           </div>
         </div>

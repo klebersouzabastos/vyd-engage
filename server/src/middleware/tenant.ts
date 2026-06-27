@@ -17,7 +17,8 @@ export async function requireTenantAccess(
     }
 
     // Get tenantId from params, body, or query
-    const tenantId = req.params.tenantId || req.body.tenantId || req.query.tenantId || req.user.tenantId;
+    const tenantId =
+      req.params.tenantId || req.body.tenantId || req.query.tenantId || req.user.tenantId;
 
     // Verify user belongs to this tenant
     const user = await prisma.user.findUnique({
@@ -57,11 +58,3 @@ export function tenantScope(req: Request, res: Response, next: NextFunction): vo
 
   next();
 }
-
-
-
-
-
-
-
-

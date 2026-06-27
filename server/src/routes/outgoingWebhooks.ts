@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  webhookService,
-  SELECTABLE_WEBHOOK_EVENTS,
-} from '../services/webhookService.js';
+import { webhookService, SELECTABLE_WEBHOOK_EVENTS } from '../services/webhookService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -14,9 +11,7 @@ router.use(authenticate);
 router.use(tenantScope);
 
 // Events selectable on creation are exactly the 9 from req 10.
-const selectableEvent = z.enum(
-  SELECTABLE_WEBHOOK_EVENTS as unknown as [string, ...string[]],
-);
+const selectableEvent = z.enum(SELECTABLE_WEBHOOK_EVENTS as unknown as [string, ...string[]]);
 
 const createWebhookSchema = z.object({
   url: z.string().url(),

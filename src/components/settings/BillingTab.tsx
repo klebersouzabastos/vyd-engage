@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Button } from "../ui/button";
-import { CheckCircle, Download } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { usePlan } from "../../contexts/PlanContext";
-import { usePayment } from "../../contexts/PaymentContext";
-import { PlanType } from "../../types/plan";
-import { PaymentModal } from "../payment/PaymentModal";
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { CheckCircle, Download } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { usePlan } from '../../contexts/PlanContext';
+import { usePayment } from '../../contexts/PaymentContext';
+import { PlanType } from '../../types/plan';
+import { PaymentModal } from '../payment/PaymentModal';
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
+} from '../ui/dialog';
 
-const planOrder: PlanType[] = ["starter", "pro", "enterprise"];
+const planOrder: PlanType[] = ['starter', 'pro', 'enterprise'];
 
 export function BillingTab() {
   const {
@@ -29,7 +29,7 @@ export function BillingTab() {
     changePlanWithPayment,
     getPlan,
     canUpgrade,
-    canDowngrade
+    canDowngrade,
   } = usePlan();
   const { validateUpgrade, currentPaymentIntent } = usePayment();
   const [planChangeModalOpen, setPlanChangeModalOpen] = useState(false);
@@ -52,7 +52,11 @@ export function BillingTab() {
                   <p className="text-gray-600">R$ {currentPlanData.price.toFixed(2)}/mes</p>
                 </div>
                 <span className="px-3 py-1 bg-primary text-white text-xs rounded-full">
-                  {subscription?.status === "active" ? "Ativo" : subscription?.status === "trial" ? "Teste" : "Inativo"}
+                  {subscription?.status === 'active'
+                    ? 'Ativo'
+                    : subscription?.status === 'trial'
+                      ? 'Teste'
+                      : 'Inativo'}
                 </span>
               </div>
               <div className="space-y-2 mb-4">
@@ -118,10 +122,10 @@ export function BillingTab() {
                 key={plan.id}
                 className={`p-6 rounded-lg border-2 ${
                   isCurrentPlan
-                    ? "border-primary bg-primary/5"
+                    ? 'border-primary bg-primary/5'
                     : plan.highlighted
-                    ? "border-amber bg-amber/5"
-                    : "border-gray-300 bg-white"
+                      ? 'border-amber bg-amber/5'
+                      : 'border-gray-300 bg-white'
                 }`}
               >
                 {plan.highlighted && !isCurrentPlan && (
@@ -135,7 +139,9 @@ export function BillingTab() {
                   <h4 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h4>
                   <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-gray-900">R$ {plan.price.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-gray-900">
+                      R$ {plan.price.toFixed(2)}
+                    </span>
                     <span className="text-sm text-gray-600">/mes</span>
                   </div>
                 </div>
@@ -155,8 +161,8 @@ export function BillingTab() {
                   <Button
                     className={`w-full ${
                       isUpgrade
-                        ? "bg-primary hover:bg-primary-dark"
-                        : "bg-gray-600 hover:bg-gray-500"
+                        ? 'bg-primary hover:bg-primary-dark'
+                        : 'bg-gray-600 hover:bg-gray-500'
                     }`}
                     onClick={() => {
                       setSelectedPlanToChange(plan.id);
@@ -172,7 +178,7 @@ export function BillingTab() {
                       }
                     }}
                   >
-                    {isUpgrade ? "Fazer Upgrade" : "Fazer Downgrade"}
+                    {isUpgrade ? 'Fazer Upgrade' : 'Fazer Downgrade'}
                   </Button>
                 )}
               </div>
@@ -186,17 +192,17 @@ export function BillingTab() {
         <h3 className="text-gray-900 mb-4">Uso Atual</h3>
         <div className="space-y-4">
           {[
-            { label: "Leads", usage: planUsage.leads },
-            { label: "Usuarios", usage: planUsage.users },
-            { label: "Automacoes", usage: planUsage.automations },
-            { label: "Conexoes WhatsApp", usage: planUsage.whatsappConnections },
-            { label: "Configuracoes de Email", usage: planUsage.emailConfigs },
+            { label: 'Leads', usage: planUsage.leads },
+            { label: 'Usuarios', usage: planUsage.users },
+            { label: 'Automacoes', usage: planUsage.automations },
+            { label: 'Conexoes WhatsApp', usage: planUsage.whatsappConnections },
+            { label: 'Configuracoes de Email', usage: planUsage.emailConfigs },
           ].map(({ label, usage }) => (
             <div key={label}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">{label}</span>
                 <span className="text-sm font-medium">
-                  {usage.current} / {usage.limit === 0 ? "Ilimitado" : usage.limit}
+                  {usage.current} / {usage.limit === 0 ? 'Ilimitado' : usage.limit}
                 </span>
               </div>
               {usage.limit > 0 && (
@@ -204,10 +210,10 @@ export function BillingTab() {
                   <div
                     className={`h-2 rounded-full ${
                       usage.percentage >= 90
-                        ? "bg-red-500"
+                        ? 'bg-red-500'
                         : usage.percentage >= 70
-                        ? "bg-yellow-500"
-                        : "bg-primary"
+                          ? 'bg-yellow-500'
+                          : 'bg-primary'
                     }`}
                     style={{ width: `${Math.min(usage.percentage, 100)}%` }}
                   ></div>
@@ -224,15 +230,18 @@ export function BillingTab() {
         <div className="space-y-3">
           {paymentHistory.length > 0 ? (
             paymentHistory.map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+              <div
+                key={payment.id}
+                className="flex items-center justify-between p-3 bg-gray-100 rounded-lg"
+              >
                 <div>
                   <p className="font-medium text-gray-900">R$ {payment.amount.toFixed(2)}</p>
                   <p className="text-sm text-gray-600">
-                    {new Date(payment.date).toLocaleDateString("pt-BR")}
+                    {new Date(payment.date).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {payment.status === "paid" && (
+                  {payment.status === 'paid' && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -240,13 +249,13 @@ export function BillingTab() {
                         try {
                           const blob = await apiClient.downloadInvoice(payment.id);
                           const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
+                          const a = document.createElement('a');
                           a.href = url;
                           a.download = `fatura-${payment.id.slice(0, 8)}.pdf`;
                           a.click();
                           URL.revokeObjectURL(url);
                         } catch {
-                          toast.error("Erro ao baixar fatura");
+                          toast.error('Erro ao baixar fatura');
                         }
                       }}
                       title="Baixar fatura"
@@ -256,22 +265,22 @@ export function BillingTab() {
                   )}
                   <span
                     className={`px-3 py-1 text-xs rounded-full ${
-                      payment.status === "paid"
-                        ? "bg-green-100 text-green-700"
-                        : payment.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : payment.status === "failed"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-gray-100 text-gray-700"
+                      payment.status === 'paid'
+                        ? 'bg-green-100 text-green-700'
+                        : payment.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : payment.status === 'failed'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
                     }`}
                   >
-                    {payment.status === "paid"
-                      ? "Pago"
-                      : payment.status === "pending"
-                      ? "Pendente"
-                      : payment.status === "failed"
-                      ? "Falhou"
-                      : "Reembolsado"}
+                    {payment.status === 'paid'
+                      ? 'Pago'
+                      : payment.status === 'pending'
+                        ? 'Pendente'
+                        : payment.status === 'failed'
+                          ? 'Falhou'
+                          : 'Reembolsado'}
                   </span>
                 </div>
               </div>
@@ -289,25 +298,28 @@ export function BillingTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedPlanToChange && planOrder.indexOf(selectedPlanToChange) > planOrder.indexOf(currentPlan)
-                ? "Confirmar Upgrade de Plano"
-                : "Confirmar Downgrade de Plano"}
+              {selectedPlanToChange &&
+              planOrder.indexOf(selectedPlanToChange) > planOrder.indexOf(currentPlan)
+                ? 'Confirmar Upgrade de Plano'
+                : 'Confirmar Downgrade de Plano'}
             </DialogTitle>
             <DialogDescription>
               {selectedPlanToChange && (
                 <>
-                  Voce esta prestes a mudar do plano <strong>{getPlan(currentPlan).name}</strong> para o plano{" "}
-                  <strong>{getPlan(selectedPlanToChange).name}</strong>.
+                  Voce esta prestes a mudar do plano <strong>{getPlan(currentPlan).name}</strong>{' '}
+                  para o plano <strong>{getPlan(selectedPlanToChange).name}</strong>.
                   {planOrder.indexOf(selectedPlanToChange) > planOrder.indexOf(currentPlan) ? (
                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm text-blue-800">
-                        <strong>Upgrade:</strong> Voce tera acesso a mais recursos e limites maiores. A mudanca sera aplicada imediatamente.
+                        <strong>Upgrade:</strong> Voce tera acesso a mais recursos e limites
+                        maiores. A mudanca sera aplicada imediatamente.
                       </p>
                     </div>
                   ) : (
                     <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-sm text-yellow-800">
-                        <strong>Atencao:</strong> Ao fazer downgrade, voce pode perder acesso a alguns recursos se estiver usando mais do que o permitido no novo plano.
+                        <strong>Atencao:</strong> Ao fazer downgrade, voce pode perder acesso a
+                        alguns recursos se estiver usando mais do que o permitido no novo plano.
                       </p>
                     </div>
                   )}
@@ -327,7 +339,8 @@ export function BillingTab() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Novo Plano</span>
                   <span className="font-medium text-gray-900">
-                    {getPlan(selectedPlanToChange).name} - R$ {getPlan(selectedPlanToChange).price.toFixed(2)}/mes
+                    {getPlan(selectedPlanToChange).name} - R${' '}
+                    {getPlan(selectedPlanToChange).price.toFixed(2)}/mes
                   </span>
                 </div>
               </div>
@@ -350,7 +363,8 @@ export function BillingTab() {
                 if (!selectedPlanToChange) return;
                 setIsChangingPlan(true);
                 try {
-                  const isUpgrade = planOrder.indexOf(selectedPlanToChange) > planOrder.indexOf(currentPlan);
+                  const isUpgrade =
+                    planOrder.indexOf(selectedPlanToChange) > planOrder.indexOf(currentPlan);
                   if (isUpgrade) {
                     const validation = validateUpgrade(selectedPlanToChange);
                     if (!validation.isValid) {
@@ -363,12 +377,12 @@ export function BillingTab() {
                   setPlanChangeModalOpen(false);
                   setSelectedPlanToChange(null);
                 } catch (error: any) {
-                  console.error("Erro ao mudar plano:", error);
-                  if (error.message?.includes("pagamento")) {
+                  console.error('Erro ao mudar plano:', error);
+                  if (error.message?.includes('pagamento')) {
                     setPlanChangeModalOpen(false);
                     setPaymentModalOpen(true);
                   } else {
-                    toast.error(error.message || "Erro ao mudar plano. Tente novamente.");
+                    toast.error(error.message || 'Erro ao mudar plano. Tente novamente.');
                   }
                 } finally {
                   setIsChangingPlan(false);
@@ -376,7 +390,7 @@ export function BillingTab() {
               }}
               disabled={isChangingPlan}
             >
-              {isChangingPlan ? "Processando..." : "Confirmar Mudanca"}
+              {isChangingPlan ? 'Processando...' : 'Confirmar Mudanca'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -392,7 +406,7 @@ export function BillingTab() {
           amount={getPlan(selectedPlanToChange).price}
           onPaymentSuccess={async () => {
             try {
-              if (currentPaymentIntent && currentPaymentIntent.status === "paid") {
+              if (currentPaymentIntent && currentPaymentIntent.status === 'paid') {
                 await changePlanWithPayment(selectedPlanToChange, currentPaymentIntent.id);
               } else {
                 await changePlan(selectedPlanToChange);
@@ -400,8 +414,10 @@ export function BillingTab() {
               setPaymentModalOpen(false);
               setSelectedPlanToChange(null);
             } catch (error: any) {
-              console.error("Erro ao atualizar plano apos pagamento:", error);
-              toast.error(error.message || "Erro ao atualizar plano. Entre em contato com o suporte.");
+              console.error('Erro ao atualizar plano apos pagamento:', error);
+              toast.error(
+                error.message || 'Erro ao atualizar plano. Entre em contato com o suporte.'
+              );
             }
           }}
         />

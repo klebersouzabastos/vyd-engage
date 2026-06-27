@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router";
-import { Button } from "../components/ui/button";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router';
+import { Button } from '../components/ui/button';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
 import {
   Users,
   Zap,
@@ -15,8 +15,8 @@ import {
   ArrowRight,
   Menu,
   X,
-  ChevronDown
-} from "lucide-react";
+  ChevronDown,
+} from 'lucide-react';
 
 function useScrollAnimation() {
   const ref = useRef<HTMLDivElement>(null);
@@ -48,40 +48,40 @@ interface PricingPlan {
 
 const fallbackPlans: PricingPlan[] = [
   {
-    name: "Starter",
-    price: "97",
+    name: 'Starter',
+    price: '97',
     features: [
-      "Até 250 leads",
-      "1 usuário",
-      "5 automações",
-      "WhatsApp + E-mail",
-      "Suporte por e-mail",
+      'Até 250 leads',
+      '1 usuário',
+      '5 automações',
+      'WhatsApp + E-mail',
+      'Suporte por e-mail',
     ],
   },
   {
-    name: "Pro",
-    price: "197",
+    name: 'Pro',
+    price: '197',
     features: [
-      "Até 1.000 leads",
-      "5 usuários",
-      "Automações ilimitadas",
-      "WhatsApp + E-mail",
-      "Suporte prioritário",
-      "Integrações avançadas",
+      'Até 1.000 leads',
+      '5 usuários',
+      'Automações ilimitadas',
+      'WhatsApp + E-mail',
+      'Suporte prioritário',
+      'Integrações avançadas',
     ],
     highlighted: true,
   },
   {
-    name: "Enterprise",
-    price: "497",
+    name: 'Enterprise',
+    price: '497',
     features: [
-      "Leads ilimitados",
-      "Usuários ilimitados",
-      "Automações ilimitadas",
-      "WhatsApp + E-mail + SMS",
-      "Suporte 24/7",
-      "API customizada",
-      "Gerente de conta dedicado",
+      'Leads ilimitados',
+      'Usuários ilimitados',
+      'Automações ilimitadas',
+      'WhatsApp + E-mail + SMS',
+      'Suporte 24/7',
+      'API customizada',
+      'Gerente de conta dedicado',
     ],
   },
 ];
@@ -95,18 +95,27 @@ export function LandingPage() {
     const apiUrl = import.meta.env.VITE_API_URL || '';
     fetch(`${apiUrl}/api/public/plans`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((plans: Array<{ name: string; price: number | string; features: unknown; highlighted?: boolean }>) => {
-        if (Array.isArray(plans) && plans.length > 0) {
-          setPricingPlans(
-            plans.map((p) => ({
-              name: p.name,
-              price: String(Math.round(Number(p.price))),
-              features: Array.isArray(p.features) ? p.features as string[] : [],
-              highlighted: p.highlighted ?? false,
-            }))
-          );
+      .then(
+        (
+          plans: Array<{
+            name: string;
+            price: number | string;
+            features: unknown;
+            highlighted?: boolean;
+          }>
+        ) => {
+          if (Array.isArray(plans) && plans.length > 0) {
+            setPricingPlans(
+              plans.map((p) => ({
+                name: p.name,
+                price: String(Math.round(Number(p.price))),
+                features: Array.isArray(p.features) ? (p.features as string[]) : [],
+                highlighted: p.highlighted ?? false,
+              }))
+            );
+          }
         }
-      })
+      )
       .catch(() => {
         // Keep fallback plans on error
       });
@@ -120,109 +129,113 @@ export function LandingPage() {
   const features = [
     {
       icon: Users,
-      title: "Captura Inteligente de Leads",
-      description: "Formulários personalizados e integrações com Meta Ads, Google Ads e mais",
+      title: 'Captura Inteligente de Leads',
+      description: 'Formulários personalizados e integrações com Meta Ads, Google Ads e mais',
     },
     {
       icon: GitBranch,
-      title: "Pipeline Visual",
-      description: "Organize seus leads em um funil kanban intuitivo e fácil de usar",
+      title: 'Pipeline Visual',
+      description: 'Organize seus leads em um funil kanban intuitivo e fácil de usar',
     },
     {
       icon: Zap,
-      title: "Automação Poderosa",
-      description: "Configure follow-ups automáticos via WhatsApp e e-mail sem programar",
+      title: 'Automação Poderosa',
+      description: 'Configure follow-ups automáticos via WhatsApp e e-mail sem programar',
     },
     {
       icon: BarChart3,
-      title: "Relatórios em Tempo Real",
-      description: "Acompanhe métricas importantes e tome decisões baseadas em dados",
+      title: 'Relatórios em Tempo Real',
+      description: 'Acompanhe métricas importantes e tome decisões baseadas em dados',
     },
     {
       icon: MessageSquare,
-      title: "WhatsApp Business API",
-      description: "Envie mensagens automatizadas diretamente para o WhatsApp dos seus leads",
+      title: 'WhatsApp Business API',
+      description: 'Envie mensagens automatizadas diretamente para o WhatsApp dos seus leads',
     },
     {
       icon: Mail,
-      title: "E-mail Marketing",
-      description: "Crie campanhas de e-mail personalizadas e automatizadas",
+      title: 'E-mail Marketing',
+      description: 'Crie campanhas de e-mail personalizadas e automatizadas',
     },
   ];
 
   const testimonials = [
     {
-      name: "Maria Santos",
-      role: "CEO da TechSolutions",
-      content: "O VYD Engage transformou nossa gestão de leads. Aumentamos nossa conversão em 45% no primeiro mês!",
+      name: 'Maria Santos',
+      role: 'CEO da TechSolutions',
+      content:
+        'O VYD Engage transformou nossa gestão de leads. Aumentamos nossa conversão em 45% no primeiro mês!',
       rating: 5,
     },
     {
-      name: "João Oliveira",
-      role: "Gerente de Vendas",
-      content: "A automação via WhatsApp é incrível. Economizamos horas de trabalho manual todos os dias.",
+      name: 'João Oliveira',
+      role: 'Gerente de Vendas',
+      content:
+        'A automação via WhatsApp é incrível. Economizamos horas de trabalho manual todos os dias.',
       rating: 5,
     },
     {
-      name: "Ana Costa",
-      role: "Fundadora da StartupX",
-      content: "Interface intuitiva e fácil de usar. Implementamos em menos de 1 hora!",
+      name: 'Ana Costa',
+      role: 'Fundadora da StartupX',
+      content: 'Interface intuitiva e fácil de usar. Implementamos em menos de 1 hora!',
       rating: 5,
     },
   ];
 
-
   const faqs = [
     {
-      question: "Como funciona o período de teste?",
-      answer: "Você tem 14 dias para testar todas as funcionalidades gratuitamente, sem precisar de cartão de crédito.",
+      question: 'Como funciona o período de teste?',
+      answer:
+        'Você tem 14 dias para testar todas as funcionalidades gratuitamente, sem precisar de cartão de crédito.',
     },
     {
-      question: "Posso cancelar a qualquer momento?",
-      answer: "Sim! Não há fidelidade. Você pode cancelar sua assinatura quando quiser.",
+      question: 'Posso cancelar a qualquer momento?',
+      answer: 'Sim! Não há fidelidade. Você pode cancelar sua assinatura quando quiser.',
     },
     {
-      question: "Preciso de conhecimento técnico?",
-      answer: "Não! O VYD Engage foi projetado para ser extremamente intuitivo. Qualquer pessoa consegue usar.",
+      question: 'Preciso de conhecimento técnico?',
+      answer:
+        'Não! O VYD Engage foi projetado para ser extremamente intuitivo. Qualquer pessoa consegue usar.',
     },
     {
-      question: "Como funciona a integração com WhatsApp?",
-      answer: "Usamos a API oficial do WhatsApp Business. Basta conectar sua conta e começar a enviar mensagens automatizadas.",
+      question: 'Como funciona a integração com WhatsApp?',
+      answer:
+        'Usamos a API oficial do WhatsApp Business. Basta conectar sua conta e começar a enviar mensagens automatizadas.',
     },
   ];
 
   const trustedCompanies = [
     {
-      name: "TechSolutions",
-      logo: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=100&fit=crop",
+      name: 'TechSolutions',
+      logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=100&fit=crop',
     },
     {
-      name: "StartupX",
-      logo: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=100&fit=crop",
+      name: 'StartupX',
+      logo: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=100&fit=crop',
     },
     {
-      name: "InnovaCorp",
-      logo: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=200&h=100&fit=crop",
+      name: 'InnovaCorp',
+      logo: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=200&h=100&fit=crop',
     },
     {
-      name: "DigitalGrowth",
-      logo: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=200&h=100&fit=crop",
+      name: 'DigitalGrowth',
+      logo: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=200&h=100&fit=crop',
     },
     {
-      name: "CloudTech",
-      logo: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=200&h=100&fit=crop",
+      name: 'CloudTech',
+      logo: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=200&h=100&fit=crop',
     },
     {
-      name: "SmartBusiness",
-      logo: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=200&h=100&fit=crop",
+      name: 'SmartBusiness',
+      logo: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=200&h=100&fit=crop',
     },
     {
-      name: "AgileSolutions",
-      logo: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=100&fit=crop",
+      name: 'AgileSolutions',
+      logo: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=100&fit=crop',
     },
     {
-      name: "NextLevel",
-      logo: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=200&h=100&fit=crop",
+      name: 'NextLevel',
+      logo: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=200&h=100&fit=crop',
     },
   ];
 
@@ -230,13 +243,13 @@ export function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
-      
+
       {/* Header */}
       <header className="sticky top-10 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99]">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               onClick={(e) => {
                 e.preventDefault();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -256,7 +269,10 @@ export function LandingPage() {
               <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Preços
               </a>
-              <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <a
+                href="#testimonials"
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
                 Depoimentos
               </a>
               <a href="#faq" className="text-gray-600 hover:text-gray-900 transition-colors">
@@ -270,12 +286,10 @@ export function LandingPage() {
                   <Button variant="ghost">Entrar</Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-primary hover:bg-primary-dark">
-                    Começar Grátis
-                  </Button>
+                  <Button className="bg-primary hover:bg-primary-dark">Começar Grátis</Button>
                 </Link>
               </div>
-              <button 
+              <button
                 className="md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
@@ -289,34 +303,34 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-300 bg-white">
             <nav className="flex flex-col px-6 py-4 gap-4">
-              <a 
-                href="#features" 
+              <a
+                href="#features"
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Funcionalidades
               </a>
-              <a 
-                href="#pricing" 
+              <a
+                href="#pricing"
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Preços
               </a>
-              <a 
-                href="#testimonials" 
+              <a
+                href="#testimonials"
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Depoimentos
               </a>
-              <a 
-                href="#faq" 
+              <a
+                href="#faq"
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -341,15 +355,18 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <section className="pt-8 pb-20 px-6">
-        <div ref={heroAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${heroAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div
+          // eslint-disable-next-line react-hooks/refs -- ref do hook useScrollAnimation aplicado ao DOM (uso legítimo do React Compiler para detecção de scroll)
+          ref={heroAnim.ref}
+          // eslint-disable-next-line react-hooks/refs -- isVisible é estado derivado do IntersectionObserver, não acesso a ref.current
+          className={`max-w-7xl mx-auto transition-all duration-700 ${heroAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-gray-900 mb-6">
-                Capture, Organize e Converta Mais Leads
-              </h1>
+              <h1 className="text-gray-900 mb-6">Capture, Organize e Converta Mais Leads</h1>
               <p className="text-xl text-gray-600 mb-8">
-                CRM simples e poderoso com automação inteligente via WhatsApp e e-mail. 
-                Aumente suas vendas sem aumentar sua equipe.
+                CRM simples e poderoso com automação inteligente via WhatsApp e e-mail. Aumente suas
+                vendas sem aumentar sua equipe.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Link to="/register">
@@ -399,8 +416,8 @@ export function LandingPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 items-center">
             {trustedCompanies.map((company, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex items-center justify-center h-16 px-4 bg-white rounded-lg border border-gray-300 hover:border-primary hover:shadow-sm transition-all grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
                 title={company.name}
               >
@@ -417,7 +434,12 @@ export function LandingPage() {
 
       {/* Features Section */}
       <section id="features" className="py-20 px-6">
-        <div ref={featuresAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${featuresAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div
+          // eslint-disable-next-line react-hooks/refs -- ref do hook useScrollAnimation aplicado ao DOM (uso legítimo do React Compiler para detecção de scroll)
+          ref={featuresAnim.ref}
+          // eslint-disable-next-line react-hooks/refs -- isVisible é estado derivado do IntersectionObserver, não acesso a ref.current
+          className={`max-w-7xl mx-auto transition-all duration-700 ${featuresAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <div className="text-center mb-16">
             <h2 className="text-gray-900 mb-4">Tudo que você precisa para vender mais</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -429,7 +451,10 @@ export function LandingPage() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="p-6 rounded-lg border border-gray-300 hover:border-primary hover:shadow-md transition-all">
+                <div
+                  key={index}
+                  className="p-6 rounded-lg border border-gray-300 hover:border-primary hover:shadow-md transition-all"
+                >
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                     <Icon className="text-primary" size={24} />
                   </div>
@@ -444,7 +469,12 @@ export function LandingPage() {
 
       {/* Benefits Section */}
       <section className="py-20 px-6 bg-gray-100">
-        <div ref={benefitsAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${benefitsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div
+          // eslint-disable-next-line react-hooks/refs -- ref do hook useScrollAnimation aplicado ao DOM (uso legítimo do React Compiler para detecção de scroll)
+          ref={benefitsAnim.ref}
+          // eslint-disable-next-line react-hooks/refs -- isVisible é estado derivado do IntersectionObserver, não acesso a ref.current
+          className={`max-w-7xl mx-auto transition-all duration-700 ${benefitsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <ImageWithFallback
@@ -454,19 +484,17 @@ export function LandingPage() {
               />
             </div>
             <div>
-              <h2 className="text-gray-900 mb-6">
-                Automação que realmente funciona
-              </h2>
+              <h2 className="text-gray-900 mb-6">Automação que realmente funciona</h2>
               <p className="text-lg text-gray-600 mb-8">
-                Configure fluxos de automação personalizados em minutos, não em dias. 
-                Envie mensagens no momento certo, para a pessoa certa, pelo canal certo.
+                Configure fluxos de automação personalizados em minutos, não em dias. Envie
+                mensagens no momento certo, para a pessoa certa, pelo canal certo.
               </p>
               <div className="space-y-4">
                 {[
-                  "Configure em minutos, não em horas",
-                  "Sem necessidade de programação",
-                  "Personalize com variáveis dinâmicas",
-                  "Acompanhe resultados em tempo real",
+                  'Configure em minutos, não em horas',
+                  'Sem necessidade de programação',
+                  'Personalize com variáveis dinâmicas',
+                  'Acompanhe resultados em tempo real',
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <CheckCircle size={20} className="text-success flex-shrink-0" />
@@ -481,12 +509,15 @@ export function LandingPage() {
 
       {/* Testimonials */}
       <section id="testimonials" className="py-20 px-6">
-        <div ref={testimonialsAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${testimonialsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div
+          // eslint-disable-next-line react-hooks/refs -- ref do hook useScrollAnimation aplicado ao DOM (uso legítimo do React Compiler para detecção de scroll)
+          ref={testimonialsAnim.ref}
+          // eslint-disable-next-line react-hooks/refs -- isVisible é estado derivado do IntersectionObserver, não acesso a ref.current
+          className={`max-w-7xl mx-auto transition-all duration-700 ${testimonialsAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <div className="text-center mb-16">
             <h2 className="text-gray-900 mb-4">O que nossos clientes dizem</h2>
-            <p className="text-xl text-gray-600">
-              Mais de 500 empresas já usam o VYD Engage
-            </p>
+            <p className="text-xl text-gray-600">Mais de 500 empresas já usam o VYD Engage</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -510,12 +541,15 @@ export function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" className="py-20 px-6 bg-gray-100">
-        <div ref={pricingAnim.ref} className={`max-w-7xl mx-auto transition-all duration-700 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div
+          // eslint-disable-next-line react-hooks/refs -- ref do hook useScrollAnimation aplicado ao DOM (uso legítimo do React Compiler para detecção de scroll)
+          ref={pricingAnim.ref}
+          // eslint-disable-next-line react-hooks/refs -- isVisible é estado derivado do IntersectionObserver, não acesso a ref.current
+          className={`max-w-7xl mx-auto transition-all duration-700 ${pricingAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <div className="text-center mb-16">
             <h2 className="text-gray-900 mb-4">Planos transparentes</h2>
-            <p className="text-xl text-gray-600">
-              Escolha o plano ideal para o seu negócio
-            </p>
+            <p className="text-xl text-gray-600">Escolha o plano ideal para o seu negócio</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -524,10 +558,7 @@ export function LandingPage() {
                 key={index}
                 className={`
                   p-8 rounded-lg bg-white border-2 
-                  ${plan.highlighted 
-                    ? 'border-primary shadow-xl scale-105' 
-                    : 'border-gray-300'
-                  }
+                  ${plan.highlighted ? 'border-primary shadow-xl scale-105' : 'border-gray-300'}
                 `}
               >
                 {plan.highlighted && (
@@ -574,7 +605,10 @@ export function LandingPage() {
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="rounded-lg bg-white border border-gray-300 overflow-hidden">
+              <div
+                key={index}
+                className="rounded-lg bg-white border border-gray-300 overflow-hidden"
+              >
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
@@ -585,7 +619,9 @@ export function LandingPage() {
                     className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${openFaq === index ? 'rotate-180' : ''}`}
                   />
                 </button>
-                <div className={`overflow-hidden transition-all duration-200 ${openFaq === index ? 'max-h-40 pb-6' : 'max-h-0'}`}>
+                <div
+                  className={`overflow-hidden transition-all duration-200 ${openFaq === index ? 'max-h-40 pb-6' : 'max-h-0'}`}
+                >
                   <p className="text-gray-600 px-6">{faq.answer}</p>
                 </div>
               </div>
@@ -597,9 +633,7 @@ export function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 px-6 bg-gradient-to-r from-primary to-primary-light">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-white mb-6">
-            Pronto para aumentar suas vendas?
-          </h2>
+          <h2 className="text-white mb-6">Pronto para aumentar suas vendas?</h2>
           <p className="text-xl text-white/90 mb-8">
             Junte-se a centenas de empresas que já estão vendendo mais com o VYD Engage
           </p>
@@ -629,23 +663,54 @@ export function LandingPage() {
             <div>
               <h4 className="text-white font-medium mb-4">Produto</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#features" className="hover:text-white transition-colors">Funcionalidades</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Preços</a></li>
-                <li><a href="#faq" className="hover:text-white transition-colors">Perguntas Frequentes</a></li>
+                <li>
+                  <a href="#features" className="hover:text-white transition-colors">
+                    Funcionalidades
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-white transition-colors">
+                    Preços
+                  </a>
+                </li>
+                <li>
+                  <a href="#faq" className="hover:text-white transition-colors">
+                    Perguntas Frequentes
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Empresa</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#testimonials" className="hover:text-white transition-colors">Depoimentos</a></li>
-                <li><a href="mailto:contato@vydengage.com" className="hover:text-white transition-colors">Contato</a></li>
+                <li>
+                  <a href="#testimonials" className="hover:text-white transition-colors">
+                    Depoimentos
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:contato@vydengage.com"
+                    className="hover:text-white transition-colors"
+                  >
+                    Contato
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="/privacidade" className="hover:text-white transition-colors">Privacidade</a></li>
-                <li><a href="/termos" className="hover:text-white transition-colors">Termos</a></li>
+                <li>
+                  <a href="/privacidade" className="hover:text-white transition-colors">
+                    Privacidade
+                  </a>
+                </li>
+                <li>
+                  <a href="/termos" className="hover:text-white transition-colors">
+                    Termos
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

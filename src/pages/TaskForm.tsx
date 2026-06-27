@@ -1,58 +1,60 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { Task } from "../types";
-import { useTasks } from "../hooks/useTasks";
-import { useLeads } from "../hooks/useLeads";
-import { ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
-import { FieldError } from "../components/register/FieldError";
-import { taskFormSchema } from "../utils/validation/formSchemas";
-import { useFormValidation } from "../hooks/useFormValidation";
-import { useAutoFocus } from "../hooks/useFocusManagement";
+} from '../components/ui/select';
+import { Task } from '../types';
+import { useTasks } from '../hooks/useTasks';
+import { useLeads } from '../hooks/useLeads';
+import { ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
+import { FieldError } from '../components/register/FieldError';
+import { taskFormSchema } from '../utils/validation/formSchemas';
+import { useFormValidation } from '../hooks/useFormValidation';
+import { useAutoFocus } from '../hooks/useFocusManagement';
 
 export function TaskForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const leadIdParam = searchParams.get("leadId");
+  const leadIdParam = searchParams.get('leadId');
   const { tasks, createTask, updateTask, fetchTasks } = useTasks();
   const { leads } = useLeads();
-  
+
   const [task, setTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState({
-    leadId: leadIdParam || "",
-    title: "",
-    description: "",
-    dueDate: new Date().toISOString().split("T")[0],
-    dueTime: "09:00",
-    priority: "MEDIUM" as Task["priority"],
+    leadId: leadIdParam || '',
+    title: '',
+    description: '',
+    dueDate: new Date().toISOString().split('T')[0],
+    dueTime: '09:00',
+    priority: 'MEDIUM' as Task['priority'],
   });
-  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, formRef } = useFormValidation({ schema: taskFormSchema });
+  const { fieldErrors, touchedFields, handleBlur, handleChange, validateAll, formRef } =
+    useFormValidation({ schema: taskFormSchema });
   const autoFocusRef = useAutoFocus<HTMLDivElement>(!id);
 
   useEffect(() => {
     if (id) {
-      const foundTask = tasks.find(t => t.id === id);
+      const foundTask = tasks.find((t) => t.id === id);
       if (foundTask) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza task/formData a partir da tarefa carregada (tasks) pelo id da rota
         setTask(foundTask);
         const dueDate = foundTask.dueDate ? new Date(foundTask.dueDate) : new Date();
         setFormData({
-          leadId: foundTask.leadId?.toString() || "",
+          leadId: foundTask.leadId?.toString() || '',
           title: foundTask.title,
-          description: foundTask.description || "",
-          dueDate: dueDate.toISOString().split("T")[0],
+          description: foundTask.description || '',
+          dueDate: dueDate.toISOString().split('T')[0],
           dueTime: dueDate.toTimeString().slice(0, 5),
           priority: foundTask.priority,
         });
@@ -74,7 +76,7 @@ export function TaskForm() {
     if (!isValid) return;
 
     const dueDateTime = new Date(`${formData.dueDate}T${formData.dueTime}`);
-    
+
     try {
       if (task) {
         await updateTask(task.id, {
@@ -95,26 +97,22 @@ export function TaskForm() {
           status: 'PENDING',
         });
       }
-      navigate("/app/tasks");
+      navigate('/app/tasks');
     } catch (error) {
-      console.error("Erro ao salvar tarefa:", error);
+      console.error('Erro ao salvar tarefa:', error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header 
-        title={task ? "Editar Tarefa" : "Nova Tarefa"} 
-        subtitle={task ? `Editando: ${task.title}` : "Preencha os dados da nova tarefa"}
+      <Header
+        title={task ? 'Editar Tarefa' : 'Nova Tarefa'}
+        subtitle={task ? `Editando: ${task.title}` : 'Preencha os dados da nova tarefa'}
       />
-      
+
       <div className="p-8 overflow-visible">
         <div className="mb-6">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/app/tasks")}
-            className="gap-2"
-          >
+          <Button variant="outline" onClick={() => navigate('/app/tasks')} className="gap-2">
             <ArrowLeft size={16} />
             Voltar para Tarefas
           </Button>
@@ -123,14 +121,11 @@ export function TaskForm() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-300 max-w-2xl relative overflow-visible">
           <div className="p-6 border-b border-gray-300">
             <h2 className="text-xl font-semibold text-gray-900">
-              {task ? "Editar Tarefa" : "Nova Tarefa"}
+              {task ? 'Editar Tarefa' : 'Nova Tarefa'}
             </h2>
           </div>
 
-          <div
-            className="p-6 space-y-6 overflow-visible"
-            ref={autoFocusRef}
-          >
+          <div className="p-6 space-y-6 overflow-visible" ref={autoFocusRef}>
             <div className="relative overflow-visible">
               <Label htmlFor="task-lead">Lead *</Label>
               <Select
@@ -161,7 +156,11 @@ export function TaskForm() {
                   )}
                 </SelectContent>
               </Select>
-              <FieldError id="task-lead-error" error={fieldErrors.leadId as string} touched={touchedFields.leadId} />
+              <FieldError
+                id="task-lead-error"
+                error={fieldErrors.leadId as string}
+                touched={touchedFields.leadId}
+              />
             </div>
 
             <div>
@@ -177,9 +176,15 @@ export function TaskForm() {
                 placeholder="Ex: Ligar para o cliente amanhã"
                 className="mt-1.5"
                 error={touchedFields.title ? fieldErrors.title : undefined}
-                aria-describedby={fieldErrors.title && touchedFields.title ? "task-title-error" : undefined}
+                aria-describedby={
+                  fieldErrors.title && touchedFields.title ? 'task-title-error' : undefined
+                }
               />
-              <FieldError id="task-title-error" error={fieldErrors.title as string} touched={touchedFields.title} />
+              <FieldError
+                id="task-title-error"
+                error={fieldErrors.title as string}
+                touched={touchedFields.title}
+              />
             </div>
 
             <div>
@@ -187,9 +192,7 @@ export function TaskForm() {
               <Textarea
                 id="task-description"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Detalhes adicionais sobre a tarefa..."
                 rows={3}
                 className="mt-1.5"
@@ -224,7 +227,7 @@ export function TaskForm() {
               <Select
                 value={formData.priority}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, priority: value as Task["priority"] })
+                  setFormData({ ...formData, priority: value as Task['priority'] })
                 }
               >
                 <SelectTrigger className="mt-1.5">
@@ -240,11 +243,11 @@ export function TaskForm() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-300 mt-6">
-              <Button variant="outline" type="button" onClick={() => navigate("/app/tasks")}>
+              <Button variant="outline" type="button" onClick={() => navigate('/app/tasks')}>
                 Cancelar
               </Button>
               <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark">
-                {task ? "Salvar" : "Criar"}
+                {task ? 'Salvar' : 'Criar'}
               </Button>
             </div>
           </div>
@@ -253,4 +256,3 @@ export function TaskForm() {
     </div>
   );
 }
-

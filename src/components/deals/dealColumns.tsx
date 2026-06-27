@@ -1,12 +1,12 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import { Calendar, User, Pencil, Trash2 } from "lucide-react";
-import { Deal } from "../../types";
-import { DealStageBadge } from "./DealStageBadge";
-import { formatCurrency } from "../../utils/format";
+import type { ColumnDef } from '@tanstack/react-table';
+import { Calendar, User, Pencil, Trash2 } from 'lucide-react';
+import { Deal } from '../../types';
+import { DealStageBadge } from './DealStageBadge';
+import { formatCurrency } from '../../utils/format';
 
 function formatDate(date: string | null | undefined): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("pt-BR");
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 /** Column definitions for the deals list (DataTable). Handlers are injected so the
@@ -17,31 +17,33 @@ export function getDealColumns(handlers: {
 }): ColumnDef<Deal>[] {
   return [
     {
-      accessorKey: "name",
-      header: "Nome",
+      accessorKey: 'name',
+      header: 'Nome',
       cell: ({ row }) => <span className="font-medium text-gray-900">{row.original.name}</span>,
     },
     {
-      accessorKey: "value",
-      header: "Valor",
+      accessorKey: 'value',
+      header: 'Valor',
       cell: ({ row }) => (
-        <span className="text-sm text-gray-700 font-medium">{formatCurrency(row.original.value)}</span>
+        <span className="text-sm text-gray-700 font-medium">
+          {formatCurrency(row.original.value)}
+        </span>
       ),
     },
     {
-      accessorKey: "stage",
-      header: "Stage",
+      accessorKey: 'stage',
+      header: 'Stage',
       enableSorting: false,
       cell: ({ row }) => <DealStageBadge stage={row.original.stage} />,
     },
     {
-      accessorKey: "probability",
-      header: "Probabilidade",
+      accessorKey: 'probability',
+      header: 'Probabilidade',
       cell: ({ row }) => <span className="text-sm text-gray-600">{row.original.probability}%</span>,
     },
     {
-      accessorKey: "expectedCloseDate",
-      header: "Fechamento",
+      accessorKey: 'expectedCloseDate',
+      header: 'Fechamento',
       cell: ({ row }) => (
         <span className="flex items-center gap-1 text-sm text-gray-600">
           <Calendar size={12} className="text-gray-400" />
@@ -50,29 +52,32 @@ export function getDealColumns(handlers: {
       ),
     },
     {
-      id: "lead",
-      header: "Lead",
+      id: 'lead',
+      header: 'Lead',
       enableSorting: false,
-      cell: ({ row }) => <span className="text-sm text-gray-600">{row.original.lead?.name || "—"}</span>,
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600">{row.original.lead?.name || '—'}</span>
+      ),
     },
     {
-      id: "assignedUser",
-      header: "Responsável",
+      id: 'assignedUser',
+      header: 'Responsável',
       enableSorting: false,
       cell: ({ row }) => (
         <span className="flex items-center gap-1 text-sm text-gray-600">
           <User size={12} className="text-gray-400" />
-          {row.original.assignedUser?.name || "—"}
+          {row.original.assignedUser?.name || '—'}
         </span>
       ),
     },
     {
-      id: "actions",
+      id: 'actions',
       header: () => <span className="sr-only">Ações</span>,
       enableSorting: false,
       cell: ({ row }) => {
         const deal = row.original;
         return (
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- onClick apenas faz stopPropagation (impede o clique propagar para a linha); não é uma ação ativável, então não há teclado a espelhar nem deve virar tab stop
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => handlers.onEdit(deal)}

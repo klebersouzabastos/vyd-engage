@@ -40,11 +40,3 @@ export function verifyRefreshToken(token: string): TokenPayload {
     throw createError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN');
   }
 }
-
-
-
-
-
-
-
-

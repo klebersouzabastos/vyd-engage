@@ -20,18 +20,23 @@ export function useDeals() {
       setError(null);
       const result = await apiClient.getDeals(filters);
 
-      const transformedDeals: Deal[] = result.deals.map((deal: Record<string, unknown>) => ({
-        ...deal,
-        value: Number(deal.value),
-      } as Deal));
+      const transformedDeals: Deal[] = result.deals.map(
+        (deal: Record<string, unknown>) =>
+          ({
+            ...deal,
+            value: Number(deal.value),
+          }) as Deal
+      );
 
       setDeals(transformedDeals);
-      setPagination(result.pagination || {
-        page: 1,
-        limit: 20,
-        total: transformedDeals.length,
-        totalPages: 1,
-      });
+      setPagination(
+        result.pagination || {
+          page: 1,
+          limit: 20,
+          total: transformedDeals.length,
+          totalPages: 1,
+        }
+      );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar deals';
       setError(message);
@@ -45,7 +50,7 @@ export function useDeals() {
     try {
       const result = await apiClient.createDeal(data);
       const newDeal: Deal = { ...result, value: Number(result.value) };
-      setDeals(prev => [newDeal, ...prev]);
+      setDeals((prev) => [newDeal, ...prev]);
       toast.success('Deal criado com sucesso!');
       return newDeal;
     } catch (err: unknown) {
@@ -55,36 +60,42 @@ export function useDeals() {
     }
   }, []);
 
-  const updateDeal = useCallback(async (id: string, data: Partial<Deal>) => {
-    const backup = [...deals];
-    setDeals(prev => prev.map(d => d.id === id ? { ...d, ...data } : d));
-    try {
-      const result = await apiClient.updateDeal(id, data);
-      const updated: Deal = { ...result, value: Number(result.value) };
-      setDeals(prev => prev.map(d => d.id === id ? updated : d));
-      toast.success('Deal atualizado com sucesso!');
-      return updated;
-    } catch (err: unknown) {
-      setDeals(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar deal';
-      toast.error(message);
-      throw err;
-    }
-  }, [deals]);
+  const updateDeal = useCallback(
+    async (id: string, data: Partial<Deal>) => {
+      const backup = [...deals];
+      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } : d)));
+      try {
+        const result = await apiClient.updateDeal(id, data);
+        const updated: Deal = { ...result, value: Number(result.value) };
+        setDeals((prev) => prev.map((d) => (d.id === id ? updated : d)));
+        toast.success('Deal atualizado com sucesso!');
+        return updated;
+      } catch (err: unknown) {
+        setDeals(backup);
+        const message = err instanceof Error ? err.message : 'Erro ao atualizar deal';
+        toast.error(message);
+        throw err;
+      }
+    },
+    [deals]
+  );
 
-  const deleteDeal = useCallback(async (id: string) => {
-    const backup = [...deals];
-    setDeals(prev => prev.filter(d => d.id !== id));
-    try {
-      await apiClient.deleteDeal(id);
-      toast.success('Deal removido com sucesso!');
-    } catch (err: unknown) {
-      setDeals(backup);
-      const message = err instanceof Error ? err.message : 'Erro ao remover deal';
-      toast.error(message);
-      throw err;
-    }
-  }, [deals]);
+  const deleteDeal = useCallback(
+    async (id: string) => {
+      const backup = [...deals];
+      setDeals((prev) => prev.filter((d) => d.id !== id));
+      try {
+        await apiClient.deleteDeal(id);
+        toast.success('Deal removido com sucesso!');
+      } catch (err: unknown) {
+        setDeals(backup);
+        const message = err instanceof Error ? err.message : 'Erro ao remover deal';
+        toast.error(message);
+        throw err;
+      }
+    },
+    [deals]
+  );
 
   useEffect(() => {
     fetchDeals();

@@ -14,8 +14,7 @@ const CITE_PUA = new RegExp('[\\uE200-\\uE20F\\uF8FF]', 'g');
 // Token de citacao textual, ex.: citeturn42search2turn42search4
 const CITE_TOKEN = /cite(?:turn\d+[a-z]+\d+)+/gi;
 // Tokens de navegacao/arquivo soltos, ex.: navlist, filecite, turn0search0
-const NAV_TOKEN =
-  /\b(?:navlist|filecite|turn\d+(?:search|news|view|forecast|image|file)\d+)\b/gi;
+const NAV_TOKEN = /\b(?:navlist|filecite|turn\d+(?:search|news|view|forecast|image|file)\d+)\b/gi;
 
 export interface CleanedMarkdown {
   markdown: string;

@@ -1,11 +1,5 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { ArrowRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ArrowRight } from 'lucide-react';
 
 /** A target field a file column can be mapped to. */
 export interface MappingTarget {
@@ -16,7 +10,7 @@ export interface MappingTarget {
 }
 
 /** Sentinel value for "do not import this column". */
-export const IGNORE_VALUE = "__ignore__";
+export const IGNORE_VALUE = '__ignore__';
 
 interface ColumnMapperProps {
   /** Column headers detected in the uploaded file. */
@@ -43,10 +37,7 @@ export function ColumnMapper({ fileColumns, targets, mapping, onChange }: Column
       </div>
       <div className="divide-y divide-gray-100">
         {fileColumns.map((column) => (
-          <div
-            key={column}
-            className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center px-4 py-3"
-          >
+          <div key={column} className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center px-4 py-3">
             <span className="font-mono text-sm text-gray-900 truncate" title={column}>
               {column || <span className="italic text-gray-400">(sem nome)</span>}
             </span>

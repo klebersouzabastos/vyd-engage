@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, ReactNode } from "react";
-import { Button, buttonVariants } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
-import { Filter, ChevronDown } from "lucide-react";
-import { cn } from "../ui/utils";
+import { useState, useRef, useEffect, ReactNode } from 'react';
+import { Button, buttonVariants } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import { Filter, ChevronDown } from 'lucide-react';
+import { cn } from '../ui/utils';
 
 interface FilterOption {
   value: string;
@@ -46,9 +46,10 @@ export function FilterPopover({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open, filterId]);
 
-  const displayText = selected.length === 0 || selected.length === options.length
-    ? allLabel
-    : `${selected.length} ${countSuffix}`;
+  const displayText =
+    selected.length === 0 || selected.length === options.length
+      ? allLabel
+      : `${selected.length} ${countSuffix}`;
 
   return (
     <div className="relative" ref={ref}>
@@ -56,14 +57,21 @@ export function FilterPopover({
         type="button"
         data-filter={filterId}
         className={cn(
-          buttonVariants({ variant: "outline" }),
-          "gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer"
+          buttonVariants({ variant: 'outline' }),
+          'gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer'
         )}
         onClick={() => setOpen(!open)}
       >
         <Filter size={16} />
         <span>{displayText}</span>
-        <ChevronDown size={16} className={open ? "rotate-180 transition-transform duration-200" : "transition-transform duration-200"} />
+        <ChevronDown
+          size={16}
+          className={
+            open
+              ? 'rotate-180 transition-transform duration-200'
+              : 'transition-transform duration-200'
+          }
+        />
       </button>
       {open && (
         <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white rounded-md border border-gray-300 shadow-lg p-3">
@@ -80,12 +88,12 @@ export function FilterPopover({
                     if (selected.length === options.length) {
                       onChange([]);
                     } else {
-                      onChange(options.map(o => o.value));
+                      onChange(options.map((o) => o.value));
                     }
                   }}
                   className="h-6 px-2 text-xs"
                 >
-                  {selected.length === options.length ? "Desmarcar" : "Selecionar todos"}
+                  {selected.length === options.length ? 'Desmarcar' : 'Selecionar todos'}
                 </Button>
               )}
             </div>
@@ -94,7 +102,7 @@ export function FilterPopover({
                 const isChecked = selected.includes(option.value);
                 const handleToggle = () => {
                   if (isChecked) {
-                    onChange(selected.filter(s => s !== option.value));
+                    onChange(selected.filter((s) => s !== option.value));
                   } else {
                     onChange([...selected, option.value]);
                   }
@@ -102,10 +110,18 @@ export function FilterPopover({
                 return (
                   <div
                     key={option.value}
+                    role="button"
+                    tabIndex={0}
                     className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-md -mx-2"
                     onClick={(e) => {
                       e.preventDefault();
                       handleToggle();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleToggle();
+                      }
                     }}
                   >
                     <Checkbox
@@ -114,6 +130,7 @@ export function FilterPopover({
                       onCheckedChange={handleToggle}
                       onClick={(e) => e.stopPropagation()}
                     />
+                    {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events -- o onClick com preventDefault evita o duplo-toggle do label nativo; a acessibilidade por teclado vem do Checkbox associado via htmlFor */}
                     <label
                       htmlFor={`${filterId}-${option.value}`}
                       className="text-sm text-gray-900 cursor-pointer flex-1"

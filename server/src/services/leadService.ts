@@ -191,18 +191,21 @@ export const leadService = {
     return updated;
   },
 
-  async findAll(tenantId: string, filters?: {
-    status?: LeadStatus;
-    source?: LeadSource;
-    search?: string;
-    tagId?: string;
-    assignedTo?: string;
-    isContact?: boolean;
-    page?: number;
-    limit?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-  }) {
+  async findAll(
+    tenantId: string,
+    filters?: {
+      status?: LeadStatus;
+      source?: LeadSource;
+      search?: string;
+      tagId?: string;
+      assignedTo?: string;
+      isContact?: boolean;
+      page?: number;
+      limit?: number;
+      sort?: string;
+      order?: 'asc' | 'desc';
+    }
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
@@ -346,7 +349,7 @@ export const leadService = {
         );
 
         // Score and trigger newly added tags
-        const newTags = data.tagIds.filter(id => !existingTagIds.includes(id));
+        const newTags = data.tagIds.filter((id) => !existingTagIds.includes(id));
         for (const tagId of newTags) {
           scoringService.processEvent(tenantId, data.id, ScoreEvent.TAG_ADDED).catch(() => {});
           dispatchTrigger(tenantId, 'tag_added', data.id, { tagId }).catch(() => {});
@@ -397,11 +400,3 @@ export const leadService = {
     });
   },
 };
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-import { Header } from "../components/Header";
-import { BillingTab } from "../components/settings/BillingTab";
+import { Header } from '../components/Header';
+import { BillingTab } from '../components/settings/BillingTab';
 
 export function Billing() {
   return (

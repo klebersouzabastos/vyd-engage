@@ -84,136 +84,136 @@ export function DeepResearch() {
             <TabsTrigger value="desdobramentos">Desdobramentos</TabsTrigger>
           </TabsList>
           <TabsContent value="pesquisas" className="space-y-6">
-        {/* Hero — ações principais consolidadas aqui */}
-        <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-blue-100">
-              <Sparkles className="h-3.5 w-3.5" />
-              Inteligência de Mercado
-            </span>
-            <h2 className="mt-3 text-2xl font-bold md:text-3xl">
-              Transforme dados em oportunidades comerciais
-            </h2>
-            <p className="mt-2 text-slate-300">
-              Solicite uma pesquisa profunda sobre uma empresa ou um segmento inteiro e receba um
-              relatório completo, pronto para apresentar à sua equipe.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                size="lg"
-                className="bg-white text-slate-900 hover:bg-slate-100"
-                onClick={openNewResearch}
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Nova pesquisa
-              </Button>
-              {isPlatformAdmin && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                  onClick={() => setTemplatesOpen(true)}
-                >
-                  <SlidersHorizontal className="mr-1.5 h-4 w-4" />
-                  Gerenciar modelos
-                </Button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Lista de pesquisas */}
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Suas pesquisas
-              {researches.length > 0 && (
-                <span className="ml-2 text-sm font-normal text-slate-400">
-                  {researches.length}
+            {/* Hero — ações principais consolidadas aqui */}
+            <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
+              <div className="max-w-2xl">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-blue-100">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Inteligência de Mercado
                 </span>
-              )}
-            </h3>
-            {researches.length > 0 && (
-              <Button variant="outline" size="sm" onClick={openNewResearch}>
-                <Plus className="mr-1 h-4 w-4" />
-                Nova
-              </Button>
-            )}
-          </div>
-
-          {listQuery.isLoading ? (
-            <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
-          ) : researches.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
-              <ScanSearch className="h-10 w-10 text-slate-300" />
-              <p className="mt-3 font-medium text-slate-900">Nenhuma pesquisa ainda</p>
-              <p className="mt-1 max-w-sm text-sm text-slate-500">
-                Comece criando sua primeira pesquisa de inteligência de mercado.
-              </p>
-              <Button className="mt-4" onClick={openNewResearch}>
-                <Plus className="mr-1 h-4 w-4" />
-                Nova pesquisa
-              </Button>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {researches.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
-                >
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/app/deep-research/${r.id}`)}
-                    className="group flex min-w-0 flex-1 items-center gap-3 text-left"
+                <h2 className="mt-3 text-2xl font-bold md:text-3xl">
+                  Transforme dados em oportunidades comerciais
+                </h2>
+                <p className="mt-2 text-slate-300">
+                  Solicite uma pesquisa profunda sobre uma empresa ou um segmento inteiro e receba
+                  um relatório completo, pronto para apresentar à sua equipe.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button
+                    size="lg"
+                    className="bg-white text-slate-900 hover:bg-slate-100"
+                    onClick={openNewResearch}
                   >
-                    <FileText className="h-5 w-5 shrink-0 text-slate-400" />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900 group-hover:text-primary">
-                        {r.title}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {r.template?.name ? `${r.template.name} · ` : ''}
-                        {new Date(r.createdAt).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                  </button>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <StatusBadge status={r.status} />
-                    {r.status === 'COMPLETED' && (
-                      <Button size="sm" onClick={() => navigate(`/app/deep-research/${r.id}`)}>
-                        <Eye className="mr-1 h-4 w-4" />
-                        Ver relatório
-                      </Button>
-                    )}
-                    {r.status === 'RESEARCHING' && (
-                      <span className="hidden items-center gap-1 text-xs font-medium text-blue-600 sm:flex">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Processando…
-                      </span>
-                    )}
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Nova pesquisa
+                  </Button>
+                  {isPlatformAdmin && (
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Editar"
-                      onClick={() => openEditResearch(r.id)}
+                      size="lg"
+                      variant="outline"
+                      className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                      onClick={() => setTemplatesOpen(true)}
                     >
-                      <Pencil className="h-4 w-4" />
+                      <SlidersHorizontal className="mr-1.5 h-4 w-4" />
+                      Gerenciar modelos
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Excluir"
-                      onClick={() => setDeleteTarget({ id: r.id, name: r.title })}
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Lista de pesquisas */}
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Suas pesquisas
+                  {researches.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-slate-400">
+                      {researches.length}
+                    </span>
+                  )}
+                </h3>
+                {researches.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={openNewResearch}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Nova
+                  </Button>
+                )}
+              </div>
+
+              {listQuery.isLoading ? (
+                <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+              ) : researches.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
+                  <ScanSearch className="h-10 w-10 text-slate-300" />
+                  <p className="mt-3 font-medium text-slate-900">Nenhuma pesquisa ainda</p>
+                  <p className="mt-1 max-w-sm text-sm text-slate-500">
+                    Comece criando sua primeira pesquisa de inteligência de mercado.
+                  </p>
+                  <Button className="mt-4" onClick={openNewResearch}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Nova pesquisa
+                  </Button>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {researches.map((r) => (
+                    <li
+                      key={r.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/app/deep-research/${r.id}`)}
+                        className="group flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        <FileText className="h-5 w-5 shrink-0 text-slate-400" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-900 group-hover:text-primary">
+                            {r.title}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {r.template?.name ? `${r.template.name} · ` : ''}
+                            {new Date(r.createdAt).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </button>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <StatusBadge status={r.status} />
+                        {r.status === 'COMPLETED' && (
+                          <Button size="sm" onClick={() => navigate(`/app/deep-research/${r.id}`)}>
+                            <Eye className="mr-1 h-4 w-4" />
+                            Ver relatório
+                          </Button>
+                        )}
+                        {r.status === 'RESEARCHING' && (
+                          <span className="hidden items-center gap-1 text-xs font-medium text-blue-600 sm:flex">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Processando…
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Editar"
+                          onClick={() => openEditResearch(r.id)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Excluir"
+                          onClick={() => setDeleteTarget({ id: r.id, name: r.title })}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </TabsContent>
           <TabsContent value="desdobramentos">
             <DesdobramentosTab />
@@ -232,7 +232,11 @@ export function DeepResearch() {
       />
 
       {isPlatformAdmin && (
-        <TemplateManager open={templatesOpen} onOpenChange={setTemplatesOpen} templates={templates} />
+        <TemplateManager
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          templates={templates}
+        />
       )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   WhatsAppConnection,
   WhatsAppProvider as WhatsAppProviderType,
@@ -7,17 +15,19 @@ import {
   PlanLimits,
   ProviderConfig,
   ConnectionStatusInfo,
-} from "../types/whatsapp";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
-import { getErrorMessage } from "../utils/errors";
-import { useAuth } from "./AuthContext";
+} from '../types/whatsapp';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
+import { getErrorMessage } from '../utils/errors';
+import { useAuth } from './AuthContext';
 
 interface WhatsAppContextType {
   connections: WhatsAppConnection[];
   currentPlan: PlanType;
   planLimits: PlanLimits;
-  addConnection: (connection: Omit<WhatsAppConnection, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  addConnection: (
+    connection: Omit<WhatsAppConnection, 'id' | 'createdAt' | 'updatedAt'>
+  ) => Promise<void>;
   updateConnection: (id: string, updates: Partial<WhatsAppConnection>) => Promise<void>;
   deleteConnection: (id: string) => Promise<void>;
   setDefaultConnection: (id: string) => Promise<void>;
@@ -75,22 +85,25 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [connections, setConnections] = useState<WhatsAppConnection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPlan, setCurrentPlan] = useState<PlanType>("pro");
+  const [currentPlan, setCurrentPlan] = useState<PlanType>('pro');
   const planLimits = PLAN_LIMITS[currentPlan];
 
   // Carregar plano atual da API de assinatura
   useEffect(() => {
     if (!user) return;
-    apiClient.getCurrentSubscription().then((sub: Record<string, unknown>) => {
-      const subscription = sub?.subscription as Record<string, unknown> | undefined;
-      const plan = subscription?.plan as Record<string, unknown> | undefined;
-      const planType = (plan?.type as string)?.toLowerCase();
-      if (planType && ["starter", "pro", "enterprise"].includes(planType)) {
-        setCurrentPlan(planType as PlanType);
-      }
-    }).catch(() => {
-      // Manter default "pro" se API falhar
-    });
+    apiClient
+      .getCurrentSubscription()
+      .then((sub: Record<string, unknown>) => {
+        const subscription = sub?.subscription as Record<string, unknown> | undefined;
+        const plan = subscription?.plan as Record<string, unknown> | undefined;
+        const planType = (plan?.type as string)?.toLowerCase();
+        if (planType && ['starter', 'pro', 'enterprise'].includes(planType)) {
+          setCurrentPlan(planType as PlanType);
+        }
+      })
+      .catch(() => {
+        // Manter default "pro" se API falhar
+      });
   }, [user]);
 
   // Carregar conexões da API
@@ -111,25 +124,27 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       const apiConnections = await apiClient.getWhatsAppConnections();
       // Transform API response to match WhatsAppConnection type
-      const transformedConnections: WhatsAppConnection[] = apiConnections.map((conn: ApiWhatsAppConnection) => ({
-        id: conn.id,
-        name: conn.name,
-        provider: conn.provider.toLowerCase() as WhatsAppProviderType,
-        status: {
-          status: conn.status.toLowerCase() as ConnectionStatus,
-          lastSync: conn.lastConnectedAt || new Date().toISOString(),
-          qrCode: conn.qrCode || undefined,
-        },
-        config: conn.config || {},
-        isDefault: false, // Backend doesn't have this field yet
-        createdAt: conn.createdAt,
-        updatedAt: conn.updatedAt,
-        lastUsedAt: conn.lastConnectedAt || undefined,
-      }));
+      const transformedConnections: WhatsAppConnection[] = apiConnections.map(
+        (conn: ApiWhatsAppConnection) => ({
+          id: conn.id,
+          name: conn.name,
+          provider: conn.provider.toLowerCase() as WhatsAppProviderType,
+          status: {
+            status: conn.status.toLowerCase() as ConnectionStatus,
+            lastSync: conn.lastConnectedAt || new Date().toISOString(),
+            qrCode: conn.qrCode || undefined,
+          },
+          config: conn.config || {},
+          isDefault: false, // Backend doesn't have this field yet
+          createdAt: conn.createdAt,
+          updatedAt: conn.updatedAt,
+          lastUsedAt: conn.lastConnectedAt || undefined,
+        })
+      );
       setConnections(transformedConnections);
     } catch (error) {
-      console.error("Erro ao carregar conexões WhatsApp:", error);
-      toast.error("Erro ao carregar conexões WhatsApp");
+      console.error('Erro ao carregar conexões WhatsApp:', error);
+      toast.error('Erro ao carregar conexões WhatsApp');
     } finally {
       setLoading(false);
     }
@@ -152,7 +167,7 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
 
   // Adicionar nova conexão
   const addConnection = useCallback(
-    async (connectionData: Omit<WhatsAppConnection, "id" | "createdAt" | "updatedAt">) => {
+    async (connectionData: Omit<WhatsAppConnection, 'id' | 'createdAt' | 'updatedAt'>) => {
       if (!canAddConnection()) {
         throw new Error(
           `Limite de conexões atingido. Seu plano permite ${planLimits.maxConnections} conexão(ões).`
@@ -183,9 +198,9 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
         };
 
         setConnections((prev) => [...prev, newConnection]);
-        toast.success("Conexão WhatsApp criada com sucesso!");
+        toast.success('Conexão WhatsApp criada com sucesso!');
       } catch (error) {
-        toast.error(getErrorMessage(error) ||"Erro ao criar conexão WhatsApp");
+        toast.error(getErrorMessage(error) || 'Erro ao criar conexão WhatsApp');
         throw error;
       }
     },
@@ -229,9 +244,9 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
           return conn;
         })
       );
-      toast.success("Conexão atualizada com sucesso!");
+      toast.success('Conexão atualizada com sucesso!');
     } catch (error) {
-      toast.error(getErrorMessage(error) ||"Erro ao atualizar conexão");
+      toast.error(getErrorMessage(error) || 'Erro ao atualizar conexão');
       throw error;
     }
   }, []);
@@ -245,23 +260,24 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
         // Se deletou a conexão padrão e ainda há outras, definir primeira como padrão
         const deletedWasDefault = prev.find((conn) => conn.id === id)?.isDefault;
         if (deletedWasDefault && filtered.length > 0) {
-          return filtered.map((conn, index) =>
-            index === 0 ? { ...conn, isDefault: true } : conn
-          );
+          return filtered.map((conn, index) => (index === 0 ? { ...conn, isDefault: true } : conn));
         }
         return filtered;
       });
-      toast.success("Conexão deletada com sucesso!");
+      toast.success('Conexão deletada com sucesso!');
     } catch (error) {
-      toast.error(getErrorMessage(error) ||"Erro ao deletar conexão");
+      toast.error(getErrorMessage(error) || 'Erro ao deletar conexão');
       throw error;
     }
   }, []);
 
   // Definir conexão padrão
-  const setDefaultConnection = useCallback(async (id: string) => {
-    await updateConnection(id, { isDefault: true });
-  }, [updateConnection]);
+  const setDefaultConnection = useCallback(
+    async (id: string) => {
+      await updateConnection(id, { isDefault: true });
+    },
+    [updateConnection]
+  );
 
   // Obter conexão padrão
   const getDefaultConnection = useCallback(() => {
@@ -286,7 +302,7 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
             ...conn,
             status,
             updatedAt: now,
-            lastUsedAt: status.status === "connected" ? now : conn.lastUsedAt,
+            lastUsedAt: status.status === 'connected' ? now : conn.lastUsedAt,
           };
         }
         return conn;
@@ -313,42 +329,53 @@ export function WhatsAppProvider({ children }: { children: ReactNode }) {
           qrCode: result.qrCode || undefined,
         });
       } catch (error) {
-        console.error("Erro ao atualizar status da conexão:", error);
-        toast.error("Erro ao atualizar status da conexão");
+        console.error('Erro ao atualizar status da conexão:', error);
+        toast.error('Erro ao atualizar status da conexão');
       }
     },
     [updateConnectionStatus]
   );
 
-  const value = useMemo(() => ({
-    connections,
-    currentPlan,
-    planLimits,
-    addConnection,
-    updateConnection,
-    deleteConnection,
-    setDefaultConnection,
-    getDefaultConnection,
-    getConnection,
-    updateConnectionStatus,
-    canAddConnection,
-    getConnectionsByProvider,
-    refreshConnectionStatus,
-  }), [connections, currentPlan, planLimits, addConnection, updateConnection, deleteConnection, setDefaultConnection, getDefaultConnection, getConnection, updateConnectionStatus, canAddConnection, getConnectionsByProvider, refreshConnectionStatus]);
-
-  return (
-    <WhatsAppContext.Provider value={value}>
-      {children}
-    </WhatsAppContext.Provider>
+  const value = useMemo(
+    () => ({
+      connections,
+      currentPlan,
+      planLimits,
+      addConnection,
+      updateConnection,
+      deleteConnection,
+      setDefaultConnection,
+      getDefaultConnection,
+      getConnection,
+      updateConnectionStatus,
+      canAddConnection,
+      getConnectionsByProvider,
+      refreshConnectionStatus,
+    }),
+    [
+      connections,
+      currentPlan,
+      planLimits,
+      addConnection,
+      updateConnection,
+      deleteConnection,
+      setDefaultConnection,
+      getDefaultConnection,
+      getConnection,
+      updateConnectionStatus,
+      canAddConnection,
+      getConnectionsByProvider,
+      refreshConnectionStatus,
+    ]
   );
-}
 
+  return <WhatsAppContext.Provider value={value}>{children}</WhatsAppContext.Provider>;
+}
 
 export function useWhatsApp() {
   const context = useContext(WhatsAppContext);
   if (context === undefined) {
-    throw new Error("useWhatsApp must be used within a WhatsAppProvider");
+    throw new Error('useWhatsApp must be used within a WhatsAppProvider');
   }
   return context;
 }
-

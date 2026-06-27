@@ -12,6 +12,7 @@ export function MigrationChecker() {
     // Only check if user is logged in
     if (user && !hasChecked) {
       const shouldShow = hasDataToMigrate();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado a partir do user autenticado + checagem única
       setShowMigration(shouldShow);
       setHasChecked(true);
     }
@@ -32,11 +33,3 @@ export function MigrationChecker() {
     />
   );
 }
-
-
-
-
-
-
-
-

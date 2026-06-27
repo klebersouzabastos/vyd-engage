@@ -204,9 +204,7 @@ export async function generateProposalPDF(dealId: string, tenantId: string): Pro
       deal_value: valueFormatted,
       deal_close: closeDate ? `Previsão de fechamento: ${closeDate}` : '',
       deal_notes: deal.notes ?? '',
-      footer: salesRep
-        ? `Gerado por ${salesRep} via VYD Engage`
-        : 'Gerado via VYD Engage',
+      footer: salesRep ? `Gerado por ${salesRep} via VYD Engage` : 'Gerado via VYD Engage',
     },
   ];
 

@@ -67,7 +67,7 @@ describe('analyzeCompanies — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeCompanies(
       tenantId,
       companyFile([{ name: '', externalId: 'X1', cnpj: '' }]),
-      companyMapping,
+      companyMapping
     );
     expect(analysis.errorCount).toBe(1);
     expect(analysis.errors[0]).toMatchObject({ row: 1, field: 'name' });
@@ -80,11 +80,15 @@ describe('analyzeCompanies — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeCompanies(
       tenantId,
       companyFile([{ name: 'Acme Renamed', externalId: 'EXT1', cnpj: '' }]),
-      companyMapping,
+      companyMapping
     );
     expect(analysis.duplicateCount).toBe(1);
     expect(analysis.newCount).toBe(0);
-    expect(analysis.duplicates[0]).toMatchObject({ row: 1, matchedBy: 'externalId', value: 'EXT1' });
+    expect(analysis.duplicates[0]).toMatchObject({
+      row: 1,
+      matchedBy: 'externalId',
+      value: 'EXT1',
+    });
   });
 
   it('classifies a brand-new company as new', async () => {
@@ -92,7 +96,7 @@ describe('analyzeCompanies — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeCompanies(
       tenantId,
       companyFile([{ name: 'New Co', externalId: 'NEW1', cnpj: '' }]),
-      companyMapping,
+      companyMapping
     );
     expect(analysis.newCount).toBe(1);
     expect(analysis.duplicateCount).toBe(0);
@@ -106,7 +110,7 @@ describe('analyzeCompanies — dedup decision (unit, mocked Prisma)', () => {
         { name: 'A', externalId: 'DUP', cnpj: '' },
         { name: 'B', externalId: 'DUP', cnpj: '' },
       ]),
-      companyMapping,
+      companyMapping
     );
     expect(analysis.newCount).toBe(1);
     expect(analysis.duplicateCount).toBe(1);
@@ -120,7 +124,7 @@ describe('analyzeCompanies — dedup decision (unit, mocked Prisma)', () => {
     const { analysis } = await analyzeCompanies(
       tenantId,
       { headers: ['name'], rows: [{ name: '  lundin mining  ' }] },
-      { name: 'name' },
+      { name: 'name' }
     );
     expect(analysis.duplicateCount).toBe(1);
     expect(analysis.duplicates[0].matchedBy).toBe('name');
@@ -133,8 +137,11 @@ describe('analyzeCompanies — dedup decision (unit, mocked Prisma)', () => {
     prismaMock.company.findMany.mockResolvedValue([]);
     const { mappedRows } = await analyzeCompanies(
       tenantId,
-      { headers: ['name', 'Valor único vendido'], rows: [{ name: 'Acme', 'Valor único vendido': '25350,29' }] },
-      { name: 'name', 'Valor único vendido': 'Valor único vendido' },
+      {
+        headers: ['name', 'Valor único vendido'],
+        rows: [{ name: 'Acme', 'Valor único vendido': '25350,29' }],
+      },
+      { name: 'name', 'Valor único vendido': 'Valor único vendido' }
     );
     expect(mappedRows[0].customFields['Valor único vendido']).toBe(25350.29);
   });
@@ -156,7 +163,7 @@ describe('analyzeLeads — contacts mode (unit, mocked Prisma)', () => {
       tenantId,
       contactFile([{ name: 'No Email', email: '', company: 'Acme' }]),
       contactMapping,
-      { contactsMode: true },
+      { contactsMode: true }
     );
     expect(analysis.errorCount).toBe(0);
     expect(analysis.newCount).toBe(1);
@@ -171,7 +178,7 @@ describe('analyzeLeads — contacts mode (unit, mocked Prisma)', () => {
         { name: 'Bob', email: 'shared@corp.com', company: 'Acme' },
       ]),
       contactMapping,
-      { contactsMode: true },
+      { contactsMode: true }
     );
     expect(analysis.newCount).toBe(2);
     expect(analysis.duplicateCount).toBe(0);
@@ -186,7 +193,7 @@ describe('analyzeLeads — contacts mode (unit, mocked Prisma)', () => {
         { name: 'Alice', email: 'alice@corp.com', company: 'Acme' },
       ]),
       contactMapping,
-      { contactsMode: true },
+      { contactsMode: true }
     );
     expect(analysis.duplicateCount).toBe(1);
     expect(analysis.duplicates[0].row).toBe(2);
@@ -201,7 +208,7 @@ describe('analyzeLeads — contacts mode (unit, mocked Prisma)', () => {
         { name: 'Carlos', email: '', company: 'Acme' },
       ]),
       contactMapping,
-      { contactsMode: true },
+      { contactsMode: true }
     );
     expect(analysis.duplicateCount).toBe(1);
   });

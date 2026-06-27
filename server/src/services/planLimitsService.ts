@@ -3,8 +3,8 @@ import { createError } from '../middleware/errorHandler.js';
 import { cacheGet, cacheSet, cacheDel, cacheDelPattern } from '../config/redis.js';
 
 // Cache TTLs (seconds)
-const PLAN_LIMITS_TTL = 3600;  // 1 hour — plan data rarely changes
-const USAGE_TTL = 300;          // 5 minutes — usage counts change more often
+const PLAN_LIMITS_TTL = 3600; // 1 hour — plan data rarely changes
+const USAGE_TTL = 300; // 5 minutes — usage counts change more often
 
 export interface PlanLimits {
   maxLeads: number;
@@ -60,14 +60,15 @@ export const planLimitsService = {
 
     const limits = await this.getLimits(tenantId);
 
-    const [leadsCount, usersCount, automationsCount, whatsappCount, emailCount] =
-      await Promise.all([
+    const [leadsCount, usersCount, automationsCount, whatsappCount, emailCount] = await Promise.all(
+      [
         prisma.lead.count({ where: { tenantId, deletedAt: null } }),
         prisma.user.count({ where: { tenantId, status: 'ACTIVE' } }),
         prisma.automation.count({ where: { tenantId } }),
         prisma.whatsAppConnection.count({ where: { tenantId } }),
         prisma.emailConfig.count({ where: { tenantId } }),
-      ]);
+      ]
+    );
 
     const calculatePercentage = (current: number, limit: number) => {
       if (limit === Infinity) return 0;
@@ -113,7 +114,8 @@ export const planLimitsService = {
     const limits = await this.getLimits(tenantId);
     const usage = await this.getUsage(tenantId);
 
-    const limitKey = `max${resource.charAt(0).toUpperCase()}${resource.slice(1)}` as keyof PlanLimits;
+    const limitKey =
+      `max${resource.charAt(0).toUpperCase()}${resource.slice(1)}` as keyof PlanLimits;
     const limit = limits[limitKey] as number;
     const current = usage[resource].current;
 
@@ -149,11 +151,3 @@ export const planLimitsService = {
     await cacheDel(`plan:${tenantId}:limits`, `plan:${tenantId}:usage`);
   },
 };
-
-
-
-
-
-
-
-

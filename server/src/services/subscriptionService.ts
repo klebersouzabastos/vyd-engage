@@ -129,5 +129,3 @@ export const subscriptionService = {
     return updated;
   },
 };
-
-

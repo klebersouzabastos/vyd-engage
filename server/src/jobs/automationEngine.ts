@@ -111,7 +111,13 @@ export function normalizeSteps(rawSteps: unknown): NormalizedStep[] {
 }
 
 export interface AutomationTrigger {
-  type: 'lead_created' | 'status_changed' | 'tag_added' | 'manual' | 'deal_created' | 'deal_stage_changed';
+  type:
+    | 'lead_created'
+    | 'status_changed'
+    | 'tag_added'
+    | 'manual'
+    | 'deal_created'
+    | 'deal_stage_changed';
   conditions?: Record<string, any>;
 }
 
@@ -160,7 +166,10 @@ export const automationDLQ = new Queue('automations-dlq', {
 // Step Executor
 // ========================
 
-async function executeStep(step: AutomationStep, jobData: AutomationJobData): Promise<{ success: boolean; message: string; data?: any }> {
+async function executeStep(
+  step: AutomationStep,
+  jobData: AutomationJobData
+): Promise<{ success: boolean; message: string; data?: any }> {
   switch (step.type) {
     case 'delay': {
       // O agendamento do próximo passo é feito pelo worker (após este retorno),
@@ -175,7 +184,8 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
       if (step.config.assignedTo !== undefined) updateData.assignedTo = step.config.assignedTo;
       if (step.config.source !== undefined) updateData.source = step.config.source;
       if (step.config.score !== undefined) updateData.score = Number(step.config.score);
-      if (step.config.customFields !== undefined) updateData.customFields = step.config.customFields;
+      if (step.config.customFields !== undefined)
+        updateData.customFields = step.config.customFields;
 
       if (Object.keys(updateData).length === 0) {
         return { success: true, message: 'Nada para atualizar' };
@@ -228,7 +238,8 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
         if (!tag) return { success: true, message: `Tag "${tagName}" não existe (nada a remover)` };
         removeTagId = tag.id;
       }
-      if (!removeTagId) return { success: false, message: 'Tag não fornecida (tagName/tagId ausente)' };
+      if (!removeTagId)
+        return { success: false, message: 'Tag não fornecida (tagName/tagId ausente)' };
 
       await prisma.leadTag.deleteMany({
         where: { leadId: jobData.leadId, tagId: removeTagId },
@@ -271,7 +282,10 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
       try {
         await assertPublicHttpUrl(url);
       } catch (err: any) {
-        return { success: false, message: `URL de webhook bloqueada: ${err?.message || 'destino inválido'}` };
+        return {
+          success: false,
+          message: `URL de webhook bloqueada: ${err?.message || 'destino inválido'}`,
+        };
       }
 
       const lead = await prisma.lead.findFirst({
@@ -341,9 +355,17 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
         return { success: false, message: 'Lead não possui telefone' };
       }
 
-      const waCtx: MergeContext = { name: lead.name, email: lead.email, company: lead.company, phone: lead.phone };
+      const waCtx: MergeContext = {
+        name: lead.name,
+        email: lead.email,
+        company: lead.company,
+        phone: lead.phone,
+      };
       // builder salva em `message`; aceitamos `content` (legado) também
-      const waContent = interpolateMergeTags(step.config.content || step.config.message || '', waCtx);
+      const waContent = interpolateMergeTags(
+        step.config.content || step.config.message || '',
+        waCtx
+      );
 
       const result = await whatsappMessagingService.sendMessage(jobData.tenantId, {
         connectionId: step.config.connectionId,
@@ -366,9 +388,17 @@ async function executeStep(step: AutomationStep, jobData: AutomationJobData): Pr
         return { success: false, message: 'Lead não possui email' };
       }
 
-      const emailCtx: MergeContext = { name: lead.name, email: lead.email, company: lead.company, phone: lead.phone };
+      const emailCtx: MergeContext = {
+        name: lead.name,
+        email: lead.email,
+        company: lead.company,
+        phone: lead.phone,
+      };
       // builder salva o corpo em `message`; aceitamos `html`/`content` (legado) também
-      const emailBody = interpolateMergeTags(step.config.html || step.config.content || step.config.message || '', emailCtx);
+      const emailBody = interpolateMergeTags(
+        step.config.html || step.config.content || step.config.message || '',
+        emailCtx
+      );
       const emailSubject = interpolateMergeTags(step.config.subject || 'Sem assunto', emailCtx);
 
       const result = await emailMessagingService.sendEmail(jobData.tenantId, {
@@ -436,7 +466,14 @@ export const automationWorker = new Worker(
 
       // Check if still active
       if (automation.status !== 'ACTIVE') {
-        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, 'Automação não está ativa', null, undefined, { leadId, executionId });
+        await automationService.addLog(
+          automationId,
+          AutomationLogStatus.SKIPPED,
+          'Automação não está ativa',
+          null,
+          undefined,
+          { leadId, executionId }
+        );
         return;
       }
 
@@ -446,7 +483,14 @@ export const automationWorker = new Worker(
       if (!isWithinSchedule(schedule)) {
         // Re-schedule for 1 hour later
         await automationQueue.add('process-step', job.data, { delay: 3600000 });
-        await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, 'Fora do horário permitido, reagendado para 1h', null, undefined, { leadId, executionId });
+        await automationService.addLog(
+          automationId,
+          AutomationLogStatus.SKIPPED,
+          'Fora do horário permitido, reagendado para 1h',
+          null,
+          undefined,
+          { leadId, executionId }
+        );
         return;
       }
 
@@ -456,7 +500,14 @@ export const automationWorker = new Worker(
           where: { id: leadId, tenantId },
         });
         if (!lead) {
-          await automationService.addLog(automationId, AutomationLogStatus.SKIPPED, `Lead ${leadId} não encontrado`, null, undefined, { leadId, executionId });
+          await automationService.addLog(
+            automationId,
+            AutomationLogStatus.SKIPPED,
+            `Lead ${leadId} não encontrado`,
+            null,
+            undefined,
+            { leadId, executionId }
+          );
           return;
         }
       }
@@ -473,7 +524,14 @@ export const automationWorker = new Worker(
       const step = currentNodeId ? stepMap.get(currentNodeId) : undefined;
       if (!step) {
         // Fim do caminho (sem nó atual válido) = execução concluída.
-        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa (${steps.length} steps)`, null, undefined, { leadId, executionId });
+        await automationService.addLog(
+          automationId,
+          AutomationLogStatus.SUCCESS,
+          `Execução ${executionId} completa (${steps.length} steps)`,
+          null,
+          undefined,
+          { leadId, executionId }
+        );
         await automationService.updateStats(automationId, true);
         return;
       }
@@ -488,9 +546,21 @@ export const automationWorker = new Worker(
         automationId,
         result.success ? AutomationLogStatus.SUCCESS : AutomationLogStatus.ERROR,
         `Step ${stepIdx + 1}/${steps.length} (${step.type}): ${result.message}`,
-        { stepId: currentNodeId, stepIndex: stepIdx, stepType: step.type, executionId, leadId, ...result.data },
+        {
+          stepId: currentNodeId,
+          stepIndex: stepIdx,
+          stepType: step.type,
+          executionId,
+          leadId,
+          ...result.data,
+        },
         result.success ? undefined : result.message,
-        { leadId, stepOrder: stepIdx >= 0 ? stepIdx : undefined, stepType: stepTypeToEnum[step.type] || null, executionId }
+        {
+          leadId,
+          stepOrder: stepIdx >= 0 ? stepIdx : undefined,
+          stepType: stepTypeToEnum[step.type] || null,
+          executionId,
+        }
       );
 
       if (!result.success) {
@@ -498,14 +568,19 @@ export const automationWorker = new Worker(
 
         // Notify admins on first step failure (before retries)
         if (job.attemptsMade === 0) {
-          const automationInfo = await prisma.automation.findFirst({ where: { id: automationId }, select: { name: true } });
-          notificationService.notifyTenantAdmins(tenantId, {
-            type: NotificationType.AUTOMATION_ERROR,
-            title: 'Erro em automação',
-            message: `"${automationInfo?.name || 'Automação'}" - Step ${stepIdx + 1} (${step.type}) falhou: ${result.message}`,
-            link: `/app/automation-logs?automationId=${automationId}`,
-            metadata: { automationId, leadId, executionId, stepId: currentNodeId },
-          }).catch(() => {});
+          const automationInfo = await prisma.automation.findFirst({
+            where: { id: automationId },
+            select: { name: true },
+          });
+          notificationService
+            .notifyTenantAdmins(tenantId, {
+              type: NotificationType.AUTOMATION_ERROR,
+              title: 'Erro em automação',
+              message: `"${automationInfo?.name || 'Automação'}" - Step ${stepIdx + 1} (${step.type}) falhou: ${result.message}`,
+              link: `/app/automation-logs?automationId=${automationId}`,
+              metadata: { automationId, leadId, executionId, stepId: currentNodeId },
+            })
+            .catch(() => {});
         }
 
         throw new Error(result.message);
@@ -520,7 +595,14 @@ export const automationWorker = new Worker(
 
       if (nextIds.length === 0) {
         // Fim deste ramo.
-        await automationService.addLog(automationId, AutomationLogStatus.SUCCESS, `Execução ${executionId} completa`, null, undefined, { leadId, executionId });
+        await automationService.addLog(
+          automationId,
+          AutomationLogStatus.SUCCESS,
+          `Execução ${executionId} completa`,
+          null,
+          undefined,
+          { leadId, executionId }
+        );
         await automationService.updateStats(automationId, true);
         return;
       }
@@ -532,7 +614,11 @@ export const automationWorker = new Worker(
       // Atualiza o log do step de delay para WAITING (visibilidade no log de automações)
       if (step.type === 'delay' && executeAt) {
         await prisma.automationLog.updateMany({
-          where: { executionId, stepOrder: stepIdx >= 0 ? stepIdx : undefined, status: AutomationLogStatus.SUCCESS },
+          where: {
+            executionId,
+            stepOrder: stepIdx >= 0 ? stepIdx : undefined,
+            status: AutomationLogStatus.SUCCESS,
+          },
           data: { status: AutomationLogStatus.WAITING, executeAt },
         });
       }
@@ -544,7 +630,7 @@ export const automationWorker = new Worker(
         await automationQueue.add(
           'process-step',
           { ...job.data, currentNodeId: nextId, currentStepIndex: undefined },
-          { jobId: `${executionId}:${nextId}`, ...(delayMs > 0 ? { delay: delayMs } : {}) },
+          { jobId: `${executionId}:${nextId}`, ...(delayMs > 0 ? { delay: delayMs } : {}) }
         );
       }
     } catch (error: any) {
@@ -573,15 +659,26 @@ export const automationWorker = new Worker(
         await automationService.updateStats(automationId, false);
 
         // Notify tenant admins about the automation failure
-        const automation = await prisma.automation.findFirst({ where: { id: automationId }, select: { name: true } });
+        const automation = await prisma.automation.findFirst({
+          where: { id: automationId },
+          select: { name: true },
+        });
         const lead = await prisma.lead.findFirst({ where: { id: leadId }, select: { name: true } });
-        notificationService.notifyTenantAdmins(tenantId, {
-          type: NotificationType.AUTOMATION_ERROR,
-          title: 'Automação falhou',
-          message: `"${automation?.name || 'Automação'}" falhou${lead?.name ? ` para o lead "${lead.name}"` : ''}: ${error.message}`,
-          link: `/app/automation-logs?automationId=${automationId}`,
-          metadata: { automationId, leadId, executionId, stepId: currentNodeId, error: error.message },
-        }).catch(() => {});
+        notificationService
+          .notifyTenantAdmins(tenantId, {
+            type: NotificationType.AUTOMATION_ERROR,
+            title: 'Automação falhou',
+            message: `"${automation?.name || 'Automação'}" falhou${lead?.name ? ` para o lead "${lead.name}"` : ''}: ${error.message}`,
+            link: `/app/automation-logs?automationId=${automationId}`,
+            metadata: {
+              automationId,
+              leadId,
+              executionId,
+              stepId: currentNodeId,
+              error: error.message,
+            },
+          })
+          .catch(() => {});
       }
 
       throw error;
@@ -663,7 +760,7 @@ export async function dispatchTrigger(
           `Trigger ${triggerType}: automação sem passos`,
           { executionId, leadId, dealId },
           undefined,
-          { leadId, executionId },
+          { leadId, executionId }
         );
         continue;
       }
@@ -683,7 +780,7 @@ export async function dispatchTrigger(
             currentNodeId: nodeId,
             executionId,
           },
-          { jobId: `${executionId}:${nodeId}` },
+          { jobId: `${executionId}:${nodeId}` }
         );
       }
 
@@ -712,12 +809,23 @@ export async function dispatchTrigger(
     }
 
     if (dispatched > 0) {
-      logger.info('Automation triggers dispatched', { tenantId, triggerType, leadId, dealId, dispatched });
+      logger.info('Automation triggers dispatched', {
+        tenantId,
+        triggerType,
+        leadId,
+        dealId,
+        dispatched,
+      });
     }
 
     return dispatched;
   } catch (error: any) {
-    logger.error('Error dispatching automation trigger', error, { tenantId, triggerType, leadId, dealId });
+    logger.error('Error dispatching automation trigger', error, {
+      tenantId,
+      triggerType,
+      leadId,
+      dealId,
+    });
     return 0;
   }
 }

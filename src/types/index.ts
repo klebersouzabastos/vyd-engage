@@ -1,16 +1,23 @@
 // Tipos compartilhados do sistema
 
 // Aligned with Prisma UserRole enum
-export type UserRole = "ADMIN" | "USER" | "VIEWER";
+export type UserRole = 'ADMIN' | 'USER' | 'VIEWER';
 
 // Aligned with Prisma LeadStatus enum
-export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST";
+export type LeadStatus =
+  | 'NEW'
+  | 'CONTACTED'
+  | 'QUALIFIED'
+  | 'PROPOSAL'
+  | 'NEGOTIATION'
+  | 'WON'
+  | 'LOST';
 
 // Aligned with Prisma LeadSource enum
-export type LeadSource = "WEBSITE" | "SOCIAL_MEDIA" | "REFERRAL" | "EMAIL" | "PHONE" | "OTHER";
+export type LeadSource = 'WEBSITE' | 'SOCIAL_MEDIA' | 'REFERRAL' | 'EMAIL' | 'PHONE' | 'OTHER';
 
 // Aligned with Prisma TaskPriority enum
-export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Lead {
   id: string; // UUID from Prisma
@@ -37,8 +44,8 @@ export interface Lead {
 export interface Interaction {
   id: string;
   leadId: string;
-  type: "note" | "call" | "email" | "whatsapp" | "meeting" | "status_change" | "automation";
-  direction?: "inbound" | "outbound";
+  type: 'note' | 'call' | 'email' | 'whatsapp' | 'meeting' | 'status_change' | 'automation';
+  direction?: 'inbound' | 'outbound';
   subject?: string;
   content: string;
   userId?: string;
@@ -64,7 +71,7 @@ export interface Task {
 export interface CustomField {
   id: string;
   name: string;
-  type: "text" | "number" | "date" | "select" | "textarea" | "checkbox";
+  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
   options?: string[];
   required: boolean;
   defaultValue?: string | number | boolean;
@@ -78,13 +85,13 @@ export interface Tag {
 }
 
 export type NotificationType =
-  | "task_due"
-  | "task_overdue"
-  | "lead_assigned"
-  | "automation_error"
-  | "payment_failed"
-  | "subscription_expiring"
-  | "system";
+  | 'task_due'
+  | 'task_overdue'
+  | 'lead_assigned'
+  | 'automation_error'
+  | 'payment_failed'
+  | 'subscription_expiring'
+  | 'system';
 
 export interface Notification {
   id: string;
@@ -101,7 +108,7 @@ export interface Report {
   id: string;
   name: string;
   description?: string;
-  type: "leads" | "sales" | "automations" | "tasks" | "custom";
+  type: 'leads' | 'sales' | 'automations' | 'tasks' | 'custom';
   widgets: ReportWidget[];
   schedule?: ReportSchedule;
   filters?: ReportFilter;
@@ -114,27 +121,27 @@ export interface Report {
 
 export interface ReportWidget {
   id: string;
-  type: "chart" | "table" | "metric" | "funnel" | "heatmap" | "line" | "comparison" | "topn";
+  type: 'chart' | 'table' | 'metric' | 'funnel' | 'heatmap' | 'line' | 'comparison' | 'topn';
   title: string;
   config: Record<string, string | number | boolean | null>;
   position: { x: number; y: number; w: number; h: number };
-  dataSource?: "leads" | "pipeline" | "automations" | "tasks" | "interactions";
+  dataSource?: 'leads' | 'pipeline' | 'automations' | 'tasks' | 'interactions';
   filters?: ReportFilter;
   dateRange?: {
-    type: "today" | "week" | "month" | "quarter" | "year" | "all" | "custom";
+    type: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom';
     start?: string;
     end?: string;
   };
-  aggregation?: "sum" | "avg" | "count" | "min" | "max";
+  aggregation?: 'sum' | 'avg' | 'count' | 'min' | 'max';
   metric?: string;
-  chartType?: "bar" | "line" | "pie" | "area";
+  chartType?: 'bar' | 'line' | 'pie' | 'area';
   colors?: string[];
   styles?: Record<string, string | number>;
 }
 
 export interface ReportFilter {
   dateRange?: {
-    type: "today" | "week" | "month" | "quarter" | "year" | "all" | "custom";
+    type: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom';
     start?: string;
     end?: string;
   };
@@ -148,21 +155,21 @@ export interface ReportFilter {
 
 export interface ReportSchedule {
   enabled: boolean;
-  frequency: "daily" | "weekly" | "monthly";
+  frequency: 'daily' | 'weekly' | 'monthly';
   dayOfWeek?: number; // 0-6 for weekly
   dayOfMonth?: number; // 1-31 for monthly
   time: string; // HH:mm format
   recipients: string[];
-  format: "pdf" | "excel" | "both";
+  format: 'pdf' | 'excel' | 'both';
 }
 
 export interface ReportTemplate {
   id: string;
   name: string;
   description: string;
-  category: "leads" | "sales" | "automations" | "tasks" | "executive";
+  category: 'leads' | 'sales' | 'automations' | 'tasks' | 'executive';
   icon?: string;
-  widgets: Omit<ReportWidget, "id" | "position">[];
+  widgets: Omit<ReportWidget, 'id' | 'position'>[];
   defaultFilters?: ReportFilter;
 }
 
@@ -205,7 +212,7 @@ export interface Comment {
 // Companies
 // ========================
 
-export type CompanySize = "MICRO" | "SMALL" | "MEDIUM" | "LARGE" | "ENTERPRISE";
+export type CompanySize = 'MICRO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'ENTERPRISE';
 
 export interface Company {
   id: string;
@@ -221,16 +228,40 @@ export interface Company {
   createdAt: string;
   updatedAt: string;
   _count?: { leads: number; deals: number; interactions?: number };
-  leads?: Array<{ id: string; name: string; email?: string; phone?: string; status: string; source: string; score: number; createdAt: string }>;
-  deals?: Array<{ id: string; name: string; value: number; stage: string; probability: number; expectedCloseDate?: string | null; createdAt: string }>;
-  interactions?: Array<{ id: string; type: string; direction: string; subject?: string; content: string; createdAt: string }>;
+  leads?: Array<{
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    status: string;
+    source: string;
+    score: number;
+    createdAt: string;
+  }>;
+  deals?: Array<{
+    id: string;
+    name: string;
+    value: number;
+    stage: string;
+    probability: number;
+    expectedCloseDate?: string | null;
+    createdAt: string;
+  }>;
+  interactions?: Array<{
+    id: string;
+    type: string;
+    direction: string;
+    subject?: string;
+    content: string;
+    createdAt: string;
+  }>;
 }
 
 // ========================
 // Deals
 // ========================
 
-export type DealStage = "QUALIFICATION" | "PROPOSAL" | "NEGOTIATION" | "CLOSING" | "WON" | "LOST";
+export type DealStage = 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'CLOSING' | 'WON' | 'LOST';
 
 export interface Deal {
   id: string;
@@ -426,4 +457,3 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
-

@@ -53,9 +53,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
       'API REST do VYD Engage CRM. Autentique-se com Bearer JWT (sessão) ou ' +
       'API Key (header X-API-Key) para integrações.',
   },
-  servers: [
-    { url: '/api/v1', description: 'Versão atual (relativa ao host)' },
-  ],
+  servers: [{ url: '/api/v1', description: 'Versão atual (relativa ao host)' }],
   // req 4 — all 28 route groups present as tags (operations annotated per route).
   tags: [
     { name: 'Auth', description: 'Autenticação, sessão, 2FA e perfil' },

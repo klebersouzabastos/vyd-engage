@@ -104,7 +104,10 @@ export const scoringService = {
         prisma.scoreRule.create({
           data: {
             tenantId,
-            name: `${rule.eventType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}`,
+            name: `${rule.eventType
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, (c) => c.toUpperCase())}`,
             eventType: rule.eventType,
             points: rule.points,
             description: rule.description,
@@ -124,7 +127,12 @@ export const scoringService = {
    * Process a scoring event for a lead.
    * Looks up active rules matching the event, sums points, updates lead score.
    */
-  async processEvent(tenantId: string, leadId: string, eventType: ScoreEvent, conditions?: Record<string, any>) {
+  async processEvent(
+    tenantId: string,
+    leadId: string,
+    eventType: ScoreEvent,
+    conditions?: Record<string, any>
+  ) {
     // Verify lead belongs to tenant before processing
     const lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId } });
     if (!lead) return 0;

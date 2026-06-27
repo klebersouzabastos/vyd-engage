@@ -16,7 +16,9 @@ const ctx: MergeTagContext = { name: 'Maria Silva', company: 'Acme', email: 'mar
 
 describe('applyMergeTags (subject / plain text)', () => {
   it('substitutes lead.name / lead.company / lead.email', () => {
-    expect(applyMergeTags('Oi {{lead.name}} da {{lead.company}}', ctx)).toBe('Oi Maria Silva da Acme');
+    expect(applyMergeTags('Oi {{lead.name}} da {{lead.company}}', ctx)).toBe(
+      'Oi Maria Silva da Acme'
+    );
     expect(applyMergeTags('{{lead.email}}', ctx)).toBe('maria@acme.com');
   });
 

@@ -65,7 +65,7 @@ export function isEncrypted(value: string): boolean {
   const parts = value.split(':');
   if (parts.length !== 3) return false;
   // Check if all parts are valid hex
-  return parts.every(part => /^[0-9a-f]+$/i.test(part));
+  return parts.every((part) => /^[0-9a-f]+$/i.test(part));
 }
 
 /**

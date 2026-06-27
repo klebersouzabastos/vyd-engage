@@ -1,11 +1,7 @@
 import crypto from 'crypto';
 import prisma from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import {
-  flattenLeadData,
-  flattenDealData,
-  flattenTaskData,
-} from '../utils/webhookPayloads.js';
+import { flattenLeadData, flattenDealData, flattenTaskData } from '../utils/webhookPayloads.js';
 
 /**
  * Webhook Dispatcher — intercepts business events and fires outgoing webhooks.
@@ -36,7 +32,7 @@ export interface OutgoingWebhookPayload {
 export function buildOutgoingPayload(
   tenantId: string,
   event: string,
-  data: Record<string, unknown>,
+  data: Record<string, unknown>
 ): OutgoingWebhookPayload {
   return { event, tenantId, timestamp: new Date().toISOString(), data };
 }
@@ -131,9 +127,7 @@ async function deliverOnce(job: DeliveryJobData, attempts: number): Promise<void
     await prisma.webhook.update({
       where: { id: webhook.id },
       data: {
-        ...(success
-          ? { successCount: { increment: 1 } }
-          : { failureCount: { increment: 1 } }),
+        ...(success ? { successCount: { increment: 1 } } : { failureCount: { increment: 1 } }),
         lastTriggeredAt: new Date(),
       },
     });
@@ -220,7 +214,7 @@ async function getQueue(): Promise<import('bullmq').Queue<DeliveryJobData> | nul
           backoffStrategy: (attemptsMade: number) =>
             1000 * Math.pow(5, Math.max(0, attemptsMade - 1)),
         },
-      },
+      }
     );
 
     worker.on('failed', (job, err) => {
@@ -257,7 +251,7 @@ async function getQueue(): Promise<import('bullmq').Queue<DeliveryJobData> | nul
 async function dispatch(
   tenantId: string,
   event: string,
-  data: Record<string, unknown>,
+  data: Record<string, unknown>
 ): Promise<void> {
   try {
     const webhooks = await prisma.webhook.findMany({
@@ -326,7 +320,7 @@ export const webhookDispatcher = {
     tenantId: string,
     event: string,
     deal: Record<string, any>,
-    extra?: Record<string, unknown>,
+    extra?: Record<string, unknown>
   ): void {
     dispatch(tenantId, event, flattenDealData(deal, extra)).catch(() => {});
   },

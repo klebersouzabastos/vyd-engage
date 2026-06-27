@@ -1,7 +1,15 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-import { PlanType, Plan, PlanLimits, PlanUsage, PaymentHistory, Subscription } from "../types/plan";
-import { apiClient } from "../services/api/client";
-import { useAuth } from "./AuthContext";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  ReactNode,
+} from 'react';
+import { PlanType, Plan, PlanLimits, PlanUsage, PaymentHistory, Subscription } from '../types/plan';
+import { apiClient } from '../services/api/client';
+import { useAuth } from './AuthContext';
 
 interface PlanContextType {
   currentPlan: PlanType;
@@ -30,8 +38,15 @@ const DEFAULT_PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxWhatsAppConnections: 1,
     maxEmailConfigs: 1,
     features: {
-      whatsapp: true, email: true, sms: false, api: false,
-      customFields: true, reports: true, automations: true, webhooks: true, integrations: true,
+      whatsapp: true,
+      email: true,
+      sms: false,
+      api: false,
+      customFields: true,
+      reports: true,
+      automations: true,
+      webhooks: true,
+      integrations: true,
     },
   },
   pro: {
@@ -41,8 +56,15 @@ const DEFAULT_PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxWhatsAppConnections: 3,
     maxEmailConfigs: 3,
     features: {
-      whatsapp: true, email: true, sms: false, api: false,
-      customFields: true, reports: true, automations: true, webhooks: true, integrations: true,
+      whatsapp: true,
+      email: true,
+      sms: false,
+      api: false,
+      customFields: true,
+      reports: true,
+      automations: true,
+      webhooks: true,
+      integrations: true,
     },
   },
   enterprise: {
@@ -52,30 +74,64 @@ const DEFAULT_PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxWhatsAppConnections: Infinity,
     maxEmailConfigs: Infinity,
     features: {
-      whatsapp: true, email: true, sms: true, api: true,
-      customFields: true, reports: true, automations: true, webhooks: true, integrations: true,
+      whatsapp: true,
+      email: true,
+      sms: true,
+      api: true,
+      customFields: true,
+      reports: true,
+      automations: true,
+      webhooks: true,
+      integrations: true,
     },
   },
 };
 
 const DEFAULT_PLANS: Plan[] = [
   {
-    id: "starter", name: "Starter", price: 97,
-    description: "Ideal para pequenas empresas começando",
-    features: ["Até 250 leads", "1 usuário", "5 automações", "WhatsApp + E-mail", "Suporte por e-mail"],
+    id: 'starter',
+    name: 'Starter',
+    price: 97,
+    description: 'Ideal para pequenas empresas começando',
+    features: [
+      'Até 250 leads',
+      '1 usuário',
+      '5 automações',
+      'WhatsApp + E-mail',
+      'Suporte por e-mail',
+    ],
     limits: DEFAULT_PLAN_LIMITS.starter,
   },
   {
-    id: "pro", name: "Pro", price: 197,
-    description: "Para empresas em crescimento",
-    features: ["Até 1.000 leads", "5 usuários", "Automações ilimitadas", "WhatsApp + E-mail", "Suporte prioritário", "Integrações avançadas"],
+    id: 'pro',
+    name: 'Pro',
+    price: 197,
+    description: 'Para empresas em crescimento',
+    features: [
+      'Até 1.000 leads',
+      '5 usuários',
+      'Automações ilimitadas',
+      'WhatsApp + E-mail',
+      'Suporte prioritário',
+      'Integrações avançadas',
+    ],
     limits: DEFAULT_PLAN_LIMITS.pro,
     highlighted: true,
   },
   {
-    id: "enterprise", name: "Enterprise", price: 497,
-    description: "Solução completa para grandes empresas",
-    features: ["Leads ilimitados", "Usuários ilimitados", "Automações ilimitadas", "WhatsApp + E-mail + SMS", "Suporte 24/7", "API customizada", "Gerente de conta dedicado"],
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 497,
+    description: 'Solução completa para grandes empresas',
+    features: [
+      'Leads ilimitados',
+      'Usuários ilimitados',
+      'Automações ilimitadas',
+      'WhatsApp + E-mail + SMS',
+      'Suporte 24/7',
+      'API customizada',
+      'Gerente de conta dedicado',
+    ],
     limits: DEFAULT_PLAN_LIMITS.enterprise,
   },
 ];
@@ -90,7 +146,7 @@ const emptyUsage: PlanUsage = {
 
 export function PlanProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [currentPlan, setCurrentPlan] = useState<PlanType>("pro");
+  const [currentPlan, setCurrentPlan] = useState<PlanType>('pro');
   const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
@@ -104,7 +160,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         apiClient.getPlans(),
       ]);
 
-      if (subResult.status === "fulfilled" && subResult.value) {
+      if (subResult.status === 'fulfilled' && subResult.value) {
         const sub = subResult.value.subscription;
         const usage = subResult.value.usage;
 
@@ -113,22 +169,29 @@ export function PlanProvider({ children }: { children: ReactNode }) {
           setCurrentPlan(planType);
           setSubscription({
             plan: planType,
-            status: sub.status?.toLowerCase() || "active",
+            status: sub.status?.toLowerCase() || 'active',
             startDate: sub.startDate || sub.createdAt,
             renewalDate: sub.renewalDate,
-            billingCycle: sub.billingCycle?.toLowerCase() || "monthly",
+            billingCycle: sub.billingCycle?.toLowerCase() || 'monthly',
           });
         }
 
         if (sub?.payments) {
           setPaymentHistory(
-            sub.payments.map((p: { id: string; createdAt?: string; amount: number | string; status?: string }) => ({
-              id: p.id,
-              date: p.createdAt,
-              amount: Number(p.amount),
-              status: p.status?.toLowerCase() || "pending",
-              plan: (sub.plan?.type?.toLowerCase() || "pro") as PlanType,
-            }))
+            sub.payments.map(
+              (p: {
+                id: string;
+                createdAt?: string;
+                amount: number | string;
+                status?: string;
+              }) => ({
+                id: p.id,
+                date: p.createdAt,
+                amount: Number(p.amount),
+                status: p.status?.toLowerCase() || 'pending',
+                plan: (sub.plan?.type?.toLowerCase() || 'pro') as PlanType,
+              })
+            )
           );
         }
 
@@ -137,16 +200,26 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (plansResult.status === "fulfilled" && Array.isArray(plansResult.value)) {
-        const apiPlans = plansResult.value.map((p: { type: string; name: string; price: number | string; description?: string; features?: string[]; limits?: PlanLimits; highlighted?: boolean }) => ({
-          id: p.type.toLowerCase() as PlanType,
-          name: p.name,
-          price: Number(p.price),
-          description: p.description || "",
-          features: p.features || [],
-          limits: p.limits || DEFAULT_PLAN_LIMITS[p.type.toLowerCase() as PlanType],
-          highlighted: p.highlighted || false,
-        }));
+      if (plansResult.status === 'fulfilled' && Array.isArray(plansResult.value)) {
+        const apiPlans = plansResult.value.map(
+          (p: {
+            type: string;
+            name: string;
+            price: number | string;
+            description?: string;
+            features?: string[];
+            limits?: PlanLimits;
+            highlighted?: boolean;
+          }) => ({
+            id: p.type.toLowerCase() as PlanType,
+            name: p.name,
+            price: Number(p.price),
+            description: p.description || '',
+            features: p.features || [],
+            limits: p.limits || DEFAULT_PLAN_LIMITS[p.type.toLowerCase() as PlanType],
+            highlighted: p.highlighted || false,
+          })
+        );
         if (apiPlans.length > 0) setPlans(apiPlans);
       }
     } catch {
@@ -166,29 +239,65 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
   const planLimits = useMemo(() => DEFAULT_PLAN_LIMITS[currentPlan], [currentPlan]);
 
-  const changePlan = useCallback(async (newPlan: PlanType) => {
-    if (newPlan === currentPlan) return;
-    await apiClient.changePlan({ planType: newPlan.toUpperCase() });
-    setCurrentPlan(newPlan);
-    await loadFromApi();
-  }, [currentPlan, loadFromApi]);
+  const changePlan = useCallback(
+    async (newPlan: PlanType) => {
+      if (newPlan === currentPlan) return;
+      await apiClient.changePlan({ planType: newPlan.toUpperCase() });
+      setCurrentPlan(newPlan);
+      await loadFromApi();
+    },
+    [currentPlan, loadFromApi]
+  );
 
-  const changePlanWithPayment = useCallback(async (newPlan: PlanType, _paymentIntentId: string) => {
-    await changePlan(newPlan);
-  }, [changePlan]);
+  const changePlanWithPayment = useCallback(
+    async (newPlan: PlanType, _paymentIntentId: string) => {
+      await changePlan(newPlan);
+    },
+    [changePlan]
+  );
 
-  const getPlan = useCallback((planType: PlanType): Plan => {
-    return plans.find(p => p.id === planType) || plans[1];
-  }, [plans]);
+  const getPlan = useCallback(
+    (planType: PlanType): Plan => {
+      return plans.find((p) => p.id === planType) || plans[1];
+    },
+    [plans]
+  );
 
-  const canUpgrade = useCallback((): boolean => currentPlan !== "enterprise", [currentPlan]);
-  const canDowngrade = useCallback((): boolean => currentPlan !== "starter", [currentPlan]);
+  const canUpgrade = useCallback((): boolean => currentPlan !== 'enterprise', [currentPlan]);
+  const canDowngrade = useCallback((): boolean => currentPlan !== 'starter', [currentPlan]);
 
-  const value = useMemo(() => ({
-    currentPlan, plans, planLimits, planUsage, subscription, paymentHistory, loading,
-    changePlan, changePlanWithPayment, getPlan, canUpgrade, canDowngrade, refresh: loadFromApi,
-  }), [currentPlan, plans, planLimits, planUsage, subscription, paymentHistory, loading,
-    changePlan, changePlanWithPayment, getPlan, canUpgrade, canDowngrade, loadFromApi]);
+  const value = useMemo(
+    () => ({
+      currentPlan,
+      plans,
+      planLimits,
+      planUsage,
+      subscription,
+      paymentHistory,
+      loading,
+      changePlan,
+      changePlanWithPayment,
+      getPlan,
+      canUpgrade,
+      canDowngrade,
+      refresh: loadFromApi,
+    }),
+    [
+      currentPlan,
+      plans,
+      planLimits,
+      planUsage,
+      subscription,
+      paymentHistory,
+      loading,
+      changePlan,
+      changePlanWithPayment,
+      getPlan,
+      canUpgrade,
+      canDowngrade,
+      loadFromApi,
+    ]
+  );
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;
 }
@@ -196,7 +305,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 export function usePlan() {
   const context = useContext(PlanContext);
   if (context === undefined) {
-    throw new Error("usePlan deve ser usado dentro de um PlanProvider");
+    throw new Error('usePlan deve ser usado dentro de um PlanProvider');
   }
   return context;
 }

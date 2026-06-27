@@ -1,12 +1,7 @@
-import { useMemo } from "react";
-import type { Task } from "../../types";
-import {
-  addDays,
-  format,
-  formatDayHeader,
-  groupTasksByDate,
-} from "./calendarUtils";
-import { Plus } from "lucide-react";
+import { useMemo } from 'react';
+import type { Task } from '../../types';
+import { addDays, format, formatDayHeader, groupTasksByDate } from './calendarUtils';
+import { Plus } from 'lucide-react';
 
 interface CalendarAgendaViewProps {
   startDate: Date;
@@ -16,17 +11,17 @@ interface CalendarAgendaViewProps {
 }
 
 const PRIORITY_LABELS: Record<string, string> = {
-  URGENT: "Urgente",
-  HIGH: "Alta",
-  MEDIUM: "Média",
-  LOW: "Baixa",
+  URGENT: 'Urgente',
+  HIGH: 'Alta',
+  MEDIUM: 'Média',
+  LOW: 'Baixa',
 };
 
 const PRIORITY_BADGE: Record<string, string> = {
-  URGENT: "bg-red-100 text-red-700",
-  HIGH: "bg-orange-100 text-orange-700",
-  MEDIUM: "bg-yellow-100 text-yellow-700",
-  LOW: "bg-blue-100 text-blue-700",
+  URGENT: 'bg-red-100 text-red-700',
+  HIGH: 'bg-orange-100 text-orange-700',
+  MEDIUM: 'bg-yellow-100 text-yellow-700',
+  LOW: 'bg-blue-100 text-blue-700',
 };
 
 export function CalendarAgendaView({
@@ -50,14 +45,11 @@ export function CalendarAgendaView({
   return (
     <div className="space-y-4">
       {days.map((day) => {
-        const dateKey = format(day, "yyyy-MM-dd");
+        const dateKey = format(day, 'yyyy-MM-dd');
         const dayTasks = tasksByDate.get(dateKey) || [];
 
         return (
-          <div
-            key={dateKey}
-            className="bg-white rounded-lg border border-gray-300 overflow-hidden"
-          >
+          <div key={dateKey} className="bg-white rounded-lg border border-gray-300 overflow-hidden">
             {/* Day header */}
             <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700 capitalize">
@@ -74,13 +66,11 @@ export function CalendarAgendaView({
 
             {/* Tasks */}
             {dayTasks.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-400">
-                Sem tarefas
-              </div>
+              <div className="px-4 py-3 text-sm text-gray-400">Sem tarefas</div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {dayTasks.map((task) => {
-                  const isCompleted = task.status === "COMPLETED";
+                  const isCompleted = task.status === 'COMPLETED';
 
                   return (
                     <button
@@ -92,23 +82,21 @@ export function CalendarAgendaView({
                       <div
                         className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           isCompleted
-                            ? "bg-gray-400"
-                            : task.priority === "URGENT"
-                            ? "bg-red-500"
-                            : task.priority === "HIGH"
-                            ? "bg-orange-500"
-                            : task.priority === "MEDIUM"
-                            ? "bg-yellow-400"
-                            : "bg-blue-400"
+                            ? 'bg-gray-400'
+                            : task.priority === 'URGENT'
+                              ? 'bg-red-500'
+                              : task.priority === 'HIGH'
+                                ? 'bg-orange-500'
+                                : task.priority === 'MEDIUM'
+                                  ? 'bg-yellow-400'
+                                  : 'bg-blue-400'
                         }`}
                       />
 
                       <div className="flex-1 min-w-0">
                         <div
                           className={`text-sm font-medium truncate ${
-                            isCompleted
-                              ? "text-gray-400 line-through"
-                              : "text-gray-900"
+                            isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'
                           }`}
                         >
                           {task.title}
@@ -123,12 +111,12 @@ export function CalendarAgendaView({
                       <span
                         className={`text-[11px] px-2 py-0.5 rounded flex-shrink-0 ${
                           isCompleted
-                            ? "bg-gray-100 text-gray-400"
-                            : PRIORITY_BADGE[task.priority] || "bg-gray-100 text-gray-600"
+                            ? 'bg-gray-100 text-gray-400'
+                            : PRIORITY_BADGE[task.priority] || 'bg-gray-100 text-gray-600'
                         }`}
                       >
                         {isCompleted
-                          ? "Concluída"
+                          ? 'Concluída'
                           : PRIORITY_LABELS[task.priority] || task.priority}
                       </span>
                     </button>

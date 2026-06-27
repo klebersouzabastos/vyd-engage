@@ -1,16 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Skeleton } from "../ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../ui/dialog";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Skeleton } from '../ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,25 +14,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
-import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Target } from "lucide-react";
-import { apiClient } from "../../services/api/client";
-import { formatCurrency } from "../../utils/format";
+} from '../ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { apiClient } from '../../services/api/client';
+import { formatCurrency } from '../../utils/format';
 
 interface GoalUser {
   id: string;
@@ -58,12 +39,22 @@ interface Goal {
 }
 
 const MONTH_NAMES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
 ];
 
 const emptyForm = {
-  userId: "",
+  userId: '',
   targetRevenue: 0,
   targetDeals: 0,
   targetLeads: 0,
@@ -92,7 +83,7 @@ export function GoalsTab() {
       const data = (res as any)?.data ?? res ?? [];
       setGoals(data as Goal[]);
     } catch {
-      toast.error("Erro ao carregar metas");
+      toast.error('Erro ao carregar metas');
     } finally {
       setLoading(false);
     }
@@ -107,8 +98,12 @@ export function GoalsTab() {
     }
   }, []);
 
-  useEffect(() => { loadGoals(); }, [loadGoals]);
-  useEffect(() => { loadUsers(); }, [loadUsers]);
+  useEffect(() => {
+    loadGoals();
+  }, [loadGoals]);
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const openCreate = () => {
     setEditingGoal(null);
@@ -128,7 +123,10 @@ export function GoalsTab() {
   };
 
   const handleSave = async () => {
-    if (!form.userId) { toast.error("Selecione um vendedor"); return; }
+    if (!form.userId) {
+      toast.error('Selecione um vendedor');
+      return;
+    }
     setSaving(true);
     try {
       await apiClient.upsertGoal({
@@ -139,11 +137,11 @@ export function GoalsTab() {
         targetDeals: Number(form.targetDeals) || 0,
         targetLeads: Number(form.targetLeads) || 0,
       });
-      toast.success(editingGoal ? "Meta atualizada" : "Meta criada");
+      toast.success(editingGoal ? 'Meta atualizada' : 'Meta criada');
       setModalOpen(false);
       loadGoals();
     } catch {
-      toast.error("Erro ao salvar meta");
+      toast.error('Erro ao salvar meta');
     } finally {
       setSaving(false);
     }
@@ -153,28 +151,30 @@ export function GoalsTab() {
     if (!deleteTarget) return;
     try {
       await apiClient.deleteGoal(deleteTarget.id);
-      toast.success("Meta removida");
+      toast.success('Meta removida');
       setDeleteTarget(null);
       loadGoals();
     } catch {
-      toast.error("Erro ao remover meta");
+      toast.error('Erro ao remover meta');
     }
   };
 
   const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
+    if (month === 1) {
+      setMonth(12);
+      setYear((y) => y - 1);
+    } else setMonth((m) => m - 1);
   };
 
   const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
+    if (month === 12) {
+      setMonth(1);
+      setYear((y) => y + 1);
+    } else setMonth((m) => m + 1);
   };
 
-  const usersWithoutGoal = users.filter(u => !goals.some(g => g.userId === u.id));
-  const availableUsers = editingGoal
-    ? users
-    : usersWithoutGoal;
+  const usersWithoutGoal = users.filter((u) => !goals.some((g) => g.userId === u.id));
+  const availableUsers = editingGoal ? users : usersWithoutGoal;
 
   return (
     <div className="space-y-6">
@@ -227,10 +227,12 @@ export function GoalsTab() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              [1, 2, 3].map(i => (
+              [1, 2, 3].map((i) => (
                 <TableRow key={i}>
-                  {[1,2,3,4,5].map(j => (
-                    <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>
+                  {[1, 2, 3, 4, 5].map((j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
@@ -239,7 +241,9 @@ export function GoalsTab() {
                 <TableCell colSpan={5}>
                   <div className="text-center py-10">
                     <Target size={36} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 text-sm">Nenhuma meta definida para {MONTH_NAMES[month - 1]} {year}</p>
+                    <p className="text-gray-500 text-sm">
+                      Nenhuma meta definida para {MONTH_NAMES[month - 1]} {year}
+                    </p>
                     <Button variant="outline" size="sm" className="mt-3" onClick={openCreate}>
                       <Plus size={14} className="mr-1" />
                       Criar primeira meta
@@ -248,7 +252,7 @@ export function GoalsTab() {
                 </TableCell>
               </TableRow>
             ) : (
-              goals.map(goal => (
+              goals.map((goal) => (
                 <TableRow key={goal.id}>
                   <TableCell className="font-medium text-gray-900">
                     <div>
@@ -259,12 +263,8 @@ export function GoalsTab() {
                   <TableCell className="text-right text-gray-700">
                     {formatCurrency(goal.targetRevenue)}
                   </TableCell>
-                  <TableCell className="text-right text-gray-700">
-                    {goal.targetDeals}
-                  </TableCell>
-                  <TableCell className="text-right text-gray-700">
-                    {goal.targetLeads}
-                  </TableCell>
+                  <TableCell className="text-right text-gray-700">{goal.targetDeals}</TableCell>
+                  <TableCell className="text-right text-gray-700">{goal.targetLeads}</TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-1">
                       <button
@@ -291,11 +291,16 @@ export function GoalsTab() {
       </div>
 
       {/* Create/Edit Modal */}
-      <Dialog open={modalOpen} onOpenChange={open => { if (!open) setModalOpen(false); }}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => {
+          if (!open) setModalOpen(false);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingGoal ? "Editar Meta" : "Nova Meta"} — {MONTH_NAMES[month - 1]} {year}
+              {editingGoal ? 'Editar Meta' : 'Nova Meta'} — {MONTH_NAMES[month - 1]} {year}
             </DialogTitle>
           </DialogHeader>
 
@@ -303,13 +308,18 @@ export function GoalsTab() {
             {!editingGoal && (
               <div className="space-y-2">
                 <Label>Vendedor</Label>
-                <Select value={form.userId} onValueChange={v => setForm(f => ({ ...f, userId: v }))}>
+                <Select
+                  value={form.userId}
+                  onValueChange={(v) => setForm((f) => ({ ...f, userId: v }))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o vendedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableUsers.map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    {availableUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -324,7 +334,7 @@ export function GoalsTab() {
                 min={0}
                 step={100}
                 value={form.targetRevenue}
-                onChange={e => setForm(f => ({ ...f, targetRevenue: Number(e.target.value) }))}
+                onChange={(e) => setForm((f) => ({ ...f, targetRevenue: Number(e.target.value) }))}
                 placeholder="0"
               />
             </div>
@@ -337,7 +347,7 @@ export function GoalsTab() {
                   type="number"
                   min={0}
                   value={form.targetDeals}
-                  onChange={e => setForm(f => ({ ...f, targetDeals: Number(e.target.value) }))}
+                  onChange={(e) => setForm((f) => ({ ...f, targetDeals: Number(e.target.value) }))}
                   placeholder="0"
                 />
               </div>
@@ -348,7 +358,7 @@ export function GoalsTab() {
                   type="number"
                   min={0}
                   value={form.targetLeads}
-                  onChange={e => setForm(f => ({ ...f, targetLeads: Number(e.target.value) }))}
+                  onChange={(e) => setForm((f) => ({ ...f, targetLeads: Number(e.target.value) }))}
                   placeholder="0"
                 />
               </div>
@@ -356,21 +366,29 @@ export function GoalsTab() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Salvando..." : "Salvar"}
+              {saving ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover meta</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja remover a meta de <strong>{deleteTarget?.user.name}</strong> para {MONTH_NAMES[month - 1]} {year}?
+              Deseja remover a meta de <strong>{deleteTarget?.user.name}</strong> para{' '}
+              {MONTH_NAMES[month - 1]} {year}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

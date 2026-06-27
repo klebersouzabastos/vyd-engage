@@ -25,10 +25,7 @@ export function extractPlaceholders(promptBody: string): string[] {
 }
 
 /** Substitui os placeholders pelos valores; mantém o original quando vazio. */
-export function applyPlaceholders(
-  promptBody: string,
-  values: Record<string, string>,
-): string {
+export function applyPlaceholders(promptBody: string, values: Record<string, string>): string {
   return (promptBody || '').replace(placeholderRegex(), (full, rawKey: string) => {
     const value = values[rawKey.trim()];
     return value && value.trim() ? value : full;
@@ -60,7 +57,7 @@ export function extractOutline(promptBody: string): string[] {
 export function buildPrompt(
   promptBody: string,
   variables: Record<string, string>,
-  extraContext?: string,
+  extraContext?: string
 ): string {
   let prompt = applyPlaceholders(promptBody, variables);
   const extra = (extraContext || '').trim();

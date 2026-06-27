@@ -1,25 +1,13 @@
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { Badge } from "../ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Loader2, Sparkles, Copy, Send, FileText } from "lucide-react";
-import { toast } from "sonner";
-import { apiClient } from "../../services/api/client";
-import type { DraftTemplateType, EmailDraft, DraftTemplate } from "../../types";
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
+import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Loader2, Sparkles, Copy, Send, FileText } from 'lucide-react';
+import { toast } from 'sonner';
+import { apiClient } from '../../services/api/client';
+import type { DraftTemplateType, EmailDraft, DraftTemplate } from '../../types';
 
 interface AIDraftDialogProps {
   open: boolean;
@@ -31,28 +19,44 @@ interface AIDraftDialogProps {
 }
 
 const TEMPLATE_OPTIONS: { value: DraftTemplateType; label: string; description: string }[] = [
-  { value: "initial_outreach", label: "Primeiro Contato", description: "Email de apresentacao para novos leads" },
-  { value: "follow_up", label: "Follow-up", description: "Acompanhamento apos periodo sem contato" },
-  { value: "proposal", label: "Proposta Comercial", description: "Envio de proposta ou apresentacao comercial" },
-  { value: "thank_you", label: "Agradecimento", description: "Agradecimento apos reuniao ou fechamento" },
+  {
+    value: 'initial_outreach',
+    label: 'Primeiro Contato',
+    description: 'Email de apresentacao para novos leads',
+  },
+  {
+    value: 'follow_up',
+    label: 'Follow-up',
+    description: 'Acompanhamento apos periodo sem contato',
+  },
+  {
+    value: 'proposal',
+    label: 'Proposta Comercial',
+    description: 'Envio de proposta ou apresentacao comercial',
+  },
+  {
+    value: 'thank_you',
+    label: 'Agradecimento',
+    description: 'Agradecimento apos reuniao ou fechamento',
+  },
 ];
 
 export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraftDialogProps) {
-  const [templateType, setTemplateType] = useState<DraftTemplateType>("initial_outreach");
-  const [customInstructions, setCustomInstructions] = useState("");
+  const [templateType, setTemplateType] = useState<DraftTemplateType>('initial_outreach');
+  const [customInstructions, setCustomInstructions] = useState('');
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<EmailDraft | null>(null);
-  const [editableSubject, setEditableSubject] = useState("");
-  const [editableBody, setEditableBody] = useState("");
+  const [editableSubject, setEditableSubject] = useState('');
+  const [editableBody, setEditableBody] = useState('');
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setDraft(null);
-      setEditableSubject("");
-      setEditableBody("");
-      setCustomInstructions("");
-      setTemplateType("initial_outreach");
+      setEditableSubject('');
+      setEditableBody('');
+      setCustomInstructions('');
+      setTemplateType('initial_outreach');
     }
   }, [open]);
 
@@ -70,8 +74,8 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
       setEditableSubject(data.subject);
       setEditableBody(data.body);
     } catch (error: any) {
-      console.error("Erro ao gerar rascunho:", error);
-      toast.error(error.message || "Erro ao gerar rascunho de email");
+      console.error('Erro ao gerar rascunho:', error);
+      toast.error(error.message || 'Erro ao gerar rascunho de email');
     } finally {
       setLoading(false);
     }
@@ -80,7 +84,7 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
   const handleCopy = () => {
     const text = `Assunto: ${editableSubject}\n\n${editableBody}`;
     navigator.clipboard.writeText(text);
-    toast.success("Email copiado para a area de transferencia!");
+    toast.success('Email copiado para a area de transferencia!');
   };
 
   const handleSend = () => {
@@ -88,7 +92,7 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
       onSend(editableSubject, editableBody);
       onClose();
     } else {
-      toast.info("Funcionalidade de envio direto sera implementada em breve.");
+      toast.info('Funcionalidade de envio direto sera implementada em breve.');
     }
   };
 
@@ -110,14 +114,17 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
           {!draft && (
             <>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label
+                  htmlFor="ai-draft-template-type"
+                  className="text-sm font-medium text-gray-700 block mb-1.5"
+                >
                   Tipo de Email
                 </label>
                 <Select
                   value={templateType}
                   onValueChange={(v) => setTemplateType(v as DraftTemplateType)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="ai-draft-template-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -134,10 +141,14 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label
+                  htmlFor="ai-draft-custom-instructions"
+                  className="text-sm font-medium text-gray-700 block mb-1.5"
+                >
                   Instrucoes adicionais (opcional)
                 </label>
                 <Textarea
+                  id="ai-draft-custom-instructions"
                   placeholder="Ex: Mencione o desconto de 10% para fechamento neste mes..."
                   value={customInstructions}
                   onChange={(e) => setCustomInstructions(e.target.value)}
@@ -149,11 +160,7 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
                 </p>
               </div>
 
-              <Button
-                className="w-full gap-2"
-                onClick={handleGenerate}
-                disabled={loading}
-              >
+              <Button className="w-full gap-2" onClick={handleGenerate} disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
@@ -174,8 +181,10 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
             <>
               <div className="flex items-center gap-2 mb-2">
                 <Badge
-                  variant={draft.aiGenerated ? "default" : "secondary"}
-                  className={draft.aiGenerated ? "bg-purple-100 text-purple-700 hover:bg-purple-100" : ""}
+                  variant={draft.aiGenerated ? 'default' : 'secondary'}
+                  className={
+                    draft.aiGenerated ? 'bg-purple-100 text-purple-700 hover:bg-purple-100' : ''
+                  }
                 >
                   {draft.aiGenerated ? (
                     <>
@@ -195,10 +204,14 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label
+                  htmlFor="ai-draft-subject"
+                  className="text-sm font-medium text-gray-700 block mb-1.5"
+                >
                   Assunto
                 </label>
                 <input
+                  id="ai-draft-subject"
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={editableSubject}
@@ -207,10 +220,14 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label
+                  htmlFor="ai-draft-body"
+                  className="text-sm font-medium text-gray-700 block mb-1.5"
+                >
                   Corpo do Email
                 </label>
                 <Textarea
+                  id="ai-draft-body"
                   value={editableBody}
                   onChange={(e) => setEditableBody(e.target.value)}
                   rows={12}
@@ -219,11 +236,7 @@ export function AIDraftDialog({ open, onClose, leadId, dealId, onSend }: AIDraft
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => setDraft(null)}
-                >
+                <Button variant="outline" className="gap-2" onClick={() => setDraft(null)}>
                   Voltar
                 </Button>
                 <div className="flex-1" />

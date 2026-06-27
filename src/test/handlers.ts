@@ -11,6 +11,6 @@ export const handlers = [
   http.get(`${API}/tags`, () =>
     HttpResponse.json([
       { id: 'tag-1', name: 'VIP', color: '#FF0000', createdAt: new Date().toISOString() },
-    ]),
+    ])
   ),
 ];

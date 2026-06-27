@@ -1,25 +1,25 @@
-import { useNavigate } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, Phone, Mail, User, Calendar } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { LeadStatusBadge } from '@/components/LeadStatusBadge'
-import { LeadScoreBadge } from '@/components/LeadScoreBadge'
-import { useSidePanel } from '@/contexts/SidePanelContext'
-import { apiClient } from '@/services/api/client'
+import { useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { ExternalLink, Phone, Mail, User, Calendar } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { LeadStatusBadge } from '@/components/LeadStatusBadge';
+import { LeadScoreBadge } from '@/components/LeadScoreBadge';
+import { useSidePanel } from '@/contexts/SidePanelContext';
+import { apiClient } from '@/services/api/client';
 
 function LeadPanelContent({ id }: { id: string }) {
-  const navigate = useNavigate()
-  const { closePanel } = useSidePanel()
+  const navigate = useNavigate();
+  const { closePanel } = useSidePanel();
 
   const { data: lead, isLoading } = useQuery({
     queryKey: ['lead', id],
     queryFn: () => apiClient.getLead(id) as Promise<any>,
     enabled: !!id,
     staleTime: 60_000,
-  })
+  });
 
   if (isLoading) {
     return (
@@ -30,10 +30,10 @@ function LeadPanelContent({ id }: { id: string }) {
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-1/2" />
       </div>
-    )
+    );
   }
 
-  if (!lead) return null
+  if (!lead) return null;
 
   return (
     <div className="p-6 space-y-5">
@@ -79,7 +79,9 @@ function LeadPanelContent({ id }: { id: string }) {
 
       {lead.interactions && lead.interactions.length > 0 && (
         <div className="text-sm border-t border-gray-100 pt-4">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Última Interação</p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+            Última Interação
+          </p>
           <p className="text-gray-600 line-clamp-2">{lead.interactions[0].content}</p>
           <p className="text-xs text-gray-400 mt-1">
             {new Date(lead.interactions[0].timestamp).toLocaleDateString('pt-BR')}
@@ -93,8 +95,8 @@ function LeadPanelContent({ id }: { id: string }) {
           variant="outline"
           size="sm"
           onClick={() => {
-            closePanel()
-            navigate(`/app/leads/${id}`)
+            closePanel();
+            navigate(`/app/leads/${id}`);
           }}
         >
           <ExternalLink size={14} className="mr-2" />
@@ -102,19 +104,19 @@ function LeadPanelContent({ id }: { id: string }) {
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 function DealPanelContent({ id }: { id: string }) {
-  const navigate = useNavigate()
-  const { closePanel } = useSidePanel()
+  const navigate = useNavigate();
+  const { closePanel } = useSidePanel();
 
   const { data: deal, isLoading } = useQuery({
     queryKey: ['deal', id],
     queryFn: () => apiClient.getDeal(id) as Promise<any>,
     enabled: !!id,
     staleTime: 60_000,
-  })
+  });
 
   if (isLoading) {
     return (
@@ -124,14 +126,15 @@ function DealPanelContent({ id }: { id: string }) {
         <Skeleton className="h-4 w-2/3" />
         <Skeleton className="h-4 w-1/2" />
       </div>
-    )
+    );
   }
 
-  if (!deal) return null
+  if (!deal) return null;
 
-  const valueFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-    deal.value || 0,
-  )
+  const valueFormatted = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(deal.value || 0);
 
   return (
     <div className="p-6 space-y-5">
@@ -177,8 +180,8 @@ function DealPanelContent({ id }: { id: string }) {
           variant="outline"
           size="sm"
           onClick={() => {
-            closePanel()
-            navigate(`/app/deals/${id}`)
+            closePanel();
+            navigate(`/app/deals/${id}`);
           }}
         >
           <ExternalLink size={14} className="mr-2" />
@@ -186,11 +189,11 @@ function DealPanelContent({ id }: { id: string }) {
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 export function SidePanel() {
-  const { open, type, id, closePanel } = useSidePanel()
+  const { open, type, id, closePanel } = useSidePanel();
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && closePanel()}>
@@ -209,5 +212,5 @@ export function SidePanel() {
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

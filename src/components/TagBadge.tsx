@@ -1,23 +1,18 @@
-import { X } from "lucide-react";
-import { Tag } from "../types";
+import { X } from 'lucide-react';
+import { Tag } from '../types';
 
 interface TagBadgeProps {
   tag: Tag;
   onRemove?: () => void;
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   showRemove?: boolean;
 }
 
-export function TagBadge({
-  tag,
-  onRemove,
-  size = "md",
-  showRemove = false,
-}: TagBadgeProps) {
+export function TagBadge({ tag, onRemove, size = 'md', showRemove = false }: TagBadgeProps) {
   const sizeClasses = {
-    sm: "text-xs px-2 py-0.5",
-    md: "text-sm px-2.5 py-1",
-    lg: "text-base px-3 py-1.5",
+    sm: 'text-xs px-2 py-0.5',
+    md: 'text-sm px-2.5 py-1',
+    lg: 'text-base px-3 py-1.5',
   };
 
   return (
@@ -49,11 +44,3 @@ export function TagBadge({
     </span>
   );
 }
-
-
-
-
-
-
-
-

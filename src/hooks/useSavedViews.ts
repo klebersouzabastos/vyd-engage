@@ -36,81 +36,91 @@ export function useSavedViews(page: string) {
     fetchViews();
   }, [fetchViews]);
 
-  const saveView = useCallback(async (
-    name: string,
-    filters: Record<string, unknown>,
-    options?: {
-      columns?: Record<string, unknown> | null;
-      isDefault?: boolean;
-      isShared?: boolean;
-      sortBy?: string | null;
-      sortOrder?: string | null;
-    },
-  ) => {
-    try {
-      const result = await apiClient.createSavedView({
-        name,
-        page,
-        filters,
-        ...options,
-      });
-      const newView = result.data;
-      setViews((prev) => [...prev, newView]);
-      setActiveViewId(newView.id);
-      toast.success('Visualizacao salva com sucesso!');
-      return newView;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao salvar visualizacao';
-      toast.error(message);
-      throw err;
-    }
-  }, [page]);
-
-  const updateView = useCallback(async (id: string, data: {
-    name?: string;
-    filters?: Record<string, unknown>;
-    columns?: Record<string, unknown> | null;
-    isDefault?: boolean;
-    isShared?: boolean;
-    sortBy?: string | null;
-    sortOrder?: string | null;
-  }) => {
-    try {
-      const result = await apiClient.updateSavedView(id, data);
-      const updated = result.data;
-      setViews((prev) => {
-        let newViews = prev.map((v) => v.id === id ? updated : v);
-        // If this was set as default, unset others locally
-        if (data.isDefault) {
-          newViews = newViews.map((v) =>
-            v.id === id ? v : { ...v, isDefault: false }
-          );
-        }
-        return newViews;
-      });
-      toast.success('Visualizacao atualizada!');
-      return updated;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar visualizacao';
-      toast.error(message);
-      throw err;
-    }
-  }, []);
-
-  const deleteView = useCallback(async (id: string) => {
-    try {
-      await apiClient.deleteSavedView(id);
-      setViews((prev) => prev.filter((v) => v.id !== id));
-      if (activeViewId === id) {
-        setActiveViewId(null);
+  const saveView = useCallback(
+    async (
+      name: string,
+      filters: Record<string, unknown>,
+      options?: {
+        columns?: Record<string, unknown> | null;
+        isDefault?: boolean;
+        isShared?: boolean;
+        sortBy?: string | null;
+        sortOrder?: string | null;
       }
-      toast.success('Visualizacao removida!');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao remover visualizacao';
-      toast.error(message);
-      throw err;
-    }
-  }, [activeViewId]);
+    ) => {
+      try {
+        const result = await apiClient.createSavedView({
+          name,
+          page,
+          filters,
+          ...options,
+        });
+        const newView = result.data;
+        setViews((prev) => [...prev, newView]);
+        setActiveViewId(newView.id);
+        toast.success('Visualizacao salva com sucesso!');
+        return newView;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Erro ao salvar visualizacao';
+        toast.error(message);
+        throw err;
+      }
+    },
+    [page]
+  );
+
+  const updateView = useCallback(
+    async (
+      id: string,
+      data: {
+        name?: string;
+        filters?: Record<string, unknown>;
+        columns?: Record<string, unknown> | null;
+        isDefault?: boolean;
+        isShared?: boolean;
+        sortBy?: string | null;
+        sortOrder?: string | null;
+      }
+    ) => {
+      try {
+        const result = await apiClient.updateSavedView(id, data);
+        const updated = result.data;
+        setViews((prev) => {
+          let newViews = prev.map((v) => (v.id === id ? updated : v));
+          // If this was set as default, unset others locally
+          if (data.isDefault) {
+            newViews = newViews.map((v) => (v.id === id ? v : { ...v, isDefault: false }));
+          }
+          return newViews;
+        });
+        toast.success('Visualizacao atualizada!');
+        return updated;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Erro ao atualizar visualizacao';
+        toast.error(message);
+        throw err;
+      }
+    },
+    []
+  );
+
+  const deleteView = useCallback(
+    async (id: string) => {
+      try {
+        await apiClient.deleteSavedView(id);
+        setViews((prev) => prev.filter((v) => v.id !== id));
+        if (activeViewId === id) {
+          setActiveViewId(null);
+        }
+        toast.success('Visualizacao removida!');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Erro ao remover visualizacao';
+        toast.error(message);
+        throw err;
+      }
+    },
+    [activeViewId]
+  );
 
   const activeView = views.find((v) => v.id === activeViewId) || null;
 

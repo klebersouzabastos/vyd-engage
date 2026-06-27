@@ -1,20 +1,14 @@
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { PaymentMethodSelector } from "./PaymentMethodSelector";
-import { CreditCardForm, CardTokenData } from "./CreditCardForm";
-import { PixPayment } from "./PixPayment";
-import { BoletoPayment } from "./BoletoPayment";
-import { usePayment } from "../../contexts/PaymentContext";
-import { PaymentMethod, PixPaymentData, BoletoPaymentData } from "../../types/payment";
-import { PlanType } from "../../types/plan";
-import { X, Loader2, CheckCircle, XCircle } from "lucide-react";
-import { Button } from "../ui/button";
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { PaymentMethodSelector } from './PaymentMethodSelector';
+import { CreditCardForm, CardTokenData } from './CreditCardForm';
+import { PixPayment } from './PixPayment';
+import { BoletoPayment } from './BoletoPayment';
+import { usePayment } from '../../contexts/PaymentContext';
+import { PaymentMethod, PixPaymentData, BoletoPaymentData } from '../../types/payment';
+import { PlanType } from '../../types/plan';
+import { X, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface PaymentModalProps {
   open: boolean;
@@ -43,14 +37,17 @@ export function PaymentModal({
   } = usePayment();
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
-  const [step, setStep] = useState<"select" | "payment" | "pending" | "success" | "error">("select");
+  const [step, setStep] = useState<'select' | 'payment' | 'pending' | 'success' | 'error'>(
+    'select'
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Resetar estado quando modal abrir
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado a partir da prop open (reset ao abrir)
       setSelectedMethod(null);
-      setStep("select");
+      setStep('select');
       setErrorMessage(null);
       clearCurrentPayment();
     }
@@ -59,13 +56,14 @@ export function PaymentModal({
   // Verificar se há pagamento pendente quando modal abrir
   useEffect(() => {
     if (open && currentPaymentIntent) {
-      if (currentPaymentIntent.status === "paid") {
-        setStep("success");
-      } else if (currentPaymentIntent.status === "pending") {
-        setStep("pending");
-      } else if (currentPaymentIntent.status === "failed") {
-        setStep("error");
-        setErrorMessage(currentPaymentIntent.errorMessage || "Pagamento falhou");
+      if (currentPaymentIntent.status === 'paid') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza step a partir do currentPaymentIntent.status (dados externos do PaymentContext)
+        setStep('success');
+      } else if (currentPaymentIntent.status === 'pending') {
+        setStep('pending');
+      } else if (currentPaymentIntent.status === 'failed') {
+        setStep('error');
+        setErrorMessage(currentPaymentIntent.errorMessage || 'Pagamento falhou');
       }
     }
   }, [open, currentPaymentIntent]);
@@ -74,27 +72,27 @@ export function PaymentModal({
     try {
       setSelectedMethod(method);
       setErrorMessage(null);
-      
+
       // Criar intenção de pagamento
       const intent = await startPayment(planId, amount, method);
-      
+
       // Se for PIX ou Boleto, já processar para gerar QR Code/Boleto
-      if (method === "pix" || method === "boleto") {
+      if (method === 'pix' || method === 'boleto') {
         const result = await processPayment(intent.id);
         if (result.success) {
-          setStep("pending");
+          setStep('pending');
         } else {
-          setStep("error");
+          setStep('error');
           setErrorMessage(result.message);
         }
       } else {
         // Cartão de crédito - mostrar formulário
-        setStep("payment");
+        setStep('payment');
       }
     } catch (error) {
-      console.error("Erro ao iniciar pagamento:", error);
-      setStep("error");
-      setErrorMessage("Erro ao iniciar pagamento. Tente novamente.");
+      console.error('Erro ao iniciar pagamento:', error);
+      setStep('error');
+      setErrorMessage('Erro ao iniciar pagamento. Tente novamente.');
     }
   };
 
@@ -104,25 +102,25 @@ export function PaymentModal({
     try {
       setErrorMessage(null);
       const result = await processPayment(currentPaymentIntent.id, tokenData);
-      
+
       if (result.success) {
-        if (result.status === "paid") {
-          setStep("success");
+        if (result.status === 'paid') {
+          setStep('success');
           setTimeout(() => {
             onPaymentSuccess();
             onOpenChange(false);
           }, 2000);
         } else {
-          setStep("pending");
+          setStep('pending');
         }
       } else {
-        setStep("error");
-        setErrorMessage(result.message || "Erro ao processar pagamento");
+        setStep('error');
+        setErrorMessage(result.message || 'Erro ao processar pagamento');
       }
     } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
-      setStep("error");
-      setErrorMessage("Erro ao processar pagamento. Tente novamente.");
+      console.error('Erro ao processar pagamento:', error);
+      setStep('error');
+      setErrorMessage('Erro ao processar pagamento. Tente novamente.');
     }
   };
 
@@ -131,19 +129,19 @@ export function PaymentModal({
 
     try {
       const status = await checkPayment(currentPaymentIntent.id);
-      
-      if (status === "paid") {
-        setStep("success");
+
+      if (status === 'paid') {
+        setStep('success');
         setTimeout(() => {
           onPaymentSuccess();
           onOpenChange(false);
         }, 2000);
-      } else if (status === "failed") {
-        setStep("error");
-        setErrorMessage("Pagamento não encontrado ou falhou");
+      } else if (status === 'failed') {
+        setStep('error');
+        setErrorMessage('Pagamento não encontrado ou falhou');
       }
     } catch (error) {
-      console.error("Erro ao verificar status:", error);
+      console.error('Erro ao verificar status:', error);
     }
   };
 
@@ -154,17 +152,15 @@ export function PaymentModal({
   };
 
   const formatAmount = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
     }).format(value);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent 
-        className="max-w-[600px] w-[90vw] sm:w-[600px] max-h-[85vh] min-h-[400px] overflow-hidden flex flex-col p-0"
-      >
+      <DialogContent className="max-w-[600px] w-[90vw] sm:w-[600px] max-h-[85vh] min-h-[400px] overflow-hidden flex flex-col p-0">
         <div className="px-6 pt-6 pb-4 border-b border-gray-300 flex-shrink-0">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">
@@ -178,112 +174,100 @@ export function PaymentModal({
 
         <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0">
           <div className="space-y-6">
-          {step === "select" && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Escolha a forma de pagamento
-              </h3>
-              <PaymentMethodSelector
-                selectedMethod={selectedMethod}
-                onSelectMethod={handleSelectMethod}
-                disabled={isProcessing}
-              />
-            </div>
-          )}
+            {step === 'select' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Escolha a forma de pagamento
+                </h3>
+                <PaymentMethodSelector
+                  selectedMethod={selectedMethod}
+                  onSelectMethod={handleSelectMethod}
+                  disabled={isProcessing}
+                />
+              </div>
+            )}
 
-          {step === "payment" && currentPaymentIntent && selectedMethod === "credit_card" && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Dados do Cartão
-              </h3>
-              <CreditCardForm
-                amount={amount}
-                onSubmit={handleCreditCardSubmit}
-                onCancel={() => setStep("select")}
-                isLoading={isProcessing}
-              />
-            </div>
-          )}
-
-          {step === "pending" && currentPaymentIntent && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {selectedMethod === "pix" ? "Pagamento via PIX" : "Pagamento via Boleto"}
-              </h3>
-              {selectedMethod === "pix" && currentPaymentIntent.paymentData && (
-                <PixPayment
-                  pixData={currentPaymentIntent.paymentData as PixPaymentData}
-                  onCheckStatus={handleCheckStatus}
+            {step === 'payment' && currentPaymentIntent && selectedMethod === 'credit_card' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Cartão</h3>
+                <CreditCardForm
+                  amount={amount}
+                  onSubmit={handleCreditCardSubmit}
+                  onCancel={() => setStep('select')}
                   isLoading={isProcessing}
                 />
-              )}
-              {selectedMethod === "boleto" && currentPaymentIntent.paymentData && (
-                <BoletoPayment
-                  boletoData={currentPaymentIntent.paymentData as BoletoPaymentData}
-                  onCheckStatus={handleCheckStatus}
-                  isLoading={isProcessing}
-                />
-              )}
-            </div>
-          )}
-
-          {step === "success" && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle size={32} className="text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Pagamento Aprovado!
-              </h3>
-              <p className="text-gray-600">
-                Seu plano será atualizado em instantes...
-              </p>
-            </div>
-          )}
+            )}
 
-          {step === "error" && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <XCircle size={32} className="text-red-600" />
+            {step === 'pending' && currentPaymentIntent && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {selectedMethod === 'pix' ? 'Pagamento via PIX' : 'Pagamento via Boleto'}
+                </h3>
+                {selectedMethod === 'pix' && currentPaymentIntent.paymentData && (
+                  <PixPayment
+                    pixData={currentPaymentIntent.paymentData as PixPaymentData}
+                    onCheckStatus={handleCheckStatus}
+                    isLoading={isProcessing}
+                  />
+                )}
+                {selectedMethod === 'boleto' && currentPaymentIntent.paymentData && (
+                  <BoletoPayment
+                    boletoData={currentPaymentIntent.paymentData as BoletoPaymentData}
+                    onCheckStatus={handleCheckStatus}
+                    isLoading={isProcessing}
+                  />
+                )}
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Erro no Pagamento
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {errorMessage || "Ocorreu um erro ao processar o pagamento."}
-              </p>
-              <div className="flex gap-2 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setStep("select");
-                    setSelectedMethod(null);
-                    setErrorMessage(null);
-                    clearCurrentPayment();
-                  }}
-                >
-                  Tentar Novamente
-                </Button>
-                <Button
-                  onClick={handleClose}
-                  className="bg-primary hover:bg-primary-dark"
-                >
-                  Fechar
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
 
-          {isProcessing && step !== "pending" && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 size={24} className="animate-spin text-primary" />
-              <span className="ml-2 text-gray-600">Processando...</span>
-            </div>
-          )}
+            {step === 'success' && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle size={32} className="text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Pagamento Aprovado!</h3>
+                <p className="text-gray-600">Seu plano será atualizado em instantes...</p>
+              </div>
+            )}
+
+            {step === 'error' && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <XCircle size={32} className="text-red-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Erro no Pagamento</h3>
+                <p className="text-gray-600 mb-4">
+                  {errorMessage || 'Ocorreu um erro ao processar o pagamento.'}
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setStep('select');
+                      setSelectedMethod(null);
+                      setErrorMessage(null);
+                      clearCurrentPayment();
+                    }}
+                  >
+                    Tentar Novamente
+                  </Button>
+                  <Button onClick={handleClose} className="bg-primary hover:bg-primary-dark">
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {isProcessing && step !== 'pending' && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={24} className="animate-spin text-primary" />
+                <span className="ml-2 text-gray-600">Processando...</span>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

@@ -1,19 +1,19 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Badge } from "../components/ui/badge";
-import { Skeleton } from "../components/ui/skeleton";
-import { Switch } from "../components/ui/switch";
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Badge } from '../components/ui/badge';
+import { Skeleton } from '../components/ui/skeleton';
+import { Switch } from '../components/ui/switch';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../components/ui/dialog";
+} from '../components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,13 +23,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { Plus, Search, Pencil, Trash2, Package } from "lucide-react";
+} from '../components/ui/alert-dialog';
+import { Plus, Search, Pencil, Trash2, Package } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
 interface Product {
@@ -51,35 +51,35 @@ interface ProductPayload {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem('accessToken');
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json",
+      Authorization: 'Bearer ' + token,
+      'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
     },
-    credentials: "include",
+    credentials: 'include',
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? "Erro na requisição");
+    throw new Error(body.error ?? 'Erro na requisição');
   }
   const data = await res.json();
   return (data.data ?? data) as T;
 }
 
 const EMPTY_FORM: ProductPayload = {
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   unitPrice: 0,
-  category: "",
+  category: '',
   active: true,
 };
 
 export function Products() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -88,20 +88,20 @@ export function Products() {
 
   // List
   const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ["products"],
-    queryFn: () => apiFetch<Product[]>("/api/v1/products"),
+    queryKey: ['products'],
+    queryFn: () => apiFetch<Product[]>('/api/v1/products'),
     staleTime: 2 * 60 * 1000,
   });
 
   // Create
   const createMutation = useMutation({
     mutationFn: (payload: ProductPayload) =>
-      apiFetch<Product>("/api/v1/products", {
-        method: "POST",
+      apiFetch<Product>('/api/v1/products', {
+        method: 'POST',
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       setDialogOpen(false);
     },
     onError: (err: Error) => setFormError(err.message),
@@ -111,11 +111,11 @@ export function Products() {
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<ProductPayload> }) =>
       apiFetch<Product>(`/api/v1/products/${id}`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       setDialogOpen(false);
     },
     onError: (err: Error) => setFormError(err.message),
@@ -123,10 +123,9 @@ export function Products() {
 
   // Delete
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiFetch(`/api/v1/products/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/api/v1/products/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       setDeleteId(null);
     },
   });
@@ -135,9 +134,7 @@ export function Products() {
     if (!search.trim()) return products;
     const q = search.toLowerCase();
     return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.category ?? "").toLowerCase().includes(q)
+      (p) => p.name.toLowerCase().includes(q) || (p.category ?? '').toLowerCase().includes(q)
     );
   }, [products, search]);
 
@@ -152,9 +149,9 @@ export function Products() {
     setEditingProduct(product);
     setForm({
       name: product.name,
-      description: product.description ?? "",
+      description: product.description ?? '',
       unitPrice: product.unitPrice,
-      category: product.category ?? "",
+      category: product.category ?? '',
       active: product.active,
     });
     setFormError(null);
@@ -165,11 +162,11 @@ export function Products() {
     e.preventDefault();
     setFormError(null);
     if (!form.name.trim()) {
-      setFormError("O nome do produto é obrigatório.");
+      setFormError('O nome do produto é obrigatório.');
       return;
     }
     if (form.unitPrice < 0) {
-      setFormError("O preço não pode ser negativo.");
+      setFormError('O preço não pode ser negativo.');
       return;
     }
     if (editingProduct) {
@@ -210,10 +207,10 @@ export function Products() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
-                    {["Nome", "Categoria", "Preço", "Status", "Ações"].map((h) => (
+                    {['Nome', 'Categoria', 'Preço', 'Status', 'Ações'].map((h) => (
                       <th
                         key={h}
-                        className={`py-3 px-4 text-xs font-medium text-gray-500 uppercase ${h === "Ações" || h === "Preço" || h === "Status" ? "text-right" : "text-left"}`}
+                        className={`py-3 px-4 text-xs font-medium text-gray-500 uppercase ${h === 'Ações' || h === 'Preço' || h === 'Status' ? 'text-right' : 'text-left'}`}
                       >
                         {h}
                       </th>
@@ -223,11 +220,21 @@ export function Products() {
                 <tbody>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-gray-100">
-                      <td className="py-3 px-4"><Skeleton className="h-4 w-40" /></td>
-                      <td className="py-3 px-4"><Skeleton className="h-4 w-24" /></td>
-                      <td className="py-3 px-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
-                      <td className="py-3 px-4 text-right"><Skeleton className="h-5 w-16 ml-auto rounded-full" /></td>
-                      <td className="py-3 px-4 text-right"><Skeleton className="h-7 w-16 ml-auto" /></td>
+                      <td className="py-3 px-4">
+                        <Skeleton className="h-4 w-40" />
+                      </td>
+                      <td className="py-3 px-4">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Skeleton className="h-4 w-20 ml-auto" />
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Skeleton className="h-5 w-16 ml-auto rounded-full" />
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Skeleton className="h-7 w-16 ml-auto" />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -237,7 +244,9 @@ export function Products() {
             <div className="flex flex-col items-center justify-center p-16 text-center">
               <Package className="h-10 w-10 text-gray-300 mb-3" />
               <p className="text-sm text-gray-500">
-                {search ? "Nenhum produto encontrado para a busca." : "Nenhum produto cadastrado ainda."}
+                {search
+                  ? 'Nenhum produto encontrado para a busca.'
+                  : 'Nenhum produto cadastrado ainda.'}
               </p>
               {!search && (
                 <Button variant="outline" size="sm" className="mt-3" onClick={openCreate}>
@@ -251,11 +260,21 @@ export function Products() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Nome</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Categoria</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Preço Unitário</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">Ações</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Nome
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Categoria
+                    </th>
+                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Preço Unitário
+                    </th>
+                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase">
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -267,7 +286,9 @@ export function Products() {
                       <td className="py-3 px-4">
                         <p className="text-sm font-medium text-gray-900">{product.name}</p>
                         {product.description && (
-                          <p className="text-xs text-gray-400 truncate max-w-xs">{product.description}</p>
+                          <p className="text-xs text-gray-400 truncate max-w-xs">
+                            {product.description}
+                          </p>
                         )}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
@@ -280,11 +301,11 @@ export function Products() {
                         <Badge
                           className={
                             product.active
-                              ? "bg-green-100 text-green-700 hover:bg-green-100"
-                              : "bg-gray-100 text-gray-500 hover:bg-gray-100"
+                              ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-100'
                           }
                         >
-                          {product.active ? "Ativo" : "Inativo"}
+                          {product.active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-right">
@@ -317,10 +338,15 @@ export function Products() {
       </div>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!isSaving) setDialogOpen(open); }}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!isSaving) setDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingProduct ? "Editar produto" : "Novo produto"}</DialogTitle>
+            <DialogTitle>{editingProduct ? 'Editar produto' : 'Novo produto'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleFormSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
@@ -378,13 +404,11 @@ export function Products() {
                 onCheckedChange={(checked) => setForm((f) => ({ ...f, active: checked }))}
               />
               <Label htmlFor="prod-active" className="cursor-pointer">
-                {form.active ? "Ativo" : "Inativo"}
+                {form.active ? 'Ativo' : 'Inativo'}
               </Label>
             </div>
 
-            {formError && (
-              <p className="text-sm text-red-500">{formError}</p>
-            )}
+            {formError && <p className="text-sm text-red-500">{formError}</p>}
 
             <DialogFooter className="gap-2">
               <Button
@@ -396,7 +420,7 @@ export function Products() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Salvando..." : editingProduct ? "Salvar alterações" : "Criar produto"}
+                {isSaving ? 'Salvando...' : editingProduct ? 'Salvar alterações' : 'Criar produto'}
               </Button>
             </DialogFooter>
           </form>
@@ -404,7 +428,12 @@ export function Products() {
       </Dialog>
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir produto</AlertDialogTitle>
@@ -419,7 +448,7 @@ export function Products() {
               onClick={() => deleteId && deleteMutation.mutate(deleteId)}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+              {deleteMutation.isPending ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

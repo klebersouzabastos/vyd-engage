@@ -74,8 +74,13 @@ const detailInclude = {
  */
 async function generateActionsFromPlaybook(
   tenantId: string,
-  roadmap: { id: string; companyId: string; empreendimentoId: string | null; playbookTemplateId: string | null },
-  ownerId?: string,
+  roadmap: {
+    id: string;
+    companyId: string;
+    empreendimentoId: string | null;
+    playbookTemplateId: string | null;
+  },
+  ownerId?: string
 ) {
   if (!roadmap.playbookTemplateId) return;
   const tpl = await prisma.playbookTemplate.findFirst({
@@ -141,7 +146,7 @@ export const roadmapService = {
       search?: string;
       page?: number;
       limit?: number;
-    },
+    }
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
@@ -209,7 +214,12 @@ export const roadmapService = {
   async upsertStakeholder(
     tenantId: string,
     roadmapId: string,
-    data: { leadId: string; roleInDecision?: StakeholderRole; posture?: StakeholderPosture; notes?: string },
+    data: {
+      leadId: string;
+      roleInDecision?: StakeholderRole;
+      posture?: StakeholderPosture;
+      notes?: string;
+    }
   ) {
     await this.findById(tenantId, roadmapId);
     const lead = await prisma.lead.findFirst({
@@ -370,16 +380,14 @@ export const roadmapService = {
     // sinaliza estagnação no roadmap.
     const atRisk = activeRoadmaps
       .map((r) => {
-        const completed = r.tasks
-          .filter((t) => t.completedAt)
-          .map((t) => t.completedAt!.getTime());
+        const completed = r.tasks.filter((t) => t.completedAt).map((t) => t.completedAt!.getTime());
         const lastActivityAt = completed.length ? new Date(Math.max(...completed)) : null;
         const overdueCount = r.tasks.filter(
           (t) =>
             t.status !== TaskStatus.COMPLETED &&
             t.status !== TaskStatus.CANCELLED &&
             t.dueDate &&
-            t.dueDate < now,
+            t.dueDate < now
         ).length;
         return {
           id: r.id,

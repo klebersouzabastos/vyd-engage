@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { EmailConfig } from "../../types/email";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+import { useState } from 'react';
+import { EmailConfig } from '../../types/email';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import {
   Edit,
   Trash2,
@@ -12,13 +12,9 @@ import {
   Mail,
   CheckCircle,
   XCircle,
-  Clock
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "../ui/dialog";
+  Clock,
+} from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +24,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { EmailTestModal } from "./EmailTestModal";
+} from '../ui/alert-dialog';
+import { EmailTestModal } from './EmailTestModal';
 
 interface EmailConfigCardProps {
   config: EmailConfig;
@@ -40,17 +36,17 @@ interface EmailConfigCardProps {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  smtp: "SMTP",
-  sendgrid: "SendGrid",
-  mailgun: "Mailgun",
-  resend: "Resend",
+  smtp: 'SMTP',
+  sendgrid: 'SendGrid',
+  mailgun: 'Mailgun',
+  resend: 'Resend',
 };
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; icon: typeof CheckCircle }> = {
-  connected: { bg: "bg-green-100", text: "text-green-700", icon: CheckCircle },
-  disconnected: { bg: "bg-gray-100", text: "text-gray-700", icon: XCircle },
-  testing: { bg: "bg-blue-100", text: "text-blue-700", icon: Clock },
-  error: { bg: "bg-red-100", text: "text-red-700", icon: XCircle },
+  connected: { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+  disconnected: { bg: 'bg-gray-100', text: 'text-gray-700', icon: XCircle },
+  testing: { bg: 'bg-blue-100', text: 'text-blue-700', icon: Clock },
+  error: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
 };
 
 export function EmailConfigCard({
@@ -67,7 +63,7 @@ export function EmailConfigCard({
 
   const getFromEmail = () => {
     const cfg = config.config as any;
-    return cfg.fromEmail || "Não configurado";
+    return cfg.fromEmail || 'Não configurado';
   };
 
   const handleDelete = () => {
@@ -81,9 +77,7 @@ export function EmailConfigCard({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <CardTitle className="text-base font-medium text-gray-900">
-                {config.name}
-              </CardTitle>
+              <CardTitle className="text-base font-medium text-gray-900">{config.name}</CardTitle>
               {config.isDefault && (
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   <Star className="h-3 w-3 mr-1" />
@@ -105,12 +99,17 @@ export function EmailConfigCard({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}>
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}
+          >
             <StatusIcon size={12} />
-            {config.status.status === "connected" ? "Conectado" : 
-             config.status.status === "disconnected" ? "Desconectado" :
-             config.status.status === "testing" ? "Testando..." :
-             "Erro"}
+            {config.status.status === 'connected'
+              ? 'Conectado'
+              : config.status.status === 'disconnected'
+                ? 'Desconectado'
+                : config.status.status === 'testing'
+                  ? 'Testando...'
+                  : 'Erro'}
           </div>
 
           {config.status.errorMessage && (
@@ -121,18 +120,13 @@ export function EmailConfigCard({
 
           {config.status.lastTested && (
             <div className="text-xs text-gray-600">
-              Último teste: {new Date(config.status.lastTested).toLocaleString("pt-BR")}
+              Último teste: {new Date(config.status.lastTested).toLocaleString('pt-BR')}
             </div>
           )}
 
           <div className="flex items-center gap-2 flex-wrap">
             {!config.isDefault && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSetDefault}
-                className="text-xs"
-              >
+              <Button variant="outline" size="sm" onClick={onSetDefault} className="text-xs">
                 <StarOff className="h-3 w-3 mr-1" />
                 Definir como padrão
               </Button>
@@ -172,7 +166,8 @@ export function EmailConfigCard({
               <AlertDialogHeader>
                 <AlertDialogTitle>Excluir Configuração</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Tem certeza que deseja deletar a configuração "{config.name}"? Esta ação não pode ser desfeita.
+                  Tem certeza que deseja deletar a configuração "{config.name}"? Esta ação não pode
+                  ser desfeita.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -190,9 +185,7 @@ export function EmailConfigCard({
                 <div>Emails enviados: {config.metadata.emailCount}</div>
               )}
               {config.lastUsedAt && (
-                <div>
-                  Último uso: {new Date(config.lastUsedAt).toLocaleString("pt-BR")}
-                </div>
+                <div>Último uso: {new Date(config.lastUsedAt).toLocaleString('pt-BR')}</div>
               )}
             </div>
           )}
@@ -201,11 +194,3 @@ export function EmailConfigCard({
     </Card>
   );
 }
-
-
-
-
-
-
-
-

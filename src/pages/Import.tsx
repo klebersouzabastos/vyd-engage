@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Upload,
   FileSpreadsheet,
@@ -13,14 +13,14 @@ import {
   History as HistoryIcon,
   Copy as CopyIcon,
   TriangleAlert,
-} from "lucide-react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
-import { Label } from "../components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+} from 'lucide-react';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
+import { Label } from '../components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -38,9 +38,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
-import { ColumnMapper, IGNORE_VALUE, type MappingTarget } from "../components/import/ColumnMapper";
-import { useCustomFields } from "../contexts/CustomFieldsContext";
+} from '../components/ui/table';
+import { ColumnMapper, IGNORE_VALUE, type MappingTarget } from '../components/import/ColumnMapper';
+import { useCustomFields } from '../contexts/CustomFieldsContext';
 import {
   apiClient,
   type ImportBatch,
@@ -49,94 +49,90 @@ import {
   type ImportDuplicateAction,
   type ImportResult,
   type ImportType,
-} from "../services/api/client";
-import { getErrorMessage } from "../utils/errors";
-import {
-  ImportParseError,
-  parseImportFile,
-  type ParsedFile,
-} from "../utils/importParser";
+} from '../services/api/client';
+import { getErrorMessage } from '../utils/errors';
+import { ImportParseError, parseImportFile, type ParsedFile } from '../utils/importParser';
 
 const PREVIEW_ROW_COUNT = 5;
 
 /** Fixed VYD target fields available for lead mapping (spec req 6). */
 const LEAD_BASE_TARGETS: MappingTarget[] = [
-  { value: "name", label: "Nome (name)" },
-  { value: "email", label: "Email (email)" },
-  { value: "phone", label: "Telefone (phone)" },
-  { value: "company", label: "Empresa (company)" },
-  { value: "position", label: "Cargo (position)" },
-  { value: "source", label: "Origem (source)" },
-  { value: "notes", label: "Observações (notes)" },
-  { value: "status", label: "Status (status)" },
+  { value: 'name', label: 'Nome (name)' },
+  { value: 'email', label: 'Email (email)' },
+  { value: 'phone', label: 'Telefone (phone)' },
+  { value: 'company', label: 'Empresa (company)' },
+  { value: 'position', label: 'Cargo (position)' },
+  { value: 'source', label: 'Origem (source)' },
+  { value: 'notes', label: 'Observações (notes)' },
+  { value: 'status', label: 'Status (status)' },
 ];
 
 /** Target fields for company mapping (spec IEC-2, req 6). */
 const COMPANY_BASE_TARGETS: MappingTarget[] = [
-  { value: "name", label: "Nome / Razão social (name)" },
-  { value: "fantasyName", label: "Nome Fantasia (fantasyName)" },
-  { value: "cnpj", label: "CNPJ (cnpj)" },
-  { value: "externalId", label: "ID externo (externalId)" },
-  { value: "website", label: "Site (website)" },
-  { value: "industry", label: "Segmento (industry)" },
-  { value: "notes", label: "Resumo / Observações (notes)" },
-  { value: "createdAt", label: "Data de criação (createdAt)" },
-  { value: "createdAtTime", label: "Hora de criação (createdAtTime)" },
+  { value: 'name', label: 'Nome / Razão social (name)' },
+  { value: 'fantasyName', label: 'Nome Fantasia (fantasyName)' },
+  { value: 'cnpj', label: 'CNPJ (cnpj)' },
+  { value: 'externalId', label: 'ID externo (externalId)' },
+  { value: 'website', label: 'Site (website)' },
+  { value: 'industry', label: 'Segmento (industry)' },
+  { value: 'notes', label: 'Resumo / Observações (notes)' },
+  { value: 'createdAt', label: 'Data de criação (createdAt)' },
+  { value: 'createdAtTime', label: 'Hora de criação (createdAtTime)' },
 ];
 
 /** Target fields for contact mapping (spec IEC-4/5; email optional). */
 const CONTACT_BASE_TARGETS: MappingTarget[] = [
-  { value: "name", label: "Nome (name)" },
-  { value: "email", label: "Email (email)" },
-  { value: "phone", label: "Telefone (phone)" },
-  { value: "company", label: "Empresa (company)" },
-  { value: "position", label: "Cargo (position)" },
-  { value: "notes", label: "Observações (notes)" },
-  { value: "createdAt", label: "Data de criação (createdAt)" },
-  { value: "createdAtTime", label: "Hora de criação (createdAtTime)" },
+  { value: 'name', label: 'Nome (name)' },
+  { value: 'email', label: 'Email (email)' },
+  { value: 'phone', label: 'Telefone (phone)' },
+  { value: 'company', label: 'Empresa (company)' },
+  { value: 'position', label: 'Cargo (position)' },
+  { value: 'notes', label: 'Observações (notes)' },
+  { value: 'createdAt', label: 'Data de criação (createdAt)' },
+  { value: 'createdAtTime', label: 'Hora de criação (createdAtTime)' },
 ];
 
 /** Required columns for the Deals CSV (spec req 17). */
-const DEAL_COLUMNS = ["lead_email", "deal_name", "value", "stage", "expected_close_date"];
+const DEAL_COLUMNS = ['lead_email', 'deal_name', 'value', 'stage', 'expected_close_date'];
 
 /** Required columns for the Interactions CSV (spec req 19). */
-const INTERACTION_COLUMNS = ["lead_email", "type", "date", "notes"];
+const INTERACTION_COLUMNS = ['lead_email', 'type', 'date', 'notes'];
 
 // ──────────────────────────────────────────────────────────
 // Status helpers (shared by panels + history)
 // ──────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<ImportBatchStatus, string> = {
-  PENDING: "Pendente",
-  PROCESSING: "Processando",
-  COMPLETED: "Concluída",
-  FAILED: "Falhou",
-  ROLLED_BACK: "Desfeita",
+  PENDING: 'Pendente',
+  PROCESSING: 'Processando',
+  COMPLETED: 'Concluída',
+  FAILED: 'Falhou',
+  ROLLED_BACK: 'Desfeita',
 };
 
 const TYPE_LABELS: Record<ImportType, string> = {
-  LEADS: "Leads",
-  DEALS: "Deals",
-  INTERACTIONS: "Interações",
-  COMPANIES: "Empresas",
+  LEADS: 'Leads',
+  DEALS: 'Deals',
+  INTERACTIONS: 'Interações',
+  COMPANIES: 'Empresas',
 };
 
 /** How a duplicate was matched, for the dry-run preview wording. */
-const MATCHED_BY_LABELS: Record<ImportDuplicate["matchedBy"], string> = {
-  email: "email",
-  phone: "telefone",
-  externalId: "ID externo",
-  cnpj: "CNPJ",
-  name: "nome",
+const MATCHED_BY_LABELS: Record<ImportDuplicate['matchedBy'], string> = {
+  email: 'email',
+  phone: 'telefone',
+  externalId: 'ID externo',
+  cnpj: 'CNPJ',
+  name: 'nome',
 };
 
 function StatusBadge({ status }: { status: ImportBatchStatus }) {
   const styles: Record<ImportBatchStatus, string> = {
-    PENDING: "bg-gray-100 text-gray-600 hover:bg-gray-100",
-    PROCESSING: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-    COMPLETED: "bg-green-100 text-green-700 hover:bg-green-100",
-    FAILED: "bg-red-100 text-red-700 hover:bg-red-100",
-    ROLLED_BACK: "bg-amber-100 text-amber-700 hover:bg-amber-100",
+    PENDING: 'bg-gray-100 text-gray-600 hover:bg-gray-100',
+    PROCESSING: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
+    COMPLETED: 'bg-green-100 text-green-700 hover:bg-green-100',
+    FAILED: 'bg-red-100 text-red-700 hover:bg-red-100',
+    ROLLED_BACK: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
   };
   return <Badge className={styles[status]}>{STATUS_LABELS[status]}</Badge>;
 }
@@ -174,7 +170,14 @@ function Dropzone({ file, onFile, onClear, disabled }: DropzoneProps) {
             <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={onClear} disabled={disabled} aria-label="Remover arquivo">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 flex-shrink-0"
+          onClick={onClear}
+          disabled={disabled}
+          aria-label="Remover arquivo"
+        >
           <X size={16} />
         </Button>
       </div>
@@ -187,7 +190,7 @@ function Dropzone({ file, onFile, onClear, disabled }: DropzoneProps) {
       tabIndex={0}
       onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && !disabled) inputRef.current?.click();
+        if ((e.key === 'Enter' || e.key === ' ') && !disabled) inputRef.current?.click();
       }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -196,14 +199,16 @@ function Dropzone({ file, onFile, onClear, disabled }: DropzoneProps) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors cursor-pointer ${
-        dragging ? "border-primary bg-primary/5" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-      } ${disabled ? "opacity-60 pointer-events-none" : ""}`}
+        dragging ? 'border-primary bg-primary/5' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+      } ${disabled ? 'opacity-60 pointer-events-none' : ''}`}
     >
       <Upload className="h-8 w-8 text-gray-400 mb-3" />
       <p className="text-sm font-medium text-gray-700">
         Arraste e solte o arquivo aqui ou clique para selecionar
       </p>
-      <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .csv (UTF-8), .xlsx ou .xls — até 10 MB, 10.000 linhas</p>
+      <p className="text-xs text-gray-500 mt-1">
+        Formatos aceitos: .csv (UTF-8), .xlsx ou .xls — até 10 MB, 10.000 linhas
+      </p>
       <input
         ref={inputRef}
         type="file"
@@ -212,7 +217,7 @@ function Dropzone({ file, onFile, onClear, disabled }: DropzoneProps) {
         onChange={(e) => {
           const selected = e.target.files?.[0];
           if (selected) onFile(selected);
-          e.target.value = "";
+          e.target.value = '';
         }}
       />
     </div>
@@ -231,7 +236,12 @@ interface DryRunPreviewProps {
   showDuplicateActions: boolean;
 }
 
-function DryRunPreview({ result, duplicateActions, onDuplicateAction, showDuplicateActions }: DryRunPreviewProps) {
+function DryRunPreview({
+  result,
+  duplicateActions,
+  onDuplicateAction,
+  showDuplicateActions,
+}: DryRunPreviewProps) {
   return (
     <div className="space-y-4">
       {/* Summary cards (req 13) */}
@@ -293,12 +303,17 @@ function DryRunPreview({ result, duplicateActions, onDuplicateAction, showDuplic
           <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 divide-y divide-gray-100">
             {result.duplicates.map((dup, idx) => {
               const key = String(dup.row);
-              const action = duplicateActions[key] ?? "skip";
+              const action = duplicateActions[key] ?? 'skip';
               return (
-                <div key={`${dup.row}-${idx}`} className="flex flex-col gap-2 p-3 md:flex-row md:items-center md:justify-between">
+                <div
+                  key={`${dup.row}-${idx}`}
+                  className="flex flex-col gap-2 p-3 md:flex-row md:items-center md:justify-between"
+                >
                   <div className="min-w-0 text-sm">
                     <span className="font-mono text-xs text-gray-400 mr-2">Linha {dup.row}</span>
-                    <span className="font-medium text-gray-900">{dup.name || dup.email || dup.phone || dup.value}</span>
+                    <span className="font-medium text-gray-900">
+                      {dup.name || dup.email || dup.phone || dup.value}
+                    </span>
                     <span className="ml-2 text-xs text-gray-500">
                       (duplicada por {MATCHED_BY_LABELS[dup.matchedBy] ?? dup.matchedBy})
                     </span>
@@ -306,16 +321,22 @@ function DryRunPreview({ result, duplicateActions, onDuplicateAction, showDuplic
                   {showDuplicateActions && (
                     <RadioGroup
                       value={action}
-                      onValueChange={(value) => onDuplicateAction(key, value as ImportDuplicateAction)}
+                      onValueChange={(value) =>
+                        onDuplicateAction(key, value as ImportDuplicateAction)
+                      }
                       className="flex flex-row gap-4"
                     >
                       <div className="flex items-center gap-1.5">
                         <RadioGroupItem value="skip" id={`skip-${dup.row}`} />
-                        <Label htmlFor={`skip-${dup.row}`} className="cursor-pointer text-sm">Pular</Label>
+                        <Label htmlFor={`skip-${dup.row}`} className="cursor-pointer text-sm">
+                          Pular
+                        </Label>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <RadioGroupItem value="update" id={`update-${dup.row}`} />
-                        <Label htmlFor={`update-${dup.row}`} className="cursor-pointer text-sm">Atualizar existente</Label>
+                        <Label htmlFor={`update-${dup.row}`} className="cursor-pointer text-sm">
+                          Atualizar existente
+                        </Label>
                       </div>
                     </RadioGroup>
                   )}
@@ -334,7 +355,7 @@ function DryRunPreview({ result, duplicateActions, onDuplicateAction, showDuplic
 // ──────────────────────────────────────────────────────────
 
 interface ImportPanelProps {
-  entity: "leads" | "companies" | "contacts" | "deals" | "interactions";
+  entity: 'leads' | 'companies' | 'contacts' | 'deals' | 'interactions';
   /** Target fields for the column mapper (mapper entities only). */
   targets?: MappingTarget[];
   /** Required columns hint (deals/interactions, fixed schema). */
@@ -346,20 +367,29 @@ interface ImportPanelProps {
   onImported: () => void;
 }
 
-function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImported }: ImportPanelProps) {
+function ImportPanel({
+  entity,
+  targets,
+  requiredColumns,
+  withMapper,
+  hint,
+  onImported,
+}: ImportPanelProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [dryRunResult, setDryRunResult] = useState<ImportResult | null>(null);
-  const [duplicateActions, setDuplicateActions] = useState<Record<string, ImportDuplicateAction>>({});
+  const [duplicateActions, setDuplicateActions] = useState<Record<string, ImportDuplicateAction>>(
+    {}
+  );
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Companies/contacts upsert duplicates (update in place) — no per-row choice,
   // and email is not a required mapping (spec IEC-2/4/6).
-  const upsertMode = entity === "companies" || entity === "contacts";
-  const perRowDuplicateChoice = entity === "leads";
-  const emailRequired = entity === "leads";
+  const upsertMode = entity === 'companies' || entity === 'contacts';
+  const perRowDuplicateChoice = entity === 'leads';
+  const emailRequired = entity === 'leads';
 
   const resetAll = useCallback(() => {
     setFile(null);
@@ -387,7 +417,9 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
           result.headers.forEach((header) => {
             const normalized = header.trim().toLowerCase();
             const match = targets.find(
-              (t) => t.value.toLowerCase() === normalized || t.label.toLowerCase().includes(`(${normalized})`)
+              (t) =>
+                t.value.toLowerCase() === normalized ||
+                t.label.toLowerCase().includes(`(${normalized})`)
             );
             if (match) auto[header] = match.value;
           });
@@ -404,11 +436,11 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
 
   const dryRunMutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Nenhum arquivo selecionado.");
-      if (entity === "leads") return apiClient.importLeadsFile(file, mapping, true);
-      if (entity === "companies") return apiClient.importCompaniesFile(file, mapping, true);
-      if (entity === "contacts") return apiClient.importContactsFile(file, mapping, true);
-      if (entity === "deals") return apiClient.importDealsFile(file, true);
+      if (!file) throw new Error('Nenhum arquivo selecionado.');
+      if (entity === 'leads') return apiClient.importLeadsFile(file, mapping, true);
+      if (entity === 'companies') return apiClient.importCompaniesFile(file, mapping, true);
+      if (entity === 'contacts') return apiClient.importContactsFile(file, mapping, true);
+      if (entity === 'deals') return apiClient.importDealsFile(file, true);
       return apiClient.importInteractionsFile(file, true);
     },
     onSuccess: (result) => {
@@ -416,7 +448,7 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
       // Default every duplicate to "skip".
       const defaults: Record<string, ImportDuplicateAction> = {};
       (result.duplicates ?? []).forEach((dup) => {
-        defaults[String(dup.row)] = "skip";
+        defaults[String(dup.row)] = 'skip';
       });
       setDuplicateActions(defaults);
     },
@@ -425,17 +457,18 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
 
   const importMutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Nenhum arquivo selecionado.");
-      if (entity === "leads") return apiClient.importLeadsFile(file, mapping, false, { duplicateActions });
-      if (entity === "companies") return apiClient.importCompaniesFile(file, mapping, false);
-      if (entity === "contacts") return apiClient.importContactsFile(file, mapping, false);
-      if (entity === "deals") return apiClient.importDealsFile(file, false);
+      if (!file) throw new Error('Nenhum arquivo selecionado.');
+      if (entity === 'leads')
+        return apiClient.importLeadsFile(file, mapping, false, { duplicateActions });
+      if (entity === 'companies') return apiClient.importCompaniesFile(file, mapping, false);
+      if (entity === 'contacts') return apiClient.importContactsFile(file, mapping, false);
+      if (entity === 'deals') return apiClient.importDealsFile(file, false);
       return apiClient.importInteractionsFile(file, false);
     },
     onSuccess: (result) => {
       setConfirmOpen(false);
       if (result.async && result.batchId) {
-        toast.success("Importação iniciada. Acompanhe o progresso no histórico abaixo.");
+        toast.success('Importação iniciada. Acompanhe o progresso no histórico abaixo.');
       } else {
         toast.success(
           `Importação concluída: ${result.newCount} novo(s), ${result.duplicateCount} duplicata(s), ${result.errorCount} erro(s).`
@@ -451,17 +484,14 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
   });
 
   // Email is required for leads (dedup key); optional for contacts/companies.
-  const emailMapped = useMemo(
-    () => Object.values(mapping).includes("email"),
-    [mapping]
-  );
+  const emailMapped = useMemo(() => Object.values(mapping).includes('email'), [mapping]);
 
   // How many existing records will be updated by the confirmed import. Leads use
   // the per-row skip/update choices; upsert entities update every duplicate.
   const updateCount = useMemo(() => {
     if (!dryRunResult) return 0;
     if (perRowDuplicateChoice) {
-      return Object.values(duplicateActions).filter((a) => a === "update").length;
+      return Object.values(duplicateActions).filter((a) => a === 'update').length;
     }
     return upsertMode ? dryRunResult.duplicateCount : 0;
   }, [dryRunResult, duplicateActions, perRowDuplicateChoice, upsertMode]);
@@ -480,7 +510,7 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
   const cellForTarget = useCallback(
     (row: Record<string, string>, targetValue: string): string => {
       const column = Object.keys(mapping).find((col) => mapping[col] === targetValue);
-      return column ? (row[column] ?? "") : "";
+      return column ? (row[column] ?? '') : '';
     },
     [mapping]
   );
@@ -503,7 +533,10 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
           <AlertDescription>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {requiredColumns.map((col) => (
-                <code key={col} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-700">
+                <code
+                  key={col}
+                  className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-700"
+                >
                   {col}
                 </code>
               ))}
@@ -530,7 +563,8 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
       {parsed && (
         <>
           <p className="text-sm text-gray-500">
-            {parsed.rowCount.toLocaleString("pt-BR")} linha(s) detectada(s) • {parsed.headers.length} coluna(s)
+            {parsed.rowCount.toLocaleString('pt-BR')} linha(s) detectada(s) •{' '}
+            {parsed.headers.length} coluna(s)
           </p>
 
           {/* Column mapping table (reqs 5, 6) — leads only */}
@@ -541,14 +575,13 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
                 fileColumns={parsed.headers}
                 targets={targets}
                 mapping={mapping}
-                onChange={(column, value) =>
-                  setMapping((prev) => ({ ...prev, [column]: value }))
-                }
+                onChange={(column, value) => setMapping((prev) => ({ ...prev, [column]: value }))}
               />
               {emailRequired && !emailMapped && (
                 <p className="flex items-center gap-1.5 text-xs text-amber-600">
                   <TriangleAlert size={14} />
-                  Mapeie uma coluna para o campo <strong>Email</strong> — ele é usado para detectar duplicatas.
+                  Mapeie uma coluna para o campo <strong>Email</strong> — ele é usado para detectar
+                  duplicatas.
                 </p>
               )}
             </div>
@@ -556,30 +589,44 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
 
           {/* Preview of first 5 rows reflecting the mapping (req 7) */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-700">Pré-visualização (primeiras {PREVIEW_ROW_COUNT} linhas)</h3>
+            <h3 className="text-sm font-medium text-gray-700">
+              Pré-visualização (primeiras {PREVIEW_ROW_COUNT} linhas)
+            </h3>
             <div className="overflow-x-auto rounded-lg border border-gray-200">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {withMapper
-                      ? previewTargets.length > 0
-                        ? previewTargets.map((t) => <TableHead key={t.value}>{t.label}</TableHead>)
-                        : <TableHead className="text-gray-400">Nenhuma coluna mapeada</TableHead>
-                      : parsed.headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
+                    {withMapper ? (
+                      previewTargets.length > 0 ? (
+                        previewTargets.map((t) => <TableHead key={t.value}>{t.label}</TableHead>)
+                      ) : (
+                        <TableHead className="text-gray-400">Nenhuma coluna mapeada</TableHead>
+                      )
+                    ) : (
+                      parsed.headers.map((h) => <TableHead key={h}>{h}</TableHead>)
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {previewRows.map((row, rowIdx) => (
                     <TableRow key={rowIdx}>
-                      {withMapper
-                        ? previewTargets.length > 0
-                          ? previewTargets.map((t) => (
-                              <TableCell key={t.value} className="text-sm">{cellForTarget(row, t.value)}</TableCell>
-                            ))
-                          : <TableCell className="text-gray-300">—</TableCell>
-                        : parsed.headers.map((h) => (
-                            <TableCell key={h} className="text-sm">{row[h] ?? ""}</TableCell>
-                          ))}
+                      {withMapper ? (
+                        previewTargets.length > 0 ? (
+                          previewTargets.map((t) => (
+                            <TableCell key={t.value} className="text-sm">
+                              {cellForTarget(row, t.value)}
+                            </TableCell>
+                          ))
+                        ) : (
+                          <TableCell className="text-gray-300">—</TableCell>
+                        )
+                      ) : (
+                        parsed.headers.map((h) => (
+                          <TableCell key={h} className="text-sm">
+                            {row[h] ?? ''}
+                          </TableCell>
+                        ))
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -597,7 +644,9 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
               Analisar importação
             </Button>
             {dryRunResult && (
-              <span className="text-xs text-gray-500">Revise o resultado abaixo antes de confirmar.</span>
+              <span className="text-xs text-gray-500">
+                Revise o resultado abaixo antes de confirmar.
+              </span>
             )}
           </div>
 
@@ -631,7 +680,10 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
       )}
 
       {/* Final confirmation dialog (req 16) */}
-      <AlertDialog open={confirmOpen} onOpenChange={(open) => !importMutation.isPending && setConfirmOpen(open)}>
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => !importMutation.isPending && setConfirmOpen(open)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar importação</AlertDialogTitle>
@@ -641,12 +693,13 @@ function ImportPanel({ entity, targets, requiredColumns, withMapper, hint, onImp
                   Serão importados <strong>{dryRunResult.newCount}</strong> registro(s) novo(s)
                   {(perRowDuplicateChoice || upsertMode) && (
                     <>
-                      {" "}e atualizados{" "}
-                      <strong>{updateCount}</strong>{" "}
-                      registro(s) existente(s)
+                      {' '}
+                      e atualizados <strong>{updateCount}</strong> registro(s) existente(s)
                     </>
                   )}
-                  . {dryRunResult.errorCount > 0 && `${dryRunResult.errorCount} linha(s) com erro serão ignoradas. `}
+                  .{' '}
+                  {dryRunResult.errorCount > 0 &&
+                    `${dryRunResult.errorCount} linha(s) com erro serão ignoradas. `}
                   Esta ação grava os dados no seu CRM.
                 </>
               )}
@@ -686,12 +739,12 @@ function ImportHistory() {
   const [rollbackTarget, setRollbackTarget] = useState<ImportBatch | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["import-batches"],
+    queryKey: ['import-batches'],
     queryFn: () => apiClient.getImportBatches(),
     // Poll while any batch is still in progress (req 31).
     refetchInterval: (query) => {
       const batches = query.state.data?.batches ?? [];
-      const pending = batches.some((b) => b.status === "PENDING" || b.status === "PROCESSING");
+      const pending = batches.some((b) => b.status === 'PENDING' || b.status === 'PROCESSING');
       return pending ? 4000 : false;
     },
   });
@@ -699,9 +752,9 @@ function ImportHistory() {
   const rollbackMutation = useMutation({
     mutationFn: (batchId: string) => apiClient.rollbackImportBatch(batchId),
     onSuccess: () => {
-      toast.success("Importação desfeita com sucesso.");
+      toast.success('Importação desfeita com sucesso.');
       setRollbackTarget(null);
-      queryClient.invalidateQueries({ queryKey: ["import-batches"] });
+      queryClient.invalidateQueries({ queryKey: ['import-batches'] });
     },
     onError: (err) => {
       setRollbackTarget(null);
@@ -717,7 +770,9 @@ function ImportHistory() {
         <HistoryIcon size={18} className="text-gray-500" />
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Histórico de Importações</h2>
-          <p className="text-sm text-gray-500">Acompanhe o status e desfaça importações recentes.</p>
+          <p className="text-sm text-gray-500">
+            Acompanhe o status e desfaça importações recentes.
+          </p>
         </div>
       </div>
 
@@ -727,7 +782,9 @@ function ImportHistory() {
           Carregando histórico...
         </div>
       ) : batches.length === 0 ? (
-        <div className="p-10 text-center text-sm text-gray-500">Nenhuma importação realizada ainda.</div>
+        <div className="p-10 text-center text-sm text-gray-500">
+          Nenhuma importação realizada ainda.
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -744,22 +801,26 @@ function ImportHistory() {
             <TableBody>
               {batches.map((batch) => {
                 const canRollback =
-                  batch.status !== "ROLLED_BACK" &&
-                  batch.status !== "PENDING" &&
-                  batch.status !== "PROCESSING" &&
+                  batch.status !== 'ROLLED_BACK' &&
+                  batch.status !== 'PENDING' &&
+                  batch.status !== 'PROCESSING' &&
                   isWithin24h(batch.createdAt);
                 return (
                   <TableRow key={batch.id}>
                     <TableCell className="text-sm text-gray-700">
-                      {new Date(batch.createdAt).toLocaleString("pt-BR")}
+                      {new Date(batch.createdAt).toLocaleString('pt-BR')}
                     </TableCell>
                     <TableCell className="text-sm">{TYPE_LABELS[batch.type]}</TableCell>
-                    <TableCell className="text-sm text-gray-700">{batch.user?.name ?? "—"}</TableCell>
-                    <TableCell className="text-right text-sm font-medium">{batch.totalRows}</TableCell>
+                    <TableCell className="text-sm text-gray-700">
+                      {batch.user?.name ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-medium">
+                      {batch.totalRows}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={batch.status} />
-                        {(batch.status === "PENDING" || batch.status === "PROCESSING") && (
+                        {(batch.status === 'PENDING' || batch.status === 'PROCESSING') && (
                           <Loader2 size={14} className="animate-spin text-blue-500" />
                         )}
                       </div>
@@ -789,13 +850,17 @@ function ImportHistory() {
       )}
 
       {/* Rollback confirmation */}
-      <AlertDialog open={!!rollbackTarget} onOpenChange={(open) => !open && setRollbackTarget(null)}>
+      <AlertDialog
+        open={!!rollbackTarget}
+        onOpenChange={(open) => !open && setRollbackTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Desfazer importação?</AlertDialogTitle>
             <AlertDialogDescription>
-              Todos os registros criados nesta importação ({rollbackTarget ? TYPE_LABELS[rollbackTarget.type] : ""}) serão
-              removidos. Esta ação só está disponível nas primeiras 24 horas.
+              Todos os registros criados nesta importação (
+              {rollbackTarget ? TYPE_LABELS[rollbackTarget.type] : ''}) serão removidos. Esta ação
+              só está disponível nas primeiras 24 horas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -857,12 +922,15 @@ export function Import() {
   }, [fields]);
 
   const refreshHistory = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["import-batches"] });
+    queryClient.invalidateQueries({ queryKey: ['import-batches'] });
   }, [queryClient]);
 
   return (
     <div className="min-h-screen">
-      <Header title="Importar Dados" subtitle="Migre empresas, contatos, leads, deals e interações a partir de CSV ou Excel" />
+      <Header
+        title="Importar Dados"
+        subtitle="Migre empresas, contatos, leads, deals e interações a partir de CSV ou Excel"
+      />
 
       <div className="p-4 md:p-8 space-y-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 md:p-6">
@@ -879,7 +947,12 @@ export function Import() {
             </TabsList>
 
             <TabsContent value="companies">
-              <ImportPanel entity="companies" targets={companyTargets} withMapper onImported={refreshHistory} />
+              <ImportPanel
+                entity="companies"
+                targets={companyTargets}
+                withMapper
+                onImported={refreshHistory}
+              />
             </TabsContent>
             <TabsContent value="contacts">
               <ImportPanel
@@ -891,7 +964,12 @@ export function Import() {
               />
             </TabsContent>
             <TabsContent value="leads">
-              <ImportPanel entity="leads" targets={leadTargets} withMapper onImported={refreshHistory} />
+              <ImportPanel
+                entity="leads"
+                targets={leadTargets}
+                withMapper
+                onImported={refreshHistory}
+              />
             </TabsContent>
             <TabsContent value="deals">
               <ImportPanel

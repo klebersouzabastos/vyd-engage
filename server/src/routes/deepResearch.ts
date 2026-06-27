@@ -19,8 +19,8 @@ function requirePlatformAdmin(req: Request, _res: Response, next: NextFunction) 
       createError(
         'Apenas administradores da plataforma podem gerenciar modelos.',
         403,
-        'PLATFORM_ADMIN_REQUIRED',
-      ),
+        'PLATFORM_ADMIN_REQUIRED'
+      )
     );
   }
   next();
@@ -72,7 +72,7 @@ router.get('/templates', async (req, res, next) => {
     if (!req.user) return next(createError('Authentication required', 401));
     const result = await deepResearchTemplateService.findAll(
       req.user.tenantId,
-      !!req.user.isPlatformAdmin,
+      !!req.user.isPlatformAdmin
     );
     res.json(result);
   } catch (error) {
@@ -84,11 +84,7 @@ router.post('/templates', requirePlatformAdmin, async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const data = createTemplateSchema.parse(req.body);
-    const tpl = await deepResearchTemplateService.create(
-      req.user.tenantId,
-      req.user.userId,
-      data,
-    );
+    const tpl = await deepResearchTemplateService.create(req.user.tenantId, req.user.userId, data);
     res.status(201).json(tpl);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -104,7 +100,7 @@ router.get('/templates/:id', async (req, res, next) => {
     const tpl = await deepResearchTemplateService.findById(
       req.user.tenantId,
       req.params.id,
-      !!req.user.isPlatformAdmin,
+      !!req.user.isPlatformAdmin
     );
     res.json(tpl);
   } catch (error) {
@@ -116,11 +112,7 @@ router.put('/templates/:id', requirePlatformAdmin, async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const data = updateTemplateSchema.parse(req.body);
-    const tpl = await deepResearchTemplateService.update(
-      req.user.tenantId,
-      req.params.id,
-      data,
-    );
+    const tpl = await deepResearchTemplateService.update(req.user.tenantId, req.params.id, data);
     res.json(tpl);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -166,7 +158,7 @@ router.post('/', async (req, res, next) => {
       req.user.tenantId,
       req.user.userId,
       data,
-      !!req.user.isPlatformAdmin,
+      !!req.user.isPlatformAdmin
     );
     res.status(201).json(research);
   } catch (error) {
@@ -183,7 +175,7 @@ router.get('/:id', async (req, res, next) => {
     const research = await deepResearchService.findById(
       req.user.tenantId,
       req.params.id,
-      !!req.user.isPlatformAdmin,
+      !!req.user.isPlatformAdmin
     );
     res.json(research);
   } catch (error) {
@@ -202,8 +194,8 @@ router.put('/:id', async (req, res, next) => {
         createError(
           'Apenas administradores da plataforma podem registrar o resultado.',
           403,
-          'PLATFORM_ADMIN_REQUIRED',
-        ),
+          'PLATFORM_ADMIN_REQUIRED'
+        )
       );
     }
 
@@ -211,7 +203,7 @@ router.put('/:id', async (req, res, next) => {
       req.user.tenantId,
       req.params.id,
       data,
-      !!req.user.isPlatformAdmin,
+      !!req.user.isPlatformAdmin
     );
     res.json(research);
   } catch (error) {

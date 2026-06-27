@@ -1,4 +1,4 @@
-import { LucideIcon } from "lucide-react";
+import { LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
@@ -12,13 +12,13 @@ interface StatCardProps {
   iconColor?: string;
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  icon: Icon, 
+export function StatCard({
+  title,
+  value,
+  icon: Icon,
   trend,
-  iconBg = "bg-primary/10",
-  iconColor = "text-primary"
+  iconBg = 'bg-primary/10',
+  iconColor = 'text-primary',
 }: StatCardProps) {
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">

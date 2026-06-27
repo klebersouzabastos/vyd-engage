@@ -1,4 +1,4 @@
-import type { Block } from "../../services/api/client";
+import type { Block } from '../../services/api/client';
 
 /**
  * Sample lead used to fill merge tags in the preview (req 5). The actual send
@@ -6,9 +6,9 @@ import type { Block } from "../../services/api/client";
  * same merge-tag set with a placeholder lead so the user sees a realistic email.
  */
 export const SAMPLE_LEAD = {
-  name: "João Silva",
-  company: "Empresa Exemplo",
-  email: "joao.silva@exemplo.com",
+  name: 'João Silva',
+  company: 'Empresa Exemplo',
+  email: 'joao.silva@exemplo.com',
 };
 
 /**
@@ -18,12 +18,12 @@ export const SAMPLE_LEAD = {
  */
 export function substituteMergeTags(
   text: string,
-  lead: { name?: string; company?: string; email?: string },
+  lead: { name?: string; company?: string; email?: string }
 ): string {
   return text
-    .replace(/\{\{lead\.name\}\}/g, lead.name ?? "")
-    .replace(/\{\{lead\.company\}\}/g, lead.company ?? "")
-    .replace(/\{\{lead\.email\}\}/g, lead.email ?? "");
+    .replace(/\{\{lead\.name\}\}/g, lead.name ?? '')
+    .replace(/\{\{lead\.company\}\}/g, lead.company ?? '')
+    .replace(/\{\{lead\.email\}\}/g, lead.email ?? '');
 }
 
 interface CampaignPreviewProps {
@@ -42,22 +42,19 @@ export function CampaignPreview({ blocks, lead = SAMPLE_LEAD }: CampaignPreviewP
     <div className="mx-auto max-w-[600px] bg-white text-gray-900">
       {blocks.map((block) => {
         switch (block.type) {
-          case "text":
+          case 'text':
             return (
-              <p
-                key={block.id}
-                className="px-6 py-2 text-sm leading-relaxed whitespace-pre-wrap"
-              >
+              <p key={block.id} className="px-6 py-2 text-sm leading-relaxed whitespace-pre-wrap">
                 {substituteMergeTags(block.content, lead)}
               </p>
             );
-          case "image":
+          case 'image':
             return (
               <div key={block.id} className="px-6 py-2">
                 {block.url ? (
                   <img
                     src={block.url}
-                    alt={block.alt || ""}
+                    alt={block.alt || ''}
                     className="max-w-full h-auto mx-auto"
                   />
                 ) : (
@@ -67,20 +64,20 @@ export function CampaignPreview({ blocks, lead = SAMPLE_LEAD }: CampaignPreviewP
                 )}
               </div>
             );
-          case "button":
+          case 'button':
             return (
               <div key={block.id} className="px-6 py-3 text-center">
                 <a
-                  href={block.href || "#"}
+                  href={block.href || '#'}
                   className="inline-block rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-white no-underline"
                 >
-                  {substituteMergeTags(block.label || "Botão", lead)}
+                  {substituteMergeTags(block.label || 'Botão', lead)}
                 </a>
               </div>
             );
-          case "divider":
+          case 'divider':
             return <hr key={block.id} className="my-3 border-gray-200" />;
-          case "spacer":
+          case 'spacer':
             return <div key={block.id} style={{ height: block.height ?? 24 }} />;
           default:
             return null;

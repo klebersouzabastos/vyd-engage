@@ -1,59 +1,55 @@
-import { useEffect, useState } from "react";
-import { Loader2, AlertCircle, Sparkles } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../ui/popover";
-import { apiClient, ApiError } from "../../services/api/client";
-import { useAIStatus } from "../../hooks/useAIStatus";
-import type { DealAIScore as DealAIScoreData } from "../../types";
+import { useEffect, useState } from 'react';
+import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { apiClient, ApiError } from '../../services/api/client';
+import { useAIStatus } from '../../hooks/useAIStatus';
+import type { DealAIScore as DealAIScoreData } from '../../types';
 
 interface DealAIScoreFetchProps {
   /** Fetch mode (deal detail): compute/fetch the score on demand. */
   dealId: string;
   /** "sm" for the kanban card, "md" for the deal detail sidebar. */
-  size?: "sm" | "md";
+  size?: 'sm' | 'md';
   value?: never;
 }
 
 interface DealAIScoreDisplayProps {
   /** Display-only mode (kanban card): render the stored score, no AI call. */
   value: number | null | undefined;
-  factors?: DealAIScoreData["factors"] | null;
-  size?: "sm" | "md";
+  factors?: DealAIScoreData['factors'] | null;
+  size?: 'sm' | 'md';
   dealId?: never;
 }
 
 type DealAIScoreProps = DealAIScoreFetchProps | DealAIScoreDisplayProps;
 
-type ErrorKind = "rate_limit" | "provider" | "generic";
+type ErrorKind = 'rate_limit' | 'provider' | 'generic';
 
 function classifyError(err: unknown): ErrorKind {
   if (err instanceof ApiError) {
-    if (err.statusCode === 429) return "rate_limit";
-    if (err.statusCode === 503) return "provider";
+    if (err.statusCode === 429) return 'rate_limit';
+    if (err.statusCode === 503) return 'provider';
   }
-  return "generic";
+  return 'generic';
 }
 
 const ERROR_MESSAGES: Record<ErrorKind, string> = {
-  rate_limit: "Limite atingido, tente em instantes.",
-  provider: "Score de IA indisponível no momento.",
-  generic: "Não foi possível calcular o score.",
+  rate_limit: 'Limite atingido, tente em instantes.',
+  provider: 'Score de IA indisponível no momento.',
+  generic: 'Não foi possível calcular o score.',
 };
 
 /** Color band by score: red < 30, yellow 30-70, green > 70 (spec req 19). */
 function bandColor(score: number): string {
-  if (score < 30) return "var(--color-error, #dc2626)";
-  if (score <= 70) return "var(--color-warning, #ca8a04)";
-  return "var(--color-success, #16a34a)";
+  if (score < 30) return 'var(--color-error, #dc2626)';
+  if (score <= 70) return 'var(--color-warning, #ca8a04)';
+  return 'var(--color-success, #16a34a)';
 }
 
 function bandTextClass(score: number): string {
-  if (score < 30) return "text-red-600";
-  if (score <= 70) return "text-yellow-600";
-  return "text-green-600";
+  if (score < 30) return 'text-red-600';
+  if (score <= 70) return 'text-yellow-600';
+  return 'text-green-600';
 }
 
 /** Small circular gauge rendered with SVG. */
@@ -85,7 +81,7 @@ function Gauge({ score, dim }: { score: number; dim: number }) {
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         strokeLinecap="round"
-        style={{ transition: "stroke-dashoffset 400ms ease" }}
+        style={{ transition: 'stroke-dashoffset 400ms ease' }}
       />
     </svg>
   );
@@ -102,20 +98,26 @@ function ScoreGauge({
   size,
 }: {
   score: number;
-  factors: DealAIScoreData["factors"];
-  size: "sm" | "md";
+  factors: DealAIScoreData['factors'];
+  size: 'sm' | 'md';
 }) {
   const [open, setOpen] = useState(false);
   /** Whether the popover was pinned open by a click (vs. transient hover). */
   const [pinned, setPinned] = useState(false);
 
-  const dim = size === "md" ? 56 : 36;
-  const fontClass = size === "md" ? "text-sm font-bold" : "text-[10px] font-bold";
+  const dim = size === 'md' ? 56 : 36;
+  const fontClass = size === 'md' ? 'text-sm font-bold' : 'text-[10px] font-bold';
   const score = Math.round(rawScore);
   const factors = (rawFactors || []).slice(0, 3);
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPinned(false); }}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setPinned(false);
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -129,13 +131,17 @@ function ScoreGauge({
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => { if (!pinned) setOpen(false); }}
+          onMouseLeave={() => {
+            if (!pinned) setOpen(false);
+          }}
           className="relative inline-flex items-center justify-center cursor-pointer"
           style={{ width: dim, height: dim }}
           aria-label={`Score de propensão IA: ${score}%`}
         >
           <Gauge score={score} dim={dim} />
-          <span className={`absolute inset-0 flex items-center justify-center ${fontClass} ${bandTextClass(score)}`}>
+          <span
+            className={`absolute inset-0 flex items-center justify-center ${fontClass} ${bandTextClass(score)}`}
+          >
             {score}%
           </span>
         </button>
@@ -144,14 +150,14 @@ function ScoreGauge({
         align="center"
         className="w-64"
         onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => { if (!pinned) setOpen(false); }}
+        onMouseLeave={() => {
+          if (!pinned) setOpen(false);
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 mb-2">
           <Sparkles size={14} className="text-purple-500" />
-          <span className="text-sm font-semibold text-gray-900">
-            Score de Propensão
-          </span>
+          <span className="text-sm font-semibold text-gray-900">Score de Propensão</span>
           <span className={`ml-auto text-sm font-bold ${bandTextClass(score)}`}>{score}%</span>
         </div>
         {factors.length > 0 ? (
@@ -176,7 +182,7 @@ function ScoreGauge({
 }
 
 /** Fetch-mode gauge for the deal detail page: computes/fetches on demand. */
-function DealAIScoreFetch({ dealId, size }: { dealId: string; size: "sm" | "md" }) {
+function DealAIScoreFetch({ dealId, size }: { dealId: string; size: 'sm' | 'md' }) {
   const [data, setData] = useState<DealAIScoreData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ErrorKind | null>(null);
@@ -200,7 +206,7 @@ function DealAIScoreFetch({ dealId, size }: { dealId: string; size: "sm" | "md" 
     };
   }, [dealId]);
 
-  const dim = size === "md" ? 56 : 36;
+  const dim = size === 'md' ? 56 : 36;
 
   // Loading / error states — kept inline and non-blocking so the host page
   // never crashes (edge cases: provider 503, rate-limit 429).
@@ -211,7 +217,7 @@ function DealAIScoreFetch({ dealId, size }: { dealId: string; size: "sm" | "md" 
         style={{ width: dim, height: dim }}
         title="Calculando score..."
       >
-        <Loader2 size={size === "md" ? 18 : 14} className="animate-spin" />
+        <Loader2 size={size === 'md' ? 18 : 14} className="animate-spin" />
       </span>
     );
   }
@@ -221,9 +227,9 @@ function DealAIScoreFetch({ dealId, size }: { dealId: string; size: "sm" | "md" 
       <span
         className="inline-flex items-center justify-center rounded-full bg-gray-100 text-gray-400"
         style={{ width: dim, height: dim }}
-        title={error ? ERROR_MESSAGES[error] : "Score indisponível"}
+        title={error ? ERROR_MESSAGES[error] : 'Score indisponível'}
       >
-        <AlertCircle size={size === "md" ? 18 : 14} />
+        <AlertCircle size={size === 'md' ? 18 : 14} />
       </span>
     );
   }
@@ -243,7 +249,7 @@ function DealAIScoreFetch({ dealId, size }: { dealId: string; size: "sm" | "md" 
  */
 export function DealAIScore(props: DealAIScoreProps) {
   const { enabled } = useAIStatus();
-  const size = props.size ?? "sm";
+  const size = props.size ?? 'sm';
 
   // AI disabled (req 33): render nothing inline.
   if (!enabled) return null;

@@ -1,23 +1,11 @@
 import { useState } from 'react';
 import { Plus, Trash2, Pencil, Loader2, ArrowLeft, Lock } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { usePlaybooks, usePlaybookActions } from '../../hooks/useComercial';
 import {
   TASK_TYPE_LABELS,
@@ -41,7 +29,14 @@ const PRIORITIES = Object.keys(TASK_PRIORITY_LABELS) as TaskPriority[];
 const ROLES = Object.keys(STAKEHOLDER_ROLE_LABELS) as StakeholderRole[];
 
 function emptyStep(order: number): PlaybookStep {
-  return { order, title: '', actionType: 'LIGACAO', targetRole: null, offsetDays: 0, priority: 'MEDIUM' };
+  return {
+    order,
+    title: '',
+    actionType: 'LIGACAO',
+    targetRole: null,
+    offsetDays: 0,
+    priority: 'MEDIUM',
+  };
 }
 
 export function PlaybooksManager({ open, onOpenChange }: Props) {
@@ -76,7 +71,9 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
     setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
   const addStep = () => setSteps((prev) => [...prev, emptyStep(prev.length + 1)]);
   const removeStep = (i: number) =>
-    setSteps((prev) => prev.filter((_, idx) => idx !== i).map((s, idx) => ({ ...s, order: idx + 1 })));
+    setSteps((prev) =>
+      prev.filter((_, idx) => idx !== i).map((s, idx) => ({ ...s, order: idx + 1 }))
+    );
 
   const canSave = name.trim() && steps.length > 0 && steps.every((s) => s.title.trim());
 
@@ -173,18 +170,33 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
           </div>
         ) : (
           <div className="space-y-4">
-            <Button variant="ghost" size="sm" className="w-fit px-2" onClick={() => setMode('list')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit px-2"
+              onClick={() => setMode('list')}
+            >
               <ArrowLeft className="mr-1 h-4 w-4" />
               Voltar
             </Button>
 
             <div className="space-y-1.5">
               <Label htmlFor="pb-name">Nome</Label>
-              <Input id="pb-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Acesso a nova conta" />
+              <Input
+                id="pb-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex.: Acesso a nova conta"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pb-desc">Descrição</Label>
-              <Input id="pb-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Para que serve esta jornada" />
+              <Input
+                id="pb-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Para que serve esta jornada"
+              />
             </div>
 
             <div className="space-y-2">
@@ -199,36 +211,61 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
                       placeholder="Título da ação"
                       className="flex-1"
                     />
-                    <Button variant="ghost" size="icon" aria-label="Remover passo" onClick={() => removeStep(i)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remover passo"
+                      onClick={() => removeStep(i)}
+                    >
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                    <Select value={s.actionType} onValueChange={(v) => setStep(i, { actionType: v as TaskType })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={s.actionType}
+                      onValueChange={(v) => setStep(i, { actionType: v as TaskType })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         {TASK_TYPES.map((t) => (
-                          <SelectItem key={t} value={t}>{TASK_TYPE_LABELS[t]}</SelectItem>
+                          <SelectItem key={t} value={t}>
+                            {TASK_TYPE_LABELS[t]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <Select
                       value={s.targetRole ?? NONE}
-                      onValueChange={(v) => setStep(i, { targetRole: v === NONE ? null : (v as StakeholderRole) })}
+                      onValueChange={(v) =>
+                        setStep(i, { targetRole: v === NONE ? null : (v as StakeholderRole) })
+                      }
                     >
-                      <SelectTrigger><SelectValue placeholder="Papel-alvo" /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Papel-alvo" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>Sem papel-alvo</SelectItem>
                         {ROLES.map((r) => (
-                          <SelectItem key={r} value={r}>{STAKEHOLDER_ROLE_LABELS[r]}</SelectItem>
+                          <SelectItem key={r} value={r}>
+                            {STAKEHOLDER_ROLE_LABELS[r]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={s.priority} onValueChange={(v) => setStep(i, { priority: v as TaskPriority })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={s.priority}
+                      onValueChange={(v) => setStep(i, { priority: v as TaskPriority })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         {PRIORITIES.map((p) => (
-                          <SelectItem key={p} value={p}>{TASK_PRIORITY_LABELS[p]}</SelectItem>
+                          <SelectItem key={p} value={p}>
+                            {TASK_PRIORITY_LABELS[p]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -252,7 +289,9 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setMode('list')}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setMode('list')}>
+                Cancelar
+              </Button>
               <Button onClick={save} disabled={!canSave || saving}>
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingId ? 'Salvar' : 'Criar playbook'}

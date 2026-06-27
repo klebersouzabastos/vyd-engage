@@ -4,10 +4,34 @@ import { createError } from '../middleware/errorHandler.js';
 
 const DEFAULT_COLUMNS = [
   { title: 'Novo', color: '#3B82F6', order: 0, isDefault: true, mappedStatus: LeadStatus.NEW },
-  { title: 'Em Contato', color: '#F59E0B', order: 1, isDefault: false, mappedStatus: LeadStatus.CONTACTED },
-  { title: 'Qualificado', color: '#8B5CF6', order: 2, isDefault: false, mappedStatus: LeadStatus.QUALIFIED },
-  { title: 'Proposta', color: '#EC4899', order: 3, isDefault: false, mappedStatus: LeadStatus.PROPOSAL },
-  { title: 'Negociação', color: '#F97316', order: 4, isDefault: false, mappedStatus: LeadStatus.NEGOTIATION },
+  {
+    title: 'Em Contato',
+    color: '#F59E0B',
+    order: 1,
+    isDefault: false,
+    mappedStatus: LeadStatus.CONTACTED,
+  },
+  {
+    title: 'Qualificado',
+    color: '#8B5CF6',
+    order: 2,
+    isDefault: false,
+    mappedStatus: LeadStatus.QUALIFIED,
+  },
+  {
+    title: 'Proposta',
+    color: '#EC4899',
+    order: 3,
+    isDefault: false,
+    mappedStatus: LeadStatus.PROPOSAL,
+  },
+  {
+    title: 'Negociação',
+    color: '#F97316',
+    order: 4,
+    isDefault: false,
+    mappedStatus: LeadStatus.NEGOTIATION,
+  },
   { title: 'Fechado', color: '#10B981', order: 5, isDefault: false, mappedStatus: LeadStatus.WON },
   { title: 'Perdido', color: '#EF4444', order: 6, isDefault: false, mappedStatus: LeadStatus.LOST },
 ];
@@ -85,7 +109,14 @@ export const funnelService = {
   /**
    * Create a new funnel with default columns
    */
-  async create(tenantId: string, data: { name: string; type?: FunnelType; columns?: Array<{ title: string; color?: string; mappedStatus?: LeadStatus }> }) {
+  async create(
+    tenantId: string,
+    data: {
+      name: string;
+      type?: FunnelType;
+      columns?: Array<{ title: string; color?: string; mappedStatus?: LeadStatus }>;
+    }
+  ) {
     const funnelType = data.type || FunnelType.LEAD;
     const existingCount = await prisma.funnel.count({ where: { tenantId, type: funnelType } });
     const defaultColumns = funnelType === FunnelType.DEAL ? DEFAULT_DEAL_COLUMNS : DEFAULT_COLUMNS;
@@ -210,7 +241,11 @@ export const funnelService = {
   /**
    * Add column to funnel
    */
-  async addColumn(tenantId: string, funnelId: string, data: { title: string; color?: string; mappedStatus?: LeadStatus }) {
+  async addColumn(
+    tenantId: string,
+    funnelId: string,
+    data: { title: string; color?: string; mappedStatus?: LeadStatus }
+  ) {
     const funnel = await prisma.funnel.findFirst({
       where: { id: funnelId, tenantId },
       include: { columns: true },
@@ -240,7 +275,11 @@ export const funnelService = {
   /**
    * Update column (title, color, order)
    */
-  async updateColumn(tenantId: string, columnId: string, data: { title?: string; color?: string; order?: number }) {
+  async updateColumn(
+    tenantId: string,
+    columnId: string,
+    data: { title?: string; color?: string; order?: number }
+  ) {
     const column = await prisma.funnelColumn.findFirst({
       where: { id: columnId, funnel: { tenantId } },
     });
@@ -279,8 +318,8 @@ export const funnelService = {
       where: { funnelId },
       select: { id: true },
     });
-    const validColumnIds = new Set(columns.map(c => c.id));
-    const invalidIds = columnIds.filter(id => !validColumnIds.has(id));
+    const validColumnIds = new Set(columns.map((c) => c.id));
+    const invalidIds = columnIds.filter((id) => !validColumnIds.has(id));
     if (invalidIds.length > 0) {
       throw createError('One or more column IDs do not belong to this funnel', 400);
     }

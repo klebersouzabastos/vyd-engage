@@ -25,7 +25,7 @@ function apiKey(): string {
  */
 export function applyChunk(
   json: any,
-  acc: { markdown: string; citations: string[]; searchResults: ResearchSource[] },
+  acc: { markdown: string; citations: string[]; searchResults: ResearchSource[] }
 ): void {
   const choice = json?.choices?.[0];
   const delta = choice?.delta;
@@ -42,7 +42,9 @@ export function applyChunk(
 
   const sr = json?.search_results || choice?.message?.search_results;
   const fromSearch: ResearchSource[] = Array.isArray(sr)
-    ? sr.map((s: any) => ({ title: s?.title, url: s?.url, date: s?.date })).filter((s: ResearchSource) => !!s.url)
+    ? sr
+        .map((s: any) => ({ title: s?.title, url: s?.url, date: s?.date }))
+        .filter((s: ResearchSource) => !!s.url)
     : [];
 
   for (const src of [...fromAnnotations, ...fromSearch]) {
@@ -104,9 +106,7 @@ export const openrouterProvider: ResearchProvider = {
 
     const markdown = acc.markdown.trim();
     if (!markdown) return { status: 'failed', error: 'OpenRouter retornou conteúdo vazio.' };
-    const sources = acc.searchResults.length
-      ? acc.searchResults.map((s) => s.url)
-      : acc.citations;
+    const sources = acc.searchResults.length ? acc.searchResults.map((s) => s.url) : acc.citations;
     logger.info('Deep Research concluído (openrouter)', {
       chars: markdown.length,
       fontes: sources.length,

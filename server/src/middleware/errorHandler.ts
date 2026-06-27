@@ -8,12 +8,7 @@ export interface AppError extends Error {
   isOperational?: boolean;
 }
 
-export function errorHandler(
-  err: AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function errorHandler(err: AppError, req: Request, res: Response, next: NextFunction): void {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
@@ -65,4 +60,3 @@ export function createError(
   }
   return error;
 }
-

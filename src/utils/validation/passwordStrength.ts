@@ -39,7 +39,7 @@ export function calculatePasswordStrength(password: string): PasswordStrength {
     },
     {
       label: 'Pelo menos um caractere especial',
-      met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
     },
   ];
 
@@ -76,10 +76,3 @@ export function calculatePasswordStrength(password: string): PasswordStrength {
     requirements,
   };
 }
-
-
-
-
-
-
-

@@ -1,30 +1,25 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
-import { AutomationBuilder } from "../components/automations/AutomationBuilder";
-import {
-  automationToFlow,
-  createDefaultFlow,
-} from "../utils/automationFlowConverter";
-import type { FlowData } from "../utils/automationFlowConverter";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { AutomationBuilder } from '../components/automations/AutomationBuilder';
+import { automationToFlow, createDefaultFlow } from '../utils/automationFlowConverter';
+import type { FlowData } from '../utils/automationFlowConverter';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export function AutomationBuilderPage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const isNew = !id || id === "new";
+  const isNew = !id || id === 'new';
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
 
   // Automation data
-  const [automationName, setAutomationName] = useState("Nova Automação");
-  const [automationDescription, setAutomationDescription] = useState("");
+  const [automationName, setAutomationName] = useState('Nova Automação');
+  const [automationDescription, setAutomationDescription] = useState('');
   const [automationActive, setAutomationActive] = useState(false);
-  const [flowData, setFlowData] = useState<FlowData | null>(
-    isNew ? createDefaultFlow() : null
-  );
+  const [flowData, setFlowData] = useState<FlowData | null>(isNew ? createDefaultFlow() : null);
 
   useEffect(() => {
     if (!isNew && id) {
@@ -38,9 +33,9 @@ export function AutomationBuilderPage() {
       const result = await apiClient.getAutomation(automationId);
       const automation: any = result?.data || result;
 
-      setAutomationName(automation.name || "");
-      setAutomationDescription(automation.description || "");
-      setAutomationActive(automation.status === "ACTIVE");
+      setAutomationName(automation.name || '');
+      setAutomationDescription(automation.description || '');
+      setAutomationActive(automation.status === 'ACTIVE');
 
       // Convert existing automation to flow format
       const flow = automationToFlow({
@@ -50,9 +45,9 @@ export function AutomationBuilderPage() {
       });
       setFlowData(flow);
     } catch (error) {
-      console.error("Erro ao carregar automação:", error);
-      toast.error("Erro ao carregar automação");
-      navigate("/app/automations");
+      console.error('Erro ao carregar automação:', error);
+      toast.error('Erro ao carregar automação');
+      navigate('/app/automations');
     } finally {
       setLoading(false);
     }
@@ -72,7 +67,7 @@ export function AutomationBuilderPage() {
       const payload = {
         name: data.name,
         description: data.description,
-        status: data.isActive ? "ACTIVE" : "PAUSED",
+        status: data.isActive ? 'ACTIVE' : 'PAUSED',
         trigger: data.trigger,
         steps: data.steps,
         conditions: data.conditions,
@@ -81,20 +76,20 @@ export function AutomationBuilderPage() {
 
       if (isNew) {
         const result = await apiClient.createAutomation(payload);
-        toast.success("Automação criada com sucesso");
+        toast.success('Automação criada com sucesso');
         // Navigate to the builder of the newly created automation
         const newId = (result as any)?.id || (result as any)?.data?.id;
         if (newId) {
           navigate(`/app/automations/${newId}/builder`, { replace: true });
         } else {
-          navigate("/app/automations");
+          navigate('/app/automations');
         }
       } else {
         await apiClient.updateAutomation(id!, payload);
-        toast.success("Automação salva com sucesso");
+        toast.success('Automação salva com sucesso');
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar automação");
+      toast.error(error.message || 'Erro ao salvar automação');
     } finally {
       setSaving(false);
     }
@@ -116,7 +111,7 @@ export function AutomationBuilderPage() {
       initialFlowData={flowData}
       saving={saving}
       onSave={handleSave}
-      onBack={() => navigate("/app/automations")}
+      onBack={() => navigate('/app/automations')}
     />
   );
 }

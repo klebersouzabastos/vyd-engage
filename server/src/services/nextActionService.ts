@@ -68,7 +68,15 @@ export async function getLeadNextAction(tenantId: string, leadId: string): Promi
   });
 
   if (!lead) {
-    return { actionType: null, action: 'Lead não encontrado', reason: '', reasoning: '', priority: 'LOW', icon: 'alert-circle', category: 'error' };
+    return {
+      actionType: null,
+      action: 'Lead não encontrado',
+      reason: '',
+      reasoning: '',
+      priority: 'LOW',
+      icon: 'alert-circle',
+      category: 'error',
+    };
   }
 
   // Get last interaction
@@ -107,7 +115,11 @@ export async function getLeadNextAction(tenantId: string, leadId: string): Promi
   }
 
   // Rule: No interaction in 7+ days → follow-up
-  if (daysSinceLastInteraction >= 7 && lead.status !== LeadStatus.WON && lead.status !== LeadStatus.LOST) {
+  if (
+    daysSinceLastInteraction >= 7 &&
+    lead.status !== LeadStatus.WON &&
+    lead.status !== LeadStatus.LOST
+  ) {
     return withReason({
       actionType: 'FOLLOW_UP',
       action: 'Fazer follow-up',
@@ -131,7 +143,12 @@ export async function getLeadNextAction(tenantId: string, leadId: string): Promi
   }
 
   // Rule: No interaction in 3-7 days → send message
-  if (daysSinceLastInteraction >= 3 && daysSinceLastInteraction < 7 && lead.status !== LeadStatus.WON && lead.status !== LeadStatus.LOST) {
+  if (
+    daysSinceLastInteraction >= 3 &&
+    daysSinceLastInteraction < 7 &&
+    lead.status !== LeadStatus.WON &&
+    lead.status !== LeadStatus.LOST
+  ) {
     return withReason({
       actionType: 'WHATSAPP',
       action: 'Enviar mensagem',
@@ -143,7 +160,12 @@ export async function getLeadNextAction(tenantId: string, leadId: string): Promi
   }
 
   // Rule: Has email but no EMAIL interaction → send intro email
-  if (lead.email && hasEmailInteraction === 0 && lead.status !== LeadStatus.WON && lead.status !== LeadStatus.LOST) {
+  if (
+    lead.email &&
+    hasEmailInteraction === 0 &&
+    lead.status !== LeadStatus.WON &&
+    lead.status !== LeadStatus.LOST
+  ) {
     return withReason({
       actionType: 'EMAIL',
       action: 'Enviar email de apresentação',
@@ -167,7 +189,12 @@ export async function getLeadNextAction(tenantId: string, leadId: string): Promi
   }
 
   // Rule: Score < 20 and age > 30 days → re-engage or discard
-  if (lead.score < 20 && leadAgeDays > 30 && lead.status !== LeadStatus.WON && lead.status !== LeadStatus.LOST) {
+  if (
+    lead.score < 20 &&
+    leadAgeDays > 30 &&
+    lead.status !== LeadStatus.WON &&
+    lead.status !== LeadStatus.LOST
+  ) {
     return withReason({
       actionType: 'FOLLOW_UP',
       action: 'Re-engajar ou descartar',
@@ -291,7 +318,15 @@ export async function getDealNextAction(tenantId: string, dealId: string): Promi
   });
 
   if (!deal) {
-    return { actionType: null, action: 'Deal não encontrado', reason: '', reasoning: '', priority: 'LOW', icon: 'alert-circle', category: 'error' };
+    return {
+      actionType: null,
+      action: 'Deal não encontrado',
+      reason: '',
+      reasoning: '',
+      priority: 'LOW',
+      icon: 'alert-circle',
+      category: 'error',
+    };
   }
 
   // Skip closed deals

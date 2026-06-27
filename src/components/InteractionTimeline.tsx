@@ -1,6 +1,6 @@
-import { Interaction } from "../types";
-import { toast } from "sonner";
-import { formatRelativeTime } from "../utils/interactions";
+import { Interaction } from '../types';
+import { toast } from 'sonner';
+import { formatRelativeTime } from '../utils/interactions';
 import {
   MessageSquare,
   Phone,
@@ -12,18 +12,12 @@ import {
   Trash2,
   Plus,
   X,
-} from "lucide-react";
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Input } from "./ui/input";
+} from 'lucide-react';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Input } from './ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,76 +27,76 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
-import { useState } from "react";
+} from './ui/alert-dialog';
+import { useState } from 'react';
 
 interface InteractionTimelineProps {
   leadId: number;
   interactions: Interaction[];
   onDelete: (interactionId: string) => void;
-  onAdd: (interaction: Omit<Interaction, "id" | "leadId" | "timestamp">) => void;
+  onAdd: (interaction: Omit<Interaction, 'id' | 'leadId' | 'timestamp'>) => void;
 }
 
-const getInteractionIcon = (type: Interaction["type"]) => {
+const getInteractionIcon = (type: Interaction['type']) => {
   switch (type) {
-    case "note":
+    case 'note':
       return FileText;
-    case "call":
+    case 'call':
       return Phone;
-    case "email":
+    case 'email':
       return Mail;
-    case "whatsapp":
+    case 'whatsapp':
       return MessageSquare;
-    case "meeting":
+    case 'meeting':
       return Calendar;
-    case "status_change":
+    case 'status_change':
       return GitBranch;
-    case "automation":
+    case 'automation':
       return Zap;
     default:
       return FileText;
   }
 };
 
-const getInteractionColor = (type: Interaction["type"]) => {
+const getInteractionColor = (type: Interaction['type']) => {
   switch (type) {
-    case "note":
-      return "bg-blue-100 text-blue-600";
-    case "call":
-      return "bg-green-100 text-green-600";
-    case "email":
-      return "bg-purple-100 text-purple-600";
-    case "whatsapp":
-      return "bg-emerald-100 text-emerald-600";
-    case "meeting":
-      return "bg-orange-100 text-orange-600";
-    case "status_change":
-      return "bg-indigo-100 text-indigo-600";
-    case "automation":
-      return "bg-yellow-100 text-yellow-600";
+    case 'note':
+      return 'bg-blue-100 text-blue-600';
+    case 'call':
+      return 'bg-green-100 text-green-600';
+    case 'email':
+      return 'bg-purple-100 text-purple-600';
+    case 'whatsapp':
+      return 'bg-emerald-100 text-emerald-600';
+    case 'meeting':
+      return 'bg-orange-100 text-orange-600';
+    case 'status_change':
+      return 'bg-indigo-100 text-indigo-600';
+    case 'automation':
+      return 'bg-yellow-100 text-yellow-600';
     default:
-      return "bg-gray-100 text-gray-600";
+      return 'bg-gray-100 text-gray-600';
   }
 };
 
-const getInteractionLabel = (type: Interaction["type"]) => {
+const getInteractionLabel = (type: Interaction['type']) => {
   switch (type) {
-    case "note":
-      return "Nota";
-    case "call":
-      return "Chamada";
-    case "email":
-      return "E-mail";
-    case "whatsapp":
-      return "WhatsApp";
-    case "meeting":
-      return "Reunião";
-    case "status_change":
-      return "Mudança de Status";
-    case "automation":
-      return "Automação";
+    case 'note':
+      return 'Nota';
+    case 'call':
+      return 'Chamada';
+    case 'email':
+      return 'E-mail';
+    case 'whatsapp':
+      return 'WhatsApp';
+    case 'meeting':
+      return 'Reunião';
+    case 'status_change':
+      return 'Mudança de Status';
+    case 'automation':
+      return 'Automação';
     default:
-      return "Interação";
+      return 'Interação';
   }
 };
 
@@ -115,20 +109,20 @@ export function InteractionTimeline({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
-    type: "note" as Interaction["type"],
-    content: "",
-    customDate: "",
-    customTime: "",
+    type: 'note' as Interaction['type'],
+    content: '',
+    customDate: '',
+    customTime: '',
   });
 
   const handleSave = () => {
     if (!formData.content.trim()) {
-      toast.error("O conteúdo da interação é obrigatório");
+      toast.error('O conteúdo da interação é obrigatório');
       return;
     }
 
     let timestamp = new Date().toISOString();
-    
+
     // Se data/hora customizada foi fornecida, usar ela
     if (formData.customDate && formData.customTime) {
       const customDateTime = new Date(`${formData.customDate}T${formData.customTime}`);
@@ -138,11 +132,11 @@ export function InteractionTimeline({
     }
 
     const metadata: Record<string, any> = {};
-    if (formData.type === "call") {
-      metadata.duration = "Não especificada";
+    if (formData.type === 'call') {
+      metadata.duration = 'Não especificada';
     }
-    if (formData.type === "meeting") {
-      metadata.location = "Não especificada";
+    if (formData.type === 'meeting') {
+      metadata.location = 'Não especificada';
     }
 
     onAdd({
@@ -153,20 +147,20 @@ export function InteractionTimeline({
 
     // Reset form
     setFormData({
-      type: "note",
-      content: "",
-      customDate: "",
-      customTime: "",
+      type: 'note',
+      content: '',
+      customDate: '',
+      customTime: '',
     });
     setShowAddForm(false);
   };
 
   const handleCancel = () => {
     setFormData({
-      type: "note",
-      content: "",
-      customDate: "",
-      customTime: "",
+      type: 'note',
+      content: '',
+      customDate: '',
+      customTime: '',
     });
     setShowAddForm(false);
   };
@@ -176,11 +170,9 @@ export function InteractionTimeline({
       <div className="text-center py-12">
         <FileText size={48} className="mx-auto text-gray-400 mb-4" />
         <p className="text-gray-600 mb-2">Nenhuma interação registrada</p>
-        <p className="text-sm text-gray-400 mb-6">
-          Comece a registrar interações com este lead
-        </p>
-        <Button 
-          onClick={() => setShowAddForm(true)} 
+        <p className="text-sm text-gray-400 mb-6">Comece a registrar interações com este lead</p>
+        <Button
+          onClick={() => setShowAddForm(true)}
           className="bg-primary hover:bg-primary-dark text-white shadow-sm hover:shadow-md transition-all duration-200 px-6 py-2.5 font-medium"
         >
           <Plus size={18} className="mr-2" />
@@ -197,8 +189,8 @@ export function InteractionTimeline({
           Histórico de Interações ({interactions.length})
         </h4>
         {!showAddForm && (
-          <Button 
-            onClick={() => setShowAddForm(true)} 
+          <Button
+            onClick={() => setShowAddForm(true)}
             className="bg-primary hover:bg-primary-dark text-white shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 font-medium flex items-center gap-2"
           >
             <Plus size={16} />
@@ -225,7 +217,7 @@ export function InteractionTimeline({
                   <X size={16} className="text-gray-600" />
                 </button>
               </div>
-              
+
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="interaction-type" className="text-xs font-medium mb-1 block">
@@ -234,7 +226,7 @@ export function InteractionTimeline({
                   <Select
                     value={formData.type}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, type: value as Interaction["type"] })
+                      setFormData({ ...formData, type: value as Interaction['type'] })
                     }
                   >
                     <SelectTrigger className="h-8 text-sm">
@@ -252,26 +244,26 @@ export function InteractionTimeline({
 
                 <div>
                   <Label htmlFor="interaction-content" className="text-xs font-medium mb-1 block">
-                    {formData.type === "note" && "Nota"}
-                    {formData.type === "call" && "Detalhes da Chamada"}
-                    {formData.type === "email" && "Conteúdo do E-mail"}
-                    {formData.type === "whatsapp" && "Mensagem"}
-                    {formData.type === "meeting" && "Resumo da Reunião"}
+                    {formData.type === 'note' && 'Nota'}
+                    {formData.type === 'call' && 'Detalhes da Chamada'}
+                    {formData.type === 'email' && 'Conteúdo do E-mail'}
+                    {formData.type === 'whatsapp' && 'Mensagem'}
+                    {formData.type === 'meeting' && 'Resumo da Reunião'}
                   </Label>
                   <Textarea
                     id="interaction-content"
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     placeholder={
-                      formData.type === "note"
-                        ? "Adicione uma nota sobre este lead..."
-                        : formData.type === "call"
-                        ? "Descreva o que foi discutido na chamada..."
-                        : formData.type === "email"
-                        ? "Conteúdo do e-mail enviado ou recebido..."
-                        : formData.type === "whatsapp"
-                        ? "Mensagem enviada ou recebida..."
-                        : "Resumo do que foi discutido na reunião..."
+                      formData.type === 'note'
+                        ? 'Adicione uma nota sobre este lead...'
+                        : formData.type === 'call'
+                          ? 'Descreva o que foi discutido na chamada...'
+                          : formData.type === 'email'
+                            ? 'Conteúdo do e-mail enviado ou recebido...'
+                            : formData.type === 'whatsapp'
+                              ? 'Mensagem enviada ou recebida...'
+                              : 'Resumo do que foi discutido na reunião...'
                     }
                     rows={3}
                     className="resize-none text-sm"
@@ -309,7 +301,10 @@ export function InteractionTimeline({
                   <Button variant="outline" onClick={handleCancel} className="h-8 text-sm px-3">
                     Cancelar
                   </Button>
-                  <Button onClick={handleSave} className="bg-primary hover:bg-primary-dark h-8 text-sm px-3">
+                  <Button
+                    onClick={handleSave}
+                    className="bg-primary hover:bg-primary-dark h-8 text-sm px-3"
+                  >
                     Salvar Interação
                   </Button>
                 </div>
@@ -346,9 +341,7 @@ export function InteractionTimeline({
                   <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-600">
-                          {label}
-                        </span>
+                        <span className="text-xs font-medium text-gray-600">{label}</span>
                         <span className="text-xs text-gray-400">
                           {formatRelativeTime(interaction.timestamp)}
                         </span>
@@ -385,10 +378,7 @@ export function InteractionTimeline({
       </div>
 
       {/* Dialog de confirmação de exclusão */}
-      <AlertDialog
-        open={!!deletingId}
-        onOpenChange={(open) => !open && setDeletingId(null)}
-      >
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
@@ -415,4 +405,3 @@ export function InteractionTimeline({
     </div>
   );
 }
-

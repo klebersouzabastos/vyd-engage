@@ -1,21 +1,29 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { ArrowLeft, Download, FileText, Calendar, RefreshCw, Filter as FilterIcon, Loader2 } from "lucide-react";
-import { Report } from "../types";
-import { ReportWidgetRenderer } from "../components/ReportWidgetRenderer";
-import { ReportFilters } from "../components/ReportFilters";
-import { apiClient } from "../services/api/client";
-import { fetchReportMetrics, clearMetricsCache } from "../utils/reportData";
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import {
+  ArrowLeft,
+  Download,
+  FileText,
+  Calendar,
+  RefreshCw,
+  Filter as FilterIcon,
+  Loader2,
+} from 'lucide-react';
+import { Report } from '../types';
+import { ReportWidgetRenderer } from '../components/ReportWidgetRenderer';
+import { ReportFilters } from '../components/ReportFilters';
+import { apiClient } from '../services/api/client';
+import { fetchReportMetrics, clearMetricsCache } from '../utils/reportData';
 
 function apiToReport(apiReport: any): Report {
   const config = apiReport.config || {};
   return {
     id: apiReport.id,
     name: apiReport.name,
-    description: apiReport.description || "",
-    type: apiReport.type || "custom",
+    description: apiReport.description || '',
+    type: apiReport.type || 'custom',
     widgets: config.widgets || [],
     schedule: config.schedule,
     filters: config.filters,
@@ -23,7 +31,7 @@ function apiToReport(apiReport: any): Report {
     templateId: config.templateId,
     createdAt: apiReport.createdAt,
     updatedAt: apiReport.updatedAt,
-    createdBy: apiReport.createdBy?.name || apiReport.createdById || "system",
+    createdBy: apiReport.createdBy?.name || apiReport.createdById || 'system',
   };
 }
 
@@ -38,12 +46,13 @@ export function ReportView() {
 
   useEffect(() => {
     if (id) {
-      apiClient.getReport(id)
+      apiClient
+        .getReport(id)
         .then((result) => {
           const data = result?.data || result;
           if (data) setReport(apiToReport(data));
         })
-        .catch((error) => console.error("Erro ao carregar relatório:", error))
+        .catch((error) => console.error('Erro ao carregar relatório:', error))
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -53,20 +62,21 @@ export function ReportView() {
     if (!report) return;
     setMetricsLoaded(false);
     clearMetricsCache();
-    fetchReportMetrics(report.filters ? { dateRange: report.filters.dateRange } : undefined)
-      .finally(() => setMetricsLoaded(true));
+    fetchReportMetrics(
+      report.filters ? { dateRange: report.filters.dateRange } : undefined
+    ).finally(() => setMetricsLoaded(true));
   }, [report?.id, refreshKey]);
 
   const handleExportPDF = () => {
     if (!report) return;
-    import("../utils/reportExport").then(({ exportReportToPDF }) => {
+    import('../utils/reportExport').then(({ exportReportToPDF }) => {
       exportReportToPDF(report);
     });
   };
 
   const handleExportExcel = () => {
     if (!report) return;
-    import("../utils/reportExport").then(({ exportReportToExcel }) => {
+    import('../utils/reportExport').then(({ exportReportToExcel }) => {
       exportReportToExcel(report);
     });
   };
@@ -87,7 +97,7 @@ export function ReportView() {
       <div className="min-h-screen">
         <Header title="Relatório não encontrado" />
         <div className="p-8">
-          <Button onClick={() => navigate("/app/reports")} className="gap-2">
+          <Button onClick={() => navigate('/app/reports')} className="gap-2">
             <ArrowLeft size={16} />
             Voltar para Relatórios
           </Button>
@@ -98,11 +108,11 @@ export function ReportView() {
 
   return (
     <div className="min-h-screen">
-      <Header title={report.name} subtitle={report.description || "Visualização do relatório"} />
+      <Header title={report.name} subtitle={report.description || 'Visualização do relatório'} />
 
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
-          <Button onClick={() => navigate("/app/reports")} variant="outline" className="gap-2">
+          <Button onClick={() => navigate('/app/reports')} variant="outline" className="gap-2">
             <ArrowLeft size={16} />
             Voltar
           </Button>
@@ -113,16 +123,20 @@ export function ReportView() {
                 <Calendar size={16} />
                 <span>
                   {report.schedule.enabled
-                    ? `Agendado: ${report.schedule.frequency === "daily" ? "Diário" : report.schedule.frequency === "weekly" ? "Semanal" : "Mensal"}`
-                    : "Não agendado"}
+                    ? `Agendado: ${report.schedule.frequency === 'daily' ? 'Diário' : report.schedule.frequency === 'weekly' ? 'Semanal' : 'Mensal'}`
+                    : 'Não agendado'}
                 </span>
               </div>
             )}
-            <Button onClick={() => setShowFilters(!showFilters)} variant="outline" className="gap-2">
+            <Button
+              onClick={() => setShowFilters(!showFilters)}
+              variant="outline"
+              className="gap-2"
+            >
               <FilterIcon size={16} />
               Filtros
             </Button>
-            <Button onClick={() => setRefreshKey(k => k + 1)} variant="outline" className="gap-2">
+            <Button onClick={() => setRefreshKey((k) => k + 1)} variant="outline" className="gap-2">
               <RefreshCw size={16} />
               Atualizar
             </Button>
@@ -163,9 +177,9 @@ export function ReportView() {
               filters={report.filters}
               onChange={(filters) => {
                 setReport({ ...report, filters });
-                setRefreshKey(k => k + 1);
+                setRefreshKey((k) => k + 1);
               }}
-              dataSource={report.type === "custom" ? "leads" : report.type}
+              dataSource={report.type === 'custom' ? 'leads' : report.type}
             />
           </div>
         )}

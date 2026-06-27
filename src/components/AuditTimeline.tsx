@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Loader2, User } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { Loader2, User } from 'lucide-react';
 
 interface AuditChange {
   field: string;
@@ -16,35 +16,35 @@ interface AuditLog {
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  name: "Nome",
-  email: "E-mail",
-  phone: "Telefone",
-  status: "Status",
-  score: "Score",
-  company: "Empresa",
-  position: "Cargo",
-  notes: "Notas",
-  assignedTo: "Responsável",
-  stage: "Etapa",
-  value: "Valor",
-  probability: "Probabilidade",
-  expectedCloseDate: "Fechamento previsto",
+  name: 'Nome',
+  email: 'E-mail',
+  phone: 'Telefone',
+  status: 'Status',
+  score: 'Score',
+  company: 'Empresa',
+  position: 'Cargo',
+  notes: 'Notas',
+  assignedTo: 'Responsável',
+  stage: 'Etapa',
+  value: 'Valor',
+  probability: 'Probabilidade',
+  expectedCloseDate: 'Fechamento previsto',
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  create: "Criou o registro",
-  update: "Atualizou",
-  delete: "Removeu o registro",
+  create: 'Criou o registro',
+  update: 'Atualizou',
+  delete: 'Removeu o registro',
 };
 
 const API_BASE =
   import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined" && window.location.hostname !== "localhost"
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? window.location.origin
-    : "http://localhost:3001");
+    : 'http://localhost:3001');
 
 interface AuditTimelineProps {
-  entityType: "lead" | "deal";
+  entityType: 'lead' | 'deal';
   entityId: string;
 }
 
@@ -58,7 +58,7 @@ export function AuditTimeline({ entityType, entityId }: AuditTimelineProps) {
       try {
         setLoading(true);
         const endpoint = `${API_BASE}/api/v1/${entityType}s/${entityId}/audit`;
-        const res = await fetch(endpoint, { credentials: "include" });
+        const res = await fetch(endpoint, { credentials: 'include' });
         const data = await res.json();
         setLogs(data?.data?.logs || []);
       } catch {
@@ -80,9 +80,7 @@ export function AuditTimeline({ entityType, entityId }: AuditTimelineProps) {
 
   if (logs.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-gray-400">
-        Nenhuma alteração registrada.
-      </div>
+      <div className="text-center py-8 text-sm text-gray-400">Nenhuma alteração registrada.</div>
     );
   }
 
@@ -96,30 +94,23 @@ export function AuditTimeline({ entityType, entityId }: AuditTimelineProps) {
           <div className="flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium text-gray-900">
-                {log.user?.name || "Sistema"}
+                {log.user?.name || 'Sistema'}
               </span>
               <span className="text-xs text-gray-400 flex-shrink-0">
-                {new Date(log.createdAt).toLocaleString("pt-BR")}
+                {new Date(log.createdAt).toLocaleString('pt-BR')}
               </span>
             </div>
             {log.changes && log.changes.length > 0 ? (
               <div className="mt-1.5 space-y-1">
                 {log.changes.map((c, i) => (
-                  <div
-                    key={i}
-                    className="text-xs bg-gray-50 rounded px-2 py-1 text-gray-600"
-                  >
+                  <div key={i} className="text-xs bg-gray-50 rounded px-2 py-1 text-gray-600">
                     <span className="font-medium text-gray-700">
                       {FIELD_LABELS[c.field] || c.field}
                     </span>
-                    {": "}
-                    <span className="line-through text-red-400">
-                      {String(c.oldValue ?? "—")}
-                    </span>
-                    {" → "}
-                    <span className="text-green-600 font-medium">
-                      {String(c.newValue ?? "—")}
-                    </span>
+                    {': '}
+                    <span className="line-through text-red-400">{String(c.oldValue ?? '—')}</span>
+                    {' → '}
+                    <span className="text-green-600 font-medium">{String(c.newValue ?? '—')}</span>
                   </div>
                 ))}
               </div>

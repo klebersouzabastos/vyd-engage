@@ -1,16 +1,10 @@
-import { useState } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./ui/dialog";
-import { Bookmark, ChevronDown, Trash2, Plus } from "lucide-react";
-import { toast } from "sonner";
-import type { SavedView } from "../hooks/useSavedViews";
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Bookmark, ChevronDown, Trash2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import type { SavedView } from '../hooks/useSavedViews';
 
 interface SavedViewsDropdownProps {
   views: SavedView[];
@@ -29,17 +23,17 @@ export function SavedViewsDropdown({
 }: SavedViewsDropdownProps) {
   const [open, setOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
-  const [viewName, setViewName] = useState("");
+  const [viewName, setViewName] = useState('');
 
   const handleSave = async () => {
     if (!viewName.trim()) {
-      toast.error("Digite um nome para a visualização");
+      toast.error('Digite um nome para a visualização');
       return;
     }
     const filters = getCurrentFilters();
     try {
       await onSave(viewName.trim(), filters);
-      setViewName("");
+      setViewName('');
       setSaveModalOpen(false);
     } catch {
       // error toast handled by hook
@@ -73,7 +67,9 @@ export function SavedViewsDropdown({
           <Bookmark size={14} />
           Visualizações
           {views.length > 0 && (
-            <span className="bg-gray-200 text-gray-700 text-xs px-1.5 rounded-full">{views.length}</span>
+            <span className="bg-gray-200 text-gray-700 text-xs px-1.5 rounded-full">
+              {views.length}
+            </span>
           )}
           <ChevronDown size={12} />
         </Button>
@@ -81,13 +77,28 @@ export function SavedViewsDropdown({
         {open && (
           <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div
+              className="fixed inset-0 z-40"
+              role="button"
+              tabIndex={0}
+              aria-label="Fechar"
+              onClick={() => setOpen(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setOpen(false);
+                }
+              }}
+            />
 
             {/* Dropdown */}
             <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
               <div className="p-3 border-b border-gray-100">
                 <button
-                  onClick={() => { setSaveModalOpen(true); setOpen(false); }}
+                  onClick={() => {
+                    setSaveModalOpen(true);
+                    setOpen(false);
+                  }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-primary hover:bg-primary/5 rounded-md transition-colors"
                 >
                   <Plus size={14} />
@@ -101,16 +112,24 @@ export function SavedViewsDropdown({
                 </div>
               ) : (
                 <div className="max-h-64 overflow-y-auto">
-                  {views.map(view => (
+                  {views.map((view) => (
                     <div
                       key={view.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleApply(view)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleApply(view);
+                        }
+                      }}
                       className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 group"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">{view.name}</p>
                         <p className="text-xs text-gray-400">
-                          {new Date(view.createdAt).toLocaleDateString("pt-BR")}
+                          {new Date(view.createdAt).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                       <button
@@ -136,14 +155,19 @@ export function SavedViewsDropdown({
             <DialogTitle>Salvar Visualização</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
+            <label
+              htmlFor="saved-view-name"
+              className="text-sm font-medium text-gray-700 mb-2 block"
+            >
               Nome da visualização
             </label>
             <Input
+              id="saved-view-name"
               value={viewName}
               onChange={(e) => setViewName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="Ex: Leads quentes do mês"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao abrir o modal
               autoFocus
             />
             <p className="text-xs text-gray-400 mt-2">

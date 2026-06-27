@@ -67,7 +67,10 @@ async function runBackup(): Promise<void> {
     try {
       await uploadToS3(backupPath, s3Bucket, filename);
       fs.unlinkSync(backupPath);
-      logger.info('Backup uploaded to S3 and local copy removed', { bucket: s3Bucket, key: filename });
+      logger.info('Backup uploaded to S3 and local copy removed', {
+        bucket: s3Bucket,
+        key: filename,
+      });
     } catch (err: any) {
       logger.error('S3 upload failed, keeping local backup', { error: err.message });
     }
@@ -92,21 +95,21 @@ async function uploadToS3(localPath: string, bucket: string, key: string): Promi
   // AWS Signature V4 requires crypto — delegate to child_process aws cli if available,
   // otherwise use presigned URL pattern via environment-provided CLI.
   // Simplest production path: install `aws` CLI in the Railway container and call it.
-  await execAsync(
-    `aws s3 cp "${localPath}" "s3://${bucket}/${s3Key}" --region "${region}"`,
-    { env: { ...process.env, AWS_ACCESS_KEY_ID: accessKey, AWS_SECRET_ACCESS_KEY: secretKey } }
-  );
+  await execAsync(`aws s3 cp "${localPath}" "s3://${bucket}/${s3Key}" --region "${region}"`, {
+    env: { ...process.env, AWS_ACCESS_KEY_ID: accessKey, AWS_SECRET_ACCESS_KEY: secretKey },
+  });
   void url; // suppress unused warning
 }
 
 function pruneOldBackups(dir: string): void {
   try {
-    const files = fs.readdirSync(dir)
-      .filter(f => f.startsWith('backup-') && f.endsWith('.sql.gz'))
-      .map(f => ({ name: f, time: fs.statSync(path.join(dir, f)).mtimeMs }))
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => f.startsWith('backup-') && f.endsWith('.sql.gz'))
+      .map((f) => ({ name: f, time: fs.statSync(path.join(dir, f)).mtimeMs }))
       .sort((a, b) => b.time - a.time);
 
-    files.slice(MAX_LOCAL_BACKUPS).forEach(f => {
+    files.slice(MAX_LOCAL_BACKUPS).forEach((f) => {
       fs.unlinkSync(path.join(dir, f.name));
       logger.info('Old backup pruned', { file: f.name });
     });
@@ -119,13 +122,16 @@ export async function initializeBackupJob(): Promise<void> {
   logger.info('Backup job initialized — first run in 5 minutes');
 
   // Run once shortly after startup to verify configuration
-  setTimeout(() => {
-    runBackup().catch(err => logger.error('Backup job error', err));
-  }, 5 * 60 * 1000);
+  setTimeout(
+    () => {
+      runBackup().catch((err) => logger.error('Backup job error', err));
+    },
+    5 * 60 * 1000
+  );
 
   // Then every 24 hours at 02:00 server time
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   setInterval(() => {
-    runBackup().catch(err => logger.error('Backup job error', err));
+    runBackup().catch((err) => logger.error('Backup job error', err));
   }, TWENTY_FOUR_HOURS);
 }

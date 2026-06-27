@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Checkbox } from "../components/ui/checkbox";
-import { PageSkeleton } from "../components/PageSkeleton";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Checkbox } from '../components/ui/checkbox';
+import { PageSkeleton } from '../components/PageSkeleton';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from '../components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +24,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 import {
   Plus,
   Trash2,
@@ -36,56 +36,56 @@ import {
   Check,
   Loader2,
   Terminal,
-} from "lucide-react";
-import { apiClient, type ApiKeyListItem } from "../services/api/client";
+} from 'lucide-react';
+import { apiClient, type ApiKeyListItem } from '../services/api/client';
 
 // Available scopes grouped by resource (req 17, 18).
 const SCOPE_GROUPS: { resource: string; scopes: { value: string; label: string }[] }[] = [
   {
-    resource: "Leads",
+    resource: 'Leads',
     scopes: [
-      { value: "leads:read", label: "Ler" },
-      { value: "leads:write", label: "Escrever" },
+      { value: 'leads:read', label: 'Ler' },
+      { value: 'leads:write', label: 'Escrever' },
     ],
   },
   {
-    resource: "Deals",
+    resource: 'Deals',
     scopes: [
-      { value: "deals:read", label: "Ler" },
-      { value: "deals:write", label: "Escrever" },
+      { value: 'deals:read', label: 'Ler' },
+      { value: 'deals:write', label: 'Escrever' },
     ],
   },
   {
-    resource: "Tarefas",
+    resource: 'Tarefas',
     scopes: [
-      { value: "tasks:read", label: "Ler" },
-      { value: "tasks:write", label: "Escrever" },
+      { value: 'tasks:read', label: 'Ler' },
+      { value: 'tasks:write', label: 'Escrever' },
     ],
   },
   {
-    resource: "Contatos",
-    scopes: [{ value: "contacts:read", label: "Ler" }],
+    resource: 'Contatos',
+    scopes: [{ value: 'contacts:read', label: 'Ler' }],
   },
   {
-    resource: "Relatórios",
-    scopes: [{ value: "reports:read", label: "Ler" }],
+    resource: 'Relatórios',
+    scopes: [{ value: 'reports:read', label: 'Ler' }],
   },
   {
-    resource: "Webhooks",
-    scopes: [{ value: "webhooks:manage", label: "Gerenciar" }],
+    resource: 'Webhooks',
+    scopes: [{ value: 'webhooks:manage', label: 'Gerenciar' }],
   },
 ];
 
 const SCOPE_LABELS: Record<string, string> = {
-  "leads:read": "Leads: Ler",
-  "leads:write": "Leads: Escrever",
-  "deals:read": "Deals: Ler",
-  "deals:write": "Deals: Escrever",
-  "tasks:read": "Tarefas: Ler",
-  "tasks:write": "Tarefas: Escrever",
-  "contacts:read": "Contatos: Ler",
-  "reports:read": "Relatórios: Ler",
-  "webhooks:manage": "Webhooks: Gerenciar",
+  'leads:read': 'Leads: Ler',
+  'leads:write': 'Leads: Escrever',
+  'deals:read': 'Deals: Ler',
+  'deals:write': 'Deals: Escrever',
+  'tasks:read': 'Tarefas: Ler',
+  'tasks:write': 'Tarefas: Escrever',
+  'contacts:read': 'Contatos: Ler',
+  'reports:read': 'Relatórios: Ler',
+  'webhooks:manage': 'Webhooks: Gerenciar',
 };
 
 export function ApiKeys() {
@@ -93,7 +93,7 @@ export function ApiKeys() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [revokingKey, setRevokingKey] = useState<ApiKeyListItem | null>(null);
-  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyName, setNewKeyName] = useState('');
   const [newKeyScopes, setNewKeyScopes] = useState<string[]>([]);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -105,7 +105,7 @@ export function ApiKeys() {
       const data = await apiClient.getApiKeys();
       setApiKeys(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar API keys");
+      toast.error(error instanceof Error ? error.message : 'Erro ao carregar API keys');
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export function ApiKeys() {
 
   const handleCreate = async () => {
     if (!newKeyName.trim()) {
-      toast.error("Informe um nome para a chave");
+      toast.error('Informe um nome para a chave');
       return;
     }
 
@@ -129,10 +129,10 @@ export function ApiKeys() {
         scopes: newKeyScopes.length > 0 ? newKeyScopes : undefined,
       });
       setCreatedKey(result.key);
-      toast.success("API key criada com sucesso");
+      toast.success('API key criada com sucesso');
       fetchKeys();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar API key");
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar API key');
     } finally {
       setSaving(false);
     }
@@ -142,17 +142,17 @@ export function ApiKeys() {
     if (!revokingKey) return;
     try {
       await apiClient.deleteApiKey(revokingKey.id);
-      toast.success("API key revogada");
+      toast.success('API key revogada');
       setRevokingKey(null);
       fetchKeys();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao revogar API key");
+      toast.error(error instanceof Error ? error.message : 'Erro ao revogar API key');
     }
   };
 
   const copyToClipboard = (text: string, keyId?: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copiado para a area de transferencia");
+    toast.success('Copiado para a area de transferencia');
     if (keyId) {
       setCopiedId(keyId);
       setTimeout(() => setCopiedId(null), 2000);
@@ -166,7 +166,7 @@ export function ApiKeys() {
   };
 
   const openCreateDialog = () => {
-    setNewKeyName("");
+    setNewKeyName('');
     setNewKeyScopes([]);
     setCreatedKey(null);
     setIsCreateOpen(true);
@@ -175,22 +175,21 @@ export function ApiKeys() {
   const closeCreateDialog = () => {
     setIsCreateOpen(false);
     setCreatedKey(null);
-    setNewKeyName("");
+    setNewKeyName('');
     setNewKeyScopes([]);
   };
 
   const maskKey = (key?: string) => {
-    if (!key) return "—";
-    if (key.startsWith("fcrm_****")) return key;
-    if (key.length > 12) return `${key.slice(0, 5)}${"*".repeat(key.length - 9)}${key.slice(-4)}`;
+    if (!key) return '—';
+    if (key.startsWith('fcrm_****')) return key;
+    if (key.length > 12) return `${key.slice(0, 5)}${'*'.repeat(key.length - 9)}${key.slice(-4)}`;
     return key;
   };
 
   if (loading) return <PageSkeleton />;
 
-  const apiBaseUrl = window.location.hostname === "localhost"
-    ? "http://localhost:3001"
-    : window.location.origin;
+  const apiBaseUrl =
+    window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
 
   return (
     <div className="min-h-screen">
@@ -260,14 +259,14 @@ export function ApiKeys() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <code className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">
-                            {showKeyFor === apiKey.id ? (apiKey.key ?? "—") : maskKey(apiKey.key)}
+                            {showKeyFor === apiKey.id ? (apiKey.key ?? '—') : maskKey(apiKey.key)}
                           </code>
                           <button
                             onClick={() =>
                               setShowKeyFor(showKeyFor === apiKey.id ? null : apiKey.id)
                             }
                             className="text-gray-400 hover:text-gray-600"
-                            title={showKeyFor === apiKey.id ? "Ocultar" : "Mostrar"}
+                            title={showKeyFor === apiKey.id ? 'Ocultar' : 'Mostrar'}
                           >
                             {showKeyFor === apiKey.id ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
@@ -301,13 +300,11 @@ export function ApiKeys() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 hidden md:table-cell">
-                        {new Date(apiKey.createdAt).toLocaleDateString("pt-BR")}
+                        {new Date(apiKey.createdAt).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-6 py-4">
-                        <Badge
-                          variant={apiKey.active !== false ? "default" : "destructive"}
-                        >
-                          {apiKey.active !== false ? "Ativa" : "Revogada"}
+                        <Badge variant={apiKey.active !== false ? 'default' : 'destructive'}>
+                          {apiKey.active !== false ? 'Ativa' : 'Revogada'}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -338,11 +335,13 @@ export function ApiKeys() {
             <h3 className="text-lg font-semibold text-gray-900">Como usar</h3>
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            Inclua sua API key no header <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">X-API-Key</code> de cada requisicao:
+            Inclua sua API key no header{' '}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">X-API-Key</code> de cada
+            requisicao:
           </p>
           <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
             <pre className="text-sm text-green-400 font-mono whitespace-pre">
-{`curl -X GET "${apiBaseUrl}/api/v1/leads" \\
+              {`curl -X GET "${apiBaseUrl}/api/v1/leads" \\
   -H "X-API-Key: fcrm_your_api_key_here" \\
   -H "Content-Type: application/json"`}
             </pre>
@@ -350,12 +349,13 @@ export function ApiKeys() {
           <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
             <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-amber-800">
-              Nunca compartilhe suas API keys publicamente ou inclua em codigo client-side. Trate-as como senhas.
+              Nunca compartilhe suas API keys publicamente ou inclua em codigo client-side. Trate-as
+              como senhas.
             </p>
           </div>
           {/* Link to interactive API docs (do not reimplement docs UI). */}
           <p className="text-sm text-gray-600 mt-4">
-            Consulte a{" "}
+            Consulte a{' '}
             <a
               href={`${apiBaseUrl}/api/docs`}
               target="_blank"
@@ -363,8 +363,8 @@ export function ApiKeys() {
               className="text-primary underline"
             >
               documentação interativa da API
-            </a>
-            {" "}para a referência completa de endpoints.
+            </a>{' '}
+            para a referência completa de endpoints.
           </p>
         </div>
       </div>
@@ -373,13 +373,11 @@ export function ApiKeys() {
       <Dialog open={isCreateOpen} onOpenChange={closeCreateDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {createdKey ? "API Key Criada" : "Criar API Key"}
-            </DialogTitle>
+            <DialogTitle>{createdKey ? 'API Key Criada' : 'Criar API Key'}</DialogTitle>
             <DialogDescription>
               {createdKey
-                ? "Copie a chave abaixo. Ela nao sera exibida novamente."
-                : "De um nome e selecione os scopes desta chave de API."}
+                ? 'Copie a chave abaixo. Ela nao sera exibida novamente.'
+                : 'De um nome e selecione os scopes desta chave de API.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -388,16 +386,13 @@ export function ApiKeys() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
                 <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-amber-800">
-                  Esta e a unica vez que a chave completa sera exibida. Copie e guarde em local seguro.
+                  Esta e a unica vez que a chave completa sera exibida. Copie e guarde em local
+                  seguro.
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-3">
                 <code className="text-sm font-mono flex-1 break-all">{createdKey}</code>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(createdKey)}
-                >
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(createdKey)}>
                   <Copy size={14} className="mr-1" />
                   Copiar
                 </Button>
@@ -476,7 +471,8 @@ export function ApiKeys() {
           <AlertDialogHeader>
             <AlertDialogTitle>Revogar API key?</AlertDialogTitle>
             <AlertDialogDescription>
-              A chave <strong>{revokingKey?.name}</strong> sera desativada permanentemente. Qualquer integracao que use esta chave parara de funcionar imediatamente.
+              A chave <strong>{revokingKey?.name}</strong> sera desativada permanentemente. Qualquer
+              integracao que use esta chave parara de funcionar imediatamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

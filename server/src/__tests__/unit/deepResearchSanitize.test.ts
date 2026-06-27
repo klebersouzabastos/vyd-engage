@@ -9,7 +9,7 @@ import { sanitizeMarkdown } from '../../services/deepResearch/sanitizeMarkdown.j
 describe('sanitizeMarkdown', () => {
   it('remove o token citeturn textual e o captura como fonte', () => {
     const { markdown, sources } = sanitizeMarkdown(
-      'do país. citeturn42search2turn42search4turn17search4',
+      'do país. citeturn42search2turn42search4turn17search4'
     );
     expect(markdown).toBe('do país.');
     expect(sources).toEqual(['citeturn42search2turn42search4turn17search4']);

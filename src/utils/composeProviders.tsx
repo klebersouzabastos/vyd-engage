@@ -12,8 +12,5 @@ type ProviderComponent = ComponentType<{ children: ReactNode }>;
  */
 export function composeProviders(...providers: ProviderComponent[]): ProviderComponent {
   return ({ children }: { children: ReactNode }) =>
-    providers.reduceRight(
-      (acc, Provider) => <Provider>{acc}</Provider>,
-      children
-    ) as JSX.Element;
+    providers.reduceRight((acc, Provider) => <Provider>{acc}</Provider>, children) as JSX.Element;
 }

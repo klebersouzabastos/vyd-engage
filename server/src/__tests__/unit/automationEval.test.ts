@@ -29,12 +29,18 @@ describe('evaluateCondition', () => {
   it('equals / not_equals comparam como string', () => {
     expect(evaluateCondition({ operator: 'equals', leadValue: 'WON', value: 'WON' })).toBe(true);
     expect(evaluateCondition({ operator: 'equals', leadValue: 100, value: '100' })).toBe(true);
-    expect(evaluateCondition({ operator: 'not_equals', leadValue: 'NEW', value: 'WON' })).toBe(true);
+    expect(evaluateCondition({ operator: 'not_equals', leadValue: 'NEW', value: 'WON' })).toBe(
+      true
+    );
   });
 
   it('contains é case-insensitive', () => {
-    expect(evaluateCondition({ operator: 'contains', leadValue: 'Acme Corp', value: 'acme' })).toBe(true);
-    expect(evaluateCondition({ operator: 'contains', leadValue: 'Acme', value: 'xyz' })).toBe(false);
+    expect(evaluateCondition({ operator: 'contains', leadValue: 'Acme Corp', value: 'acme' })).toBe(
+      true
+    );
+    expect(evaluateCondition({ operator: 'contains', leadValue: 'Acme', value: 'xyz' })).toBe(
+      false
+    );
   });
 
   it('greater_than / less_than comparam numericamente', () => {
@@ -52,8 +58,17 @@ describe('evaluateCondition', () => {
   });
 
   it('has_tag verifica presença na lista de tags', () => {
-    expect(evaluateCondition({ operator: 'has_tag', leadValue: null, value: 'vip', tags: ['vip', 'lead-quente'] })).toBe(true);
-    expect(evaluateCondition({ operator: 'has_tag', leadValue: null, value: 'frio', tags: ['vip'] })).toBe(false);
+    expect(
+      evaluateCondition({
+        operator: 'has_tag',
+        leadValue: null,
+        value: 'vip',
+        tags: ['vip', 'lead-quente'],
+      })
+    ).toBe(true);
+    expect(
+      evaluateCondition({ operator: 'has_tag', leadValue: null, value: 'frio', tags: ['vip'] })
+    ).toBe(false);
   });
 
   it('operador desconhecido retorna false', () => {

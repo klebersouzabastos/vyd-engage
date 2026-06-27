@@ -1,29 +1,38 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
-import { Shield, Building2, Users, TrendingUp, DollarSign, Plus, Loader2, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router';
+import {
+  Shield,
+  Building2,
+  Users,
+  TrendingUp,
+  DollarSign,
+  Plus,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { toast } from "sonner";
-import { useAuth } from "../contexts/AuthContext";
-import { apiClient } from "../services/api/client";
+} from '../components/ui/select';
+import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../services/api/client';
 
 // ---- Types inferred from client.ts responses ----
 type OverviewData = {
@@ -45,20 +54,20 @@ type TenantRow = {
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  STARTER: "Starter",
-  PRO: "Pro",
-  ENTERPRISE: "Enterprise",
+  STARTER: 'Starter',
+  PRO: 'Pro',
+  ENTERPRISE: 'Enterprise',
 };
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  ACTIVE: "default",
-  TRIAL: "secondary",
-  CANCELLED: "destructive",
-  PAST_DUE: "destructive",
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  ACTIVE: 'default',
+  TRIAL: 'secondary',
+  CANCELLED: 'destructive',
+  PAST_DUE: 'destructive',
 };
 
 function formatMRR(value: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
 export function PlatformAdmin() {
@@ -68,35 +77,34 @@ export function PlatformAdmin() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({
-    tenantName: "",
-    slug: "",
-    planType: "STARTER" as "STARTER" | "PRO" | "ENTERPRISE",
-    subscriptionStatus: "TRIAL" as "ACTIVE" | "TRIAL",
-    adminEmail: "",
-    adminName: "",
-    adminPassword: "",
+    tenantName: '',
+    slug: '',
+    planType: 'STARTER' as 'STARTER' | 'PRO' | 'ENTERPRISE',
+    subscriptionStatus: 'TRIAL' as 'ACTIVE' | 'TRIAL',
+    adminEmail: '',
+    adminName: '',
+    adminPassword: '',
   });
 
-  // Redirect if not platform admin
-  if (!user?.isPlatformAdmin) {
-    navigate("/app");
-    return null;
-  }
-
+  // `enabled` garante que estas queries só disparam para platform admins —
+  // os hooks ficam antes do redirect (rules-of-hooks) sem requisições extras
+  // para usuários comuns.
   const overviewQuery = useQuery({
-    queryKey: ["platform-overview"],
+    queryKey: ['platform-overview'],
     queryFn: async () => {
       const res = await apiClient.getPlatformOverview();
       return res.data as OverviewData;
     },
+    enabled: !!user?.isPlatformAdmin,
   });
 
   const tenantsQuery = useQuery({
-    queryKey: ["platform-tenants"],
+    queryKey: ['platform-tenants'],
     queryFn: async () => {
       const res = await apiClient.getPlatformTenants();
       return res.data as TenantRow[];
     },
+    enabled: !!user?.isPlatformAdmin,
   });
 
   const createMutation = useMutation({
@@ -111,34 +119,40 @@ export function PlatformAdmin() {
         adminPassword: data.adminPassword || undefined,
       }),
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["platform-overview"] });
-      queryClient.invalidateQueries({ queryKey: ["platform-tenants"] });
+      queryClient.invalidateQueries({ queryKey: ['platform-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-tenants'] });
       setCreateOpen(false);
       setForm({
-        tenantName: "",
-        slug: "",
-        planType: "STARTER",
-        subscriptionStatus: "TRIAL",
-        adminEmail: "",
-        adminName: "",
-        adminPassword: "",
+        tenantName: '',
+        slug: '',
+        planType: 'STARTER',
+        subscriptionStatus: 'TRIAL',
+        adminEmail: '',
+        adminName: '',
+        adminPassword: '',
       });
       const pwd = res.data?.generatedPassword;
       if (pwd) {
-        toast.success("Tenant criado com sucesso", {
+        toast.success('Tenant criado com sucesso', {
           description: `Senha gerada (copie agora): ${pwd}`,
           duration: 20000,
         });
       } else {
-        toast.success("Tenant criado com sucesso", {
-          description: "Usuário já existia — senha preservada.",
+        toast.success('Tenant criado com sucesso', {
+          description: 'Usuário já existia — senha preservada.',
         });
       }
     },
     onError: (err: Error) => {
-      toast.error("Erro ao criar tenant", { description: err.message });
+      toast.error('Erro ao criar tenant', { description: err.message });
     },
   });
+
+  // Redirect if not platform admin (after hooks to preserve hook call order)
+  if (!user?.isPlatformAdmin) {
+    navigate('/app');
+    return null;
+  }
 
   const overview = overviewQuery.data;
   const tenants = tenantsQuery.data ?? [];
@@ -235,19 +249,24 @@ export function PlatformAdmin() {
                 </thead>
                 <tbody>
                   {tenants.map((t) => (
-                    <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={t.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-6 py-3 font-medium text-gray-900">{t.name}</td>
                       <td className="px-6 py-3 text-gray-500 font-mono text-xs">{t.slug}</td>
                       <td className="px-6 py-3">
                         {t.subscription ? (
-                          <span className="text-gray-700">{PLAN_LABELS[t.subscription.plan.type] ?? t.subscription.plan.type}</span>
+                          <span className="text-gray-700">
+                            {PLAN_LABELS[t.subscription.plan.type] ?? t.subscription.plan.type}
+                          </span>
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
                       <td className="px-6 py-3">
                         {t.subscription ? (
-                          <Badge variant={STATUS_VARIANT[t.subscription.status] ?? "outline"}>
+                          <Badge variant={STATUS_VARIANT[t.subscription.status] ?? 'outline'}>
                             {t.subscription.status}
                           </Badge>
                         ) : (
@@ -257,7 +276,7 @@ export function PlatformAdmin() {
                       <td className="px-6 py-3 text-right text-gray-700">{t._count.users}</td>
                       <td className="px-6 py-3 text-right text-gray-700">{t._count.leads}</td>
                       <td className="px-6 py-3 text-gray-500">
-                        {new Date(t.createdAt).toLocaleDateString("pt-BR")}
+                        {new Date(t.createdAt).toLocaleDateString('pt-BR')}
                       </td>
                     </tr>
                   ))}
@@ -289,7 +308,12 @@ export function PlatformAdmin() {
               <Input
                 id="slug"
                 value={form.slug}
-                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    slug: e.target.value.toLowerCase().replace(/\s+/g, '-'),
+                  }))
+                }
                 placeholder="acme-ltda"
               />
             </div>
@@ -298,7 +322,9 @@ export function PlatformAdmin() {
                 <Label>Plano</Label>
                 <Select
                   value={form.planType}
-                  onValueChange={(v) => setForm((f) => ({ ...f, planType: v as typeof form.planType }))}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, planType: v as typeof form.planType }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -314,7 +340,12 @@ export function PlatformAdmin() {
                 <Label>Status</Label>
                 <Select
                   value={form.subscriptionStatus}
-                  onValueChange={(v) => setForm((f) => ({ ...f, subscriptionStatus: v as typeof form.subscriptionStatus }))}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      subscriptionStatus: v as typeof form.subscriptionStatus,
+                    }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -327,7 +358,9 @@ export function PlatformAdmin() {
               </div>
             </div>
             <hr className="border-gray-200" />
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Admin do tenant</p>
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              Admin do tenant
+            </p>
             <div className="space-y-1.5">
               <Label htmlFor="adminName">Nome</Label>
               <Input
@@ -348,7 +381,9 @@ export function PlatformAdmin() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="adminPassword">Senha (opcional — gerada automaticamente se vazio)</Label>
+              <Label htmlFor="adminPassword">
+                Senha (opcional — gerada automaticamente se vazio)
+              </Label>
               <Input
                 id="adminPassword"
                 type="password"
@@ -364,7 +399,13 @@ export function PlatformAdmin() {
             </Button>
             <Button
               onClick={() => createMutation.mutate(form)}
-              disabled={createMutation.isPending || !form.tenantName || !form.slug || !form.adminEmail || !form.adminName}
+              disabled={
+                createMutation.isPending ||
+                !form.tenantName ||
+                !form.slug ||
+                !form.adminEmail ||
+                !form.adminName
+              }
             >
               {createMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
               Criar Tenant
@@ -398,7 +439,7 @@ function OverviewCard({
         {loading ? (
           <div className="h-7 w-12 bg-gray-100 rounded animate-pulse" />
         ) : (
-          <p className="text-2xl font-bold text-gray-900">{value ?? "—"}</p>
+          <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
         )}
       </CardContent>
     </Card>

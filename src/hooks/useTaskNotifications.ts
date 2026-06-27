@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { useNotifications } from "../contexts/NotificationContext";
-import { useTasks } from "./useTasks";
+import { useEffect } from 'react';
+import { useNotifications } from '../contexts/NotificationContext';
+import { useTasks } from './useTasks';
 
 export function useTaskNotifications() {
   const { addNotification, notifications } = useNotifications();
@@ -29,15 +29,15 @@ export function useTaskNotifications() {
       overdue.forEach((task: { id: string; title: string; status: string; dueDate?: string }) => {
         const alreadyNotified = notifications.some(
           (n) =>
-            n.type === "task_overdue" &&
+            n.type === 'task_overdue' &&
             n.metadata?.taskId === task.id &&
             new Date(n.timestamp).toDateString() === new Date().toDateString()
         );
 
         if (!alreadyNotified) {
           addNotification({
-            type: "task_overdue",
-            title: "Tarefa Vencida",
+            type: 'task_overdue',
+            title: 'Tarefa Vencida',
             message: `A tarefa "${task.title}" está vencida`,
             link: `/app/tasks`,
             metadata: { taskId: task.id },
@@ -46,24 +46,26 @@ export function useTaskNotifications() {
       });
 
       // Verificar tarefas que vencem hoje
-      todayTasks.forEach((task: { id: string; title: string; status: string; dueDate?: string }) => {
-        const alreadyNotified = notifications.some(
-          (n) =>
-            n.type === "task_due" &&
-            n.metadata?.taskId === task.id &&
-            new Date(n.timestamp).toDateString() === new Date().toDateString()
-        );
+      todayTasks.forEach(
+        (task: { id: string; title: string; status: string; dueDate?: string }) => {
+          const alreadyNotified = notifications.some(
+            (n) =>
+              n.type === 'task_due' &&
+              n.metadata?.taskId === task.id &&
+              new Date(n.timestamp).toDateString() === new Date().toDateString()
+          );
 
-        if (!alreadyNotified) {
-          addNotification({
-            type: "task_due",
-            title: "Tarefa Vence Hoje",
-            message: `A tarefa "${task.title}" vence hoje`,
-            link: `/app/tasks`,
-            metadata: { taskId: task.id },
-          });
+          if (!alreadyNotified) {
+            addNotification({
+              type: 'task_due',
+              title: 'Tarefa Vence Hoje',
+              message: `A tarefa "${task.title}" vence hoje`,
+              link: `/app/tasks`,
+              metadata: { taskId: task.id },
+            });
+          }
         }
-      });
+      );
     };
 
     // Verificar imediatamente
@@ -75,5 +77,3 @@ export function useTaskNotifications() {
     return () => clearInterval(interval);
   }, [addNotification, notifications, tasks]);
 }
-
-

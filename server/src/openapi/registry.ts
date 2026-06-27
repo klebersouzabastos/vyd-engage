@@ -24,7 +24,7 @@ const CaptureLeadSchema = registry.register(
     message: z.string().optional(),
     source: z.string().optional().openapi({ example: 'website' }),
     customFields: z.record(z.any()).optional(),
-  }),
+  })
 );
 
 const PlanSchema = registry.register(
@@ -37,7 +37,7 @@ const PlanSchema = registry.register(
     description: z.string().nullable().optional(),
     features: z.any().optional(),
     highlighted: z.boolean().optional(),
-  }),
+  })
 );
 
 // ========================

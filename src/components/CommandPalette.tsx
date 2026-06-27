@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
-import { User } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { User } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -10,49 +10,46 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@/components/ui/command'
+} from '@/components/ui/command';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { useCommandPalette, type PaletteItem } from '@/hooks/useCommandPalette'
-import { apiClient } from '@/services/api/client'
+} from '@/components/ui/dialog';
+import { useCommandPalette, type PaletteItem } from '@/hooks/useCommandPalette';
+import { apiClient } from '@/services/api/client';
 
 function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return debounced
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
 }
 
 export function CommandPalette() {
   const { open, setOpen, query, setQuery, filteredStaticItems, recentItems, execute } =
-    useCommandPalette()
-  const navigate = useNavigate()
-  const debouncedQuery = useDebounce(query, 300)
+    useCommandPalette();
+  const navigate = useNavigate();
+  const debouncedQuery = useDebounce(query, 300);
 
   const { data: leadResults } = useQuery({
     queryKey: ['cmd-palette-leads', debouncedQuery],
     queryFn: () => apiClient.getLeads({ search: debouncedQuery, limit: 5 }),
     enabled: debouncedQuery.length > 2 && open,
     staleTime: 10_000,
-  })
+  });
 
-  const leads = (leadResults as any)?.leads ?? []
+  const leads = (leadResults as any)?.leads ?? [];
 
-  const showRecent = query.length === 0 && recentItems.length > 0
-  const contextualItems = filteredStaticItems.filter((i) => i.group === 'contextual')
-  const navItems = filteredStaticItems.filter((i) => i.group === 'navigation')
+  const showRecent = query.length === 0 && recentItems.length > 0;
+  const contextualItems = filteredStaticItems.filter((i) => i.group === 'contextual');
+  const navItems = filteredStaticItems.filter((i) => i.group === 'navigation');
   const hasContent =
-    showRecent ||
-    leads.length > 0 ||
-    contextualItems.length > 0 ||
-    navItems.length > 0
+    showRecent || leads.length > 0 || contextualItems.length > 0 || navItems.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -99,8 +96,8 @@ export function CommandPalette() {
                       key={lead.id}
                       value={`lead-${lead.id}`}
                       onSelect={() => {
-                        setOpen(false)
-                        navigate(`/app/leads/${lead.id}`)
+                        setOpen(false);
+                        navigate(`/app/leads/${lead.id}`);
                       }}
                     >
                       <User className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -123,11 +120,7 @@ export function CommandPalette() {
               <>
                 <CommandGroup heading="Ações desta página">
                   {contextualItems.map((item: PaletteItem) => (
-                    <CommandItem
-                      key={item.id}
-                      value={item.id}
-                      onSelect={() => execute(item)}
-                    >
+                    <CommandItem key={item.id} value={item.id} onSelect={() => execute(item)}>
                       <item.icon className="mr-2 h-4 w-4 shrink-0" />
                       {item.label}
                     </CommandItem>
@@ -140,11 +133,7 @@ export function CommandPalette() {
             {navItems.length > 0 && (
               <CommandGroup heading="Navegar">
                 {navItems.map((item: PaletteItem) => (
-                  <CommandItem
-                    key={item.id}
-                    value={item.id}
-                    onSelect={() => execute(item)}
-                  >
+                  <CommandItem key={item.id} value={item.id} onSelect={() => execute(item)}>
                     <item.icon className="mr-2 h-4 w-4 shrink-0" />
                     {item.label}
                   </CommandItem>
@@ -155,5 +144,5 @@ export function CommandPalette() {
         </Command>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

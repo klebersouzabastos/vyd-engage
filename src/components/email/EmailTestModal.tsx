@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { EmailConfig } from "../../types/email";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Alert, AlertDescription } from "../ui/alert";
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-import { testEmailConfig } from "../../utils/email/emailService";
+import { useState } from 'react';
+import { EmailConfig } from '../../types/email';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Alert, AlertDescription } from '../ui/alert';
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { testEmailConfig } from '../../utils/email/emailService';
 
 interface EmailTestModalProps {
   config: EmailConfig;
@@ -13,7 +13,7 @@ interface EmailTestModalProps {
 }
 
 export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
-  const [testEmail, setTestEmail] = useState("");
+  const [testEmail, setTestEmail] = useState('');
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
     success: boolean;
@@ -22,11 +22,11 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
   } | null>(null);
 
   const handleTest = async () => {
-    if (!testEmail || !testEmail.includes("@")) {
+    if (!testEmail || !testEmail.includes('@')) {
       setTestResult({
         success: false,
-        message: "Email inválido",
-        error: "Por favor, insira um email válido",
+        message: 'Email inválido',
+        error: 'Por favor, insira um email válido',
       });
       return;
     }
@@ -48,8 +48,8 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
     } catch (error) {
       setTestResult({
         success: false,
-        message: "Erro ao testar configuração",
-        error: error instanceof Error ? error.message : "Erro desconhecido",
+        message: 'Erro ao testar configuração',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
       });
     } finally {
       setIsTesting(false);
@@ -59,9 +59,7 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Testar Configuração de Email
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Testar Configuração de Email</h3>
         <p className="text-sm text-gray-600">
           Envie um email de teste para verificar se sua configuração está funcionando corretamente.
         </p>
@@ -84,7 +82,7 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
       </div>
 
       {testResult && (
-        <Alert variant={testResult.success ? "default" : "destructive"}>
+        <Alert variant={testResult.success ? 'default' : 'destructive'}>
           {testResult.success ? (
             <CheckCircle className="h-4 w-4" />
           ) : (
@@ -92,9 +90,7 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
           )}
           <AlertDescription>
             <div className="font-medium">{testResult.message}</div>
-            {testResult.error && (
-              <div className="mt-1 text-sm">{testResult.error}</div>
-            )}
+            {testResult.error && <div className="mt-1 text-sm">{testResult.error}</div>}
           </AlertDescription>
         </Alert>
       )}
@@ -111,18 +107,10 @@ export function EmailTestModal({ config, onTest }: EmailTestModalProps) {
               Enviando...
             </>
           ) : (
-            "Enviar Email de Teste"
+            'Enviar Email de Teste'
           )}
         </Button>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-

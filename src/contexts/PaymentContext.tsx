@@ -1,12 +1,21 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  ReactNode,
+} from 'react';
 import {
   PaymentIntent,
   PaymentMethod,
   PaymentResult,
   CardTokenData,
   PaymentStatus,
-} from "../types/payment";
-import { PlanType } from "../types/plan";
+} from '../types/payment';
+import { PlanType } from '../types/plan';
 import {
   createPaymentIntent,
   processCreditCardPayment,
@@ -14,20 +23,21 @@ import {
   processBoletoPayment,
   checkPaymentStatus,
   getPaymentHistory,
-} from "../services/paymentService";
-import { useAuth } from "./AuthContext";
+} from '../services/paymentService';
+import { useAuth } from './AuthContext';
 
 interface PaymentContextType {
   paymentIntents: PaymentIntent[];
   currentPaymentIntent: PaymentIntent | null;
   isProcessing: boolean;
   startPayment: (planId: PlanType, amount: number, method: PaymentMethod) => Promise<PaymentIntent>;
-  processPayment: (
-    paymentIntentId: string,
-    data?: CardTokenData
-  ) => Promise<PaymentResult>;
+  processPayment: (paymentIntentId: string, data?: CardTokenData) => Promise<PaymentResult>;
   checkPayment: (paymentIntentId: string) => Promise<PaymentStatus>;
-  validateUpgrade: (planId: PlanType) => { isValid: boolean; reason?: string; pendingPayment?: PaymentIntent };
+  validateUpgrade: (planId: PlanType) => {
+    isValid: boolean;
+    reason?: string;
+    pendingPayment?: PaymentIntent;
+  };
   clearCurrentPayment: () => void;
   refreshPayments: () => void;
 }
@@ -59,10 +69,10 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
       }
       const intents: PaymentIntent[] = (history || []).map((p: ApiPayment) => ({
         id: p.id,
-        planId: p.planType || p.planId || "",
+        planId: p.planType || p.planId || '',
         amount: Number(p.amount) || 0,
-        method: (p.method || "credit_card").toLowerCase() as PaymentMethod,
-        status: (p.status || "pending").toLowerCase() as PaymentStatus,
+        method: (p.method || 'credit_card').toLowerCase() as PaymentMethod,
+        status: (p.status || 'pending').toLowerCase() as PaymentStatus,
         createdAt: p.createdAt || new Date().toISOString(),
         updatedAt: p.updatedAt || new Date().toISOString(),
         metadata: p.metadata,
@@ -78,7 +88,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar pagamentos:", error);
+      console.error('Erro ao carregar pagamentos:', error);
     }
   }, []);
 
@@ -105,7 +115,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
 
         return intent;
       } catch (error) {
-        console.error("Erro ao criar intenção de pagamento:", error);
+        console.error('Erro ao criar intenção de pagamento:', error);
         throw error;
       } finally {
         setIsProcessing(false);
@@ -116,39 +126,37 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
 
   // Processar pagamento
   const processPayment = useCallback(
-    async (
-      paymentIntentId: string,
-      data?: CardTokenData
-    ): Promise<PaymentResult> => {
+    async (paymentIntentId: string, data?: CardTokenData): Promise<PaymentResult> => {
       setIsProcessing(true);
       try {
         // Buscar intent do estado local
         const allIntents = [...paymentIntents];
-        const intent = currentPaymentRef.current?.id === paymentIntentId
-          ? currentPaymentRef.current
-          : allIntents.find((i) => i.id === paymentIntentId);
+        const intent =
+          currentPaymentRef.current?.id === paymentIntentId
+            ? currentPaymentRef.current
+            : allIntents.find((i) => i.id === paymentIntentId);
 
         if (!intent) {
-          throw new Error("Intenção de pagamento não encontrada");
+          throw new Error('Intenção de pagamento não encontrada');
         }
 
         let result: PaymentResult;
 
         switch (intent.method) {
-          case "credit_card":
+          case 'credit_card':
             if (!data) {
-              throw new Error("Dados do cartão são obrigatórios");
+              throw new Error('Dados do cartão são obrigatórios');
             }
             result = await processCreditCardPayment(paymentIntentId, data);
             break;
-          case "pix":
+          case 'pix':
             result = await processPixPayment(paymentIntentId);
             break;
-          case "boleto":
+          case 'boleto':
             result = await processBoletoPayment(paymentIntentId);
             break;
           default:
-            throw new Error("Método de pagamento não suportado");
+            throw new Error('Método de pagamento não suportado');
         }
 
         // Atualizar estado via API
@@ -156,7 +164,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
 
         return result;
       } catch (error) {
-        console.error("Erro ao processar pagamento:", error);
+        console.error('Erro ao processar pagamento:', error);
         throw error;
       } finally {
         setIsProcessing(false);
@@ -173,8 +181,8 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
         await refreshPayments();
         return status;
       } catch (error) {
-        console.error("Erro ao verificar status de pagamento:", error);
-        return "failed";
+        console.error('Erro ao verificar status de pagamento:', error);
+        return 'failed';
       }
     },
     [refreshPayments]
@@ -184,13 +192,13 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
   const validateUpgrade = useCallback(
     (planId: PlanType): { isValid: boolean; reason?: string; pendingPayment?: PaymentIntent } => {
       const pendingPayment = paymentIntents.find(
-        (p) => p.status === "pending" || p.status === "processing"
+        (p) => p.status === 'pending' || p.status === 'processing'
       );
 
       if (pendingPayment) {
         return {
           isValid: false,
-          reason: "Há um pagamento pendente. Aguarde a confirmação.",
+          reason: 'Há um pagamento pendente. Aguarde a confirmação.',
           pendingPayment,
         };
       }
@@ -210,8 +218,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     const interval = setInterval(() => {
       const pendingIntents = paymentIntents.filter(
         (intent) =>
-          intent.status === "pending" &&
-          (intent.method === "pix" || intent.method === "boleto")
+          intent.status === 'pending' && (intent.method === 'pix' || intent.method === 'boleto')
       );
 
       if (pendingIntents.length > 0) {
@@ -224,17 +231,30 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [paymentIntents, checkPayment]);
 
-  const value = useMemo(() => ({
-    paymentIntents,
-    currentPaymentIntent,
-    isProcessing,
-    startPayment,
-    processPayment,
-    checkPayment,
-    validateUpgrade,
-    clearCurrentPayment,
-    refreshPayments,
-  }), [paymentIntents, currentPaymentIntent, isProcessing, startPayment, processPayment, checkPayment, validateUpgrade, clearCurrentPayment, refreshPayments]);
+  const value = useMemo(
+    () => ({
+      paymentIntents,
+      currentPaymentIntent,
+      isProcessing,
+      startPayment,
+      processPayment,
+      checkPayment,
+      validateUpgrade,
+      clearCurrentPayment,
+      refreshPayments,
+    }),
+    [
+      paymentIntents,
+      currentPaymentIntent,
+      isProcessing,
+      startPayment,
+      processPayment,
+      checkPayment,
+      validateUpgrade,
+      clearCurrentPayment,
+      refreshPayments,
+    ]
+  );
 
   return <PaymentContext.Provider value={value}>{children}</PaymentContext.Provider>;
 }
@@ -242,15 +262,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
 export function usePayment() {
   const context = useContext(PaymentContext);
   if (context === undefined) {
-    throw new Error("usePayment deve ser usado dentro de um PaymentProvider");
+    throw new Error('usePayment deve ser usado dentro de um PaymentProvider');
   }
   return context;
 }
-
-
-
-
-
-
-
-

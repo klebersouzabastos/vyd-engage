@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { emailConfigService } from '../services/emailConfigService.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
-import { scheduleCampaign, cancelScheduledCampaign, getScheduledCampaignStatus } from '../jobs/emailCampaign.js';
+import {
+  scheduleCampaign,
+  cancelScheduledCampaign,
+  getScheduledCampaignStatus,
+} from '../jobs/emailCampaign.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -130,11 +134,16 @@ const sendEmailSchema = z.object({
 
 const bulkSendSchema = z.object({
   configId: z.string().uuid(),
-  recipients: z.array(z.object({
-    email: z.string().email(),
-    leadId: z.string().uuid().optional(),
-    variables: z.record(z.string()).optional(),
-  })).min(1).max(500),
+  recipients: z
+    .array(
+      z.object({
+        email: z.string().email(),
+        leadId: z.string().uuid().optional(),
+        variables: z.record(z.string()).optional(),
+      })
+    )
+    .min(1)
+    .max(500),
   subject: z.string().min(1),
   html: z.string().min(1),
   text: z.string().optional(),
@@ -180,7 +189,11 @@ router.post('/configs/:id/test', async (req, res, next) => {
     const { toEmail } = req.body;
     if (!toEmail) return next(createError('toEmail is required', 400));
 
-    const result = await emailMessagingService.sendTestEmail(req.user.tenantId, req.params.id, toEmail);
+    const result = await emailMessagingService.sendTestEmail(
+      req.user.tenantId,
+      req.params.id,
+      toEmail
+    );
     res.json({ status: 200, data: result });
   } catch (error) {
     next(error);
@@ -193,11 +206,16 @@ router.post('/configs/:id/test', async (req, res, next) => {
 
 const scheduleCampaignSchema = z.object({
   configId: z.string().uuid(),
-  recipients: z.array(z.object({
-    email: z.string().email(),
-    leadId: z.string().uuid().optional(),
-    variables: z.record(z.string()).optional(),
-  })).min(1).max(500),
+  recipients: z
+    .array(
+      z.object({
+        email: z.string().email(),
+        leadId: z.string().uuid().optional(),
+        variables: z.record(z.string()).optional(),
+      })
+    )
+    .min(1)
+    .max(500),
   subject: z.string().min(1),
   html: z.string().min(1),
   text: z.string().optional(),
@@ -228,7 +246,7 @@ router.post('/schedule', async (req, res, next) => {
         text: data.text,
         campaignId,
       },
-      scheduledAt,
+      scheduledAt
     );
 
     res.json({
@@ -296,7 +314,3 @@ router.get('/schedule/:campaignId', async (req, res, next) => {
 });
 
 export default router;
-
-
-
-

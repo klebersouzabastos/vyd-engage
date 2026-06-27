@@ -1,20 +1,20 @@
-import React, { useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { ArrowLeft, Mail } from "lucide-react";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
-import { getErrorMessage, getErrorCode, getErrorStatusCode } from "../utils/errors";
-import { FieldError } from "../components/register/FieldError";
-import { useAutoFocus } from "../hooks/useFocusManagement";
+import React, { useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { ArrowLeft, Mail } from 'lucide-react';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
+import { getErrorMessage, getErrorCode, getErrorStatusCode } from '../utils/errors';
+import { FieldError } from '../components/register/FieldError';
+import { useAutoFocus } from '../hooks/useFocusManagement';
 
 export function ForgotPassword() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [fieldError, setFieldError] = useState<string | undefined>();
@@ -22,9 +22,9 @@ export function ForgotPassword() {
   const autoFocusRef = useAutoFocus<HTMLFormElement>(!sent);
 
   const validateEmail = useCallback((value: string): string | undefined => {
-    if (!value.trim()) return "E-mail é obrigatório";
+    if (!value.trim()) return 'E-mail é obrigatório';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value.trim())) return "Formato de e-mail inválido";
+    if (!emailRegex.test(value.trim())) return 'Formato de e-mail inválido';
     return undefined;
   }, []);
 
@@ -40,25 +40,25 @@ export function ForgotPassword() {
     try {
       // Normalize email before sending
       const normalizedEmail = email.trim().toLowerCase();
-      
+
       await apiClient.requestPasswordReset(normalizedEmail);
       setSent(true);
-      toast.success("Email de recuperação enviado! Verifique sua caixa de entrada.");
+      toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
     } catch (error: unknown) {
       const code = getErrorCode(error);
       const statusCode = getErrorStatusCode(error);
       let errorMessage = getErrorMessage(error);
 
       if (code === 'NETWORK_ERROR') {
-        errorMessage = "Erro de conexão. Verifique se o servidor está rodando.";
+        errorMessage = 'Erro de conexão. Verifique se o servidor está rodando.';
       } else if (code === 'VALIDATION_ERROR' || statusCode === 400) {
-        errorMessage = "Email inválido. Verifique o formato e tente novamente.";
+        errorMessage = 'Email inválido. Verifique o formato e tente novamente.';
       } else if (statusCode >= 500) {
-        errorMessage = "Erro no servidor. Tente novamente mais tarde.";
+        errorMessage = 'Erro no servidor. Tente novamente mais tarde.';
       }
 
       toast.error(errorMessage);
-      console.error("Erro ao solicitar recuperação de senha:", error);
+      console.error('Erro ao solicitar recuperação de senha:', error);
     } finally {
       setLoading(false);
     }
@@ -68,13 +68,13 @@ export function ForgotPassword() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
-      
+
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
           {/* Back Button */}
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 sm:mb-8"
           >
             <ArrowLeft size={20} />
@@ -95,17 +95,24 @@ export function ForgotPassword() {
               Esqueci minha senha
             </h1>
             <p className="text-gray-600 text-base sm:text-lg md:text-xl mt-2">
-              {sent 
-                ? "Enviamos um email com instruções para redefinir sua senha."
-                : "Digite seu email e enviaremos um link para redefinir sua senha."
-              }
+              {sent
+                ? 'Enviamos um email com instruções para redefinir sua senha.'
+                : 'Digite seu email e enviaremos um link para redefinir sua senha.'}
             </p>
           </div>
 
           {!sent ? (
-            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6" ref={autoFocusRef} noValidate>
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-5 sm:space-y-6"
+              ref={autoFocusRef}
+              noValidate
+            >
               <div className="space-y-2.5">
-                <Label htmlFor="email" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="email"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   E-mail
                 </Label>
                 <Input
@@ -123,22 +130,18 @@ export function ForgotPassword() {
                     setTouched(true);
                     setFieldError(validateEmail(email));
                   }}
-                  className={`w-full h-12 sm:h-14 px-4 py-3 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touched && fieldError ? "border-red-500" : "border-gray-300"}`}
-                  aria-describedby={fieldError && touched ? "forgot-email-error" : undefined}
+                  className={`w-full h-12 sm:h-14 px-4 py-3 border rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${touched && fieldError ? 'border-red-500' : 'border-gray-300'}`}
+                  aria-describedby={fieldError && touched ? 'forgot-email-error' : undefined}
                 />
-                <FieldError
-                  id="forgot-email-error"
-                  error={fieldError}
-                  touched={touched}
-                />
+                <FieldError id="forgot-email-error" error={fieldError} touched={touched} />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading}
                 className="w-full h-12 sm:h-14 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-base sm:text-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Enviando..." : "Enviar link de recuperação"}
+                {loading ? 'Enviando...' : 'Enviar link de recuperação'}
               </Button>
             </form>
           ) : (
@@ -148,7 +151,8 @@ export function ForgotPassword() {
               </div>
               <div className="text-center space-y-4">
                 <p className="text-gray-600 text-base sm:text-lg">
-                  Verifique sua caixa de entrada em <strong>{email}</strong> e siga as instruções para redefinir sua senha.
+                  Verifique sua caixa de entrada em <strong>{email}</strong> e siga as instruções
+                  para redefinir sua senha.
                 </p>
                 <p className="text-sm text-gray-400">
                   Não recebeu o email? Verifique sua pasta de spam ou tente novamente.
@@ -174,9 +178,9 @@ export function ForgotPassword() {
 
           {/* Sign up link */}
           <p className="mt-8 sm:mt-10 text-center text-gray-600 text-base sm:text-lg">
-            Lembrou sua senha?{" "}
-            <Link 
-              to="/login" 
+            Lembrou sua senha?{' '}
+            <Link
+              to="/login"
               className="text-primary hover:text-primary-dark font-medium transition-colors"
             >
               Fazer login
@@ -208,4 +212,3 @@ export function ForgotPassword() {
     </div>
   );
 }
-

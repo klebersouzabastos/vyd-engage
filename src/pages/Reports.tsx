@@ -1,13 +1,40 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Plus, FileText, Calendar, Mail, Download, Trash2, Edit, Search, Grid3x3, List, X, Zap, Loader2, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
-import { Switch } from "../components/ui/switch";
-import { Label } from "../components/ui/label";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import {
+  Plus,
+  FileText,
+  Calendar,
+  Mail,
+  Download,
+  Trash2,
+  Edit,
+  Search,
+  Grid3x3,
+  List,
+  X,
+  Zap,
+  Loader2,
+  Clock,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog';
+import { Switch } from '../components/ui/switch';
+import { Label } from '../components/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,12 +44,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { Report, ReportSchedule } from "../types";
-import { ReportWizard } from "../components/ReportWizard";
-import { createReportFromTemplate } from "../utils/reportTemplates";
-import { apiClient } from "../services/api/client";
-import { toast } from "sonner";
+} from '../components/ui/alert-dialog';
+import { Report, ReportSchedule } from '../types';
+import { ReportWizard } from '../components/ReportWizard';
+import { createReportFromTemplate } from '../utils/reportTemplates';
+import { apiClient } from '../services/api/client';
+import { toast } from 'sonner';
 
 // Convert API format (config JSON) to frontend Report type
 function apiToReport(apiReport: any): Report {
@@ -30,8 +57,8 @@ function apiToReport(apiReport: any): Report {
   return {
     id: apiReport.id,
     name: apiReport.name,
-    description: apiReport.description || "",
-    type: apiReport.type || "custom",
+    description: apiReport.description || '',
+    type: apiReport.type || 'custom',
     widgets: config.widgets || [],
     schedule: config.schedule,
     filters: config.filters,
@@ -39,7 +66,7 @@ function apiToReport(apiReport: any): Report {
     templateId: config.templateId,
     createdAt: apiReport.createdAt,
     updatedAt: apiReport.updatedAt,
-    createdBy: apiReport.createdBy?.name || apiReport.createdById || "system",
+    createdBy: apiReport.createdBy?.name || apiReport.createdById || 'system',
   };
 }
 
@@ -59,31 +86,31 @@ function reportToApi(report: Report) {
   };
 }
 
-type ViewMode = "grid" | "list";
-type SortOption = "name" | "date" | "type" | "updated";
+type ViewMode = 'grid' | 'list';
+type SortOption = 'name' | 'date' | 'type' | 'updated';
 
 export function Reports() {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<SortOption>("updated");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('updated');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showWizard, setShowWizard] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [scheduleReport, setScheduleReport] = useState<Report | null>(null);
   const [scheduleForm, setScheduleForm] = useState<ReportSchedule>({
     enabled: false,
-    frequency: "weekly",
+    frequency: 'weekly',
     dayOfWeek: 1,
     dayOfMonth: 1,
-    time: "09:00",
+    time: '09:00',
     recipients: [],
-    format: "pdf",
+    format: 'pdf',
   });
-  const [scheduleRecipientInput, setScheduleRecipientInput] = useState("");
+  const [scheduleRecipientInput, setScheduleRecipientInput] = useState('');
   const [savingSchedule, setSavingSchedule] = useState(false);
 
   useEffect(() => {
@@ -96,7 +123,7 @@ export function Reports() {
       const list = result?.data || result || [];
       setReports(list.map(apiToReport));
     } catch (error) {
-      console.error("Erro ao carregar relatórios:", error);
+      console.error('Erro ao carregar relatórios:', error);
     } finally {
       setLoading(false);
     }
@@ -112,9 +139,9 @@ export function Reports() {
     try {
       await apiClient.deleteReport(reportToDelete);
       setReports(reports.filter((r) => r.id !== reportToDelete));
-      toast.success("Relatório excluído");
+      toast.success('Relatório excluído');
     } catch (error) {
-      console.error("Erro ao excluir relatório:", error);
+      console.error('Erro ao excluir relatório:', error);
     } finally {
       setDeleteDialogOpen(false);
       setReportToDelete(null);
@@ -122,9 +149,12 @@ export function Reports() {
   };
 
   const handleQuickCreate = async () => {
-    const defaultTemplate = "executive-dashboard";
-    const report = createReportFromTemplate(defaultTemplate, `Relatório Rápido ${new Date().toLocaleDateString()}`);
-    report.filters = { dateRange: { type: "month" } };
+    const defaultTemplate = 'executive-dashboard';
+    const report = createReportFromTemplate(
+      defaultTemplate,
+      `Relatório Rápido ${new Date().toLocaleDateString()}`
+    );
+    report.filters = { dateRange: { type: 'month' } };
 
     try {
       const created = await apiClient.createReport(reportToApi(report));
@@ -132,7 +162,7 @@ export function Reports() {
       setReports([newReport, ...reports]);
       navigate(`/app/reports/view/${newReport.id}`);
     } catch (error) {
-      console.error("Erro ao criar relatório:", error);
+      console.error('Erro ao criar relatório:', error);
     }
   };
 
@@ -144,23 +174,25 @@ export function Reports() {
       setReports([newReport, ...reports]);
       navigate(`/app/reports/${newReport.id}`);
     } catch (error) {
-      console.error("Erro ao criar relatório:", error);
+      console.error('Erro ao criar relatório:', error);
     }
   };
 
   const openScheduleModal = (report: Report, e: React.MouseEvent) => {
     e.stopPropagation();
     setScheduleReport(report);
-    setScheduleForm(report.schedule ?? {
-      enabled: false,
-      frequency: "weekly",
-      dayOfWeek: 1,
-      dayOfMonth: 1,
-      time: "09:00",
-      recipients: [],
-      format: "pdf",
-    });
-    setScheduleRecipientInput("");
+    setScheduleForm(
+      report.schedule ?? {
+        enabled: false,
+        frequency: 'weekly',
+        dayOfWeek: 1,
+        dayOfMonth: 1,
+        time: '09:00',
+        recipients: [],
+        format: 'pdf',
+      }
+    );
+    setScheduleRecipientInput('');
   };
 
   const handleSaveSchedule = async () => {
@@ -169,11 +201,11 @@ export function Reports() {
     try {
       const updated = { ...scheduleReport, schedule: scheduleForm };
       await apiClient.updateReport(scheduleReport.id, reportToApi(updated));
-      setReports(reports.map(r => r.id === scheduleReport.id ? updated : r));
-      toast.success("Agendamento salvo");
+      setReports(reports.map((r) => (r.id === scheduleReport.id ? updated : r)));
+      toast.success('Agendamento salvo');
       setScheduleReport(null);
     } catch {
-      toast.error("Erro ao salvar agendamento");
+      toast.error('Erro ao salvar agendamento');
     } finally {
       setSavingSchedule(false);
     }
@@ -182,24 +214,24 @@ export function Reports() {
   const addRecipient = () => {
     const email = scheduleRecipientInput.trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Email inválido");
+      toast.error('Email inválido');
       return;
     }
     if (scheduleForm.recipients.includes(email)) {
-      toast.error("Email já adicionado");
+      toast.error('Email já adicionado');
       return;
     }
-    setScheduleForm(f => ({ ...f, recipients: [...f.recipients, email] }));
-    setScheduleRecipientInput("");
+    setScheduleForm((f) => ({ ...f, recipients: [...f.recipients, email] }));
+    setScheduleRecipientInput('');
   };
 
   const removeRecipient = (email: string) => {
-    setScheduleForm(f => ({ ...f, recipients: f.recipients.filter(r => r !== email) }));
+    setScheduleForm((f) => ({ ...f, recipients: f.recipients.filter((r) => r !== email) }));
   };
 
   const handleExportPDF = (report: Report, e: React.MouseEvent) => {
     e.stopPropagation();
-    import("../utils/reportExport").then(({ exportReportToPDF }) => {
+    import('../utils/reportExport').then(({ exportReportToPDF }) => {
       exportReportToPDF(report);
     });
   };
@@ -207,7 +239,7 @@ export function Reports() {
   const handleExportExcel = async (report: Report, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const { exportReportToExcel } = await import("../utils/reportExport");
+      const { exportReportToExcel } = await import('../utils/reportExport');
       await exportReportToExcel(report);
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
@@ -216,18 +248,18 @@ export function Reports() {
   };
 
   const getScheduleLabel = (schedule?: ReportSchedule) => {
-    if (!schedule || !schedule.enabled) return "Não agendado";
+    if (!schedule || !schedule.enabled) return 'Não agendado';
 
-    const time = schedule.time || "09:00";
-    if (schedule.frequency === "daily") return `Diário às ${time}`;
-    if (schedule.frequency === "weekly") {
-      const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const time = schedule.time || '09:00';
+    if (schedule.frequency === 'daily') return `Diário às ${time}`;
+    if (schedule.frequency === 'weekly') {
+      const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
       return `Semanal (${days[schedule.dayOfWeek || 0]}) às ${time}`;
     }
-    if (schedule.frequency === "monthly") {
+    if (schedule.frequency === 'monthly') {
       return `Mensal (dia ${schedule.dayOfMonth || 1}) às ${time}`;
     }
-    return "Agendado";
+    return 'Agendado';
   };
 
   const filteredAndSortedReports = reports
@@ -238,29 +270,29 @@ export function Reports() {
         const matchesDescription = report.description?.toLowerCase().includes(query) || false;
         if (!matchesName && !matchesDescription) return false;
       }
-      if (typeFilter !== "all" && report.type !== typeFilter) return false;
+      if (typeFilter !== 'all' && report.type !== typeFilter) return false;
       return true;
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case "name":
+        case 'name':
           return a.name.localeCompare(b.name);
-        case "date":
+        case 'date':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case "type":
+        case 'type':
           return a.type.localeCompare(b.type);
-        case "updated":
+        case 'updated':
         default:
           return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       }
     });
 
   const clearFilters = () => {
-    setSearchQuery("");
-    setTypeFilter("all");
+    setSearchQuery('');
+    setTypeFilter('all');
   };
 
-  const hasActiveFilters = searchQuery || typeFilter !== "all";
+  const hasActiveFilters = searchQuery || typeFilter !== 'all';
 
   if (loading) {
     return (
@@ -281,11 +313,7 @@ export function Reports() {
         {/* Actions */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleQuickCreate}
-            >
+            <Button variant="outline" className="gap-2" onClick={handleQuickCreate}>
               <Zap size={16} />
               Criar Rápido
             </Button>
@@ -317,7 +345,10 @@ export function Reports() {
           <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" size={16} />
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600"
+                  size={16}
+                />
                 <Input
                   placeholder="Buscar relatórios..."
                   value={searchQuery}
@@ -353,10 +384,20 @@ export function Reports() {
               </Select>
 
               <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1">
-                <Button variant={viewMode === "grid" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("grid")} className="h-8">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8"
+                >
                   <Grid3x3 size={16} />
                 </Button>
-                <Button variant={viewMode === "list" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("list")} className="h-8">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-8"
+                >
                   <List size={16} />
                 </Button>
               </div>
@@ -373,16 +414,26 @@ export function Reports() {
 
         {/* Reports Grid/List */}
         {filteredAndSortedReports.length > 0 ? (
-          <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+          <div
+            className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                : 'space-y-4'
+            }
+          >
             {filteredAndSortedReports.map((report) => (
               <div
                 key={report.id}
                 className={`bg-gray-50 rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow ${
-                  viewMode === "list" ? "flex items-center p-4" : ""
+                  viewMode === 'list' ? 'flex items-center p-4' : ''
                 }`}
               >
-                <div className={viewMode === "list" ? "flex-1 flex items-center justify-between" : "p-6"}>
-                  {viewMode === "list" ? (
+                <div
+                  className={
+                    viewMode === 'list' ? 'flex-1 flex items-center justify-between' : 'p-6'
+                  }
+                >
+                  {viewMode === 'list' ? (
                     <>
                       <div className="flex-1">
                         <h3 className="text-gray-900 font-medium mb-1">{report.name}</h3>
@@ -398,17 +449,35 @@ export function Reports() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/view/${report.id}`)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/app/reports/view/${report.id}`)}
+                        >
                           <FileText size={14} className="mr-1" />
                           Visualizar
                         </Button>
-                        <Button variant="outline" size="sm" onClick={(e) => openScheduleModal(report, e)} title="Agendar envio">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => openScheduleModal(report, e)}
+                          title="Agendar envio"
+                        >
                           <Clock size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/app/reports/${report.id}`)}
+                        >
                           <Edit size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => confirmDelete(report.id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-error hover:text-error hover:bg-red-50"
+                          onClick={() => confirmDelete(report.id)}
+                        >
                           <Trash2 size={14} />
                         </Button>
                       </div>
@@ -419,7 +488,9 @@ export function Reports() {
                         <div className="flex-1">
                           <h3 className="text-gray-900 font-medium mb-1">{report.name}</h3>
                           {report.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2">{report.description}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {report.description}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -427,7 +498,9 @@ export function Reports() {
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FileText size={14} />
-                          <span>{report.widgets.length} widget{report.widgets.length !== 1 ? 's' : ''}</span>
+                          <span>
+                            {report.widgets.length} widget{report.widgets.length !== 1 ? 's' : ''}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar size={14} />
@@ -436,32 +509,65 @@ export function Reports() {
                         {report.schedule?.enabled && report.schedule.recipients.length > 0 && (
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Mail size={14} />
-                            <span>{report.schedule.recipients.length} destinatário{report.schedule.recipients.length !== 1 ? 's' : ''}</span>
+                            <span>
+                              {report.schedule.recipients.length} destinatário
+                              {report.schedule.recipients.length !== 1 ? 's' : ''}
+                            </span>
                           </div>
                         )}
                       </div>
 
                       <div className="flex items-center gap-2 pt-4 border-t border-gray-300">
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/app/reports/view/${report.id}`)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => navigate(`/app/reports/view/${report.id}`)}
+                        >
                           <FileText size={14} className="mr-1" />
                           Visualizar
                         </Button>
-                        <Button variant="outline" size="sm" onClick={(e) => openScheduleModal(report, e)} title="Agendar envio">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => openScheduleModal(report, e)}
+                          title="Agendar envio"
+                        >
                           <Clock size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/reports/${report.id}`)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/app/reports/${report.id}`)}
+                        >
                           <Edit size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" className="text-error hover:text-error hover:bg-red-50" onClick={() => confirmDelete(report.id)} title="Excluir">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-error hover:text-error hover:bg-red-50"
+                          onClick={() => confirmDelete(report.id)}
+                          title="Excluir"
+                        >
                           <Trash2 size={14} />
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 pt-2">
-                        <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={(e) => handleExportPDF(report, e)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs"
+                          onClick={(e) => handleExportPDF(report, e)}
+                        >
                           <FileText size={12} className="mr-1" />
                           PDF
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={(e) => handleExportExcel(report, e)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs"
+                          onClick={(e) => handleExportExcel(report, e)}
+                        >
                           <Download size={12} className="mr-1" />
                           Excel
                         </Button>
@@ -475,9 +581,7 @@ export function Reports() {
         ) : reports.length === 0 ? (
           <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 p-12 text-center">
             <FileText size={48} className="mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum relatório criado
-            </h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum relatório criado</h3>
             <p className="text-gray-600 mb-6">
               Comece criando seu primeiro relatório personalizado
             </p>
@@ -492,12 +596,8 @@ export function Reports() {
         ) : (
           <div className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 p-12 text-center">
             <Search size={48} className="mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum relatório encontrado
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Tente ajustar seus filtros de busca
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum relatório encontrado</h3>
+            <p className="text-gray-600 mb-6">Tente ajustar seus filtros de busca</p>
             <Button variant="outline" onClick={clearFilters} className="gap-2">
               <X size={16} />
               Limpar Filtros
@@ -507,7 +607,12 @@ export function Reports() {
       </div>
 
       {/* Schedule Modal */}
-      <Dialog open={!!scheduleReport} onOpenChange={open => { if (!open) setScheduleReport(null); }}>
+      <Dialog
+        open={!!scheduleReport}
+        onOpenChange={(open) => {
+          if (!open) setScheduleReport(null);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Agendar Relatório — {scheduleReport?.name}</DialogTitle>
@@ -522,7 +627,7 @@ export function Reports() {
               </div>
               <Switch
                 checked={scheduleForm.enabled}
-                onCheckedChange={v => setScheduleForm(f => ({ ...f, enabled: v }))}
+                onCheckedChange={(v) => setScheduleForm((f) => ({ ...f, enabled: v }))}
               />
             </div>
 
@@ -533,9 +638,16 @@ export function Reports() {
                   <Label>Frequência</Label>
                   <Select
                     value={scheduleForm.frequency}
-                    onValueChange={v => setScheduleForm(f => ({ ...f, frequency: v as ReportSchedule["frequency"] }))}
+                    onValueChange={(v) =>
+                      setScheduleForm((f) => ({
+                        ...f,
+                        frequency: v as ReportSchedule['frequency'],
+                      }))
+                    }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="daily">Diário</SelectItem>
                       <SelectItem value="weekly">Semanal</SelectItem>
@@ -545,35 +657,49 @@ export function Reports() {
                 </div>
 
                 {/* Day of week (weekly) */}
-                {scheduleForm.frequency === "weekly" && (
+                {scheduleForm.frequency === 'weekly' && (
                   <div className="space-y-2">
                     <Label>Dia da semana</Label>
                     <Select
                       value={String(scheduleForm.dayOfWeek ?? 1)}
-                      onValueChange={v => setScheduleForm(f => ({ ...f, dayOfWeek: Number(v) }))}
+                      onValueChange={(v) =>
+                        setScheduleForm((f) => ({ ...f, dayOfWeek: Number(v) }))
+                      }
                     >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        {["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"].map((d, i) => (
-                          <SelectItem key={i} value={String(i)}>{d}</SelectItem>
-                        ))}
+                        {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(
+                          (d, i) => (
+                            <SelectItem key={i} value={String(i)}>
+                              {d}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
                 {/* Day of month (monthly) */}
-                {scheduleForm.frequency === "monthly" && (
+                {scheduleForm.frequency === 'monthly' && (
                   <div className="space-y-2">
                     <Label>Dia do mês</Label>
                     <Select
                       value={String(scheduleForm.dayOfMonth ?? 1)}
-                      onValueChange={v => setScheduleForm(f => ({ ...f, dayOfMonth: Number(v) }))}
+                      onValueChange={(v) =>
+                        setScheduleForm((f) => ({ ...f, dayOfMonth: Number(v) }))
+                      }
                     >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
-                          <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                          <SelectItem key={d} value={String(d)}>
+                            Dia {d}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -587,7 +713,7 @@ export function Reports() {
                     id="schedule-time"
                     type="time"
                     value={scheduleForm.time}
-                    onChange={e => setScheduleForm(f => ({ ...f, time: e.target.value }))}
+                    onChange={(e) => setScheduleForm((f) => ({ ...f, time: e.target.value }))}
                   />
                 </div>
 
@@ -596,9 +722,13 @@ export function Reports() {
                   <Label>Formato</Label>
                   <Select
                     value={scheduleForm.format}
-                    onValueChange={v => setScheduleForm(f => ({ ...f, format: v as ReportSchedule["format"] }))}
+                    onValueChange={(v) =>
+                      setScheduleForm((f) => ({ ...f, format: v as ReportSchedule['format'] }))
+                    }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pdf">PDF</SelectItem>
                       <SelectItem value="excel">Excel</SelectItem>
@@ -615,8 +745,13 @@ export function Reports() {
                       type="email"
                       placeholder="email@exemplo.com"
                       value={scheduleRecipientInput}
-                      onChange={e => setScheduleRecipientInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addRecipient(); } }}
+                      onChange={(e) => setScheduleRecipientInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addRecipient();
+                        }
+                      }}
                     />
                     <Button type="button" variant="outline" onClick={addRecipient}>
                       <Plus size={16} />
@@ -624,7 +759,7 @@ export function Reports() {
                   </div>
                   {scheduleForm.recipients.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {scheduleForm.recipients.map(email => (
+                      {scheduleForm.recipients.map((email) => (
                         <span
                           key={email}
                           className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
@@ -647,9 +782,11 @@ export function Reports() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setScheduleReport(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setScheduleReport(null)}>
+              Cancelar
+            </Button>
             <Button onClick={handleSaveSchedule} disabled={savingSchedule}>
-              {savingSchedule ? "Salvando..." : "Salvar"}
+              {savingSchedule ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogFooter>
         </DialogContent>

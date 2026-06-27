@@ -50,9 +50,7 @@ export function useFormValidation<T extends Record<string, unknown>>({
         });
       } catch (err) {
         const zodError = err as ZodError;
-        const fieldError = zodError.errors.find(
-          (e) => e.path[0] === field
-        );
+        const fieldError = zodError.errors.find((e) => e.path[0] === field);
         setFieldErrors((prev) => ({
           ...prev,
           [field]: fieldError?.message || undefined,

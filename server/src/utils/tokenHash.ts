@@ -17,10 +17,7 @@ export function hashToken(token: string): string {
 export function compareToken(token: string, storedHash: string): boolean {
   const tokenHash = hashToken(token);
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(tokenHash, 'hex'),
-      Buffer.from(storedHash, 'hex')
-    );
+    return crypto.timingSafeEqual(Buffer.from(tokenHash, 'hex'), Buffer.from(storedHash, 'hex'));
   } catch {
     return false;
   }

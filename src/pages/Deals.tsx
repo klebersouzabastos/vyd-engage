@@ -1,18 +1,18 @@
-import { useState, useCallback, useMemo } from "react";
-import { useQueryState } from "nuqs";
-import { useNavigate } from "react-router";
-import { DataTable } from "../components/ui/data-table";
-import { getDealColumns } from "../components/deals/dealColumns";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
+import { useState, useCallback, useMemo } from 'react';
+import { useQueryState } from 'nuqs';
+import { useNavigate } from 'react-router';
+import { DataTable } from '../components/ui/data-table';
+import { getDealColumns } from '../components/deals/dealColumns';
+import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from '../components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,23 +22,23 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
+} from '../components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../components/ui/dialog";
-import { DealStageBadge } from "../components/deals/DealStageBadge";
-import { DealForm } from "../components/deals/DealForm";
-import { DealPipelineBoard } from "../components/deals/DealPipelineBoard";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { EmptyState } from "../components/EmptyState";
-import { useDeals } from "../hooks/useDeals";
-import { useDealsPipeline } from "../hooks/useDealsPipeline";
-import { useSidePanel } from "../contexts/SidePanelContext";
-import { Deal, DealStage } from "../types";
+} from '../components/ui/dialog';
+import { DealStageBadge } from '../components/deals/DealStageBadge';
+import { DealForm } from '../components/deals/DealForm';
+import { DealPipelineBoard } from '../components/deals/DealPipelineBoard';
+import { PageSkeleton } from '../components/PageSkeleton';
+import { EmptyState } from '../components/EmptyState';
+import { useDeals } from '../hooks/useDeals';
+import { useDealsPipeline } from '../hooks/useDealsPipeline';
+import { useSidePanel } from '../contexts/SidePanelContext';
+import { Deal, DealStage } from '../types';
 import {
   Plus,
   Search,
@@ -55,27 +55,31 @@ import {
   Edit2,
   X,
   Check,
-} from "lucide-react";
-import { formatCurrency } from "../utils/format";
-import { ExportButton } from "../components/ExportButton";
-import { apiClient } from "../services/api/client";
-import { useSavedViews } from "../hooks/useSavedViews";
-import { SavedViewsBar } from "../components/filters/SavedViewsBar";
-import { AdvancedFilterPanel, type FilterCondition, type FieldDefinition } from "../components/filters/AdvancedFilterPanel";
+} from 'lucide-react';
+import { formatCurrency } from '../utils/format';
+import { ExportButton } from '../components/ExportButton';
+import { apiClient } from '../services/api/client';
+import { useSavedViews } from '../hooks/useSavedViews';
+import { SavedViewsBar } from '../components/filters/SavedViewsBar';
+import {
+  AdvancedFilterPanel,
+  type FilterCondition,
+  type FieldDefinition,
+} from '../components/filters/AdvancedFilterPanel';
 
 const STAGE_OPTIONS: { value: string; label: string }[] = [
-  { value: "ALL", label: "Todos os Stages" },
-  { value: "QUALIFICATION", label: "Qualificação" },
-  { value: "PROPOSAL", label: "Proposta" },
-  { value: "NEGOTIATION", label: "Negociação" },
-  { value: "CLOSING", label: "Fechamento" },
-  { value: "WON", label: "Ganho" },
-  { value: "LOST", label: "Perdido" },
+  { value: 'ALL', label: 'Todos os Stages' },
+  { value: 'QUALIFICATION', label: 'Qualificação' },
+  { value: 'PROPOSAL', label: 'Proposta' },
+  { value: 'NEGOTIATION', label: 'Negociação' },
+  { value: 'CLOSING', label: 'Fechamento' },
+  { value: 'WON', label: 'Ganho' },
+  { value: 'LOST', label: 'Perdido' },
 ];
 
 function formatDate(date: string | null | undefined): string {
-  if (!date) return "\u2014";
-  return new Date(date).toLocaleDateString("pt-BR");
+  if (!date) return '\u2014';
+  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 export function Deals() {
@@ -103,16 +107,16 @@ export function Deals() {
     saveView,
     updateView: updateSavedView,
     deleteView: deleteSavedView,
-  } = useSavedViews("deals");
+  } = useSavedViews('deals');
 
   // Advanced filter state for deals
   const [advancedConditions, setAdvancedConditions] = useState<FilterCondition[]>([]);
-  const [advancedLogic, setAdvancedLogic] = useState<"AND" | "OR">("AND");
+  const [advancedLogic, setAdvancedLogic] = useState<'AND' | 'OR'>('AND');
 
-  const [viewMode, setViewMode] = useState<"list" | "pipeline">("list");
+  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list');
   // Filtros refletidos na URL (view filtrada compartilhável/bookmarkável)
-  const [search, setSearch] = useQueryState("q", { defaultValue: "" });
-  const [stageFilter, setStageFilter] = useQueryState("stage", { defaultValue: "ALL" });
+  const [search, setSearch] = useQueryState('q', { defaultValue: '' });
+  const [stageFilter, setStageFilter] = useQueryState('stage', { defaultValue: 'ALL' });
   const [formOpen, setFormOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -120,33 +124,40 @@ export function Deals() {
 
   // Pipeline funnel management state
   const [createFunnelOpen, setCreateFunnelOpen] = useState(false);
-  const [newFunnelName, setNewFunnelName] = useState("");
+  const [newFunnelName, setNewFunnelName] = useState('');
   const [deleteFunnelId, setDeleteFunnelId] = useState<string | null>(null);
   const [editingFunnelId, setEditingFunnelId] = useState<string | null>(null);
-  const [editingFunnelName, setEditingFunnelName] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [editingFunnelName, setEditingFunnelName] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSearch = useCallback(() => {
     const filters: any = { page: 1 };
     if (search.trim()) filters.search = search.trim();
-    if (stageFilter !== "ALL") filters.stage = stageFilter;
+    if (stageFilter !== 'ALL') filters.stage = stageFilter;
     fetchDeals(filters);
   }, [search, stageFilter, fetchDeals]);
 
-  const handleStageChange = useCallback((value: string) => {
-    setStageFilter(value);
-    const filters: any = { page: 1 };
-    if (search.trim()) filters.search = search.trim();
-    if (value !== "ALL") filters.stage = value;
-    fetchDeals(filters);
-  }, [search, fetchDeals]);
+  const handleStageChange = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps manuais [search, fetchDeals] são intencionais; setStageFilter (setter estável) é omitido de propósito para não refazer o callback
+    (value: string) => {
+      setStageFilter(value);
+      const filters: any = { page: 1 };
+      if (search.trim()) filters.search = search.trim();
+      if (value !== 'ALL') filters.stage = value;
+      fetchDeals(filters);
+    },
+    [search, fetchDeals]
+  );
 
-  const handlePageChange = useCallback((page: number) => {
-    const filters: any = { page };
-    if (search.trim()) filters.search = search.trim();
-    if (stageFilter !== "ALL") filters.stage = stageFilter;
-    fetchDeals(filters);
-  }, [search, stageFilter, fetchDeals]);
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const filters: any = { page };
+      if (search.trim()) filters.search = search.trim();
+      if (stageFilter !== 'ALL') filters.stage = stageFilter;
+      fetchDeals(filters);
+    },
+    [search, stageFilter, fetchDeals]
+  );
 
   const handleSave = async (data: any) => {
     if (editingDeal) {
@@ -154,13 +165,13 @@ export function Deals() {
     } else {
       // When in pipeline view, auto-assign to current funnel
       const saveData = { ...data };
-      if (viewMode === "pipeline" && currentDealFunnelId && !saveData.funnelId) {
+      if (viewMode === 'pipeline' && currentDealFunnelId && !saveData.funnelId) {
         saveData.funnelId = currentDealFunnelId;
       }
       await createDeal(saveData);
     }
     // Refresh pipeline view
-    if (viewMode === "pipeline" && currentDealFunnelId) {
+    if (viewMode === 'pipeline' && currentDealFunnelId) {
       loadFunnelWithDeals(currentDealFunnelId);
     }
   };
@@ -175,7 +186,7 @@ export function Deals() {
     await deleteDeal(dealToDelete.id);
     setDeleteDialogOpen(false);
     setDealToDelete(null);
-    if (viewMode === "pipeline" && currentDealFunnelId) {
+    if (viewMode === 'pipeline' && currentDealFunnelId) {
       loadFunnelWithDeals(currentDealFunnelId);
     }
   };
@@ -188,23 +199,21 @@ export function Deals() {
   const handleCreateFunnel = async () => {
     if (!newFunnelName.trim()) return;
     const trimmedName = newFunnelName.trim();
-    const duplicate = dealFunnels.find(
-      (f) => f.name.toLowerCase() === trimmedName.toLowerCase()
-    );
+    const duplicate = dealFunnels.find((f) => f.name.toLowerCase() === trimmedName.toLowerCase());
     if (duplicate) {
       setErrorMessage(`Já existe um pipeline com o nome "${duplicate.name}".`);
       return;
     }
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       const newFunnel = await createDealFunnel(trimmedName);
-      setNewFunnelName("");
+      setNewFunnelName('');
       setCreateFunnelOpen(false);
       if (newFunnel) {
         switchDealFunnel(newFunnel.id);
       }
     } catch {
-      setErrorMessage("Erro ao criar pipeline.");
+      setErrorMessage('Erro ao criar pipeline.');
     }
   };
 
@@ -213,14 +222,14 @@ export function Deals() {
     const funnel = dealFunnels.find((f) => f.id === deleteFunnelId);
     if (!funnel) return;
     if (funnel.isDefault) {
-      setErrorMessage("Não é possível deletar o pipeline padrão.");
+      setErrorMessage('Não é possível deletar o pipeline padrão.');
       setDeleteFunnelId(null);
       return;
     }
     try {
       await deleteDealFunnel(deleteFunnelId);
     } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao deletar pipeline.");
+      setErrorMessage(err.message || 'Erro ao deletar pipeline.');
     }
     setDeleteFunnelId(null);
   };
@@ -240,80 +249,115 @@ export function Deals() {
       setErrorMessage(`Já existe um pipeline com o nome "${duplicate.name}".`);
       return;
     }
-    setErrorMessage("");
+    setErrorMessage('');
     try {
       await updateDealFunnel(editingFunnelId, { name: trimmedName });
     } catch {
-      setErrorMessage("Erro ao renomear pipeline.");
+      setErrorMessage('Erro ao renomear pipeline.');
     }
     setEditingFunnelId(null);
-    setEditingFunnelName("");
+    setEditingFunnelName('');
   };
 
   const handleCancelEditFunnel = () => {
     setEditingFunnelId(null);
-    setEditingFunnelName("");
-    setErrorMessage("");
+    setEditingFunnelName('');
+    setErrorMessage('');
   };
 
   // Advanced filter field definitions for deals
   const dealFilterFields: FieldDefinition[] = [
-    { key: "name", label: "Nome", type: "text" },
-    { key: "value", label: "Valor", type: "number" },
-    { key: "stage", label: "Stage", type: "select", options: STAGE_OPTIONS.filter(o => o.value !== "ALL") },
-    { key: "probability", label: "Probabilidade (%)", type: "number" },
-    { key: "expectedCloseDate", label: "Data de Fechamento", type: "date" },
-    { key: "notes", label: "Notas", type: "text" },
+    { key: 'name', label: 'Nome', type: 'text' },
+    { key: 'value', label: 'Valor', type: 'number' },
+    {
+      key: 'stage',
+      label: 'Stage',
+      type: 'select',
+      options: STAGE_OPTIONS.filter((o) => o.value !== 'ALL'),
+    },
+    { key: 'probability', label: 'Probabilidade (%)', type: 'number' },
+    { key: 'expectedCloseDate', label: 'Data de Fechamento', type: 'date' },
+    { key: 'notes', label: 'Notas', type: 'text' },
   ];
 
   // Saved Views helpers
-  const getCurrentDealFilters = useCallback(() => ({
-    search, stageFilter, advancedConditions, advancedLogic,
-  }), [search, stageFilter, advancedConditions, advancedLogic]);
+  const getCurrentDealFilters = useCallback(
+    () => ({
+      search,
+      stageFilter,
+      advancedConditions,
+      advancedLogic,
+    }),
+    [search, stageFilter, advancedConditions, advancedLogic]
+  );
 
-  const applyDealSavedViewFilters = useCallback((filters: Record<string, any>) => {
-    setSearch(filters.search || "");
-    setStageFilter(filters.stageFilter || "ALL");
-    setAdvancedConditions(filters.advancedConditions || []);
-    setAdvancedLogic(filters.advancedLogic || "AND");
-    const newFilters: any = { page: 1 };
-    if (filters.search?.trim()) newFilters.search = filters.search.trim();
-    if (filters.stageFilter && filters.stageFilter !== "ALL") newFilters.stage = filters.stageFilter;
-    fetchDeals(newFilters);
-  }, [fetchDeals]);
+  const applyDealSavedViewFilters = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps manuais [fetchDeals] são intencionais; setSearch/setStageFilter (setters estáveis) são omitidos de propósito
+    (filters: Record<string, any>) => {
+      setSearch(filters.search || '');
+      setStageFilter(filters.stageFilter || 'ALL');
+      setAdvancedConditions(filters.advancedConditions || []);
+      setAdvancedLogic(filters.advancedLogic || 'AND');
+      const newFilters: any = { page: 1 };
+      if (filters.search?.trim()) newFilters.search = filters.search.trim();
+      if (filters.stageFilter && filters.stageFilter !== 'ALL')
+        newFilters.stage = filters.stageFilter;
+      fetchDeals(newFilters);
+    },
+    [fetchDeals]
+  );
 
-  const handleDealViewSelect = useCallback((viewId: string | null) => {
-    selectDealView(viewId);
-    if (viewId === null) {
-      setSearch(""); setStageFilter("ALL");
-      setAdvancedConditions([]); setAdvancedLogic("AND");
-      fetchDeals({ page: 1 });
-    } else {
-      const view = savedViews.find((v) => v.id === viewId);
-      if (view) applyDealSavedViewFilters(view.filters);
-    }
-  }, [selectDealView, savedViews, applyDealSavedViewFilters, fetchDeals]);
+  const handleDealViewSelect = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps manuais são intencionais; setSearch/setStageFilter (setters estáveis) são omitidos de propósito
+    (viewId: string | null) => {
+      selectDealView(viewId);
+      if (viewId === null) {
+        setSearch('');
+        setStageFilter('ALL');
+        setAdvancedConditions([]);
+        setAdvancedLogic('AND');
+        fetchDeals({ page: 1 });
+      } else {
+        const view = savedViews.find((v) => v.id === viewId);
+        if (view) applyDealSavedViewFilters(view.filters);
+      }
+    },
+    [selectDealView, savedViews, applyDealSavedViewFilters, fetchDeals]
+  );
 
-  const handleSaveDealView = useCallback(async (name: string, options?: { isDefault?: boolean; isShared?: boolean }) => {
-    await saveView(name, getCurrentDealFilters(), options);
-  }, [saveView, getCurrentDealFilters]);
+  const handleSaveDealView = useCallback(
+    async (name: string, options?: { isDefault?: boolean; isShared?: boolean }) => {
+      await saveView(name, getCurrentDealFilters(), options);
+    },
+    [saveView, getCurrentDealFilters]
+  );
 
-  const handleUpdateDealView = useCallback(async (id: string, data: { name?: string; isDefault?: boolean; isShared?: boolean }) => {
-    await updateSavedView(id, data);
-  }, [updateSavedView]);
+  const handleUpdateDealView = useCallback(
+    async (id: string, data: { name?: string; isDefault?: boolean; isShared?: boolean }) => {
+      await updateSavedView(id, data);
+    },
+    [updateSavedView]
+  );
 
-  const handleDeleteDealView = useCallback(async (id: string) => {
-    await deleteSavedView(id);
-  }, [deleteSavedView]);
+  const handleDeleteDealView = useCallback(
+    async (id: string) => {
+      await deleteSavedView(id);
+    },
+    [deleteSavedView]
+  );
 
   // Column defs for the deals list table (handlers use stable setters)
   const dealTableColumns = useMemo(
-    () => getDealColumns({
-      onEdit: handleEdit,
-      onDelete: (deal: Deal) => { setDealToDelete(deal); setDeleteDialogOpen(true); },
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    () =>
+      getDealColumns({
+        onEdit: handleEdit,
+        onDelete: (deal: Deal) => {
+          setDealToDelete(deal);
+          setDeleteDialogOpen(true);
+        },
+      }),
+
+    []
   );
 
   if (loading && deals.length === 0) {
@@ -333,15 +377,19 @@ export function Deals() {
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
-            {viewMode === "list" && (
+            {viewMode === 'list' && (
               <>
                 <div className="relative flex-1 max-w-sm">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    aria-hidden="true"
+                  />
                   <Input
                     placeholder="Buscar deals..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="pl-9"
                     aria-label="Buscar deals"
                   />
@@ -351,8 +399,10 @@ export function Deals() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {STAGE_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    {STAGE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -364,31 +414,31 @@ export function Deals() {
             {/* View toggle */}
             <div className="flex items-center border border-gray-300 rounded-lg p-1 bg-gray-50">
               <button
-                onClick={() => setViewMode("list")}
-                className={`p-1.5 rounded ${viewMode === "list" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                 title="Lista"
                 aria-label="Visualização em lista"
-                aria-pressed={viewMode === "list"}
+                aria-pressed={viewMode === 'list'}
               >
                 <List size={16} aria-hidden="true" />
               </button>
               <button
-                onClick={() => setViewMode("pipeline")}
-                className={`p-1.5 rounded ${viewMode === "pipeline" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}
+                onClick={() => setViewMode('pipeline')}
+                className={`p-1.5 rounded ${viewMode === 'pipeline' ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                 title="Pipeline"
                 aria-label="Visualização em pipeline"
-                aria-pressed={viewMode === "pipeline"}
+                aria-pressed={viewMode === 'pipeline'}
               >
                 <LayoutGrid size={16} aria-hidden="true" />
               </button>
             </div>
 
-            {viewMode === "list" && (
+            {viewMode === 'list' && (
               <ExportButton
                 onExport={async (format) => {
                   const filters: Record<string, string> = {};
                   if (search.trim()) filters.search = search.trim();
-                  if (stageFilter !== "ALL") filters.stage = stageFilter;
+                  if (stageFilter !== 'ALL') filters.stage = stageFilter;
                   return apiClient.exportDealsDownload(format, filters);
                 }}
                 filename="deals-export"
@@ -396,7 +446,13 @@ export function Deals() {
               />
             )}
 
-            <Button onClick={() => { setEditingDeal(null); setFormOpen(true); }} className="gap-2">
+            <Button
+              onClick={() => {
+                setEditingDeal(null);
+                setFormOpen(true);
+              }}
+              className="gap-2"
+            >
               <Plus size={16} />
               Novo Deal
             </Button>
@@ -404,7 +460,7 @@ export function Deals() {
         </div>
 
         {/* Saved Views Bar */}
-        {viewMode === "list" && (
+        {viewMode === 'list' && (
           <SavedViewsBar
             views={savedViews}
             activeViewId={dealsActiveViewId}
@@ -416,7 +472,7 @@ export function Deals() {
         )}
 
         {/* Advanced Filter Panel */}
-        {viewMode === "list" && (
+        {viewMode === 'list' && (
           <AdvancedFilterPanel
             conditions={advancedConditions}
             onConditionsChange={setAdvancedConditions}
@@ -424,12 +480,15 @@ export function Deals() {
             onLogicChange={setAdvancedLogic}
             fields={dealFilterFields}
             onApply={handleSearch}
-            onClear={() => { setAdvancedConditions([]); handleSearch(); }}
+            onClear={() => {
+              setAdvancedConditions([]);
+              handleSearch();
+            }}
           />
         )}
 
         {/* Pipeline Funnel Selector (shown only in pipeline view) */}
-        {viewMode === "pipeline" && (
+        {viewMode === 'pipeline' && (
           <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
@@ -441,39 +500,52 @@ export function Deals() {
                         value={editingFunnelName}
                         onChange={(e) => {
                           setEditingFunnelName(e.target.value);
-                          setErrorMessage("");
+                          setErrorMessage('');
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") handleSaveEditFunnel();
-                          if (e.key === "Escape") handleCancelEditFunnel();
+                          if (e.key === 'Enter') handleSaveEditFunnel();
+                          if (e.key === 'Escape') handleCancelEditFunnel();
                         }}
-                        className={`h-8 text-sm flex-1 ${errorMessage ? "border-red-500" : ""}`}
+                        className={`h-8 text-sm flex-1 ${errorMessage ? 'border-red-500' : ''}`}
+                        // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao entrar em modo de edição inline
                         autoFocus
                       />
-                      <Button size="sm" variant="ghost" onClick={handleSaveEditFunnel} className="h-8 w-8 p-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleSaveEditFunnel}
+                        className="h-8 w-8 p-0"
+                      >
                         <Check size={14} />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={handleCancelEditFunnel} className="h-8 w-8 p-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCancelEditFunnel}
+                        className="h-8 w-8 p-0"
+                      >
                         <X size={14} />
                       </Button>
                     </div>
                   ) : (
                     <>
                       <select
-                        value={currentDealFunnelId || ""}
+                        value={currentDealFunnelId || ''}
                         onChange={(e) => switchDealFunnel(e.target.value)}
                         className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       >
                         {dealFunnels.map((funnel) => (
                           <option key={funnel.id} value={funnel.id}>
-                            {funnel.name} {funnel.isDefault ? "(Padrão)" : ""}
+                            {funnel.name} {funnel.isDefault ? '(Padrão)' : ''}
                           </option>
                         ))}
                       </select>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleStartEditFunnel(currentDealFunnelId!, currentDealFunnel?.name || "")}
+                        onClick={() =>
+                          handleStartEditFunnel(currentDealFunnelId!, currentDealFunnel?.name || '')
+                        }
                         className="h-8 w-8 p-0 hover:bg-gray-200"
                         title="Renomear pipeline"
                       >
@@ -512,7 +584,7 @@ export function Deals() {
         )}
 
         {/* Content */}
-        {viewMode === "pipeline" ? (
+        {viewMode === 'pipeline' ? (
           pipelineLoading ? (
             <PageSkeleton type="table" />
           ) : (
@@ -537,14 +609,21 @@ export function Deals() {
                   emptyState={
                     <EmptyState
                       icon={Handshake}
-                      title={search.trim() || stageFilter !== "ALL" ? "Nenhum deal encontrado" : "Nenhum deal criado"}
+                      title={
+                        search.trim() || stageFilter !== 'ALL'
+                          ? 'Nenhum deal encontrado'
+                          : 'Nenhum deal criado'
+                      }
                       description={
-                        search.trim() || stageFilter !== "ALL"
-                          ? "Tente ajustar os filtros ou termos de busca"
-                          : "Comece adicionando seu primeiro deal para gerenciar seu pipeline de vendas"
+                        search.trim() || stageFilter !== 'ALL'
+                          ? 'Tente ajustar os filtros ou termos de busca'
+                          : 'Comece adicionando seu primeiro deal para gerenciar seu pipeline de vendas'
                       }
                       actionLabel="Novo Deal"
-                      onAction={() => { setEditingDeal(null); setFormOpen(true); }}
+                      onAction={() => {
+                        setEditingDeal(null);
+                        setFormOpen(true);
+                      }}
                     />
                   }
                 />
@@ -554,7 +633,8 @@ export function Deals() {
               {pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
                   <span className="text-sm text-gray-600">
-                    {pagination.total} deal{pagination.total !== 1 ? "s" : ""} &bull; Página {pagination.page} de {pagination.totalPages}
+                    {pagination.total} deal{pagination.total !== 1 ? 's' : ''} &bull; Página{' '}
+                    {pagination.page} de {pagination.totalPages}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -584,10 +664,13 @@ export function Deals() {
       {/* Deal Form Modal */}
       <DealForm
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditingDeal(null); }}
+        onClose={() => {
+          setFormOpen(false);
+          setEditingDeal(null);
+        }}
         onSave={handleSave}
         deal={editingDeal}
-        defaultFunnelId={viewMode === "pipeline" ? currentDealFunnelId || undefined : undefined}
+        defaultFunnelId={viewMode === 'pipeline' ? currentDealFunnelId || undefined : undefined}
       />
 
       {/* Delete Deal Confirmation */}
@@ -596,7 +679,8 @@ export function Deals() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Deal</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o deal &quot;{dealToDelete?.name}&quot;? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o deal &quot;{dealToDelete?.name}&quot;? Esta ação não
+              pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -612,31 +696,39 @@ export function Deals() {
       <Dialog open={createFunnelOpen} onOpenChange={setCreateFunnelOpen}>
         <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader className="text-left space-y-0 pb-4">
-            <DialogTitle className="text-lg font-semibold text-gray-900">Criar Novo Pipeline</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-gray-900">
+              Criar Novo Pipeline
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-2 block">
+              <label
+                htmlFor="new-funnel-name"
+                className="text-sm font-medium text-gray-900 mb-2 block"
+              >
                 Nome do Pipeline
               </label>
               <Input
+                id="new-funnel-name"
                 value={newFunnelName}
                 onChange={(e) => {
                   setNewFunnelName(e.target.value);
-                  setErrorMessage("");
+                  setErrorMessage('');
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateFunnel();
+                  if (e.key === 'Enter') handleCreateFunnel();
                 }}
                 placeholder="Ex: Enterprise Sales"
-                className={errorMessage && !editingFunnelId ? "border-red-500" : ""}
+                className={errorMessage && !editingFunnelId ? 'border-red-500' : ''}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- foco inicial intencional ao abrir o diálogo de criação de pipeline
                 autoFocus
               />
               {errorMessage && !editingFunnelId && (
                 <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
               )}
               <p className="text-xs text-gray-600 mt-2">
-                O pipeline será criado com colunas padrão (Qualificação, Proposta, Negociação, Fechamento, Ganho, Perdido).
+                O pipeline será criado com colunas padrão (Qualificação, Proposta, Negociação,
+                Fechamento, Ganho, Perdido).
               </p>
             </div>
           </div>
@@ -645,8 +737,8 @@ export function Deals() {
               variant="outline"
               onClick={() => {
                 setCreateFunnelOpen(false);
-                setNewFunnelName("");
-                setErrorMessage("");
+                setNewFunnelName('');
+                setErrorMessage('');
               }}
             >
               Cancelar
@@ -663,39 +755,45 @@ export function Deals() {
       </Dialog>
 
       {/* Delete Pipeline Alert Dialog */}
-      <AlertDialog open={deleteFunnelId !== null} onOpenChange={(open) => !open && setDeleteFunnelId(null)}>
+      <AlertDialog
+        open={deleteFunnelId !== null}
+        onOpenChange={(open) => !open && setDeleteFunnelId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Pipeline</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteFunnelId && (() => {
-                const funnel = dealFunnels.find((f) => f.id === deleteFunnelId);
-                if (funnel?.isDefault) {
-                  return (
-                    <span className="text-red-600">
-                      Não é possível deletar o pipeline padrão.
-                    </span>
-                  );
-                }
-                return `Tem certeza que deseja deletar o pipeline "${funnel?.name}"?`;
-              })()}
+              {deleteFunnelId &&
+                (() => {
+                  const funnel = dealFunnels.find((f) => f.id === deleteFunnelId);
+                  if (funnel?.isDefault) {
+                    return (
+                      <span className="text-red-600">
+                        Não é possível deletar o pipeline padrão.
+                      </span>
+                    );
+                  }
+                  return `Tem certeza que deseja deletar o pipeline "${funnel?.name}"?`;
+                })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteFunnelId(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            {deleteFunnelId && (() => {
-              const funnel = dealFunnels.find((f) => f.id === deleteFunnelId);
-              return funnel && !funnel.isDefault && (
-                <AlertDialogAction
-                  onClick={handleDeleteFunnel}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Deletar
-                </AlertDialogAction>
-              );
-            })()}
+            <AlertDialogCancel onClick={() => setDeleteFunnelId(null)}>Cancelar</AlertDialogCancel>
+            {deleteFunnelId &&
+              (() => {
+                const funnel = dealFunnels.find((f) => f.id === deleteFunnelId);
+                return (
+                  funnel &&
+                  !funnel.isDefault && (
+                    <AlertDialogAction
+                      onClick={handleDeleteFunnel}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Deletar
+                    </AlertDialogAction>
+                  )
+                );
+              })()}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

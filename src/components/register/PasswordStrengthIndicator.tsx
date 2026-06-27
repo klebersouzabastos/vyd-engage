@@ -1,6 +1,9 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
-import { calculatePasswordStrength, PasswordRequirement } from '../../utils/validation/passwordStrength';
+import {
+  calculatePasswordStrength,
+  PasswordRequirement,
+} from '../../utils/validation/passwordStrength';
 import { cn } from '../ui/utils';
 
 interface PasswordStrengthIndicatorProps {
@@ -56,10 +59,7 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
         </div>
         <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
           <div
-            className={cn(
-              'h-full transition-all duration-300 ease-out',
-              colors.bar
-            )}
+            className={cn('h-full transition-all duration-300 ease-out', colors.bar)}
             style={{ width: `${strength.percentage}%` }}
             role="progressbar"
             aria-valuenow={strength.percentage}
@@ -73,28 +73,13 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
       {/* Lista de requisitos */}
       <div className={cn('rounded-md p-2 space-y-1.5', colors.bg)}>
         {strength.requirements.map((requirement: PasswordRequirement, index: number) => (
-          <div
-            key={index}
-            className="flex items-center gap-2 text-xs"
-          >
+          <div key={index} className="flex items-center gap-2 text-xs">
             {requirement.met ? (
-              <Check
-                size={14}
-                className={cn('flex-shrink-0', colors.text)}
-                aria-hidden="true"
-              />
+              <Check size={14} className={cn('flex-shrink-0', colors.text)} aria-hidden="true" />
             ) : (
-              <X
-                size={14}
-                className="flex-shrink-0 text-gray-400"
-                aria-hidden="true"
-              />
+              <X size={14} className="flex-shrink-0 text-gray-400" aria-hidden="true" />
             )}
-            <span
-              className={cn(
-                requirement.met ? colors.text : 'text-gray-500'
-              )}
-            >
+            <span className={cn(requirement.met ? colors.text : 'text-gray-500')}>
               {requirement.label}
             </span>
           </div>
@@ -103,10 +88,3 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
     </div>
   );
 }
-
-
-
-
-
-
-

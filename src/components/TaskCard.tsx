@@ -1,7 +1,21 @@
-import { Task } from "../types";
-import { Checkbox } from "./ui/checkbox";
-import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2, Clock, Circle, XCircle, AlertTriangle, ArrowUp, ArrowRight, ArrowDown, Flame } from "lucide-react";
-import { formatRelativeTime } from "../utils/interactions";
+import { Task } from '../types';
+import { Checkbox } from './ui/checkbox';
+import {
+  Edit2,
+  Trash2,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Circle,
+  XCircle,
+  AlertTriangle,
+  ArrowUp,
+  ArrowRight,
+  ArrowDown,
+  Flame,
+} from 'lucide-react';
+import { formatRelativeTime } from '../utils/interactions';
 
 interface TaskCardProps {
   task: Task;
@@ -13,74 +27,90 @@ interface TaskCardProps {
   showCheckbox?: boolean;
 }
 
-export const getPriorityColor = (priority: Task["priority"]) => {
+export const getPriorityColor = (priority: Task['priority']) => {
   switch (priority) {
-    case "URGENT":
-      return "badge-priority-urgent";
-    case "HIGH":
-      return "badge-priority-high";
-    case "MEDIUM":
-      return "badge-priority-medium";
-    case "LOW":
-      return "badge-priority-low";
+    case 'URGENT':
+      return 'badge-priority-urgent';
+    case 'HIGH':
+      return 'badge-priority-high';
+    case 'MEDIUM':
+      return 'badge-priority-medium';
+    case 'LOW':
+      return 'badge-priority-low';
     default:
-      return "bg-gray-100 text-gray-700 border-gray-200";
+      return 'bg-gray-100 text-gray-700 border-gray-200';
   }
 };
 
-export const getPriorityLabel = (priority: Task["priority"]) => {
+export const getPriorityLabel = (priority: Task['priority']) => {
   switch (priority) {
-    case "URGENT":
-      return "Urgente";
-    case "HIGH":
-      return "Alta";
-    case "MEDIUM":
-      return "Média";
-    case "LOW":
-      return "Baixa";
+    case 'URGENT':
+      return 'Urgente';
+    case 'HIGH':
+      return 'Alta';
+    case 'MEDIUM':
+      return 'Média';
+    case 'LOW':
+      return 'Baixa';
     default:
       return priority;
   }
 };
 
-export const getPriorityIcon = (priority: Task["priority"]) => {
+export const getPriorityIcon = (priority: Task['priority']) => {
   switch (priority) {
-    case "URGENT":
+    case 'URGENT':
       return <Flame size={12} className="inline mr-0.5" aria-hidden="true" />;
-    case "HIGH":
+    case 'HIGH':
       return <ArrowUp size={12} className="inline mr-0.5" aria-hidden="true" />;
-    case "MEDIUM":
+    case 'MEDIUM':
       return <ArrowRight size={12} className="inline mr-0.5" aria-hidden="true" />;
-    case "LOW":
+    case 'LOW':
       return <ArrowDown size={12} className="inline mr-0.5" aria-hidden="true" />;
     default:
       return null;
   }
 };
 
-export const getStatusInfo = (status: Task["status"]) => {
+export const getStatusInfo = (status: Task['status']) => {
   switch (status) {
-    case "COMPLETED":
-      return { icon: <CheckCircle2 size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Concluída", className: "bg-green-100 text-green-700 border-green-200" };
-    case "IN_PROGRESS":
-      return { icon: <Clock size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Em andamento", className: "bg-blue-100 text-blue-700 border-blue-200" };
-    case "PENDING":
-      return { icon: <Circle size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Pendente", className: "bg-gray-100 text-gray-700 border-gray-200" };
-    case "CANCELLED":
-      return { icon: <XCircle size={12} className="inline mr-0.5" aria-hidden="true" />, label: "Cancelada", className: "bg-red-100 text-red-600 border-red-200" };
+    case 'COMPLETED':
+      return {
+        icon: <CheckCircle2 size={12} className="inline mr-0.5" aria-hidden="true" />,
+        label: 'Concluída',
+        className: 'bg-green-100 text-green-700 border-green-200',
+      };
+    case 'IN_PROGRESS':
+      return {
+        icon: <Clock size={12} className="inline mr-0.5" aria-hidden="true" />,
+        label: 'Em andamento',
+        className: 'bg-blue-100 text-blue-700 border-blue-200',
+      };
+    case 'PENDING':
+      return {
+        icon: <Circle size={12} className="inline mr-0.5" aria-hidden="true" />,
+        label: 'Pendente',
+        className: 'bg-gray-100 text-gray-700 border-gray-200',
+      };
+    case 'CANCELLED':
+      return {
+        icon: <XCircle size={12} className="inline mr-0.5" aria-hidden="true" />,
+        label: 'Cancelada',
+        className: 'bg-red-100 text-red-600 border-red-200',
+      };
     default:
-      return { icon: null, label: status, className: "bg-gray-100 text-gray-700 border-gray-200" };
+      return { icon: null, label: status, className: 'bg-gray-100 text-gray-700 border-gray-200' };
   }
 };
 
-export function TaskCard({ 
-  task, 
-  onToggle, 
-  onEdit, 
-  onDelete, 
+export function TaskCard({
+  task,
+  onToggle,
+  onEdit,
+  onDelete,
   selected = false,
   onSelect,
-  showCheckbox = false
+  showCheckbox = false,
 }: TaskCardProps) {
   const now = new Date();
   const isCompleted = task.status === 'COMPLETED';
@@ -92,14 +122,15 @@ export function TaskCard({
     <div
       className={`
         p-4 border rounded-lg transition-all
-        ${selected ? "bg-blue-50 border-blue-300" : ""}
-        ${isCompleted
-          ? "bg-gray-100 border-gray-300 opacity-60"
-          : isOverdue
-          ? "bg-red-50 border-red-200"
-          : isDueToday
-          ? "bg-yellow-50 border-yellow-200"
-          : "bg-white border-gray-300 hover:shadow-md"
+        ${selected ? 'bg-blue-50 border-blue-300' : ''}
+        ${
+          isCompleted
+            ? 'bg-gray-100 border-gray-300 opacity-60'
+            : isOverdue
+              ? 'bg-red-50 border-red-200'
+              : isDueToday
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-white border-gray-300 hover:shadow-md'
         }
       `}
     >
@@ -117,18 +148,19 @@ export function TaskCard({
           checked={isCompleted}
           onCheckedChange={onToggle}
           className="mt-1"
-          aria-label={isCompleted ? `Marcar tarefa "${task.title}" como pendente` : `Marcar tarefa "${task.title}" como concluída`}
+          aria-label={
+            isCompleted
+              ? `Marcar tarefa "${task.title}" como pendente`
+              : `Marcar tarefa "${task.title}" como concluída`
+          }
         />
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h4
               className={`
                 font-medium
-                ${isCompleted
-                  ? "text-gray-400 line-through"
-                  : "text-gray-900"
-                }
+                ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}
               `}
             >
               {task.title}
@@ -155,10 +187,7 @@ export function TaskCard({
             <p
               className={`
                 text-sm mb-2
-                ${isCompleted
-                  ? "text-gray-400"
-                  : "text-gray-600"
-                }
+                ${isCompleted ? 'text-gray-400' : 'text-gray-600'}
               `}
             >
               {task.description}
@@ -170,28 +199,25 @@ export function TaskCard({
               <Calendar
                 size={14}
                 className={
-                  isOverdue
-                    ? "text-red-600"
-                    : isDueToday
-                    ? "text-yellow-600"
-                    : "text-gray-600"
+                  isOverdue ? 'text-red-600' : isDueToday ? 'text-yellow-600' : 'text-gray-600'
                 }
               />
               <span
                 className={`
                   text-xs
-                  ${isOverdue
-                    ? "text-red-600 font-medium"
-                    : isDueToday
-                    ? "text-yellow-600 font-medium"
-                    : "text-gray-600"
+                  ${
+                    isOverdue
+                      ? 'text-red-600 font-medium'
+                      : isDueToday
+                        ? 'text-yellow-600 font-medium'
+                        : 'text-gray-600'
                   }
                 `}
               >
                 {isOverdue && dueDate ? (
                   <>
                     <AlertTriangle size={12} className="inline mr-1" aria-hidden="true" />
-                    Vencida: {dueDate.toLocaleDateString("pt-BR")}
+                    Vencida: {dueDate.toLocaleDateString('pt-BR')}
                   </>
                 ) : isDueToday ? (
                   <>
@@ -201,7 +227,7 @@ export function TaskCard({
                 ) : dueDate ? (
                   `Vence em ${formatRelativeTime(task.dueDate!)}`
                 ) : (
-                  "Sem data de vencimento"
+                  'Sem data de vencimento'
                 )}
               </span>
             </div>
@@ -238,4 +264,3 @@ export function TaskCard({
     </div>
   );
 }
-

@@ -1,64 +1,58 @@
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Checkbox } from "./ui/checkbox";
-import { Clock, Mail, MessageSquare } from "lucide-react";
-import { TagSelector } from "./TagSelector";
-import { useCustomFields } from "../contexts/CustomFieldsContext";
-import { CustomFieldInput } from "./CustomFieldInput";
-import { InteractionTimeline } from "./InteractionTimeline";
-import { apiClient } from "../services/api/client";
-import { TasksList } from "./TasksList";
-import { useNotifications } from "../contexts/NotificationContext";
-import { calculateLeadScore, getLeadScore, saveLeadScore } from "../utils/leadScoring";
-import { LeadScoreBadge } from "./LeadScoreBadge";
-import { Lead } from "../types";
-import { CommentsSection } from "./CommentsSection";
-import { useLeads } from "../hooks/useLeads";
-import { useFunnels } from "../hooks/useFunnels";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Checkbox } from './ui/checkbox';
+import { Clock, Mail, MessageSquare } from 'lucide-react';
+import { TagSelector } from './TagSelector';
+import { useCustomFields } from '../contexts/CustomFieldsContext';
+import { CustomFieldInput } from './CustomFieldInput';
+import { InteractionTimeline } from './InteractionTimeline';
+import { apiClient } from '../services/api/client';
+import { TasksList } from './TasksList';
+import { useNotifications } from '../contexts/NotificationContext';
+import { calculateLeadScore, getLeadScore, saveLeadScore } from '../utils/leadScoring';
+import { LeadScoreBadge } from './LeadScoreBadge';
+import { Lead } from '../types';
+import { CommentsSection } from './CommentsSection';
+import { useLeads } from '../hooks/useLeads';
+import { useFunnels } from '../hooks/useFunnels';
+import { toast } from 'sonner';
 
 const DEFAULT_PIPELINE_COLUMNS = [
-  { id: "novo", title: "Novo" },
-  { id: "contato", title: "Em Contato" },
-  { id: "fechado", title: "Fechado" },
+  { id: 'novo', title: 'Novo' },
+  { id: 'contato', title: 'Em Contato' },
+  { id: 'fechado', title: 'Fechado' },
 ];
 
 interface Automation {
   id: number;
   name: string;
-  type: "whatsapp" | "email";
-  status: "active" | "paused";
+  type: 'whatsapp' | 'email';
+  status: 'active' | 'paused';
 }
 
 const availableAutomations: Automation[] = [
   {
     id: 1,
-    name: "Boas-vindas WhatsApp",
-    type: "whatsapp",
-    status: "active",
+    name: 'Boas-vindas WhatsApp',
+    type: 'whatsapp',
+    status: 'active',
   },
   {
     id: 2,
-    name: "Follow-up E-mail",
-    type: "email",
-    status: "active",
+    name: 'Follow-up E-mail',
+    type: 'email',
+    status: 'active',
   },
   {
     id: 3,
-    name: "Recuperação de Leads Perdidos",
-    type: "whatsapp",
-    status: "paused",
+    name: 'Recuperação de Leads Perdidos',
+    type: 'whatsapp',
+    status: 'paused',
   },
 ];
 
@@ -74,37 +68,42 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
   const { createLead, updateLead } = useLeads();
   const { currentFunnel } = useFunnels();
   const [interactions, setInteractions] = useState<any[]>([]);
-  const [leadScore, setLeadScore] = useState<{ score: number; factors: Array<{ type: string; description: string; points: number }> } | null>(null);
-  const pipelineColumns = currentFunnel?.columns?.map(c => ({ id: c.id, title: c.title })) || DEFAULT_PIPELINE_COLUMNS;
+  const [leadScore, setLeadScore] = useState<{
+    score: number;
+    factors: Array<{ type: string; description: string; points: number }>;
+  } | null>(null);
+  const pipelineColumns =
+    currentFunnel?.columns?.map((c) => ({ id: c.id, title: c.title })) || DEFAULT_PIPELINE_COLUMNS;
   const [formData, setFormData] = useState({
-    name: lead?.name || "",
-    email: lead?.email || "",
-    phone: lead?.phone || "",
-    source: lead?.source || "manual",
-    status: lead?.status || pipelineColumns[0]?.id || "novo",
-    automations: lead?.automations || [] as number[],
-    tags: lead?.tags || [] as string[],
-    customFields: lead?.customFields || {} as Record<string, any>,
+    name: lead?.name || '',
+    email: lead?.email || '',
+    phone: lead?.phone || '',
+    source: lead?.source || 'manual',
+    status: lead?.status || pipelineColumns[0]?.id || 'novo',
+    automations: lead?.automations || ([] as number[]),
+    tags: lead?.tags || ([] as string[]),
+    customFields: lead?.customFields || ({} as Record<string, any>),
   });
   const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const columns = pipelineColumns;
     // Garantir que sempre há pelo menos uma coluna
-    const defaultStatus = columns.length > 0 ? columns[0].id : "novo";
-    
+    const defaultStatus = columns.length > 0 ? columns[0].id : 'novo';
+
     if (lead) {
       // Garantir que o lead tem um status válido
-      const validStatus = columns.some(col => col.id === lead.status) 
-        ? lead.status 
+      const validStatus = columns.some((col) => col.id === lead.status)
+        ? lead.status
         : defaultStatus;
-      
+
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza formData a partir do prop lead/open ao abrir o modal
       setFormData({
-        name: lead.name || "",
-        email: lead.email || "",
-        phone: lead.phone || "",
-        source: lead.source || "manual",
-        status: validStatus as "novo" | "contato" | "fechado" | "perdido",
+        name: lead.name || '',
+        email: lead.email || '',
+        phone: lead.phone || '',
+        source: lead.source || 'manual',
+        status: validStatus as 'novo' | 'contato' | 'fechado' | 'perdido',
         automations: lead.automations || [],
         tags: lead.tags || [],
         customFields: lead.customFields || {},
@@ -117,27 +116,27 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           defaultCustomFields[field.id] = field.defaultValue;
         }
       });
-      
+
       setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        source: "manual",
-        status: defaultStatus as "novo" | "contato" | "fechado" | "perdido",
+        name: '',
+        email: '',
+        phone: '',
+        source: 'manual',
+        status: defaultStatus as 'novo' | 'contato' | 'fechado' | 'perdido',
         automations: [],
         tags: [],
         customFields: defaultCustomFields,
       });
     }
     setCustomFieldErrors({});
-    
+
     // Carregar interações do lead
     const loadInteractions = async () => {
       if (lead?.id) {
         try {
           const interactionsData = await apiClient.getLeadInteractions(String(lead.id));
           setInteractions(Array.isArray(interactionsData) ? interactionsData : []);
-          
+
           // Calcular score do lead
           const leadWithInteractions: Lead = {
             ...lead,
@@ -147,7 +146,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           saveLeadScore(score);
           setLeadScore({ score: score.score, factors: score.factors });
         } catch (error) {
-          console.error("Erro ao carregar interações:", error);
+          console.error('Erro ao carregar interações:', error);
           setInteractions([]);
           setLeadScore(null);
         }
@@ -156,7 +155,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
         setLeadScore(null);
       }
     };
-    
+
     loadInteractions();
   }, [lead, open, fields]);
 
@@ -171,8 +170,8 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
       });
       setInteractions([newInteraction, ...interactions]);
     } catch (error) {
-      console.error("Erro ao criar interação:", error);
-      toast.error("Erro ao criar interação");
+      console.error('Erro ao criar interação:', error);
+      toast.error('Erro ao criar interação');
     }
   };
 
@@ -182,14 +181,14 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
       await apiClient.deleteInteraction(interactionId);
       setInteractions(interactions.filter((i) => i.id !== interactionId));
     } catch (error) {
-      console.error("Erro ao deletar interação:", error);
-      toast.error("Erro ao deletar interação");
+      console.error('Erro ao deletar interação:', error);
+      toast.error('Erro ao deletar interação');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validar campos customizados
     const errors: Record<string, string> = {};
     fields.forEach((field) => {
@@ -213,20 +212,20 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           pipelineColumns.forEach((col) => {
             statusLabels[col.id] = col.title;
           });
-          
+
           const oldStatusLabel = statusLabels[lead.status] || lead.status;
           const newStatusLabel = statusLabels[formData.status] || formData.status;
-          
+
           await apiClient.createInteraction({
             leadId: String(lead.id),
-            type: "status_change",
+            type: 'status_change',
             content: `Status alterado de "${oldStatusLabel}" para "${newStatusLabel}"`,
             metadata: {
               oldStatus: lead.status,
               newStatus: formData.status,
             },
           });
-          
+
           // Recarregar interações
           const interactionsData = await apiClient.getLeadInteractions(String(lead.id));
           setInteractions(Array.isArray(interactionsData) ? interactionsData : []);
@@ -253,27 +252,27 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           customFields: formData.customFields,
           tags: formData.tags.map((tagId: string) => ({ id: tagId })),
         });
-        
+
         // Criar interação inicial
         await apiClient.createInteraction({
           leadId: String(newLead.id),
-          type: "note",
-          content: "Lead criado",
+          type: 'note',
+          content: 'Lead criado',
         });
 
         // Criar notificação
         addNotification({
-          type: "new_lead",
-          title: "Novo Lead Criado",
+          type: 'new_lead',
+          title: 'Novo Lead Criado',
           message: `Lead "${formData.name}" foi adicionado ao sistema`,
           link: `/app/leads`,
         });
       }
-      
+
       onClose();
     } catch (error) {
-      console.error("Erro ao salvar lead:", error);
-      toast.error("Erro ao salvar lead");
+      console.error('Erro ao salvar lead:', error);
+      toast.error('Erro ao salvar lead');
     }
   };
 
@@ -289,7 +288,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
     if (customFieldErrors[fieldId]) {
       setCustomFieldErrors({
         ...customFieldErrors,
-        [fieldId]: "",
+        [fieldId]: '',
       });
     }
   };
@@ -312,25 +311,19 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
   };
 
   const activities = [
-    { id: 1, type: "note", text: "Lead entrou em contato via formulário", time: "Há 2 horas" },
-    { id: 2, type: "automation", text: "WhatsApp de boas-vindas enviado", time: "Há 2 horas" },
-    { id: 3, type: "status", text: "Status alterado para Em Contato", time: "Há 3 horas" },
+    { id: 1, type: 'note', text: 'Lead entrou em contato via formulário', time: 'Há 2 horas' },
+    { id: 2, type: 'automation', text: 'WhatsApp de boas-vindas enviado', time: 'Há 2 horas' },
+    { id: 3, type: 'status', text: 'Status alterado para Em Contato', time: 'Há 3 horas' },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent
-        className="flex flex-col overflow-hidden p-0 w-[900px] h-[700px] max-w-[90vw] max-h-[90vh]"
-      >
+      <DialogContent className="flex flex-col overflow-hidden p-0 w-[900px] h-[700px] max-w-[90vw] max-h-[90vh]">
         <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-300 px-6 pt-6">
           <div className="flex items-center justify-between">
-            <DialogTitle>{lead ? "Editar Lead" : "Novo Lead"}</DialogTitle>
+            <DialogTitle>{lead ? 'Editar Lead' : 'Novo Lead'}</DialogTitle>
             {leadScore && (
-              <LeadScoreBadge 
-                score={leadScore.score} 
-                showDetails 
-                factors={leadScore.factors}
-              />
+              <LeadScoreBadge score={leadScore.score} showDetails factors={leadScore.factors} />
             )}
           </div>
         </DialogHeader>
@@ -338,9 +331,15 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
         <div className="flex-1 overflow-auto min-h-0 py-4 px-6">
           <Tabs defaultValue="info" className="mt-4">
             <TabsList className="inline-flex w-full">
-              <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
-              <TabsTrigger value="activity" className="flex-1">Atividades</TabsTrigger>
-              <TabsTrigger value="comments" className="flex-1">Comentários</TabsTrigger>
+              <TabsTrigger value="info" className="flex-1">
+                Informações
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="flex-1">
+                Atividades
+              </TabsTrigger>
+              <TabsTrigger value="comments" className="flex-1">
+                Comentários
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="info" className="space-y-4 mt-4">
@@ -433,36 +432,36 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                             <div
                               className={`
                                 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                                ${automation.type === "whatsapp"
-                                  ? "bg-green-100 text-green-600"
-                                  : "bg-blue-100 text-blue-600"
+                                ${
+                                  automation.type === 'whatsapp'
+                                    ? 'bg-green-100 text-green-600'
+                                    : 'bg-blue-100 text-blue-600'
                                 }
                               `}
                             >
-                              {automation.type === "whatsapp" ? (
+                              {automation.type === 'whatsapp' ? (
                                 <MessageSquare size={16} />
                               ) : (
                                 <Mail size={16} />
                               )}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">
-                                {automation.name}
-                              </p>
+                              <p className="text-sm font-medium text-gray-900">{automation.name}</p>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span
                                   className={`
                                     text-xs px-1.5 py-0.5 rounded
-                                    ${automation.status === "active"
-                                      ? "bg-green-50 text-green-700"
-                                      : "bg-gray-100 text-gray-600"
+                                    ${
+                                      automation.status === 'active'
+                                        ? 'bg-green-50 text-green-700'
+                                        : 'bg-gray-100 text-gray-600'
                                     }
                                   `}
                                 >
-                                  {automation.status === "active" ? "Ativa" : "Pausada"}
+                                  {automation.status === 'active' ? 'Ativa' : 'Pausada'}
                                 </span>
                                 <span className="text-xs text-gray-600">
-                                  {automation.type === "whatsapp" ? "WhatsApp" : "E-mail"}
+                                  {automation.type === 'whatsapp' ? 'WhatsApp' : 'E-mail'}
                                 </span>
                               </div>
                             </div>
@@ -566,7 +565,6 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           </Button>
         </DialogFooter>
       </DialogContent>
-
     </Dialog>
   );
 }

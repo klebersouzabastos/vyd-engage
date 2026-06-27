@@ -41,7 +41,11 @@ export function captureException(error: Error, context?: Record<string, any>) {
   });
 }
 
-export function captureMessage(message: string, level: Sentry.SeverityLevel = 'info', context?: Record<string, any>) {
+export function captureMessage(
+  message: string,
+  level: Sentry.SeverityLevel = 'info',
+  context?: Record<string, any>
+) {
   if (!sentryInitialized) {
     logger.info(`Message (Sentry not initialized): ${message}`, context);
     return;
@@ -68,11 +72,3 @@ export function addBreadcrumb(breadcrumb: Sentry.Breadcrumb) {
     Sentry.addBreadcrumb(breadcrumb);
   }
 }
-
-
-
-
-
-
-
-

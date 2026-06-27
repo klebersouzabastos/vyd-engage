@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { LoadingButton } from "../components/ui/loading-button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { VYDEcosystemBanner } from "../components/VYDEcosystemBanner";
-import { ArrowLeft, Eye, EyeOff, Check, ChevronRight } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { toast } from "sonner";
-import { step1Schema, step2Schema, step3Schema, type Step1FormData, type Step2FormData, type Step3FormData } from "../utils/validation/registerSchema";
-import { getErrorMessage } from "../utils/validation/errorMessages";
-import { PasswordStrengthIndicator } from "../components/register/PasswordStrengthIndicator";
-import { FieldError } from "../components/register/FieldError";
-import { FieldSuccess } from "../components/register/FieldSuccess";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { LoadingButton } from '../components/ui/loading-button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { VYDEcosystemBanner } from '../components/VYDEcosystemBanner';
+import { ArrowLeft, Eye, EyeOff, Check, ChevronRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
+import {
+  step1Schema,
+  step2Schema,
+  step3Schema,
+  type Step1FormData,
+  type Step2FormData,
+  type Step3FormData,
+} from '../utils/validation/registerSchema';
+import { getErrorMessage } from '../utils/validation/errorMessages';
+import { PasswordStrengthIndicator } from '../components/register/PasswordStrengthIndicator';
+import { FieldError } from '../components/register/FieldError';
+import { FieldSuccess } from '../components/register/FieldSuccess';
 
 type RegisterFormData = Step1FormData & Step2FormData & Step3FormData;
 
@@ -30,51 +37,51 @@ export function Register() {
   // Form para Step 1 (Nome e Empresa)
   const step1Form = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
-    mode: "onBlur",
-    reValidateMode: "onChange",
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
-      name: formData.name || "",
-      companyName: formData.companyName || "",
+      name: formData.name || '',
+      companyName: formData.companyName || '',
     },
   });
 
   // Form para Step 2 (Senha)
   const step2Form = useForm<Step2FormData>({
     resolver: zodResolver(step2Schema),
-    mode: "onChange",
+    mode: 'onChange',
     defaultValues: {
-      password: "",
-      confirmPassword: "",
+      password: '',
+      confirmPassword: '',
     },
   });
 
   // Atualizar valores do formulário quando formData mudar
   useEffect(() => {
     if (formData.password !== undefined) {
-      step2Form.setValue("password", formData.password, { shouldValidate: false });
+      step2Form.setValue('password', formData.password, { shouldValidate: false });
     }
     if (formData.confirmPassword !== undefined) {
-      step2Form.setValue("confirmPassword", formData.confirmPassword, { shouldValidate: false });
+      step2Form.setValue('confirmPassword', formData.confirmPassword, { shouldValidate: false });
     }
   }, [formData.password, formData.confirmPassword]);
 
   // Form para Step 3 (Email - obrigatório)
   const step3Form = useForm<Step3FormData>({
     resolver: zodResolver(step3Schema),
-    mode: "onChange",
+    mode: 'onChange',
     defaultValues: {
-      email: "",
+      email: '',
     },
   });
 
   // Atualizar valores do formulário quando formData mudar
   useEffect(() => {
     if (formData.email !== undefined) {
-      step3Form.setValue("email", formData.email, { shouldValidate: false });
+      step3Form.setValue('email', formData.email, { shouldValidate: false });
     }
   }, [formData.email]);
 
-  const password = step2Form.watch("password");
+  const password = step2Form.watch('password');
   const watchedFieldsStep1 = step1Form.watch();
   const watchedFieldsStep2 = step2Form.watch();
   const watchedFieldsStep3 = step3Form.watch();
@@ -94,9 +101,9 @@ export function Register() {
     setIsSubmitting(true);
     try {
       // Validação adicional para garantir que o email seja fornecido
-      if (!data.email || data.email.trim() === "") {
-        toast.error("O e-mail é obrigatório para criar sua conta.");
-        step3Form.setError("email", { message: "Email é obrigatório" });
+      if (!data.email || data.email.trim() === '') {
+        toast.error('O e-mail é obrigatório para criar sua conta.');
+        step3Form.setError('email', { message: 'Email é obrigatório' });
         setIsSubmitting(false);
         return;
       }
@@ -107,8 +114,8 @@ export function Register() {
       } as RegisterFormData;
 
       // Validação final antes de enviar
-      if (!finalData.email || finalData.email.trim() === "") {
-        toast.error("Por favor, informe um e-mail válido.");
+      if (!finalData.email || finalData.email.trim() === '') {
+        toast.error('Por favor, informe um e-mail válido.');
         setIsSubmitting(false);
         return;
       }
@@ -119,11 +126,11 @@ export function Register() {
         password: finalData.password,
         companyName: finalData.companyName,
       });
-      
-      toast.success("Conta criada com sucesso! Redirecionando...");
-      
+
+      toast.success('Conta criada com sucesso! Redirecionando...');
+
       setTimeout(() => {
-        navigate("/onboarding");
+        navigate('/onboarding');
       }, 1500);
     } catch (error: any) {
       const errorMessage = getErrorMessage(error);
@@ -140,22 +147,22 @@ export function Register() {
   };
 
   const steps = [
-    { number: 1, title: "Dados pessoais", description: "Nome e empresa" },
-    { number: 2, title: "Senha", description: "Crie uma senha segura" },
-    { number: 3, title: "E-mail", description: "Seu e-mail de acesso" },
+    { number: 1, title: 'Dados pessoais', description: 'Nome e empresa' },
+    { number: 2, title: 'Senha', description: 'Crie uma senha segura' },
+    { number: 3, title: 'E-mail', description: 'Seu e-mail de acesso' },
   ];
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
-      
+
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
           {/* Back Button */}
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 sm:mb-8"
           >
             <ArrowLeft size={20} />
@@ -189,8 +196,8 @@ export function Register() {
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${
                         currentStep >= step.number
-                          ? "bg-primary text-white"
-                          : "bg-gray-300 text-gray-600"
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-300 text-gray-600'
                       }`}
                     >
                       {currentStep > step.number ? <Check size={20} /> : step.number}
@@ -202,7 +209,7 @@ export function Register() {
                   {index < steps.length - 1 && (
                     <div
                       className={`h-1 flex-1 mx-2 transition-all ${
-                        currentStep > step.number ? "bg-primary" : "bg-gray-300"
+                        currentStep > step.number ? 'bg-primary' : 'bg-gray-300'
                       }`}
                     />
                   )}
@@ -213,10 +220,17 @@ export function Register() {
 
           {/* Step 1: Dados pessoais */}
           {currentStep === 1 && (
-            <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-5 sm:space-y-6" noValidate>
+            <form
+              onSubmit={step1Form.handleSubmit(handleStep1Submit)}
+              className="space-y-5 sm:space-y-6"
+              noValidate
+            >
               {/* Nome completo */}
               <div className="space-y-2.5">
-                <Label htmlFor="name" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="name"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   Nome completo <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -224,22 +238,29 @@ export function Register() {
                     id="name"
                     type="text"
                     placeholder="Seu nome completo"
-                    {...step1Form.register("name", {
+                    {...step1Form.register('name', {
                       onChange: (e) => {
-                        const value = e.target.value ?? "";
-                        step1Form.setValue("name", value, { shouldValidate: false, shouldTouch: true });
+                        const value = e.target.value ?? '';
+                        step1Form.setValue('name', value, {
+                          shouldValidate: false,
+                          shouldTouch: true,
+                        });
                       },
                       onBlur: (e) => {
-                        const trimmedValue = (e.target.value ?? "").trim();
-                        step1Form.setValue("name", trimmedValue, { shouldValidate: true });
-                      }
+                        const trimmedValue = (e.target.value ?? '').trim();
+                        step1Form.setValue('name', trimmedValue, { shouldValidate: true });
+                      },
                     })}
                     error={step1Form.formState.errors.name?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    aria-describedby={step1Form.formState.errors.name ? "name-error" : undefined}
+                    aria-describedby={step1Form.formState.errors.name ? 'name-error' : undefined}
                   />
                   <FieldSuccess
-                    isValid={!step1Form.formState.errors.name && step1Form.formState.touchedFields.name && !!watchedFieldsStep1.name}
+                    isValid={
+                      !step1Form.formState.errors.name &&
+                      step1Form.formState.touchedFields.name &&
+                      !!watchedFieldsStep1.name
+                    }
                     touched={step1Form.formState.touchedFields.name}
                   />
                 </div>
@@ -253,7 +274,10 @@ export function Register() {
 
               {/* Nome da empresa */}
               <div className="space-y-2.5">
-                <Label htmlFor="companyName" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="companyName"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   Nome da empresa <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -261,22 +285,31 @@ export function Register() {
                     id="companyName"
                     type="text"
                     placeholder="Nome da sua empresa"
-                    {...step1Form.register("companyName", {
+                    {...step1Form.register('companyName', {
                       onChange: (e) => {
-                        const value = e.target.value ?? "";
-                        step1Form.setValue("companyName", value, { shouldValidate: false, shouldTouch: true });
+                        const value = e.target.value ?? '';
+                        step1Form.setValue('companyName', value, {
+                          shouldValidate: false,
+                          shouldTouch: true,
+                        });
                       },
                       onBlur: (e) => {
-                        const trimmedValue = (e.target.value ?? "").trim();
-                        step1Form.setValue("companyName", trimmedValue, { shouldValidate: true });
-                      }
+                        const trimmedValue = (e.target.value ?? '').trim();
+                        step1Form.setValue('companyName', trimmedValue, { shouldValidate: true });
+                      },
                     })}
                     error={step1Form.formState.errors.companyName?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    aria-describedby={step1Form.formState.errors.companyName ? "companyName-error" : undefined}
+                    aria-describedby={
+                      step1Form.formState.errors.companyName ? 'companyName-error' : undefined
+                    }
                   />
                   <FieldSuccess
-                    isValid={!step1Form.formState.errors.companyName && step1Form.formState.touchedFields.companyName && !!watchedFieldsStep1.companyName}
+                    isValid={
+                      !step1Form.formState.errors.companyName &&
+                      step1Form.formState.touchedFields.companyName &&
+                      !!watchedFieldsStep1.companyName
+                    }
                     touched={step1Form.formState.touchedFields.companyName}
                   />
                 </div>
@@ -302,26 +335,40 @@ export function Register() {
 
           {/* Step 2: Senha */}
           {currentStep === 2 && (
-            <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-5 sm:space-y-6" noValidate>
+            <form
+              onSubmit={step2Form.handleSubmit(handleStep2Submit)}
+              className="space-y-5 sm:space-y-6"
+              noValidate
+            >
               {/* Senha */}
               <div className="space-y-2.5">
-                <Label htmlFor="password" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="password"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   Senha <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    {...step2Form.register("password", {
+                    {...step2Form.register('password', {
                       onChange: (e) => {
-                        const value = e.target.value ?? "";
-                        step2Form.setValue("password", value, { shouldValidate: false, shouldTouch: true });
-                      }
+                        const value = e.target.value ?? '';
+                        step2Form.setValue('password', value, {
+                          shouldValidate: false,
+                          shouldTouch: true,
+                        });
+                      },
                     })}
                     error={step2Form.formState.errors.password?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    aria-describedby={step2Form.formState.errors.password ? "password-error password-strength" : "password-strength"}
+                    aria-describedby={
+                      step2Form.formState.errors.password
+                        ? 'password-error password-strength'
+                        : 'password-strength'
+                    }
                   />
                   <button
                     type="button"
@@ -331,7 +378,7 @@ export function Register() {
                       setShowPassword(!showPassword);
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     tabIndex={0}
                   >
                     {showPassword ? (
@@ -342,7 +389,7 @@ export function Register() {
                   </button>
                 </div>
                 <div id="password-strength">
-                  <PasswordStrengthIndicator password={password || ""} />
+                  <PasswordStrengthIndicator password={password || ''} />
                 </div>
                 <FieldError
                   id="password-error"
@@ -354,18 +401,25 @@ export function Register() {
 
               {/* Confirmar senha */}
               <div className="space-y-2.5">
-                <Label htmlFor="confirmPassword" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   Confirmar senha <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    {...step2Form.register("confirmPassword")}
+                    {...step2Form.register('confirmPassword')}
                     error={step2Form.formState.errors.confirmPassword?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    aria-describedby={step2Form.formState.errors.confirmPassword ? "confirmPassword-error" : undefined}
+                    aria-describedby={
+                      step2Form.formState.errors.confirmPassword
+                        ? 'confirmPassword-error'
+                        : undefined
+                    }
                   />
                   <button
                     type="button"
@@ -375,7 +429,7 @@ export function Register() {
                       setShowConfirmPassword(!showConfirmPassword);
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none z-10 cursor-pointer flex items-center justify-center"
-                    aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     tabIndex={0}
                   >
                     {showConfirmPassword ? (
@@ -417,10 +471,17 @@ export function Register() {
 
           {/* Step 3: Email (obrigatório) */}
           {currentStep === 3 && (
-            <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className="space-y-5 sm:space-y-6" noValidate>
+            <form
+              onSubmit={step3Form.handleSubmit(handleStep3Submit)}
+              className="space-y-5 sm:space-y-6"
+              noValidate
+            >
               {/* Email */}
               <div className="space-y-2.5">
-                <Label htmlFor="email" className="text-gray-900 text-base sm:text-lg font-medium block">
+                <Label
+                  htmlFor="email"
+                  className="text-gray-900 text-base sm:text-lg font-medium block"
+                >
                   E-mail <span className="text-red-500">*</span>
                   <span className="text-sm text-gray-600 font-normal ml-2">(obrigatório)</span>
                 </Label>
@@ -430,14 +491,21 @@ export function Register() {
                     type="email"
                     placeholder="seu@email.com"
                     required
-                    {...step3Form.register("email")}
+                    {...step3Form.register('email')}
                     error={step3Form.formState.errors.email?.message}
                     className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    aria-describedby={step3Form.formState.errors.email ? "email-error email-help" : "email-help"}
+                    aria-describedby={
+                      step3Form.formState.errors.email ? 'email-error email-help' : 'email-help'
+                    }
                     aria-required="true"
                   />
                   <FieldSuccess
-                    isValid={!step3Form.formState.errors.email && step3Form.formState.touchedFields.email && !!watchedFieldsStep3.email && watchedFieldsStep3.email.trim() !== ""}
+                    isValid={
+                      !step3Form.formState.errors.email &&
+                      step3Form.formState.touchedFields.email &&
+                      !!watchedFieldsStep3.email &&
+                      watchedFieldsStep3.email.trim() !== ''
+                    }
                     touched={step3Form.formState.touchedFields.email}
                   />
                 </div>
@@ -477,9 +545,9 @@ export function Register() {
 
           {/* Sign in link */}
           <p className="mt-8 sm:mt-10 text-center text-gray-600 text-base sm:text-lg">
-            Já tem uma conta?{" "}
-            <Link 
-              to="/login" 
+            Já tem uma conta?{' '}
+            <Link
+              to="/login"
               className="text-primary hover:text-primary-dark font-medium transition-colors"
             >
               Fazer login
@@ -503,7 +571,8 @@ export function Register() {
               Comece a vender mais hoje
             </h3>
             <p className="text-sm lg:text-base xl:text-lg opacity-90">
-              Junte-se a centenas de empresas que já estão usando o VYD Engage para aumentar suas vendas.
+              Junte-se a centenas de empresas que já estão usando o VYD Engage para aumentar suas
+              vendas.
             </p>
           </div>
         </div>

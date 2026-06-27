@@ -1,8 +1,8 @@
-import { DashboardWidget as WidgetType } from "../utils/dashboard";
-import { X } from "lucide-react";
-import { Button } from "./ui/button";
-import { StatCard } from "./StatCard";
-import { Users, TrendingUp, Clock, Target } from "lucide-react";
+import { DashboardWidget as WidgetType } from '../utils/dashboard';
+import { X } from 'lucide-react';
+import { Button } from './ui/button';
+import { StatCard } from './StatCard';
+import { Users, TrendingUp, Clock, Target } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -13,8 +13,8 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-} from "recharts";
-import { DashboardStats } from "../hooks/useDashboard";
+} from 'recharts';
+import { DashboardStats } from '../hooks/useDashboard';
 
 interface DashboardWidgetProps {
   widget: WidgetType;
@@ -25,9 +25,9 @@ interface DashboardWidgetProps {
   sourceData?: Array<{ name: string; value: number; color: string }>;
 }
 
-export function DashboardWidget({ 
-  widget, 
-  onRemove, 
+export function DashboardWidget({
+  widget,
+  onRemove,
   isEditing,
   stats,
   funnelData = [],
@@ -35,7 +35,7 @@ export function DashboardWidget({
 }: DashboardWidgetProps) {
   const renderWidget = () => {
     switch (widget.type) {
-      case "stat":
+      case 'stat': {
         if (!stats) {
           return (
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
@@ -53,14 +53,15 @@ export function DashboardWidget({
           },
           conversionRate: {
             icon: TrendingUp,
-            value: stats.totalLeads > 0 
-              ? `${((stats.leadsByStatus.won || 0) / stats.totalLeads * 100).toFixed(1)}%`
-              : "0%",
+            value:
+              stats.totalLeads > 0
+                ? `${(((stats.leadsByStatus.won || 0) / stats.totalLeads) * 100).toFixed(1)}%`
+                : '0%',
             trend: undefined,
           },
           avgResponseTime: {
             icon: Clock,
-            value: "N/A", // Would need interaction data
+            value: 'N/A', // Would need interaction data
             trend: undefined,
           },
           leadsInPipeline: {
@@ -78,10 +79,11 @@ export function DashboardWidget({
             trend={config.trend}
           />
         );
+      }
 
-      case "chart":
-        if (widget.config.chartType === "pie") {
-          const dataToUse = widget.config.dataSource === "sources" ? sourceData : funnelData;
+      case 'chart': {
+        if (widget.config.chartType === 'pie') {
+          const dataToUse = widget.config.dataSource === 'sources' ? sourceData : funnelData;
           return (
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 h-full">
               <h3 className="text-gray-900 mb-4">{widget.title}</h3>
@@ -113,7 +115,7 @@ export function DashboardWidget({
           );
         }
 
-        const barDataToUse = widget.config.dataSource === "funnel" ? funnelData : sourceData;
+        const barDataToUse = widget.config.dataSource === 'funnel' ? funnelData : sourceData;
         return (
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 h-full">
             <h3 className="text-gray-900 mb-4">{widget.title}</h3>
@@ -137,6 +139,7 @@ export function DashboardWidget({
             )}
           </div>
         );
+      }
 
       default:
         return (
@@ -166,5 +169,3 @@ export function DashboardWidget({
     </div>
   );
 }
-
-

@@ -1,8 +1,8 @@
-import { lazy, Suspense } from "react";
-import { createBrowserRouter } from "react-router";
-import { AppLayout } from "../components/AppLayout";
-import { RequireAuth } from "../components/RequireAuth";
-import { ErrorBoundary } from "../components/ErrorBoundary";
+import { lazy, Suspense } from 'react';
+import { createBrowserRouter } from 'react-router';
+import { AppLayout } from '../components/AppLayout';
+import { RequireAuth } from '../components/RequireAuth';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Loading fallback
 function PageLoader() {
@@ -14,13 +14,8 @@ function PageLoader() {
 }
 
 // Lazy wrapper for named exports — each route gets its own ErrorBoundary
-function lazyNamed<T extends Record<string, any>>(
-  factory: () => Promise<T>,
-  name: keyof T
-) {
-  const Component = lazy(() =>
-    factory().then((mod) => ({ default: mod[name] as any }))
-  );
+function lazyNamed<T extends Record<string, any>>(factory: () => Promise<T>, name: keyof T) {
+  const Component = lazy(() => factory().then((mod) => ({ default: mod[name] as any })));
   return (
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
@@ -31,48 +26,54 @@ function lazyNamed<T extends Record<string, any>>(
 }
 
 // Public pages
-const LandingPage = lazyNamed(() => import("../pages/LandingPage"), "LandingPage");
-const Login = lazyNamed(() => import("../pages/Login"), "Login");
-const Register = lazyNamed(() => import("../pages/Register"), "Register");
-const ForgotPassword = lazyNamed(() => import("../pages/ForgotPassword"), "ForgotPassword");
-const ResetPassword = lazyNamed(() => import("../pages/ResetPassword"), "ResetPassword");
-const Onboarding = lazyNamed(() => import("../pages/Onboarding"), "Onboarding");
-const PublicForm = lazyNamed(() => import("../pages/PublicForm"), "PublicForm");
-const PublicSchedule = lazyNamed(() => import("../pages/PublicSchedule"), "PublicSchedule");
-const AcceptInvitation = lazyNamed(() => import("../pages/AcceptInvitation"), "AcceptInvitation");
+const LandingPage = lazyNamed(() => import('../pages/LandingPage'), 'LandingPage');
+const Login = lazyNamed(() => import('../pages/Login'), 'Login');
+const Register = lazyNamed(() => import('../pages/Register'), 'Register');
+const ForgotPassword = lazyNamed(() => import('../pages/ForgotPassword'), 'ForgotPassword');
+const ResetPassword = lazyNamed(() => import('../pages/ResetPassword'), 'ResetPassword');
+const Onboarding = lazyNamed(() => import('../pages/Onboarding'), 'Onboarding');
+const PublicForm = lazyNamed(() => import('../pages/PublicForm'), 'PublicForm');
+const PublicSchedule = lazyNamed(() => import('../pages/PublicSchedule'), 'PublicSchedule');
+const AcceptInvitation = lazyNamed(() => import('../pages/AcceptInvitation'), 'AcceptInvitation');
 
 // App pages (behind auth)
-const Dashboard = lazyNamed(() => import("../pages/Dashboard"), "Dashboard");
-const Leads = lazyNamed(() => import("../pages/Leads"), "Leads");
-const LeadForm = lazyNamed(() => import("../pages/LeadForm"), "LeadForm");
-const Pipeline = lazyNamed(() => import("../pages/Pipeline"), "Pipeline");
-const Automations = lazyNamed(() => import("../pages/Automations"), "Automations");
-const AutomationBuilderPage = lazyNamed(() => import("../pages/AutomationBuilderPage"), "AutomationBuilderPage");
-const AutomationLogs = lazyNamed(() => import("../pages/AutomationLogs"), "AutomationLogs");
-const Settings = lazyNamed(() => import("../pages/Settings"), "Settings");
-const CustomFields = lazyNamed(() => import("../pages/CustomFields"), "CustomFields");
-const Tasks = lazyNamed(() => import("../pages/Tasks"), "Tasks");
-const TaskForm = lazyNamed(() => import("../pages/TaskForm"), "TaskForm");
-const Profile = lazyNamed(() => import("../pages/Profile"), "Profile");
-const Inbox = lazyNamed(() => import("../pages/Inbox"), "Inbox");
-const Billing = lazyNamed(() => import("../pages/Billing"), "Billing");
-const Reports = lazyNamed(() => import("../pages/Reports"), "Reports");
-const ReportBuilder = lazyNamed(() => import("../pages/ReportBuilder"), "ReportBuilder");
-const ReportView = lazyNamed(() => import("../pages/ReportView"), "ReportView");
-const WhatsAppTemplates = lazyNamed(() => import("../pages/WhatsAppTemplates"), "WhatsAppTemplates");
-const EmailCampaigns = lazyNamed(() => import("../pages/EmailCampaigns"), "EmailCampaigns");
-const TeamManagement = lazyNamed(() => import("../pages/TeamManagement"), "TeamManagement");
-const LeadDetail = lazyNamed(() => import("../pages/LeadDetail"), "LeadDetail");
-const LeadDuplicates = lazyNamed(() => import("../pages/LeadDuplicates"), "LeadDuplicates");
-const Companies = lazyNamed(() => import("../pages/Companies"), "Companies");
-const CompanyDetail = lazyNamed(() => import("../pages/CompanyDetail"), "CompanyDetail");
-const Deals = lazyNamed(() => import("../pages/Deals"), "Deals");
-const DealDetail = lazyNamed(() => import("../pages/DealDetail"), "DealDetail");
-const Forecast = lazyNamed(() => import("../pages/Forecast"), "Forecast");
-const FunnelConversion = lazyNamed(() => import("../pages/FunnelConversion"), "FunnelConversion");
-const Webhooks = lazyNamed(() => import("../pages/Webhooks"), "Webhooks");
-const ApiKeys = lazyNamed(() => import("../pages/ApiKeys"), "ApiKeys");
-const PlatformAdmin = lazyNamed(() => import("../pages/PlatformAdmin"), "PlatformAdmin");
+const Dashboard = lazyNamed(() => import('../pages/Dashboard'), 'Dashboard');
+const Leads = lazyNamed(() => import('../pages/Leads'), 'Leads');
+const LeadForm = lazyNamed(() => import('../pages/LeadForm'), 'LeadForm');
+const Pipeline = lazyNamed(() => import('../pages/Pipeline'), 'Pipeline');
+const Automations = lazyNamed(() => import('../pages/Automations'), 'Automations');
+const AutomationBuilderPage = lazyNamed(
+  () => import('../pages/AutomationBuilderPage'),
+  'AutomationBuilderPage'
+);
+const AutomationLogs = lazyNamed(() => import('../pages/AutomationLogs'), 'AutomationLogs');
+const Settings = lazyNamed(() => import('../pages/Settings'), 'Settings');
+const CustomFields = lazyNamed(() => import('../pages/CustomFields'), 'CustomFields');
+const Tasks = lazyNamed(() => import('../pages/Tasks'), 'Tasks');
+const TaskForm = lazyNamed(() => import('../pages/TaskForm'), 'TaskForm');
+const Profile = lazyNamed(() => import('../pages/Profile'), 'Profile');
+const Inbox = lazyNamed(() => import('../pages/Inbox'), 'Inbox');
+const Billing = lazyNamed(() => import('../pages/Billing'), 'Billing');
+const Reports = lazyNamed(() => import('../pages/Reports'), 'Reports');
+const ReportBuilder = lazyNamed(() => import('../pages/ReportBuilder'), 'ReportBuilder');
+const ReportView = lazyNamed(() => import('../pages/ReportView'), 'ReportView');
+const WhatsAppTemplates = lazyNamed(
+  () => import('../pages/WhatsAppTemplates'),
+  'WhatsAppTemplates'
+);
+const EmailCampaigns = lazyNamed(() => import('../pages/EmailCampaigns'), 'EmailCampaigns');
+const TeamManagement = lazyNamed(() => import('../pages/TeamManagement'), 'TeamManagement');
+const LeadDetail = lazyNamed(() => import('../pages/LeadDetail'), 'LeadDetail');
+const LeadDuplicates = lazyNamed(() => import('../pages/LeadDuplicates'), 'LeadDuplicates');
+const Companies = lazyNamed(() => import('../pages/Companies'), 'Companies');
+const CompanyDetail = lazyNamed(() => import('../pages/CompanyDetail'), 'CompanyDetail');
+const Deals = lazyNamed(() => import('../pages/Deals'), 'Deals');
+const DealDetail = lazyNamed(() => import('../pages/DealDetail'), 'DealDetail');
+const Forecast = lazyNamed(() => import('../pages/Forecast'), 'Forecast');
+const FunnelConversion = lazyNamed(() => import('../pages/FunnelConversion'), 'FunnelConversion');
+const Webhooks = lazyNamed(() => import('../pages/Webhooks'), 'Webhooks');
+const ApiKeys = lazyNamed(() => import('../pages/ApiKeys'), 'ApiKeys');
+const PlatformAdmin = lazyNamed(() => import('../pages/PlatformAdmin'), 'PlatformAdmin');
 const TeamPerformance = lazyNamed(() => import('../pages/TeamPerformance'), 'TeamPerformance');
 const WinLossReport = lazyNamed(() => import('../pages/WinLossReport'), 'WinLossReport');
 const Products = lazyNamed(() => import('../pages/Products'), 'Products');
@@ -87,43 +88,43 @@ const RoadmapPanelView = lazyNamed(() => import('../pages/RoadmapPanelView'), 'R
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: LandingPage,
   },
   {
-    path: "/login",
+    path: '/login',
     element: Login,
   },
   {
-    path: "/register",
+    path: '/register',
     element: Register,
   },
   {
-    path: "/forgot-password",
+    path: '/forgot-password',
     element: ForgotPassword,
   },
   {
-    path: "/reset-password",
+    path: '/reset-password',
     element: ResetPassword,
   },
   {
-    path: "/onboarding",
+    path: '/onboarding',
     element: Onboarding,
   },
   {
-    path: "/capture/:formId",
+    path: '/capture/:formId',
     element: PublicForm,
   },
   {
-    path: "/s/:slug",
+    path: '/s/:slug',
     element: PublicSchedule,
   },
   {
-    path: "/accept-invitation",
+    path: '/accept-invitation',
     element: AcceptInvitation,
   },
   {
-    path: "/app",
+    path: '/app',
     element: (
       <RequireAuth>
         <ErrorBoundary>
@@ -137,203 +138,203 @@ export const router = createBrowserRouter([
         element: Dashboard,
       },
       {
-        path: "leads",
+        path: 'leads',
         element: Leads,
       },
       {
-        path: "leads/new",
+        path: 'leads/new',
         element: LeadForm,
       },
       {
-        path: "leads/duplicates",
+        path: 'leads/duplicates',
         element: LeadDuplicates,
       },
       {
-        path: "leads/:id/edit",
+        path: 'leads/:id/edit',
         element: LeadForm,
       },
       {
-        path: "leads/:id",
+        path: 'leads/:id',
         element: LeadDetail,
       },
       {
-        path: "companies",
+        path: 'companies',
         element: Companies,
       },
       {
-        path: "companies/:id",
+        path: 'companies/:id',
         element: CompanyDetail,
       },
       {
-        path: "deals",
+        path: 'deals',
         element: Deals,
       },
       {
-        path: "deals/:id",
+        path: 'deals/:id',
         element: DealDetail,
       },
       {
-        path: "forecast",
+        path: 'forecast',
         element: Forecast,
       },
       {
-        path: "funnel",
+        path: 'funnel',
         element: FunnelConversion,
       },
       {
-        path: "team",
+        path: 'team',
         element: TeamManagement,
       },
       {
-        path: "pipeline",
+        path: 'pipeline',
         element: Pipeline,
       },
       {
-        path: "automations",
+        path: 'automations',
         element: Automations,
       },
       {
         // Editor único: o builder visual. As rotas /builder ficam como alias
         // retrocompatível dos links existentes.
-        path: "automations/new",
+        path: 'automations/new',
         element: AutomationBuilderPage,
       },
       {
-        path: "automations/new/builder",
+        path: 'automations/new/builder',
         element: AutomationBuilderPage,
       },
       {
-        path: "automations/logs",
+        path: 'automations/logs',
         element: AutomationLogs,
       },
       {
-        path: "automations/:id",
+        path: 'automations/:id',
         element: AutomationBuilderPage,
       },
       {
-        path: "automations/:id/builder",
+        path: 'automations/:id/builder',
         element: AutomationBuilderPage,
       },
       {
-        path: "settings",
+        path: 'settings',
         element: Settings,
       },
       {
-        path: "custom-fields",
+        path: 'custom-fields',
         element: CustomFields,
       },
       {
-        path: "tasks",
+        path: 'tasks',
         element: Tasks,
       },
       {
-        path: "tasks/new",
+        path: 'tasks/new',
         element: TaskForm,
       },
       {
-        path: "tasks/:id/edit",
+        path: 'tasks/:id/edit',
         element: TaskForm,
       },
       {
-        path: "profile",
+        path: 'profile',
         element: Profile,
       },
       {
-        path: "inbox",
+        path: 'inbox',
         element: Inbox,
       },
       {
-        path: "billing",
+        path: 'billing',
         element: Billing,
       },
       {
-        path: "whatsapp/templates",
+        path: 'whatsapp/templates',
         element: WhatsAppTemplates,
       },
       {
-        path: "email/campaigns",
+        path: 'email/campaigns',
         element: EmailCampaigns,
       },
       {
-        path: "campaigns",
+        path: 'campaigns',
         element: Campaigns,
       },
       {
-        path: "campaigns/new",
+        path: 'campaigns/new',
         element: CampaignWizard,
       },
       {
-        path: "campaigns/:id",
+        path: 'campaigns/:id',
         element: CampaignDetail,
       },
       {
-        path: "reports",
+        path: 'reports',
         element: Reports,
       },
       {
-        path: "reports/new",
+        path: 'reports/new',
         element: ReportBuilder,
       },
       {
-        path: "reports/view/:id",
+        path: 'reports/view/:id',
         element: ReportView,
       },
       {
-        path: "reports/:id",
+        path: 'reports/:id',
         element: ReportBuilder,
       },
       {
-        path: "performance",
+        path: 'performance',
         element: TeamPerformance,
       },
       {
-        path: "deep-research",
+        path: 'deep-research',
         element: DeepResearch,
       },
       {
-        path: "deep-research/painel",
+        path: 'deep-research/painel',
         element: RoadmapPanelView,
       },
       {
-        path: "deep-research/desdobramento/:id",
+        path: 'deep-research/desdobramento/:id',
         element: RoadmapView,
       },
       {
-        path: "deep-research/:id",
+        path: 'deep-research/:id',
         element: DeepResearchView,
       },
       {
-        path: "reports/win-loss",
+        path: 'reports/win-loss',
         element: WinLossReport,
       },
       {
-        path: "settings/products",
+        path: 'settings/products',
         element: Products,
       },
       {
-        path: "settings/import",
+        path: 'settings/import',
         element: Import,
       },
       {
-        path: "webhooks",
+        path: 'webhooks',
         element: Webhooks,
       },
       {
         // Spec-required path for the API Hub webhooks page (API-1.2, req 8).
-        path: "settings/webhooks",
+        path: 'settings/webhooks',
         element: Webhooks,
       },
       {
-        path: "api-keys",
+        path: 'api-keys',
         element: ApiKeys,
       },
       {
         // Spec-required path for the API keys page with scopes (API-2.1, req 21).
-        path: "settings/api-keys",
+        path: 'settings/api-keys',
         element: ApiKeys,
       },
       {
-        path: "admin",
+        path: 'admin',
         element: PlatformAdmin,
       },
     ],

@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Button } from "./ui/button";
-import { ReportWidget } from "../types";
-import { ReportFilters } from "./ReportFilters";
-import { Settings } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Button } from './ui/button';
+import { ReportWidget } from '../types';
+import { ReportFilters } from './ReportFilters';
+import { Settings } from 'lucide-react';
 
 interface ReportWidgetConfigProps {
   widget: ReportWidget;
@@ -13,85 +13,85 @@ interface ReportWidgetConfigProps {
 }
 
 const DATA_SOURCES = [
-  { value: "leads", label: "Leads" },
-  { value: "pipeline", label: "Pipeline/Funil" },
-  { value: "automations", label: "Automações" },
-  { value: "tasks", label: "Tarefas" },
-  { value: "interactions", label: "Interações" },
+  { value: 'leads', label: 'Leads' },
+  { value: 'pipeline', label: 'Pipeline/Funil' },
+  { value: 'automations', label: 'Automações' },
+  { value: 'tasks', label: 'Tarefas' },
+  { value: 'interactions', label: 'Interações' },
 ];
 
 const AGGREGATION_TYPES = [
-  { value: "sum", label: "Soma" },
-  { value: "avg", label: "Média" },
-  { value: "count", label: "Contagem" },
-  { value: "min", label: "Mínimo" },
-  { value: "max", label: "Máximo" },
+  { value: 'sum', label: 'Soma' },
+  { value: 'avg', label: 'Média' },
+  { value: 'count', label: 'Contagem' },
+  { value: 'min', label: 'Mínimo' },
+  { value: 'max', label: 'Máximo' },
 ];
 
 const CHART_TYPES = [
-  { value: "bar", label: "Barras" },
-  { value: "line", label: "Linha" },
-  { value: "pie", label: "Pizza" },
-  { value: "area", label: "Área" },
+  { value: 'bar', label: 'Barras' },
+  { value: 'line', label: 'Linha' },
+  { value: 'pie', label: 'Pizza' },
+  { value: 'area', label: 'Área' },
 ];
 
 const METRIC_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
   leads: [
-    { value: "total", label: "Total de Leads" },
-    { value: "conversionRate", label: "Taxa de Conversão" },
-    { value: "avgResponseTime", label: "Tempo Médio de Resposta" },
-    { value: "newLeads", label: "Novos Leads" },
-    { value: "closedLeads", label: "Leads Fechados" },
-    { value: "byStatus", label: "Por Status" },
-    { value: "bySource", label: "Por Origem" },
+    { value: 'total', label: 'Total de Leads' },
+    { value: 'conversionRate', label: 'Taxa de Conversão' },
+    { value: 'avgResponseTime', label: 'Tempo Médio de Resposta' },
+    { value: 'newLeads', label: 'Novos Leads' },
+    { value: 'closedLeads', label: 'Leads Fechados' },
+    { value: 'byStatus', label: 'Por Status' },
+    { value: 'bySource', label: 'Por Origem' },
   ],
   pipeline: [
-    { value: "conversionRate", label: "Taxa de Conversão" },
-    { value: "totalLeads", label: "Total de Leads" },
-    { value: "stages", label: "Estágios do Funil" },
+    { value: 'conversionRate', label: 'Taxa de Conversão' },
+    { value: 'totalLeads', label: 'Total de Leads' },
+    { value: 'stages', label: 'Estágios do Funil' },
   ],
   automations: [
-    { value: "total", label: "Total de Automações" },
-    { value: "active", label: "Automações Ativas" },
-    { value: "successRate", label: "Taxa de Sucesso" },
-    { value: "totalSentMessages", label: "Mensagens Enviadas" },
-    { value: "totalLeadsEnrolled", label: "Leads Inscritos" },
-    { value: "byType", label: "Por Tipo" },
-    { value: "byStatus", label: "Por Status" },
+    { value: 'total', label: 'Total de Automações' },
+    { value: 'active', label: 'Automações Ativas' },
+    { value: 'successRate', label: 'Taxa de Sucesso' },
+    { value: 'totalSentMessages', label: 'Mensagens Enviadas' },
+    { value: 'totalLeadsEnrolled', label: 'Leads Inscritos' },
+    { value: 'byType', label: 'Por Tipo' },
+    { value: 'byStatus', label: 'Por Status' },
   ],
   tasks: [
-    { value: "total", label: "Total de Tarefas" },
-    { value: "completionRate", label: "Taxa de Conclusão" },
-    { value: "overdue", label: "Tarefas Atrasadas" },
-    { value: "dueToday", label: "Tarefas para Hoje" },
-    { value: "avgCompletionTime", label: "Tempo Médio de Conclusão" },
-    { value: "byPriority", label: "Por Prioridade" },
+    { value: 'total', label: 'Total de Tarefas' },
+    { value: 'completionRate', label: 'Taxa de Conclusão' },
+    { value: 'overdue', label: 'Tarefas Atrasadas' },
+    { value: 'dueToday', label: 'Tarefas para Hoje' },
+    { value: 'avgCompletionTime', label: 'Tempo Médio de Conclusão' },
+    { value: 'byPriority', label: 'Por Prioridade' },
   ],
   interactions: [
-    { value: "total", label: "Total de Interações" },
-    { value: "byType", label: "Por Tipo" },
-    { value: "avgPerLead", label: "Média por Lead" },
+    { value: 'total', label: 'Total de Interações' },
+    { value: 'byType', label: 'Por Tipo' },
+    { value: 'avgPerLead', label: 'Média por Lead' },
   ],
 };
 
 export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  
+
   // Detectar fonte de dados automaticamente se não estiver definida
   useEffect(() => {
-    if (!widget.dataSource && widget.type === "metric") {
+    if (!widget.dataSource && widget.type === 'metric') {
       // Tentar detectar baseado na métrica
       if (widget.metric) {
-        const metricToSource: Record<string, ReportWidget["dataSource"]> = {
-          total: "leads",
-          conversionRate: "leads",
-          avgResponseTime: "leads",
-          newLeads: "leads",
-          closedLeads: "leads",
-          byStatus: "leads",
-          bySource: "leads",
+        const metricToSource: Record<string, ReportWidget['dataSource']> = {
+          total: 'leads',
+          conversionRate: 'leads',
+          avgResponseTime: 'leads',
+          newLeads: 'leads',
+          closedLeads: 'leads',
+          byStatus: 'leads',
+          bySource: 'leads',
         };
-        
+
         const detectedSource = metricToSource[widget.metric];
         if (detectedSource) {
           onChange({ dataSource: detectedSource });
@@ -103,7 +103,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
 
   const handleDataSourceChange = (value: string) => {
     onChange({
-      dataSource: value as ReportWidget["dataSource"],
+      dataSource: value as ReportWidget['dataSource'],
       // Reset metric when data source changes
       metric: undefined,
     });
@@ -115,13 +115,13 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
 
   const handleChartTypeChange = (value: string) => {
     onChange({
-      chartType: value as ReportWidget["chartType"],
+      chartType: value as ReportWidget['chartType'],
       config: { ...widget.config, chartType: value },
     });
   };
 
   const handleAggregationChange = (value: string) => {
-    onChange({ aggregation: value as ReportWidget["aggregation"] });
+    onChange({ aggregation: value as ReportWidget['aggregation'] });
   };
 
   const handleFilterChange = (filters: any) => {
@@ -148,7 +148,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
         <Label>Tipo</Label>
         <Select
           value={widget.type}
-          onValueChange={(value) => onChange({ type: value as ReportWidget["type"] })}
+          onValueChange={(value) => onChange({ type: value as ReportWidget['type'] })}
         >
           <SelectTrigger className="mt-1.5">
             <SelectValue />
@@ -168,15 +168,12 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
       {/* Fonte de Dados */}
       <div>
         <Label>Fonte de Dados</Label>
-        <Select
-          value={widget.dataSource || ""}
-          onValueChange={handleDataSourceChange}
-        >
+        <Select value={widget.dataSource || ''} onValueChange={handleDataSourceChange}>
           <SelectTrigger className="mt-1.5">
             <SelectValue placeholder="Selecione a fonte" />
           </SelectTrigger>
           <SelectContent>
-            {DATA_SOURCES.map(source => (
+            {DATA_SOURCES.map((source) => (
               <SelectItem key={source.value} value={source.value}>
                 {source.label}
               </SelectItem>
@@ -186,18 +183,15 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
       </div>
 
       {/* Métrica (para widgets de métrica) */}
-      {widget.type === "metric" && widget.dataSource && currentMetrics.length > 0 && (
+      {widget.type === 'metric' && widget.dataSource && currentMetrics.length > 0 && (
         <div>
           <Label>Métrica</Label>
-          <Select
-            value={widget.metric || ""}
-            onValueChange={handleMetricChange}
-          >
+          <Select value={widget.metric || ''} onValueChange={handleMetricChange}>
             <SelectTrigger className="mt-1.5">
               <SelectValue placeholder="Selecione a métrica" />
             </SelectTrigger>
             <SelectContent>
-              {currentMetrics.map(metric => (
+              {currentMetrics.map((metric) => (
                 <SelectItem key={metric.value} value={metric.value}>
                   {metric.label}
                 </SelectItem>
@@ -208,18 +202,15 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
       )}
 
       {/* Tipo de Gráfico (para widgets de gráfico) */}
-      {widget.type === "chart" && (
+      {widget.type === 'chart' && (
         <div>
           <Label>Tipo de Gráfico</Label>
-          <Select
-            value={widget.chartType || "bar"}
-            onValueChange={handleChartTypeChange}
-          >
+          <Select value={widget.chartType || 'bar'} onValueChange={handleChartTypeChange}>
             <SelectTrigger className="mt-1.5">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CHART_TYPES.map(type => (
+              {CHART_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
                 </SelectItem>
@@ -230,18 +221,15 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
       )}
 
       {/* Agregação */}
-      {(widget.type === "chart" || widget.type === "table") && (
+      {(widget.type === 'chart' || widget.type === 'table') && (
         <div>
           <Label>Agregação</Label>
-          <Select
-            value={widget.aggregation || "count"}
-            onValueChange={handleAggregationChange}
-          >
+          <Select value={widget.aggregation || 'count'} onValueChange={handleAggregationChange}>
             <SelectTrigger className="mt-1.5">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {AGGREGATION_TYPES.map(agg => (
+              {AGGREGATION_TYPES.map((agg) => (
                 <SelectItem key={agg.value} value={agg.value}>
                   {agg.label}
                 </SelectItem>
@@ -275,7 +263,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
           className="gap-2"
         >
           <Settings size={14} />
-          {showAdvanced ? "Ocultar" : "Mostrar"} configurações avançadas
+          {showAdvanced ? 'Ocultar' : 'Mostrar'} configurações avançadas
         </Button>
 
         {showAdvanced && (
@@ -284,7 +272,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
             <div>
               <Label>Período de Análise</Label>
               <Select
-                value={widget.dateRange?.type || "month"}
+                value={widget.dateRange?.type || 'month'}
                 onValueChange={(value) =>
                   onChange({
                     dateRange: {
@@ -310,17 +298,17 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
             </div>
 
             {/* Cores personalizadas (para gráficos) */}
-            {widget.type === "chart" && (
+            {widget.type === 'chart' && (
               <div>
                 <Label>Cores (separadas por vírgula)</Label>
                 <Input
-                  value={widget.colors?.join(", ") || ""}
+                  value={widget.colors?.join(', ') || ''}
                   onChange={(e) =>
                     onChange({
                       colors: e.target.value
-                        .split(",")
-                        .map(c => c.trim())
-                        .filter(c => c),
+                        .split(',')
+                        .map((c) => c.trim())
+                        .filter((c) => c),
                     })
                   }
                   className="mt-1.5"
@@ -334,4 +322,3 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
     </div>
   );
 }
-

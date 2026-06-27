@@ -2,7 +2,12 @@ import { Queue, Worker, Job } from 'bullmq';
 import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
-import { blocksToHtml, applyMergeTags, rewriteLinksForTracking, type MergeTagContext } from '../services/campaignService.js';
+import {
+  blocksToHtml,
+  applyMergeTags,
+  rewriteLinksForTracking,
+  type MergeTagContext,
+} from '../services/campaignService.js';
 
 // ============================================================================
 // campaignSender — BullMQ job that sends an Email Campaign in batches.
@@ -106,7 +111,11 @@ async function processCampaignBatch(job: Job<CampaignSendJobData>): Promise<void
   }
 
   // Respect lifecycle: only SCHEDULED/SENDING campaigns send. PAUSED/CANCELLED stop.
-  if (campaign.status === 'PAUSED' || campaign.status === 'CANCELLED' || campaign.status === 'SENT') {
+  if (
+    campaign.status === 'PAUSED' ||
+    campaign.status === 'CANCELLED' ||
+    campaign.status === 'SENT'
+  ) {
     logger.info('Campaign send: status halts processing', { campaignId, status: campaign.status });
     return;
   }
@@ -156,7 +165,10 @@ async function processCampaignBatch(job: Job<CampaignSendJobData>): Promise<void
     if (!lead || lead.unsubscribed || !lead.email) {
       await prisma.campaignRecipient.update({
         where: { id: recipient.id },
-        data: { status: 'UNSUBSCRIBED', lastError: lead?.unsubscribed ? 'unsubscribed' : 'no email/lead' },
+        data: {
+          status: 'UNSUBSCRIBED',
+          lastError: lead?.unsubscribed ? 'unsubscribed' : 'no email/lead',
+        },
       });
       continue;
     }

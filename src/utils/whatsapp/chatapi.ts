@@ -4,7 +4,7 @@ import {
   SendMessageResult,
   ConnectionTestResult,
   ConnectionStatusInfo,
-} from "../../types/whatsapp";
+} from '../../types/whatsapp';
 
 /**
  * Valida credenciais da ChatAPI
@@ -14,9 +14,9 @@ export async function validateChatAPICredentials(
 ): Promise<ConnectionTestResult> {
   try {
     const response = await fetch(`${config.apiUrl}/getStatus`, {
-      method: "GET",
+      method: 'GET',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         token: config.apiToken,
@@ -27,22 +27,23 @@ export async function validateChatAPICredentials(
     if (!response.ok) {
       return {
         success: false,
-        message: "Erro ao validar credenciais da ChatAPI",
-        error: "Credenciais inválidas",
+        message: 'Erro ao validar credenciais da ChatAPI',
+        error: 'Credenciais inválidas',
       };
     }
 
     const data = await response.json();
     return {
-      success: data.status === "authenticated",
-      message: data.status === "authenticated" ? "Credenciais válidas" : "Instância não autenticada",
+      success: data.status === 'authenticated',
+      message:
+        data.status === 'authenticated' ? 'Credenciais válidas' : 'Instância não autenticada',
       responseTime: Date.now(),
     };
   } catch (error) {
     return {
       success: false,
-      message: `Erro de conexão: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -69,9 +70,9 @@ export async function sendChatAPIMessage(
     }
 
     const response = await fetch(`${config.apiUrl}/sendMessage`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
@@ -81,7 +82,7 @@ export async function sendChatAPIMessage(
     if (!response.ok || data.error) {
       return {
         success: false,
-        error: data.error?.message || "Erro ao enviar mensagem",
+        error: data.error?.message || 'Erro ao enviar mensagem',
         providerResponse: data,
       };
     }
@@ -94,7 +95,7 @@ export async function sendChatAPIMessage(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
@@ -102,14 +103,12 @@ export async function sendChatAPIMessage(
 /**
  * Obtém status da conexão ChatAPI
  */
-export async function getChatAPIStatus(
-  config: ChatAPIConfig
-): Promise<ConnectionStatusInfo> {
+export async function getChatAPIStatus(config: ChatAPIConfig): Promise<ConnectionStatusInfo> {
   try {
     const response = await fetch(`${config.apiUrl}/getStatus`, {
-      method: "GET",
+      method: 'GET',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         token: config.apiToken,
@@ -119,13 +118,13 @@ export async function getChatAPIStatus(
 
     if (!response.ok) {
       return {
-        status: "error",
-        errorMessage: "Não foi possível verificar o status",
+        status: 'error',
+        errorMessage: 'Não foi possível verificar o status',
       };
     }
 
     const data = await response.json();
-    const status = data.status === "authenticated" ? "connected" : "disconnected";
+    const status = data.status === 'authenticated' ? 'connected' : 'disconnected';
 
     return {
       status,
@@ -133,16 +132,8 @@ export async function getChatAPIStatus(
     };
   } catch (error) {
     return {
-      status: "error",
-      errorMessage: error instanceof Error ? error.message : "Erro desconhecido",
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
 }
-
-
-
-
-
-
-
-

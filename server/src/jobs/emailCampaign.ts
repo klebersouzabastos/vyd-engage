@@ -77,13 +77,13 @@ export const emailCampaignWorker = new Worker(
   {
     connection: redisConnection,
     concurrency: 2,
-  },
+  }
 );
 
 // Helper to schedule a campaign
 export async function scheduleCampaign(
   data: ScheduledCampaignData,
-  scheduledAt: Date,
+  scheduledAt: Date
 ): Promise<string> {
   const delay = scheduledAt.getTime() - Date.now();
 
@@ -91,14 +91,10 @@ export async function scheduleCampaign(
     throw new Error('Scheduled time must be in the future');
   }
 
-  const job = await emailCampaignQueue.add(
-    `campaign-${data.campaignId}`,
-    data,
-    {
-      delay,
-      jobId: `campaign-${data.campaignId}`,
-    },
-  );
+  const job = await emailCampaignQueue.add(`campaign-${data.campaignId}`, data, {
+    delay,
+    jobId: `campaign-${data.campaignId}`,
+  });
 
   logger.info('Email campaign scheduled', {
     campaignId: data.campaignId,

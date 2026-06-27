@@ -91,7 +91,7 @@ export function LeadScoringTab() {
         description: formDescription || undefined,
       });
       const newRule = res.data || res;
-      setRules(prev => [...prev, newRule]);
+      setRules((prev) => [...prev, newRule]);
       setShowCreate(false);
       resetForm();
     } catch (err: any) {
@@ -112,7 +112,7 @@ export function LeadScoringTab() {
         description: formDescription || null,
       });
       const updated = res.data || res;
-      setRules(prev => prev.map(r => r.id === editingId ? updated : r));
+      setRules((prev) => prev.map((r) => (r.id === editingId ? updated : r)));
       setEditingId(null);
       resetForm();
     } catch (err: any) {
@@ -126,7 +126,7 @@ export function LeadScoringTab() {
     try {
       const res = await apiClient.updateScoringRule(rule.id, { active: !rule.active });
       const updated = res.data || res;
-      setRules(prev => prev.map(r => r.id === rule.id ? updated : r));
+      setRules((prev) => prev.map((r) => (r.id === rule.id ? updated : r)));
     } catch (err) {
       console.error('Failed to toggle rule:', err);
     }
@@ -135,7 +135,7 @@ export function LeadScoringTab() {
   const handleDelete = async (id: string) => {
     try {
       await apiClient.deleteScoringRule(id);
-      setRules(prev => prev.filter(r => r.id !== id));
+      setRules((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       console.error('Failed to delete rule:', err);
     }
@@ -159,7 +159,7 @@ export function LeadScoringTab() {
           <div className="h-6 bg-gray-200 rounded w-48" />
           <div className="h-4 bg-gray-200 rounded w-96" />
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="h-16 bg-gray-100 rounded" />
             ))}
           </div>
@@ -173,8 +173,8 @@ export function LeadScoringTab() {
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Lead Scoring</h3>
         <p className="text-sm text-gray-500">
-          Configure as regras de pontuação para classificar seus leads automaticamente.
-          Cada evento soma pontos ao score do lead.
+          Configure as regras de pontuação para classificar seus leads automaticamente. Cada evento
+          soma pontos ao score do lead.
         </p>
       </div>
 
@@ -196,7 +196,7 @@ export function LeadScoringTab() {
 
       {/* Rules list */}
       <div className="space-y-2">
-        {rules.map(rule => (
+        {rules.map((rule) => (
           <div
             key={rule.id}
             className={`border rounded-lg p-4 ${rule.active ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'}`}
@@ -206,43 +206,69 @@ export function LeadScoringTab() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Nome</label>
+                    <label
+                      htmlFor={`edit-name-${rule.id}`}
+                      className="text-xs text-gray-500 mb-1 block"
+                    >
+                      Nome
+                    </label>
                     <input
+                      id={`edit-name-${rule.id}`}
                       type="text"
                       value={formName}
-                      onChange={e => setFormName(e.target.value)}
+                      onChange={(e) => setFormName(e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Evento</label>
+                    <label
+                      htmlFor={`edit-event-${rule.id}`}
+                      className="text-xs text-gray-500 mb-1 block"
+                    >
+                      Evento
+                    </label>
                     <select
+                      id={`edit-event-${rule.id}`}
                       value={formEventType}
-                      onChange={e => setFormEventType(e.target.value)}
+                      onChange={(e) => setFormEventType(e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                     >
-                      {EVENT_TYPES.map(et => (
-                        <option key={et} value={et}>{EVENT_TYPE_LABELS[et]}</option>
+                      {EVENT_TYPES.map((et) => (
+                        <option key={et} value={et}>
+                          {EVENT_TYPE_LABELS[et]}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Pontos</label>
+                    <label
+                      htmlFor={`edit-points-${rule.id}`}
+                      className="text-xs text-gray-500 mb-1 block"
+                    >
+                      Pontos
+                    </label>
                     <input
+                      id={`edit-points-${rule.id}`}
                       type="number"
                       value={formPoints}
-                      onChange={e => setFormPoints(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setFormPoints(parseInt(e.target.value) || 0)}
                       className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Descrição</label>
+                    <label
+                      htmlFor={`edit-description-${rule.id}`}
+                      className="text-xs text-gray-500 mb-1 block"
+                    >
+                      Descrição
+                    </label>
                     <input
+                      id={`edit-description-${rule.id}`}
                       type="text"
                       value={formDescription}
-                      onChange={e => setFormDescription(e.target.value)}
+                      onChange={(e) => setFormDescription(e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                     />
                   </div>
@@ -265,8 +291,11 @@ export function LeadScoringTab() {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                       {EVENT_TYPE_LABELS[rule.eventType] || rule.eventType}
                     </span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rule.points >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {rule.points > 0 ? '+' : ''}{rule.points} pts
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${rule.points >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                    >
+                      {rule.points > 0 ? '+' : ''}
+                      {rule.points} pts
                     </span>
                   </div>
                   {rule.description && (
@@ -278,12 +307,19 @@ export function LeadScoringTab() {
                     onClick={() => handleToggle(rule)}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${rule.active ? 'bg-primary' : 'bg-gray-300'}`}
                   >
-                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${rule.active ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${rule.active ? 'translate-x-4' : 'translate-x-0.5'}`}
+                    />
                   </button>
                   <Button variant="ghost" size="sm" onClick={() => startEdit(rule)}>
                     <Pencil size={14} />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(rule.id)} className="text-red-500 hover:text-red-700">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(rule.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
                     <Trash2 size={14} />
                   </Button>
                 </div>
@@ -299,44 +335,58 @@ export function LeadScoringTab() {
           <h4 className="text-sm font-medium text-gray-900">Nova regra de scoring</h4>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Nome</label>
+              <label htmlFor="create-name" className="text-xs text-gray-500 mb-1 block">
+                Nome
+              </label>
               <input
+                id="create-name"
                 type="text"
                 value={formName}
-                onChange={e => setFormName(e.target.value)}
+                onChange={(e) => setFormName(e.target.value)}
                 placeholder="Ex: Email aberto"
                 className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Evento</label>
+              <label htmlFor="create-event" className="text-xs text-gray-500 mb-1 block">
+                Evento
+              </label>
               <select
+                id="create-event"
                 value={formEventType}
-                onChange={e => setFormEventType(e.target.value)}
+                onChange={(e) => setFormEventType(e.target.value)}
                 className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
               >
-                {EVENT_TYPES.map(et => (
-                  <option key={et} value={et}>{EVENT_TYPE_LABELS[et]}</option>
+                {EVENT_TYPES.map((et) => (
+                  <option key={et} value={et}>
+                    {EVENT_TYPE_LABELS[et]}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Pontos</label>
+              <label htmlFor="create-points" className="text-xs text-gray-500 mb-1 block">
+                Pontos
+              </label>
               <input
+                id="create-points"
                 type="number"
                 value={formPoints}
-                onChange={e => setFormPoints(parseInt(e.target.value) || 0)}
+                onChange={(e) => setFormPoints(parseInt(e.target.value) || 0)}
                 className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Descrição (opcional)</label>
+              <label htmlFor="create-description" className="text-xs text-gray-500 mb-1 block">
+                Descrição (opcional)
+              </label>
               <input
+                id="create-description"
                 type="text"
                 value={formDescription}
-                onChange={e => setFormDescription(e.target.value)}
+                onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Descrição da regra"
                 className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
               />
@@ -357,18 +407,18 @@ export function LeadScoringTab() {
       <div className="pt-6 border-t border-gray-300 flex gap-3">
         {!showCreate && (
           <Button
-            onClick={() => { resetForm(); setShowCreate(true); setEditingId(null); }}
+            onClick={() => {
+              resetForm();
+              setShowCreate(true);
+              setEditingId(null);
+            }}
             className="bg-primary hover:bg-primary-dark"
           >
             <Plus size={16} className="mr-2" />
             Nova Regra
           </Button>
         )}
-        <Button
-          variant="outline"
-          onClick={handleRecalculate}
-          disabled={recalculating}
-        >
+        <Button variant="outline" onClick={handleRecalculate} disabled={recalculating}>
           <RefreshCw size={16} className={`mr-2 ${recalculating ? 'animate-spin' : ''}`} />
           {recalculating ? 'Recalculando...' : 'Recalcular Scores'}
         </Button>

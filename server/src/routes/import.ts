@@ -49,7 +49,9 @@ function handleUpload(field: string) {
     mw(req, res, (err: unknown) => {
       if (err) {
         if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-          return next(createError('Arquivo excede o tamanho máximo de 10 MB.', 413, 'FILE_TOO_LARGE'));
+          return next(
+            createError('Arquivo excede o tamanho máximo de 10 MB.', 413, 'FILE_TOO_LARGE')
+          );
         }
         return next(createError('Falha no upload do arquivo.', 400, 'UPLOAD_FAILED'));
       }
@@ -67,7 +69,11 @@ function parseMapping(raw: unknown): ColumnMapping {
     try {
       value = JSON.parse(raw);
     } catch {
-      throw createError('Mapeamento de colunas inválido (JSON malformado).', 400, 'INVALID_MAPPING');
+      throw createError(
+        'Mapeamento de colunas inválido (JSON malformado).',
+        400,
+        'INVALID_MAPPING'
+      );
     }
   }
   const result = mappingSchema.safeParse(value);
@@ -128,7 +134,7 @@ async function handleImport(
   res: any,
   next: any,
   type: ImportType,
-  opts: { contactsMode?: boolean } = {},
+  opts: { contactsMode?: boolean } = {}
 ) {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
@@ -142,7 +148,9 @@ async function handleImport(
     // Leads, contacts and companies are mapped via a visual column mapper.
     const usesMapping = type === ImportType.LEADS || type === ImportType.COMPANIES;
     const mapping = usesMapping ? parseMapping(req.body.mapping) : {};
-    const options: LeadImportOptions | undefined = opts.contactsMode ? { contactsMode: true } : undefined;
+    const options: LeadImportOptions | undefined = opts.contactsMode
+      ? { contactsMode: true }
+      : undefined;
 
     let parsed: ParsedFile;
     try {
@@ -159,8 +167,8 @@ async function handleImport(
         createError(
           `A importação excede o máximo de ${MAX_IMPORT_ROWS} linhas.`,
           400,
-          'TOO_MANY_ROWS',
-        ),
+          'TOO_MANY_ROWS'
+        )
       );
     }
 
@@ -173,7 +181,7 @@ async function handleImport(
     // plain leads keep the original 'skip' default.
     const defaultStrategy = type === ImportType.COMPANIES || opts.contactsMode ? 'update' : 'skip';
     const duplicateStrategy = parseDuplicateStrategy(
-      req.body.duplicateStrategy ?? req.body.duplicate_strategy ?? defaultStrategy,
+      req.body.duplicateStrategy ?? req.body.duplicate_strategy ?? defaultStrategy
     );
 
     // Run analysis (used for both dry-run and to feed the writers).
@@ -196,7 +204,16 @@ async function handleImport(
     // Create the batch row.
     const batch = await createBatch(tenantId, userId, type, parsed.rows.length);
 
-    const runInput = { tenantId, userId, type, parsed, mapping, duplicateStrategy, duplicateActions, options };
+    const runInput = {
+      tenantId,
+      userId,
+      type,
+      parsed,
+      mapping,
+      duplicateStrategy,
+      duplicateActions,
+      options,
+    };
 
     // The precomputed `type` tag mirrors the entity so executeBatch reuses the
     // analysis instead of re-running it.
@@ -208,8 +225,10 @@ async function handleImport(
           : type === ImportType.DEALS
             ? 'DEALS'
             : 'INTERACTIONS';
-    const buildPrecomputed = () =>
-      ({ type: precomputedType as any, rows: (analysisResult as any).mappedRows });
+    const buildPrecomputed = () => ({
+      type: precomputedType as any,
+      rows: (analysisResult as any).mappedRows,
+    });
 
     if (shouldRunSync(parsed.rows.length)) {
       // ≤500 rows → process now and return the final state (spec req 30).
@@ -249,28 +268,28 @@ async function handleImport(
 
 // POST /api/v1/import/leads — multipart (file + mapping JSON), dry_run supported
 router.post('/leads', handleUpload('file'), (req, res, next) =>
-  handleImport(req, res, next, ImportType.LEADS),
+  handleImport(req, res, next, ImportType.LEADS)
 );
 
 // POST /api/v1/import/companies — multipart (file + mapping JSON), dry_run supported
 router.post('/companies', handleUpload('file'), (req, res, next) =>
-  handleImport(req, res, next, ImportType.COMPANIES),
+  handleImport(req, res, next, ImportType.COMPANIES)
 );
 
 // POST /api/v1/import/contacts — contacts variant of leads (email optional,
 // dedup by name+email/company, links to companies, flagged isContact)
 router.post('/contacts', handleUpload('file'), (req, res, next) =>
-  handleImport(req, res, next, ImportType.LEADS, { contactsMode: true }),
+  handleImport(req, res, next, ImportType.LEADS, { contactsMode: true })
 );
 
 // POST /api/v1/import/deals — multipart CSV (lead_email, deal_name, value, stage, expected_close_date)
 router.post('/deals', handleUpload('file'), (req, res, next) =>
-  handleImport(req, res, next, ImportType.DEALS),
+  handleImport(req, res, next, ImportType.DEALS)
 );
 
 // POST /api/v1/import/interactions — multipart CSV (lead_email, type, date, notes)
 router.post('/interactions', handleUpload('file'), (req, res, next) =>
-  handleImport(req, res, next, ImportType.INTERACTIONS),
+  handleImport(req, res, next, ImportType.INTERACTIONS)
 );
 
 // GET /api/v1/import/batches — import history + polling source (spec reqs 22, 31)
@@ -289,7 +308,8 @@ router.get('/batches/:batchId', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const batch = await getBatch(req.user.tenantId, req.params.batchId);
-    if (!batch) return next(createError('Lote de importação não encontrado.', 404, 'BATCH_NOT_FOUND'));
+    if (!batch)
+      return next(createError('Lote de importação não encontrado.', 404, 'BATCH_NOT_FOUND'));
     res.json({ status: 200, data: { batch } });
   } catch (error) {
     next(error);

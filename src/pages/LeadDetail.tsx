@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router";
-import { toast } from "sonner";
-import { Header } from "../components/Header";
-import { LeadStatusBadge } from "../components/LeadStatusBadge";
-import { LeadSourceBadge } from "../components/LeadSourceBadge";
-import { TagBadge } from "../components/TagBadge";
-import { LeadScoreBadge } from "../components/LeadScoreBadge";
-import { ScoreBreakdownModal } from "../components/ScoreBreakdownModal";
-import { CustomFieldDisplay } from "../components/CustomFieldDisplay";
-import { Button } from "../components/ui/button";
-import { Textarea } from "../components/ui/textarea";
-import { PageSkeleton } from "../components/PageSkeleton";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router';
+import { toast } from 'sonner';
+import { Header } from '../components/Header';
+import { LeadStatusBadge } from '../components/LeadStatusBadge';
+import { LeadSourceBadge } from '../components/LeadSourceBadge';
+import { TagBadge } from '../components/TagBadge';
+import { LeadScoreBadge } from '../components/LeadScoreBadge';
+import { ScoreBreakdownModal } from '../components/ScoreBreakdownModal';
+import { CustomFieldDisplay } from '../components/CustomFieldDisplay';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { PageSkeleton } from '../components/PageSkeleton';
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -30,22 +30,22 @@ import {
   UserCheck,
   ChevronDown,
   Sparkles,
-} from "lucide-react";
-import { apiClient } from "../services/api/client";
-import { useTags } from "../contexts/TagsContext";
-import { useCustomFields } from "../contexts/CustomFieldsContext";
-import { mapStatusFromBackend, mapSourceFromBackend } from "../utils/leadEnums";
-import { DealStageBadge } from "../components/deals/DealStageBadge";
-import { DealForm } from "../components/deals/DealForm";
-import { NextActionCard } from "../components/NextActionCard";
-import { AIDraftDialog } from "../components/ai/AIDraftDialog";
-import { AISummaryCard } from "../components/leads/AISummaryCard";
-import { NextActionBadge } from "../components/leads/NextActionBadge";
-import { AIChatPanel } from "../components/leads/AIChatPanel";
-import { AuditTimeline } from "../components/AuditTimeline";
-import { Deal, DealStage } from "../types";
-import { Handshake, DollarSign } from "lucide-react";
-import { Timeline, TimelineItem } from "../components/ui/timeline";
+} from 'lucide-react';
+import { apiClient } from '../services/api/client';
+import { useTags } from '../contexts/TagsContext';
+import { useCustomFields } from '../contexts/CustomFieldsContext';
+import { mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
+import { DealStageBadge } from '../components/deals/DealStageBadge';
+import { DealForm } from '../components/deals/DealForm';
+import { NextActionCard } from '../components/NextActionCard';
+import { AIDraftDialog } from '../components/ai/AIDraftDialog';
+import { AISummaryCard } from '../components/leads/AISummaryCard';
+import { NextActionBadge } from '../components/leads/NextActionBadge';
+import { AIChatPanel } from '../components/leads/AIChatPanel';
+import { AuditTimeline } from '../components/AuditTimeline';
+import { Deal, DealStage } from '../types';
+import { Handshake, DollarSign } from 'lucide-react';
+import { Timeline, TimelineItem } from '../components/ui/timeline';
 
 // Number of interactions to show per "page"
 const ITEMS_PER_PAGE = 10;
@@ -83,19 +83,19 @@ interface InteractionData {
 // Icon mapping for interaction types
 function getInteractionIcon(type: string) {
   switch (type) {
-    case "EMAIL":
+    case 'EMAIL':
       return <Mail size={16} />;
-    case "WHATSAPP":
+    case 'WHATSAPP':
       return <MessageSquare size={16} />;
-    case "CALL":
+    case 'CALL':
       return <Phone size={16} />;
-    case "MEETING":
+    case 'MEETING':
       return <Calendar size={16} />;
-    case "NOTE":
+    case 'NOTE':
       return <FileText size={16} />;
-    case "STATUS_CHANGE":
+    case 'STATUS_CHANGE':
       return <ArrowRightLeft size={16} />;
-    case "AUTOMATION":
+    case 'AUTOMATION':
       return <Zap size={16} />;
     default:
       return <FileText size={16} />;
@@ -105,35 +105,35 @@ function getInteractionIcon(type: string) {
 // Icon background color per type
 function getInteractionIconStyle(type: string): string {
   switch (type) {
-    case "EMAIL":
-      return "bg-blue-100 text-blue-600";
-    case "WHATSAPP":
-      return "bg-green-100 text-green-600";
-    case "CALL":
-      return "bg-purple-100 text-purple-600";
-    case "MEETING":
-      return "bg-orange-100 text-orange-600";
-    case "NOTE":
-      return "bg-gray-100 text-gray-600";
-    case "STATUS_CHANGE":
-      return "bg-yellow-100 text-yellow-600";
-    case "AUTOMATION":
-      return "bg-indigo-100 text-indigo-600";
+    case 'EMAIL':
+      return 'bg-blue-100 text-blue-600';
+    case 'WHATSAPP':
+      return 'bg-green-100 text-green-600';
+    case 'CALL':
+      return 'bg-purple-100 text-purple-600';
+    case 'MEETING':
+      return 'bg-orange-100 text-orange-600';
+    case 'NOTE':
+      return 'bg-gray-100 text-gray-600';
+    case 'STATUS_CHANGE':
+      return 'bg-yellow-100 text-yellow-600';
+    case 'AUTOMATION':
+      return 'bg-indigo-100 text-indigo-600';
     default:
-      return "bg-gray-100 text-gray-600";
+      return 'bg-gray-100 text-gray-600';
   }
 }
 
 // Type label mapping
 function getInteractionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    EMAIL: "E-mail",
-    WHATSAPP: "WhatsApp",
-    CALL: "Ligação",
-    MEETING: "Reunião",
-    NOTE: "Nota",
-    STATUS_CHANGE: "Mudança de Status",
-    AUTOMATION: "Automação",
+    EMAIL: 'E-mail',
+    WHATSAPP: 'WhatsApp',
+    CALL: 'Ligação',
+    MEETING: 'Reunião',
+    NOTE: 'Nota',
+    STATUS_CHANGE: 'Mudança de Status',
+    AUTOMATION: 'Automação',
   };
   return labels[type] || type;
 }
@@ -147,42 +147,42 @@ function formatRelativeTime(dateStr: string): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMinutes < 1) return "agora";
+  if (diffMinutes < 1) return 'agora';
   if (diffMinutes < 60) return `${diffMinutes}min atras`;
   if (diffHours < 24) return `${diffHours}h atras`;
   if (diffDays < 7) return `${diffDays}d atras`;
 
   // Absolute date for older entries
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 // Format date for display
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Date(dateStr).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 // Direction badge component
 function DirectionBadge({ direction }: { direction: string }) {
-  if (direction === "INBOUND") {
+  if (direction === 'INBOUND') {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
         Recebido
       </span>
     );
   }
-  if (direction === "OUTBOUND") {
+  if (direction === 'OUTBOUND') {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
         Enviado
@@ -206,7 +206,7 @@ export function LeadDetail() {
 
   // Note form state
   const [showNoteForm, setShowNoteForm] = useState(false);
-  const [noteContent, setNoteContent] = useState("");
+  const [noteContent, setNoteContent] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
 
@@ -227,9 +227,9 @@ export function LeadDetail() {
       const result = await apiClient.getLead(id);
       setLead(result);
     } catch (error: any) {
-      console.error("Erro ao carregar lead:", error);
-      toast.error("Erro ao carregar dados do lead");
-      navigate("/app/leads");
+      console.error('Erro ao carregar lead:', error);
+      toast.error('Erro ao carregar dados do lead');
+      navigate('/app/leads');
     } finally {
       setLoadingLead(false);
     }
@@ -242,8 +242,8 @@ export function LeadDetail() {
       const result = await apiClient.getLeadInteractions(id);
       setInteractions(Array.isArray(result) ? result : []);
     } catch (error: any) {
-      console.error("Erro ao carregar interacoes:", error);
-      toast.error("Erro ao carregar historico de atividades");
+      console.error('Erro ao carregar interacoes:', error);
+      toast.error('Erro ao carregar historico de atividades');
     } finally {
       setLoadingInteractions(false);
     }
@@ -272,17 +272,17 @@ export function LeadDetail() {
       setSavingNote(true);
       const newInteraction = await apiClient.createInteraction({
         leadId: id,
-        type: "NOTE",
-        direction: "OUTBOUND",
+        type: 'NOTE',
+        direction: 'OUTBOUND',
         content: noteContent.trim(),
       });
       setInteractions((prev) => [newInteraction, ...prev]);
-      setNoteContent("");
+      setNoteContent('');
       setShowNoteForm(false);
-      toast.success("Nota adicionada com sucesso!");
+      toast.success('Nota adicionada com sucesso!');
     } catch (error: any) {
-      console.error("Erro ao salvar nota:", error);
-      toast.error("Erro ao salvar nota");
+      console.error('Erro ao salvar nota:', error);
+      toast.error('Erro ao salvar nota');
     } finally {
       setSavingNote(false);
     }
@@ -297,12 +297,12 @@ export function LeadDetail() {
     try {
       setConverting(true);
       await apiClient.convertToContact(id);
-      toast.success("Lead convertido para Contato com sucesso!");
+      toast.success('Lead convertido para Contato com sucesso!');
       fetchLead();
       fetchInteractions();
     } catch (error: any) {
-      console.error("Erro ao converter lead:", error);
-      toast.error("Erro ao converter lead para contato.");
+      console.error('Erro ao converter lead:', error);
+      toast.error('Erro ao converter lead para contato.');
     } finally {
       setConverting(false);
     }
@@ -313,12 +313,12 @@ export function LeadDetail() {
     try {
       setConverting(true);
       await apiClient.revertToLead(id);
-      toast.success("Contato revertido para Lead com sucesso!");
+      toast.success('Contato revertido para Lead com sucesso!');
       fetchLead();
       fetchInteractions();
     } catch (error: any) {
-      console.error("Erro ao reverter contato:", error);
-      toast.error("Erro ao reverter contato para lead.");
+      console.error('Erro ao reverter contato:', error);
+      toast.error('Erro ao reverter contato para lead.');
     } finally {
       setConverting(false);
     }
@@ -337,7 +337,7 @@ export function LeadDetail() {
     return lead.tags
       .map((t: any) => {
         // Handle both { tag: { id, name, color } } and plain string id formats
-        if (typeof t === "string") {
+        if (typeof t === 'string') {
           return getTagById(t);
         }
         if (t?.tag) {
@@ -352,15 +352,15 @@ export function LeadDetail() {
   }, [lead?.tags, getTagById]);
 
   // Map backend status/source to frontend display values
-  const displayStatus = lead ? mapStatusFromBackend(lead.status) : "";
-  const displaySource = lead ? mapSourceFromBackend(lead.source) : "";
+  const displayStatus = lead ? mapStatusFromBackend(lead.status) : '';
+  const displaySource = lead ? mapSourceFromBackend(lead.source) : '';
 
   // Custom fields with values
   const customFieldsWithValues = useMemo(() => {
     if (!lead?.customFields || !customFields.length) return [];
     return customFields.filter((field) => {
       const value = lead.customFields[field.id];
-      return value !== null && value !== undefined && value !== "";
+      return value !== null && value !== undefined && value !== '';
     });
   }, [lead?.customFields, customFields]);
 
@@ -378,10 +378,8 @@ export function LeadDetail() {
       <div className="min-h-screen">
         <Header title="Lead nao encontrado" />
         <div className="p-8 text-center">
-          <p className="text-gray-600 mb-4">
-            O lead solicitado nao foi encontrado.
-          </p>
-          <Button onClick={() => navigate("/app/leads")}>
+          <p className="text-gray-600 mb-4">O lead solicitado nao foi encontrado.</p>
+          <Button onClick={() => navigate('/app/leads')}>
             <ArrowLeft size={16} className="mr-2" />
             Voltar para Leads
           </Button>
@@ -392,15 +390,12 @@ export function LeadDetail() {
 
   return (
     <div className="min-h-screen">
-      <Header
-        title={lead.name}
-        subtitle="Detalhes e historico de atividades"
-      />
+      <Header title={lead.name} subtitle="Detalhes e historico de atividades" />
 
       <div className="p-8">
         {/* Back button */}
         <button
-          onClick={() => navigate("/app/leads")}
+          onClick={() => navigate('/app/leads')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         >
           <ArrowLeft size={16} />
@@ -416,9 +411,7 @@ export function LeadDetail() {
           <div className="lg:w-[70%]">
             <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Atividades
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">Atividades</h2>
                 <Button
                   variant="outline"
                   size="sm"
@@ -446,7 +439,7 @@ export function LeadDetail() {
                       size="sm"
                       onClick={() => {
                         setShowNoteForm(false);
-                        setNoteContent("");
+                        setNoteContent('');
                       }}
                     >
                       Cancelar
@@ -456,9 +449,7 @@ export function LeadDetail() {
                       onClick={handleSaveNote}
                       disabled={!noteContent.trim() || savingNote}
                     >
-                      {savingNote && (
-                        <Loader2 size={14} className="mr-2 animate-spin" />
-                      )}
+                      {savingNote && <Loader2 size={14} className="mr-2 animate-spin" />}
                       Salvar nota
                     </Button>
                   </div>
@@ -472,10 +463,7 @@ export function LeadDetail() {
                 </div>
               ) : interactions.length === 0 ? (
                 <div className="text-center py-12">
-                  <FileText
-                    size={40}
-                    className="mx-auto text-gray-300 mb-3"
-                  />
+                  <FileText size={40} className="mx-auto text-gray-300 mb-3" />
                   <p className="text-gray-500 text-sm">
                     Nenhuma atividade registrada para este lead.
                   </p>
@@ -510,8 +498,7 @@ export function LeadDetail() {
                         className="gap-2"
                       >
                         <ChevronDown size={14} />
-                        Carregar mais ({interactions.length - visibleCount}{" "}
-                        restantes)
+                        Carregar mais ({interactions.length - visibleCount} restantes)
                       </Button>
                     </div>
                   )}
@@ -525,7 +512,7 @@ export function LeadDetail() {
                 <History size={18} />
                 Histórico de alterações
               </h2>
-              <AuditTimeline entityType="lead" entityId={id || ""} />
+              <AuditTimeline entityType="lead" entityId={id || ''} />
             </div>
           </div>
 
@@ -541,12 +528,8 @@ export function LeadDetail() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
               {/* Name and basic info */}
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">
-                  {lead.name}
-                </h2>
-                {lead.position && (
-                  <p className="text-sm text-gray-500">{lead.position}</p>
-                )}
+                <h2 className="text-xl font-bold text-gray-900 mb-1">{lead.name}</h2>
+                {lead.position && <p className="text-sm text-gray-500">{lead.position}</p>}
                 {/* AI next-action suggestion with reasoning tooltip */}
                 {id && (
                   <div className="mt-2">
@@ -571,20 +554,14 @@ export function LeadDetail() {
                 {lead.phone && (
                   <div className="flex items-center gap-3 text-sm">
                     <Phone size={14} className="text-gray-400 flex-shrink-0" />
-                    <a
-                      href={`tel:${lead.phone}`}
-                      className="text-gray-700 hover:underline"
-                    >
+                    <a href={`tel:${lead.phone}`} className="text-gray-700 hover:underline">
                       {lead.phone}
                     </a>
                   </div>
                 )}
                 {lead.company && (
                   <div className="flex items-center gap-3 text-sm">
-                    <Building2
-                      size={14}
-                      className="text-gray-400 flex-shrink-0"
-                    />
+                    <Building2 size={14} className="text-gray-400 flex-shrink-0" />
                     <span className="text-gray-700">{lead.company}</span>
                   </div>
                 )}
@@ -611,7 +588,11 @@ export function LeadDetail() {
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">
                     Score
                   </span>
-                  <button type="button" onClick={() => setScoreModalOpen(true)} className="cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setScoreModalOpen(true)}
+                    className="cursor-pointer"
+                  >
                     <LeadScoreBadge score={lead.score || 0} />
                   </button>
                 </div>
@@ -689,18 +670,23 @@ export function LeadDetail() {
                   <p className="text-xs text-gray-400">Nenhum deal associado</p>
                 ) : (
                   <div className="space-y-2">
-                    {leadDeals.map(deal => (
+                    {leadDeals.map((deal) => (
                       <button
                         key={deal.id}
                         onClick={() => navigate(`/app/deals/${deal.id}`)}
                         className="w-full text-left p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-900 truncate">{deal.name}</span>
+                          <span className="text-sm font-medium text-gray-900 truncate">
+                            {deal.name}
+                          </span>
                           <DealStageBadge stage={deal.stage} size="sm" />
                         </div>
                         <span className="text-sm font-bold text-gray-700">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(deal.value)}
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(deal.value)}
                         </span>
                       </button>
                     ))}
@@ -727,7 +713,7 @@ export function LeadDetail() {
                     disabled={converting}
                   >
                     <ArrowRightLeft size={14} />
-                    {converting ? "Revertendo..." : "Reverter para Lead"}
+                    {converting ? 'Revertendo...' : 'Reverter para Lead'}
                   </Button>
                 </div>
               ) : (
@@ -738,7 +724,7 @@ export function LeadDetail() {
                   disabled={converting}
                 >
                   <UserCheck size={14} />
-                  {converting ? "Convertendo..." : "Converter para Contato"}
+                  {converting ? 'Convertendo...' : 'Converter para Contato'}
                 </Button>
               )}
 
@@ -795,11 +781,7 @@ export function LeadDetail() {
       />
 
       {/* AI Draft Dialog */}
-      <AIDraftDialog
-        open={aiDraftOpen}
-        onClose={() => setAiDraftOpen(false)}
-        leadId={id}
-      />
+      <AIDraftDialog open={aiDraftOpen} onClose={() => setAiDraftOpen(false)} leadId={id} />
     </div>
   );
 }

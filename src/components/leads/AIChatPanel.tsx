@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  Sparkles,
-  Send,
-  Loader2,
-  AlertTriangle,
-  Info,
-} from "lucide-react";
-import { apiClient, ApiError } from "../../services/api/client";
-import { useAIStatus } from "../../hooks/useAIStatus";
-import type { ChatMessage } from "../../types";
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, Send, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { apiClient, ApiError } from '../../services/api/client';
+import { useAIStatus } from '../../hooks/useAIStatus';
+import type { ChatMessage } from '../../types';
 
 interface AIChatPanelProps {
   leadId: string;
@@ -58,10 +52,10 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
   const { enabled, loading: statusLoading } = useAIStatus();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   /** Live partial answer being streamed (not yet committed to `messages`). */
-  const [partial, setPartial] = useState("");
+  const [partial, setPartial] = useState('');
   const [error, setError] = useState<string | null>(null);
   /** Set when a stream was cut short by a connection loss. */
   const [interrupted, setInterrupted] = useState(false);
@@ -72,7 +66,7 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
   // Load session history when the lead changes.
   useEffect(() => {
     setMessages(loadHistory(leadId));
-    setPartial("");
+    setPartial('');
     setError(null);
     setInterrupted(false);
   }, [leadId]);
@@ -99,12 +93,12 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
     setError(null);
     setInterrupted(false);
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    const userMsg: ChatMessage = { role: 'user', content: trimmed };
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
-    setInput("");
+    setInput('');
     setStreaming(true);
-    setPartial("");
+    setPartial('');
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -112,28 +106,28 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
     // Truncate history sent to the backend to avoid oversized payloads (edge case).
     const historyToSend = nextMessages.slice(-MAX_HISTORY_SENT);
 
-    let accumulated = "";
+    let accumulated = '';
     try {
       const response = await apiClient.streamLeadAIChat(
         leadId,
         { message: trimmed, history: historyToSend },
-        controller.signal,
+        controller.signal
       );
 
       if (!response.ok) {
         if (response.status === 429) {
-          setError("Limite atingido, tente em instantes.");
+          setError('Limite atingido, tente em instantes.');
         } else if (response.status === 503) {
-          setError("O assistente de IA está indisponível no momento.");
+          setError('O assistente de IA está indisponível no momento.');
         } else {
-          setError("Não foi possível obter a resposta. Tente novamente.");
+          setError('Não foi possível obter a resposta. Tente novamente.');
         }
         setStreaming(false);
         return;
       }
 
       if (!response.body) {
-        setError("Resposta vazia do servidor.");
+        setError('Resposta vazia do servidor.');
         setStreaming(false);
         return;
       }
@@ -142,7 +136,7 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
       const decoder = new TextDecoder();
 
       // Read the raw text stream chunk by chunk and append progressively.
-      // eslint-disable-next-line no-constant-condition
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -155,16 +149,16 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
       // Connection lost mid-stream (or aborted): keep whatever we received and
       // flag the interruption instead of discarding it (edge case).
       if (err instanceof ApiError && err.statusCode === 429) {
-        setError("Limite atingido, tente em instantes.");
-      } else if (!(err instanceof DOMException && err.name === "AbortError")) {
+        setError('Limite atingido, tente em instantes.');
+      } else if (!(err instanceof DOMException && err.name === 'AbortError')) {
         setInterrupted(true);
       }
     } finally {
       // Commit the (possibly partial) answer to history so it persists.
       if (accumulated) {
-        setMessages((prev) => [...prev, { role: "assistant", content: accumulated }]);
+        setMessages((prev) => [...prev, { role: 'assistant', content: accumulated }]);
       }
-      setPartial("");
+      setPartial('');
       setStreaming(false);
       abortRef.current = null;
     }
@@ -182,8 +176,8 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
           <span className="text-sm font-semibold text-gray-700">Chat IA</span>
         </div>
         <p className="text-xs text-gray-500">
-          Configure um provedor de IA (variável <code className="font-mono">AI_PROVIDER</code>)
-          para conversar sobre este lead.
+          Configure um provedor de IA (variável <code className="font-mono">AI_PROVIDER</code>) para
+          conversar sobre este lead.
         </p>
       </div>
     );
@@ -210,15 +204,12 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
         )}
 
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={msg.role === "user" ? "flex justify-end" : "flex justify-start"}
-          >
+          <div key={i} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-gray-100 text-gray-800"
+                msg.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-gray-100 text-gray-800'
               }`}
             >
               {msg.content}
@@ -271,7 +262,7 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSend();
             }
