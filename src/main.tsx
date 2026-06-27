@@ -4,6 +4,7 @@ import './index.css';
 import { initSentry } from './utils/sentry';
 import { reportWebVitals } from './utils/webVitals';
 import { reloadForChunkError } from './utils/chunkReload';
+import { registerPWAUpdates } from './utils/pwaUpdate';
 
 // Initialize Sentry before rendering (loads from CDN if VITE_SENTRY_DSN is set)
 initSentry();
@@ -23,3 +24,6 @@ createRoot(document.getElementById('root')!).render(<App />);
 
 // Report Web Vitals metrics
 reportWebVitals();
+
+// Registra o Service Worker e mantém o app atualizado automaticamente após deploys
+registerPWAUpdates();
