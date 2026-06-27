@@ -43,7 +43,13 @@ const querySchema = z.object({
   search: z.string().optional(),
   tagId: z.string().uuid().optional(),
   assignedTo: z.string().uuid().optional(),
-  isContact: z.coerce.boolean().optional(),
+  // z.coerce.boolean() é uma armadilha: Boolean('false') === true. Mapeamos
+  // explicitamente a string 'true'/'false' para evitar a aba Leads filtrar
+  // isContact=true por engano.
+  isContact: z.preprocess(
+    (v) => (v === 'true' ? true : v === 'false' ? false : undefined),
+    z.boolean().optional()
+  ),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
   sort: z.enum(['createdAt', 'updatedAt', 'name', 'status', 'score']).optional(),

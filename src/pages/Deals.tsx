@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQueryState } from 'nuqs';
 import { useNavigate } from 'react-router';
 import { DataTable } from '../components/ui/data-table';
@@ -158,6 +158,13 @@ export function Deals() {
     },
     [search, stageFilter, fetchDeals]
   );
+
+  // Filtrar ao digitar: refaz a busca (server-side) com debounce ao alterar o texto.
+  useEffect(() => {
+    const t = setTimeout(() => handleSearch(), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const handleSave = async (data: any) => {
     if (editingDeal) {
@@ -390,7 +397,7 @@ export function Deals() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    className="pl-9"
+                    className="pl-10"
                     aria-label="Buscar deals"
                   />
                 </div>
