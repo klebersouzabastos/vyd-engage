@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { DataTable } from '../components/ui/data-table';
 import { getCompanyColumns } from '../components/companies/companyColumns';
@@ -110,6 +110,13 @@ export function Companies() {
     [search, sizeFilter, fetchCompanies]
   );
 
+  // Filtrar ao digitar: refaz a busca (server-side) com debounce ao alterar o texto.
+  useEffect(() => {
+    const t = setTimeout(() => handleSearch(), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
   const handleSave = async (data: Partial<Company>) => {
     if (editingCompany) {
       await updateCompany(editingCompany.id, data);
@@ -174,7 +181,7 @@ export function Companies() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-9"
+                className="pl-10"
                 aria-label="Buscar empresas"
               />
             </div>
