@@ -1,0 +1,17 @@
+/* Organograma de decisores — layout de árvore dedicado (o Tailwind do projeto é
+   pré-compilado/estático; conectores e indentação de árvore vão aqui). */
+.organograma ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.organograma .org-children {
+  margin-left: 0.75rem;
+  padding-left: 1rem;
+  border-left: 1px solid #e2e8f0;
+}
+
+.organograma .org-node {
+  margin-top: 0.5rem;
+}

@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { TaskStatus, TaskPriority } from '@prisma/client';
+import { TaskStatus, TaskPriority, TaskType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
@@ -11,6 +11,12 @@ export interface CreateTaskData {
   priority?: TaskPriority;
   assignedTo?: string;
   leadId?: string;
+  // Desdobramento comercial — tipo de ação + vínculos (agenda das ações).
+  dealId?: string;
+  companyId?: string;
+  empreendimentoId?: string;
+  roadmapId?: string;
+  type?: TaskType;
   dueDate?: Date | string;
 }
 
@@ -29,6 +35,11 @@ export const taskService = {
         priority: data.priority || TaskPriority.MEDIUM,
         assignedTo: data.assignedTo,
         leadId: data.leadId,
+        dealId: data.dealId,
+        companyId: data.companyId,
+        empreendimentoId: data.empreendimentoId,
+        roadmapId: data.roadmapId,
+        type: data.type,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
       },
     });

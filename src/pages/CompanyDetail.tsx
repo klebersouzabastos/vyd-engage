@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { CompanyForm } from "../components/CompanyForm";
+import { EmpreendimentosManager } from "../components/comercial/EmpreendimentosManager";
 import { Company, CompanySize } from "../types";
 import { apiClient } from "../services/api/client";
 import {
@@ -102,7 +103,7 @@ export function CompanyDetail() {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [loadingCompany, setLoadingCompany] = useState(true);
-  const [activeTab, setActiveTab] = useState<"leads" | "deals" | "timeline" | "info">("leads");
+  const [activeTab, setActiveTab] = useState<"leads" | "deals" | "empreendimentos" | "timeline" | "info">("leads");
   const [editFormOpen, setEditFormOpen] = useState(false);
 
   const fetchCompany = useCallback(async () => {
@@ -157,6 +158,7 @@ export function CompanyDetail() {
   const tabs = [
     { id: "leads" as const, label: "Leads", count: company._count?.leads ?? company.leads?.length ?? 0 },
     { id: "deals" as const, label: "Deals", count: company._count?.deals ?? company.deals?.length ?? 0 },
+    { id: "empreendimentos" as const, label: "Empreendimentos", count: null },
     { id: "timeline" as const, label: "Timeline", count: company.interactions?.length ?? 0 },
     { id: "info" as const, label: "Informacoes", count: null },
   ];
@@ -323,6 +325,8 @@ export function CompanyDetail() {
             )}
           </div>
         )}
+
+        {activeTab === "empreendimentos" && id && <EmpreendimentosManager companyId={id} />}
 
         {activeTab === "timeline" && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">

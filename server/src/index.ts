@@ -203,6 +203,9 @@ import campaignRoutes from './routes/campaigns.js';
 import campaignTrackingRoutes from './routes/campaignTracking.js';
 import zapierRoutes from './routes/zapier.js';
 import deepResearchRoutes from './routes/deepResearch.js';
+import empreendimentoRoutes from './routes/empreendimentos.js';
+import playbookRoutes from './routes/playbooks.js';
+import roadmapRoutes from './routes/roadmaps.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -278,6 +281,9 @@ v1Router.use('/stage-task-templates', csrfProtection);
 v1Router.use('/import', csrfProtection);
 v1Router.use('/campaigns', csrfProtection);
 v1Router.use('/deep-research', csrfProtection);
+v1Router.use('/empreendimentos', csrfProtection);
+v1Router.use('/playbooks', csrfProtection);
+v1Router.use('/roadmaps', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -326,6 +332,9 @@ v1Router.use('/campaigns', campaignRoutes);
 // Zapier integration (API-2.2) — API-key auth (X-API-Key), no session/CSRF.
 v1Router.use('/zapier', zapierRoutes);
 v1Router.use('/deep-research', deepResearchRoutes);
+v1Router.use('/empreendimentos', empreendimentoRoutes);
+v1Router.use('/playbooks', playbookRoutes);
+v1Router.use('/roadmaps', roadmapRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

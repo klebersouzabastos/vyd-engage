@@ -82,6 +82,8 @@ const CampaignWizard = lazyNamed(() => import('../pages/CampaignWizard'), 'Campa
 const CampaignDetail = lazyNamed(() => import('../pages/CampaignDetail'), 'CampaignDetail');
 const DeepResearch = lazyNamed(() => import('../pages/DeepResearch'), 'DeepResearch');
 const DeepResearchView = lazyNamed(() => import('../pages/DeepResearchView'), 'DeepResearchView');
+const RoadmapView = lazyNamed(() => import('../pages/RoadmapView'), 'RoadmapView');
+const RoadmapPanelView = lazyNamed(() => import('../pages/RoadmapPanelView'), 'RoadmapPanelView');
 
 export const router = createBrowserRouter([
   {
@@ -287,6 +289,14 @@ export const router = createBrowserRouter([
       {
         path: "deep-research",
         element: DeepResearch,
+      },
+      {
+        path: "deep-research/painel",
+        element: RoadmapPanelView,
+      },
+      {
+        path: "deep-research/desdobramento/:id",
+        element: RoadmapView,
       },
       {
         path: "deep-research/:id",

@@ -202,6 +202,48 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
 }
 
 /**
+ * Parses a legacy `.xls` (BIFF8) file. ExcelJS only reads `.xlsx`, so SheetJS is
+ * loaded on demand (dynamic import) — it is only pulled into the bundle when a
+ * user actually uploads a `.xls`, keeping the initial bundle lean.
+ */
+async function parseXls(file: File): Promise<ParsedFile> {
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  let workbook: import('xlsx').WorkBook;
+  try {
+    workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
+  } catch {
+    throw new ImportParseError(
+      'Não foi possível ler o arquivo .xls. Verifique se não está corrompido ou protegido por senha.'
+    );
+  }
+
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = sheetName ? workbook.Sheets[sheetName] : undefined;
+  if (!worksheet) {
+    throw new ImportParseError('A planilha não contém nenhuma aba com dados.');
+  }
+
+  const matrix = XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
+    header: 1,
+    raw: false,
+    defval: '',
+    blankrows: false,
+  });
+  if (matrix.length === 0) {
+    throw new ImportParseError('O arquivo está vazio.');
+  }
+
+  const headers = (matrix[0] as unknown[]).map((h) => String(h ?? '').trim());
+  const rawRows = matrix
+    .slice(1)
+    .map((cells) => headers.map((_, i) => String((cells as unknown[])[i] ?? '')))
+    .filter((cells) => cells.some((c) => c.trim() !== ''));
+  const rows = rawRows.map((cells) => rowToObject(headers, cells));
+  return { headers, rows, rawRows, rowCount: rawRows.length };
+}
+
+/**
  * Validates and parses an uploaded file. Throws {@link ImportParseError} with a
  * user-facing (pt-BR) message for any guard-rail violation: size, format,
  * encoding, delimiter, password protection, or row count.
@@ -219,8 +261,10 @@ export async function parseImportFile(file: File): Promise<ParsedFile> {
     parsed = await parseCsv(file);
   } else if (ext === 'xlsx') {
     parsed = await parseXlsx(file);
+  } else if (ext === 'xls') {
+    parsed = await parseXls(file);
   } else {
-    throw new ImportParseError('Formato não suportado. Envie um arquivo .csv (UTF-8) ou .xlsx.');
+    throw new ImportParseError('Formato não suportado. Envie um arquivo .csv (UTF-8), .xlsx ou .xls.');
   }
 
   if (parsed.rowCount > MAX_ROWS) {

@@ -5,6 +5,21 @@ import type {
   CreateDeepResearchInput,
   UpdateDeepResearchInput,
 } from '../../types/deepResearch';
+import type {
+  Empreendimento,
+  CreateEmpreendimentoInput,
+  UpdateEmpreendimentoInput,
+  PlaybookTemplate,
+  CreatePlaybookInput,
+  UpdatePlaybookInput,
+  CommercialRoadmap,
+  CommercialRoadmapListItem,
+  CreateRoadmapInput,
+  UpdateRoadmapInput,
+  UpsertStakeholderInput,
+  RoadmapStakeholder,
+  RoadmapPanel,
+} from '../../types/comercial';
 
 // Detect API URL automatically in production, use env var or localhost in development
 const getApiUrl = () => {
@@ -1602,7 +1617,7 @@ class ApiClient {
    * must let the browser set the multipart boundary itself. Mirrors the
    * cookie + CSRF auth handling used by the rest of the client.
    */
-  private async postImport<T>(entity: 'leads' | 'deals' | 'interactions', formData: FormData, dryRun: boolean): Promise<T> {
+  private async postImport<T>(entity: 'leads' | 'deals' | 'interactions' | 'companies' | 'contacts', formData: FormData, dryRun: boolean): Promise<T> {
     const csrfToken = this.getCsrfToken();
     const headers: Record<string, string> = {};
     if (csrfToken) headers['x-csrf-token'] = csrfToken;
@@ -1639,6 +1654,23 @@ class ApiClient {
     return this.postImport<ImportResult>('leads', formData, dryRun);
   }
 
+  async importCompaniesFile(file: File, mapping: Record<string, string>, dryRun: boolean): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify(mapping));
+    return this.postImport<ImportResult>('companies', formData, dryRun);
+  }
+
+  async importContactsFile(file: File, mapping: Record<string, string>, dryRun: boolean, options?: { duplicateActions?: Record<string, ImportDuplicateAction> }): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify(mapping));
+    if (options?.duplicateActions) {
+      formData.append('duplicateActions', JSON.stringify(options.duplicateActions));
+    }
+    return this.postImport<ImportResult>('contacts', formData, dryRun);
+  }
+
   async importDealsFile(file: File, dryRun: boolean): Promise<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
@@ -1663,9 +1695,9 @@ class ApiClient {
 
   async rollbackImportBatch(
     batchId: string,
-  ): Promise<{ deleted: { leads: number; deals: number; interactions: number } }> {
+  ): Promise<{ deleted: { leads: number; deals: number; interactions: number; companies: number } }> {
     const res = await this.request<{
-      data: { deleted: { leads: number; deals: number; interactions: number } };
+      data: { deleted: { leads: number; deals: number; interactions: number; companies: number } };
     }>(`/api/v1/import/batches/${batchId}`, {
       method: 'DELETE',
     });
@@ -1742,6 +1774,137 @@ class ApiClient {
     return this.request(`/api/v1/deep-research/templates/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // ── Desdobramento Comercial — Empreendimentos ──────
+  async getEmpreendimentos(filters?: Record<string, string | number | undefined>) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') params.append(key, String(value));
+      });
+    }
+    const query = params.toString();
+    return this.request<{
+      items: Empreendimento[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/empreendimentos${query ? `?${query}` : ''}`);
+  }
+
+  async getEmpreendimento(id: string) {
+    return this.request<Empreendimento>(`/api/v1/empreendimentos/${id}`);
+  }
+
+  async createEmpreendimento(data: CreateEmpreendimentoInput) {
+    return this.request<Empreendimento>('/api/v1/empreendimentos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEmpreendimento(id: string, data: UpdateEmpreendimentoInput) {
+    return this.request<Empreendimento>(`/api/v1/empreendimentos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEmpreendimento(id: string) {
+    return this.request(`/api/v1/empreendimentos/${id}`, { method: 'DELETE' });
+  }
+
+  // ── Desdobramento Comercial — Playbooks ────────────
+  async getPlaybooks() {
+    return this.request<{ items: PlaybookTemplate[] }>('/api/v1/playbooks');
+  }
+
+  async getPlaybook(id: string) {
+    return this.request<PlaybookTemplate>(`/api/v1/playbooks/${id}`);
+  }
+
+  async createPlaybook(data: CreatePlaybookInput) {
+    return this.request<PlaybookTemplate>('/api/v1/playbooks', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePlaybook(id: string, data: UpdatePlaybookInput) {
+    return this.request<PlaybookTemplate>(`/api/v1/playbooks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePlaybook(id: string) {
+    return this.request(`/api/v1/playbooks/${id}`, { method: 'DELETE' });
+  }
+
+  // ── Desdobramento Comercial — Roadmaps ─────────────
+  async getRoadmaps(filters?: Record<string, string | number | undefined>) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') params.append(key, String(value));
+      });
+    }
+    const query = params.toString();
+    return this.request<{
+      items: CommercialRoadmapListItem[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/api/v1/roadmaps${query ? `?${query}` : ''}`);
+  }
+
+  async getRoadmap(id: string) {
+    return this.request<CommercialRoadmap>(`/api/v1/roadmaps/${id}`);
+  }
+
+  async createRoadmap(data: CreateRoadmapInput) {
+    return this.request<CommercialRoadmap>('/api/v1/roadmaps', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRoadmap(id: string, data: UpdateRoadmapInput) {
+    return this.request<CommercialRoadmap>(`/api/v1/roadmaps/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRoadmap(id: string) {
+    return this.request(`/api/v1/roadmaps/${id}`, { method: 'DELETE' });
+  }
+
+  async advanceRoadmapToProposal(id: string) {
+    return this.request<CommercialRoadmap>(`/api/v1/roadmaps/${id}/advance-to-proposal`, {
+      method: 'POST',
+    });
+  }
+
+  async upsertRoadmapStakeholder(id: string, data: UpsertStakeholderInput) {
+    return this.request<RoadmapStakeholder>(`/api/v1/roadmaps/${id}/stakeholders`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeRoadmapStakeholder(id: string, leadId: string) {
+    return this.request(`/api/v1/roadmaps/${id}/stakeholders/${leadId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getRoadmapPanel(filters?: Record<string, string | number | undefined>) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') params.append(key, String(value));
+      });
+    }
+    const query = params.toString();
+    return this.request<RoadmapPanel>(`/api/v1/roadmaps/panel${query ? `?${query}` : ''}`);
   }
 }
 
@@ -1975,7 +2138,7 @@ export interface CampaignStats {
 
 // ── Import Pro types ────────────────────────────────
 
-export type ImportType = 'LEADS' | 'DEALS' | 'INTERACTIONS';
+export type ImportType = 'LEADS' | 'DEALS' | 'INTERACTIONS' | 'COMPANIES';
 
 export type ImportBatchStatus =
   | 'PENDING'
@@ -1993,11 +2156,14 @@ export interface ImportValidationError {
   message: string;
 }
 
-/** A duplicate detected during dry-run, matched by email or phone. */
+/**
+ * A duplicate detected during dry-run. Leads/contacts match by email/phone;
+ * companies match by externalId/cnpj/name.
+ */
 export interface ImportDuplicate {
   row: number;
-  matchedBy: 'email' | 'phone';
-  /** Identifier the row collides with (email/phone value or existing record id). */
+  matchedBy: 'email' | 'phone' | 'externalId' | 'cnpj' | 'name';
+  /** Identifier the row collides with (the matched value or existing record id). */
   value: string;
   name?: string;
   email?: string;

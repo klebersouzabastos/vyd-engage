@@ -12,6 +12,7 @@ import {
   analyzeLeads,
   analyzeDeals,
   analyzeInteractions,
+  analyzeCompanies,
   createBatch,
   executeBatch,
   shouldRunSync,
@@ -23,6 +24,7 @@ import {
   type ColumnMapping,
   type DuplicateStrategy,
   type DuplicateActionMap,
+  type LeadImportOptions,
   type ParsedFile,
 } from '../services/importService.js';
 
@@ -116,15 +118,17 @@ function mapImportError(err: unknown) {
 }
 
 /**
- * Shared handler for leads/deals/interactions import. Parses the file, runs the
- * analysis, and either returns the dry-run report (spec req 11) or persists
- * synchronously (≤500 rows, spec req 30) / asynchronously (>500 rows, spec req 31).
+ * Shared handler for leads/contacts/companies/deals/interactions import. Parses
+ * the file, runs the analysis, and either returns the dry-run report (spec req
+ * 11) or persists synchronously (≤500 rows, req 30) / asynchronously (>500 rows,
+ * req 31). `opts.contactsMode` selects the contacts variant of the leads path.
  */
 async function handleImport(
   req: any,
   res: any,
   next: any,
   type: ImportType,
+  opts: { contactsMode?: boolean } = {},
 ) {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
@@ -135,7 +139,10 @@ async function handleImport(
       return next(createError('Nenhum arquivo enviado.', 400, 'NO_FILE'));
     }
 
-    const mapping = type === ImportType.LEADS ? parseMapping(req.body.mapping) : {};
+    // Leads, contacts and companies are mapped via a visual column mapper.
+    const usesMapping = type === ImportType.LEADS || type === ImportType.COMPANIES;
+    const mapping = usesMapping ? parseMapping(req.body.mapping) : {};
+    const options: LeadImportOptions | undefined = opts.contactsMode ? { contactsMode: true } : undefined;
 
     let parsed: ParsedFile;
     try {
@@ -158,16 +165,23 @@ async function handleImport(
     }
 
     const dryRun = isDryRun(req);
-    // Per-row decisions drive leads dedup (Gap 4); the global strategy is only a
-    // fallback for rows the frontend did not specify.
+    // Per-row decisions drive leads/contacts dedup (Gap 4); the global strategy is
+    // only a fallback for rows the frontend did not specify.
     const duplicateActions =
       type === ImportType.LEADS ? parseDuplicateActions(req.body.duplicateActions) : {};
-    const duplicateStrategy = parseDuplicateStrategy(req.body.duplicateStrategy ?? req.body.duplicate_strategy);
+    // Companies and contacts default to upsert (idempotent re-import, spec req 27);
+    // plain leads keep the original 'skip' default.
+    const defaultStrategy = type === ImportType.COMPANIES || opts.contactsMode ? 'update' : 'skip';
+    const duplicateStrategy = parseDuplicateStrategy(
+      req.body.duplicateStrategy ?? req.body.duplicate_strategy ?? defaultStrategy,
+    );
 
     // Run analysis (used for both dry-run and to feed the writers).
     let analysisResult;
-    if (type === ImportType.LEADS) {
-      analysisResult = await analyzeLeads(tenantId, parsed, mapping);
+    if (type === ImportType.COMPANIES) {
+      analysisResult = await analyzeCompanies(tenantId, parsed, mapping);
+    } else if (type === ImportType.LEADS) {
+      analysisResult = await analyzeLeads(tenantId, parsed, mapping, options);
     } else if (type === ImportType.DEALS) {
       analysisResult = await analyzeDeals(tenantId, parsed);
     } else {
@@ -182,18 +196,24 @@ async function handleImport(
     // Create the batch row.
     const batch = await createBatch(tenantId, userId, type, parsed.rows.length);
 
-    const runInput = { tenantId, userId, type, parsed, mapping, duplicateStrategy, duplicateActions };
+    const runInput = { tenantId, userId, type, parsed, mapping, duplicateStrategy, duplicateActions, options };
+
+    // The precomputed `type` tag mirrors the entity so executeBatch reuses the
+    // analysis instead of re-running it.
+    const precomputedType =
+      type === ImportType.COMPANIES
+        ? 'COMPANIES'
+        : type === ImportType.LEADS
+          ? 'LEADS'
+          : type === ImportType.DEALS
+            ? 'DEALS'
+            : 'INTERACTIONS';
+    const buildPrecomputed = () =>
+      ({ type: precomputedType as any, rows: (analysisResult as any).mappedRows });
 
     if (shouldRunSync(parsed.rows.length)) {
       // ≤500 rows → process now and return the final state (spec req 30).
-      const precomputed =
-        type === ImportType.LEADS
-          ? ({ type: 'LEADS' as const, rows: (analysisResult as any).mappedRows })
-          : type === ImportType.DEALS
-            ? ({ type: 'DEALS' as const, rows: (analysisResult as any).mappedRows })
-            : ({ type: 'INTERACTIONS' as const, rows: (analysisResult as any).mappedRows });
-
-      await executeBatch(batch.id, runInput, precomputed);
+      await executeBatch(batch.id, runInput, buildPrecomputed());
       const finalBatch = await getBatch(tenantId, batch.id);
       // Unified import contract (Gap 3): map the batch row onto the same shape
       // the dry-run and the frontend toast consume. importedRows already folds
@@ -215,13 +235,7 @@ async function handleImport(
     res.status(202).json({ status: 202, data: { batchId: batch.id, async: true } });
 
     setImmediate(() => {
-      const precomputed =
-        type === ImportType.LEADS
-          ? ({ type: 'LEADS' as const, rows: (analysisResult as any).mappedRows })
-          : type === ImportType.DEALS
-            ? ({ type: 'DEALS' as const, rows: (analysisResult as any).mappedRows })
-            : ({ type: 'INTERACTIONS' as const, rows: (analysisResult as any).mappedRows });
-      executeBatch(batch.id, runInput, precomputed).catch((err) => {
+      executeBatch(batch.id, runInput, buildPrecomputed()).catch((err) => {
         logger.error('Async import execution failed', err, { batchId: batch.id, tenantId });
       });
     });
@@ -236,6 +250,17 @@ async function handleImport(
 // POST /api/v1/import/leads — multipart (file + mapping JSON), dry_run supported
 router.post('/leads', handleUpload('file'), (req, res, next) =>
   handleImport(req, res, next, ImportType.LEADS),
+);
+
+// POST /api/v1/import/companies — multipart (file + mapping JSON), dry_run supported
+router.post('/companies', handleUpload('file'), (req, res, next) =>
+  handleImport(req, res, next, ImportType.COMPANIES),
+);
+
+// POST /api/v1/import/contacts — contacts variant of leads (email optional,
+// dedup by name+email/company, links to companies, flagged isContact)
+router.post('/contacts', handleUpload('file'), (req, res, next) =>
+  handleImport(req, res, next, ImportType.LEADS, { contactsMode: true }),
 );
 
 // POST /api/v1/import/deals — multipart CSV (lead_email, deal_name, value, stage, expected_close_date)

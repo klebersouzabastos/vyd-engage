@@ -4,7 +4,7 @@ import { taskService } from '../services/taskService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { TaskStatus, TaskPriority, NotificationType } from '@prisma/client';
+import { TaskStatus, TaskPriority, TaskType, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import { googleCalendarService } from '../services/googleCalendarService.js';
 import { emitToTenant } from '../services/socketService.js';
@@ -22,6 +22,12 @@ const createTaskSchema = z.object({
   assignedTo: z.string().uuid().optional(),
   leadId: z.string().uuid().optional(),
   dueDate: z.coerce.date().optional(),
+  // Desdobramento comercial — vínculos da ação (agenda do roadmap).
+  type: z.nativeEnum(TaskType).optional(),
+  companyId: z.string().uuid().optional(),
+  empreendimentoId: z.string().uuid().optional(),
+  dealId: z.string().uuid().optional(),
+  roadmapId: z.string().uuid().optional(),
 });
 
 const updateTaskSchema = createTaskSchema.extend({
