@@ -1,0 +1,20 @@
+# Normaliza fins de linha: o repositório armazena LF e faz checkout em LF,
+# eliminando o churn de CRLF no Windows (git autocrlf) que sujava o format:check.
+* text=auto eol=lf
+
+# Arquivos binários: nunca normalizar (corromperia o conteúdo).
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.svg  text eol=lf
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.pdf   binary
+*.xls   binary
+*.xlsx  binary
+*.keystore binary
