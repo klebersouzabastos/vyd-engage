@@ -52,6 +52,8 @@ export function DealForm({
   const [qualification, setQualification] = useState<number>(0);
   const [sourceId, setSourceId] = useState('');
   const [originCampaignId, setOriginCampaignId] = useState('');
+  const [oneTimeValue, setOneTimeValue] = useState('');
+  const [recurringValue, setRecurringValue] = useState('');
   const [sources, setSources] = useState<ConfigItem[]>([]);
   const [campaigns, setCampaigns] = useState<ConfigItem[]>([]);
   const [saving, setSaving] = useState(false);
@@ -152,6 +154,8 @@ export function DealForm({
       setQualification(typeof d.qualification === 'number' ? (d.qualification as number) : 0);
       setSourceId((d.sourceId as string) || '');
       setOriginCampaignId((d.originCampaignId as string) || '');
+      setOneTimeValue(d.oneTimeValue != null ? String(d.oneTimeValue) : '');
+      setRecurringValue(d.recurringValue != null ? String(d.recurringValue) : '');
     } else {
       setName('');
       setValue('');
@@ -166,6 +170,8 @@ export function DealForm({
       setQualification(0);
       setSourceId('');
       setOriginCampaignId('');
+      setOneTimeValue('');
+      setRecurringValue('');
     }
   }, [deal, open, defaultLeadId, defaultFunnelId]);
 
@@ -215,6 +221,8 @@ export function DealForm({
         qualification: qualification > 0 ? qualification : null,
         sourceId: sourceId || null,
         originCampaignId: originCampaignId || null,
+        oneTimeValue: oneTimeValue !== '' ? parseFloat(oneTimeValue) : null,
+        recurringValue: recurringValue !== '' ? parseFloat(recurringValue) : null,
       });
       onClose();
     } catch {
@@ -324,6 +332,33 @@ export function DealForm({
                 type="date"
                 value={expectedCloseDate}
                 onChange={(e) => setExpectedCloseDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="deal-onetime">Valor único (R$)</Label>
+              <Input
+                id="deal-onetime"
+                type="number"
+                min="0"
+                step="0.01"
+                value={oneTimeValue}
+                onChange={(e) => setOneTimeValue(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="deal-recurring">Valor recorrente (R$)</Label>
+              <Input
+                id="deal-recurring"
+                type="number"
+                min="0"
+                step="0.01"
+                value={recurringValue}
+                onChange={(e) => setRecurringValue(e.target.value)}
+                placeholder="0.00"
               />
             </div>
           </div>
