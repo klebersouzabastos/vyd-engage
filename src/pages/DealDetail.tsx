@@ -251,6 +251,32 @@ export function DealDetail() {
     }
   };
 
+  const applyDealAction = (res: { data?: unknown }) => {
+    const updated = (res.data ?? res) as Record<string, unknown>;
+    setDeal({ ...(updated as unknown as Deal), value: Number(updated.value) });
+  };
+
+  const handleMarkWon = async () => {
+    if (!id) return;
+    try {
+      applyDealAction(await apiClient.markDealWon(id));
+      toast.success('Negociação marcada como ganha');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao marcar ganho');
+    }
+  };
+
+  const handleTogglePause = async () => {
+    if (!id) return;
+    const paused = (deal as unknown as Record<string, unknown>)?.status === 'PAUSED';
+    try {
+      applyDealAction(paused ? await apiClient.resumeDeal(id) : await apiClient.pauseDeal(id));
+      toast.success(paused ? 'Negociação retomada' : 'Negociação pausada');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar');
+    }
+  };
+
   const handleSaveNote = async () => {
     if (!noteContent.trim() || !id) return;
     try {
@@ -491,6 +517,33 @@ export function DealDetail() {
                   </div>
                 )}
               </div>
+
+              {/* Ações de status — Ganho / Perda / Pausar-Retomar (reqs 19-23) */}
+              {(() => {
+                const status = (deal as unknown as Record<string, unknown>).status as
+                  | string
+                  | undefined;
+                const closed = status === 'WON' || status === 'LOST';
+                const paused = status === 'PAUSED';
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={handleMarkWon} disabled={status === 'WON'}>
+                      Marcar venda
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowLostModal(true)}
+                      disabled={status === 'LOST'}
+                    >
+                      Marcar perda
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleTogglePause} disabled={closed}>
+                      {paused ? 'Retomar' : 'Pausar'}
+                    </Button>
+                  </div>
+                );
+              })()}
 
               {/* Deal Products */}
               <DealProducts
