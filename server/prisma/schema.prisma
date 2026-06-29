@@ -78,6 +78,7 @@ model User {
   reports               Report[]              @relation("ReportCreator")
   calendarConnections   CalendarConnection[]  @relation("UserCalendarConnections")
   savedViews            SavedView[]
+  suggestions           Suggestion[]          @relation("SuggestionAuthor")
   meetingAvailabilities MeetingAvailability[]
   auditLogs             AuditLog[]
   goals                 Goal[]
@@ -158,6 +159,7 @@ model Tenant {
   deals                 Deal[]
   calendarConnections   CalendarConnection[]
   savedViews            SavedView[]
+  suggestions           Suggestion[]
   emailTemplates        EmailTemplate[]
   meetingAvailabilities MeetingAvailability[]
   auditLogs             AuditLog[]
@@ -1764,4 +1766,39 @@ model RoadmapStakeholder {
   @@index([roadmapId])
   @@index([leadId])
   @@map("roadmap_stakeholders")
+}
+
+model Suggestion {
+  id          String           @id @default(uuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation("SuggestionAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  route       String?
+  type        SuggestionType   @default(IMPROVEMENT)
+  status      SuggestionStatus @default(PENDING)
+  adminNotes  String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  resolvedAt  DateTime?
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, userId])
+  @@index([tenantId, createdAt])
+}
+
+enum SuggestionType {
+  IMPROVEMENT
+  BUG
+}
+
+enum SuggestionStatus {
+  PENDING
+  IN_REVIEW
+  IN_PROGRESS
+  DONE
+  REJECTED
 }
