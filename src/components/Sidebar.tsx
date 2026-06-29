@@ -52,6 +52,13 @@ const menuItems = [
     tourId: 'sidebar-suggestions',
   },
   {
+    icon: Handshake,
+    label: 'Config. Negócios',
+    path: '/app/settings/deal-config',
+    tourId: 'sidebar-deal-config',
+    adminOnly: true,
+  },
+  {
     icon: ScanSearch,
     label: 'Inteligência de Mercado',
     path: '/app/deep-research',

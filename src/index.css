@@ -2923,3 +2923,14 @@
 .hover\:bg-red-700:hover {
   background-color: #b91c1c;
 }
+
+/* Utilities ausentes usadas pela config de negócios (Tailwind pré-compilado) */
+.line-through {
+  text-decoration-line: line-through;
+}
+.divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e5e7eb;
+}
+.divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #d1d5db;
+}
