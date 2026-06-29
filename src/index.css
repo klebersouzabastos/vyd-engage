@@ -2934,3 +2934,14 @@
 .divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
   border-color: #d1d5db;
 }
+
+/* Utilities ausentes usadas pelo detalhe da negociação em abas (stepper/contatos) */
+.justify-start {
+  justify-content: flex-start;
+}
+.max-h-40 {
+  max-height: 10rem;
+}
+.hover\:text-red-600:hover {
+  color: #dc2626;
+}

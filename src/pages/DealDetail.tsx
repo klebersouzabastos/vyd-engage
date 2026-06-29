@@ -22,13 +22,22 @@ import {
   Zap,
   DollarSign,
   User,
+  Users,
   Clock,
   ChevronDown,
   Link as LinkIcon,
   Pencil,
   Sparkles,
+  Flame,
+  Star,
+  Trash2,
+  Paperclip,
+  ClipboardList,
+  FileSignature,
+  CheckSquare,
 } from 'lucide-react';
-import { apiClient, ConfigItem } from '../services/api/client';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { apiClient, ConfigItem, DealContact } from '../services/api/client';
 import { DealForm } from '../components/deals/DealForm';
 import { DealProducts } from '../components/deals/DealProducts';
 import { DealAIScore } from '../components/deals/DealAIScore';
@@ -212,6 +221,131 @@ export function DealDetail() {
     enabled: !!id,
   });
 
+  // ── Funil/etapas ricas para o stepper, playbook e esfriamento (reqs 24-26) ──
+  const { data: funnelData } = useQuery({
+    queryKey: ['deal-funnel', deal?.funnelId],
+    queryFn: async () => {
+      if (!deal?.funnelId) return null;
+      const res = await apiClient.getFunnel(deal.funnelId);
+      return ((res as Record<string, unknown>)?.data ?? res) as Record<string, unknown> | null;
+    },
+    enabled: !!deal?.funnelId,
+  });
+
+  const funnelColumns = useMemo(() => {
+    const cols = (funnelData?.columns as Array<Record<string, unknown>> | undefined) || [];
+    return [...cols].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+  }, [funnelData]);
+
+  const currentColumn = useMemo(
+    () => funnelColumns.find((c) => c.id === deal?.funnelColumnId) || null,
+    [funnelColumns, deal?.funnelColumnId]
+  );
+
+  // Tempo na etapa atual: usa o registro de stage-history aberto (sem exitedAt),
+  // com fallback para updatedAt do deal.
+  const daysInStage = useMemo(() => {
+    const current = (stageHistory as Array<Record<string, unknown>>).find((e) => !e.exitedAt);
+    const since = (current?.enteredAt as string | undefined) ?? deal?.updatedAt;
+    if (!since) return null;
+    return Math.floor((Date.now() - new Date(since).getTime()) / 86400000);
+  }, [stageHistory, deal?.updatedAt]);
+
+  // Esfriamento por etapa (req 26): dias sem interação acima do limite da etapa.
+  const coolingDaysOver = useMemo(() => {
+    const enabled = currentColumn?.coolingEnabled as boolean | undefined;
+    const limit = currentColumn?.coolingDays as number | undefined;
+    if (!enabled || !limit) return null;
+    const lastActivity = interactions[0]?.createdAt ?? deal?.updatedAt;
+    if (!lastActivity) return null;
+    const days = Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86400000);
+    return days > limit ? days : null;
+  }, [currentColumn, interactions, deal?.updatedAt]);
+
+  const [movingColumn, setMovingColumn] = useState(false);
+  const handleMoveToColumn = async (colId: string) => {
+    if (!id || colId === deal?.funnelColumnId || movingColumn) return;
+    setMovingColumn(true);
+    try {
+      const result = await apiClient.updateDeal(id, { funnelColumnId: colId });
+      setDeal({
+        ...(result as unknown as Deal),
+        value: Number((result as Record<string, unknown>).value),
+      });
+      toast.success('Etapa atualizada');
+    } catch (err) {
+      // A mensagem do backend lista os campos obrigatórios pendentes (reqs 4/10).
+      toast.error(err instanceof Error ? err.message : 'Erro ao mover etapa');
+    } finally {
+      setMovingColumn(false);
+    }
+  };
+
+  // ── Múltiplos contatos da negociação (req 16) ──
+  const [contacts, setContacts] = useState<DealContact[]>([]);
+  const [showContactSearch, setShowContactSearch] = useState(false);
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactResults, setContactResults] = useState<Array<{ id: string; name: string }>>([]);
+
+  const fetchContacts = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await apiClient.getDealContacts(id);
+      setContacts(res.data || []);
+    } catch {
+      // silencioso — negociação pode não ter contatos
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
+
+  useEffect(() => {
+    if (!showContactSearch) return;
+    const t = setTimeout(async () => {
+      try {
+        const res = await apiClient.getLeads({
+          limit: 20,
+          search: contactSearch.trim() || undefined,
+        });
+        setContactResults(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          res.leads?.map((l: any) => ({ id: l.id, name: l.name })) || []
+        );
+      } catch {
+        // silencioso
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [contactSearch, showContactSearch]);
+
+  const handleAddContact = async (leadId: string) => {
+    if (!id) return;
+    try {
+      await apiClient.addDealContact(id, { leadId });
+      await fetchContacts();
+      setShowContactSearch(false);
+      setContactSearch('');
+      toast.success('Contato adicionado');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao adicionar contato');
+    }
+  };
+
+  const handleRemoveContact = async (contactId: string) => {
+    if (!id) return;
+    try {
+      await apiClient.removeDealContact(id, contactId);
+      setContacts((prev) => prev.filter((c) => c.id !== contactId));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover contato');
+    }
+  };
+
+  // Filtro por tipo de evento na aba Histórico (req 28).
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<string>('ALL');
+
   const handleDownloadPdf = async () => {
     if (!id) return;
     setDownloadingPdf(true);
@@ -305,11 +439,18 @@ export function DealDetail() {
     toast.success('Deal atualizado!');
   };
 
-  const visibleInteractions = useMemo(
-    () => interactions.slice(0, visibleCount),
-    [interactions, visibleCount]
+  const filteredInteractions = useMemo(
+    () =>
+      historyTypeFilter === 'ALL'
+        ? interactions
+        : interactions.filter((i) => i.type === historyTypeFilter),
+    [interactions, historyTypeFilter]
   );
-  const hasMore = visibleCount < interactions.length;
+  const visibleInteractions = useMemo(
+    () => filteredInteractions.slice(0, visibleCount),
+    [filteredInteractions, visibleCount]
+  );
+  const hasMore = visibleCount < filteredInteractions.length;
 
   if (loadingDeal) {
     return (
@@ -348,24 +489,119 @@ export function DealDetail() {
           <span className="text-sm">Voltar para Deals</span>
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left: Timeline (70%) */}
-          <div className="lg:w-[70%]">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">Atividades</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => setShowNoteForm(!showNoteForm)}
-                >
-                  <Plus size={14} />
-                  Adicionar nota
-                </Button>
+        {/* Stepper de etapas (req 24) — clicável, com tempo na etapa e badge de esfriamento (req 26) */}
+        {funnelColumns.length > 0 && (
+          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold text-gray-900">Etapas do funil</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                {daysInStage !== null && (
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <Clock size={12} /> {daysInStage} dia{daysInStage !== 1 ? 's' : ''} nesta etapa
+                  </span>
+                )}
+                {coolingDaysOver !== null && (
+                  <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 flex items-center gap-1">
+                    <Flame size={12} /> Esfriando há {coolingDaysOver} dias
+                  </span>
+                )}
               </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {funnelColumns.map((col) => {
+                const isCurrent = col.id === deal.funnelColumnId;
+                return (
+                  <button
+                    key={col.id as string}
+                    type="button"
+                    onClick={() => handleMoveToColumn(col.id as string)}
+                    disabled={movingColumn}
+                    title={(col.objective as string) || (col.title as string)}
+                    className={`text-xs px-3 py-1.5 rounded-full border border-gray-300 transition-colors ${
+                      isCurrent
+                        ? 'bg-primary text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {(col.abbreviation as string) || (col.title as string)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-              {showNoteForm && (
+        {/* Playbook da etapa atual (req 25) */}
+        {currentColumn &&
+          ((currentColumn.objective as string) || (currentColumn.playbook as string)) && (
+            <div className="mb-6 bg-gray-50 rounded-lg border border-gray-300 p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                <FileText size={14} /> Playbook — {currentColumn.title as string}
+              </h3>
+              {currentColumn.objective ? (
+                <p className="text-sm text-gray-700 font-medium">
+                  {currentColumn.objective as string}
+                </p>
+              ) : null}
+              {currentColumn.playbook ? (
+                <p className="text-sm text-gray-600 whitespace-pre-line mt-1">
+                  {currentColumn.playbook as string}
+                </p>
+              ) : null}
+            </div>
+          )}
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left: conteúdo em abas (req 27) */}
+          <div className="lg:w-[70%]">
+            <Tabs defaultValue="historico">
+              <TabsList className="flex-wrap h-auto justify-start gap-1 mb-4">
+                <TabsTrigger value="historico">Histórico</TabsTrigger>
+                <TabsTrigger value="email">E-mail</TabsTrigger>
+                <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+                <TabsTrigger value="produtos">Produtos</TabsTrigger>
+                <TabsTrigger value="arquivos">Arquivos</TabsTrigger>
+                <TabsTrigger value="propostas">Propostas</TabsTrigger>
+                <TabsTrigger value="questionarios">Questionários</TabsTrigger>
+              </TabsList>
+
+              {/* Aba Histórico — timeline + filtro por tipo + criar anotação (reqs 27, 28) */}
+              <TabsContent value="historico" className="space-y-4">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+                  <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
+                    <h2 className="text-lg font-semibold text-gray-900">Atividades</h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={historyTypeFilter}
+                        onChange={(e) => {
+                          setHistoryTypeFilter(e.target.value);
+                          setVisibleCount(ITEMS_PER_PAGE);
+                        }}
+                        aria-label="Filtrar por tipo de evento"
+                        className="text-sm border border-gray-300 rounded px-2 py-1.5 text-gray-700"
+                      >
+                        <option value="ALL">Todos os tipos</option>
+                        <option value="NOTE">Nota</option>
+                        <option value="EMAIL">E-mail</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                        <option value="CALL">Ligação</option>
+                        <option value="MEETING">Reunião</option>
+                        <option value="STATUS_CHANGE">Mudança de Status</option>
+                        <option value="AUTOMATION">Automação</option>
+                      </select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setShowNoteForm(!showNoteForm)}
+                      >
+                        <Plus size={14} />
+                        Adicionar nota
+                      </Button>
+                    </div>
+                  </div>
+
+                  {showNoteForm && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <Textarea
                     placeholder="Escreva uma nota sobre este deal..."
@@ -400,10 +636,14 @@ export function DealDetail() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 size={24} className="animate-spin text-gray-400" />
                 </div>
-              ) : interactions.length === 0 ? (
+              ) : filteredInteractions.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText size={40} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 text-sm">Nenhuma atividade registrada.</p>
+                  <p className="text-gray-500 text-sm">
+                    {historyTypeFilter === 'ALL'
+                      ? 'Nenhuma atividade registrada.'
+                      : 'Nenhuma atividade desse tipo.'}
+                  </p>
                   <p className="text-gray-400 text-xs mt-1">
                     Adicione uma nota para iniciar o histórico.
                   </p>
@@ -433,7 +673,7 @@ export function DealDetail() {
                         className="gap-2"
                       >
                         <ChevronDown size={14} />
-                        Carregar mais ({interactions.length - visibleCount} restantes)
+                        Carregar mais ({filteredInteractions.length - visibleCount} restantes)
                       </Button>
                     </div>
                   )}
@@ -493,6 +733,98 @@ export function DealDetail() {
                 )}
               </div>
             )}
+              </TabsContent>
+
+              {/* Aba E-mail (req 32, P1) */}
+              <TabsContent value="email">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Gere um rascunho de e-mail com IA para esta negociação. A sincronização completa
+                    da thread de e-mails será adicionada em seguida.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                    onClick={() => setAiDraftOpen(true)}
+                  >
+                    <Sparkles size={14} />
+                    Gerar Email
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* Aba Tarefas (req 29, P1) */}
+              <TabsContent value="tarefas">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 text-center">
+                  <CheckSquare size={36} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500">
+                    As tarefas vinculadas a esta negociação aparecerão aqui.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 gap-2"
+                    onClick={() => navigate('/app/tasks')}
+                  >
+                    Ir para Tarefas
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* Aba Produtos (reqs 17, 27) */}
+              <TabsContent value="produtos">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+                  <DealProducts
+                    dealId={deal.id}
+                    currentValue={Number(deal.value)}
+                    onValueChange={async (v) => {
+                      if (!id) return;
+                      const result = await apiClient.updateDeal(id, { value: v });
+                      setDeal({ ...result, value: Number(result.value) });
+                    }}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Aba Arquivos (req 30, P1) */}
+              <TabsContent value="arquivos">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 text-center">
+                  <Paperclip size={36} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500">Anexos da negociação em breve.</p>
+                </div>
+              </TabsContent>
+
+              {/* Aba Propostas (req 31, P1) */}
+              <TabsContent value="propostas">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Exporte a proposta em PDF. Modelos e histórico de propostas serão adicionados em
+                    seguida.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                  >
+                    {downloadingPdf ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <FileSignature size={14} />
+                    )}
+                    Exportar Proposta
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* Aba Questionários (req 33, P2) */}
+              <TabsContent value="questionarios">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 text-center">
+                  <ClipboardList size={36} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500">Questionários configuráveis em breve.</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Right: Info Sidebar (30%) */}
@@ -545,16 +877,92 @@ export function DealDetail() {
                 );
               })()}
 
-              {/* Deal Products */}
-              <DealProducts
-                dealId={deal.id}
-                currentValue={Number(deal.value)}
-                onValueChange={async (v) => {
-                  if (!id) return;
-                  const result = await apiClient.updateDeal(id, { value: v });
-                  setDeal({ ...result, value: Number(result.value) });
-                }}
-              />
+              {/* Qualificação (req 15) — estrelas read-only no detalhe */}
+              {(() => {
+                const q = (deal as unknown as Record<string, unknown>).qualification as
+                  | number
+                  | undefined;
+                return (
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">
+                      Qualificação
+                    </span>
+                    <div className="flex items-center gap-1 text-amber-700">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} size={16} fill={q && n <= q ? 'currentColor' : 'none'} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Múltiplos contatos (req 16) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                    <Users size={12} /> Contatos
+                  </span>
+                  <button
+                    onClick={() => setShowContactSearch((v) => !v)}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    {showContactSearch ? 'Fechar' : '+ Adicionar'}
+                  </button>
+                </div>
+                {showContactSearch && (
+                  <div className="mb-2">
+                    <Input
+                      placeholder="Buscar contato..."
+                      value={contactSearch}
+                      onChange={(e) => setContactSearch(e.target.value)}
+                      className="mb-1"
+                    />
+                    {contactResults.length > 0 && (
+                      <ul className="border border-gray-200 rounded max-h-40 overflow-y-auto">
+                        {contactResults.map((r) => (
+                          <li key={r.id}>
+                            <button
+                              onClick={() => handleAddContact(r.id)}
+                              className="w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              {r.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+                {contacts.length === 0 ? (
+                  <p className="text-xs text-gray-400">Nenhum contato vinculado.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {contacts.map((c) => (
+                      <li key={c.id} className="flex items-start justify-between gap-2 text-sm">
+                        <div className="min-w-0">
+                          <p className="text-gray-900 truncate">{c.lead?.name || 'Contato'}</p>
+                          {c.lead?.position && (
+                            <p className="text-xs text-gray-500 truncate">{c.lead.position}</p>
+                          )}
+                          {c.lead?.email && (
+                            <p className="text-xs text-gray-500 truncate">{c.lead.email}</p>
+                          )}
+                          {c.lead?.phone && (
+                            <p className="text-xs text-gray-500 truncate">{c.lead.phone}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveContact(c.id)}
+                          aria-label="Remover contato"
+                          className="text-gray-400 hover:text-red-600 flex-shrink-0"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               {/* Stage and probability */}
               <div className="space-y-3">
@@ -661,29 +1069,6 @@ export function DealDetail() {
                   </div>
                 )}
               </div>
-
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={handleDownloadPdf}
-                disabled={downloadingPdf}
-              >
-                {downloadingPdf ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <FileText size={14} />
-                )}
-                Exportar Proposta
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
-                onClick={() => setAiDraftOpen(true)}
-              >
-                <Sparkles size={14} />
-                Gerar Email
-              </Button>
 
               <Button
                 variant="outline"
