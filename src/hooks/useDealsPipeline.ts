@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { apiClient } from '../services/api/client';
 import { Deal } from '../types';
 
@@ -286,7 +287,11 @@ export function useDealsPipeline() {
         await apiClient.moveDeal({ dealId, targetColumnId, position });
       } catch (err: unknown) {
         console.error('Failed to move deal:', err);
+        // Reverte o update otimista recarregando o funil do backend.
         await loadFunnelWithDeals(currentFunnelId);
+        // req 4: a mensagem do backend já lista os campos obrigatórios pendentes
+        // da etapa de destino (STAGE_REQUIRED_FIELDS_MISSING) — exibe ao usuário.
+        toast.error(err instanceof Error ? err.message : 'Erro ao mover negociação');
       }
     },
     [currentFunnelId, loadFunnelWithDeals]

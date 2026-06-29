@@ -171,6 +171,32 @@ router.get('/:id/audit', async (req, res, next) => {
   }
 });
 
+// GET /api/deals/:id/stage-history - Histórico de etapas (tempo em cada etapa) — req 24
+router.get('/:id/stage-history', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { id } = req.params;
+    const { tenantId } = req.user;
+    // Tenant-safety: garante que o deal pertence ao tenant antes de expor o histórico.
+    const owned = await prisma.deal.findFirst({
+      where: { id, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!owned) {
+      return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
+    }
+    const history = await prisma.dealStageHistory.findMany({
+      where: { dealId: id },
+      orderBy: { enteredAt: 'asc' },
+    });
+    res.json({ status: 200, data: history });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/deals/:id - Get deal by ID
 router.get('/:id', async (req, res, next) => {
   try {

@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { LeadStatus, FunnelType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { assertStageRequiredFieldsFilled } from './dealService.js';
 
 const DEFAULT_COLUMNS = [
   { title: 'Novo', color: '#3B82F6', order: 0, isDefault: true, mappedStatus: LeadStatus.NEW },
@@ -441,6 +442,16 @@ export const funnelService = {
 
     if (!targetColumn) {
       throw createError('Target column not found', 404);
+    }
+
+    // Enforcement (reqs 4/10): bloquear o avanço via drag-drop se a etapa de destino
+    // tem campos obrigatórios (StageRequiredField) ainda não preenchidos. Mesma regra
+    // aplicada no dealService.update (clique no stepper) — paridade entre os dois caminhos.
+    if (deal.funnelColumnId !== targetColumnId) {
+      await assertStageRequiredFieldsFilled(
+        targetColumnId,
+        (deal.customFields as Record<string, unknown>) || {}
+      );
     }
 
     // Update deal's column position and funnel

@@ -69,7 +69,7 @@ function isFilled(v: unknown): boolean {
  * campos pendentes (reqs 4 e 10). Checa o valor tanto por nome quanto por id do
  * CustomField em `customFields` (o JSON do deal é chaveado por nome ou id).
  */
-async function assertStageRequiredFieldsFilled(
+export async function assertStageRequiredFieldsFilled(
   destColumnId: string,
   customFields: Record<string, unknown>
 ) {
