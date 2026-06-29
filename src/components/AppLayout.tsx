@@ -6,6 +6,7 @@ import { OnboardingTour } from './OnboardingTour';
 import { CommandPalette } from './CommandPalette';
 import { SidePanel } from './SidePanel';
 import { SidePanelProvider } from '@/contexts/SidePanelContext';
+import { SuggestionFab } from './SuggestionFab';
 import { Menu } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'vyd-sidebar-collapsed';
@@ -85,6 +86,9 @@ export function AppLayout() {
 
           {/* Onboarding Tour */}
           <OnboardingTour />
+
+          {/* Floating feedback button (global) */}
+          <SuggestionFab />
         </div>
       </SidePanelProvider>
     </NuqsAdapter>

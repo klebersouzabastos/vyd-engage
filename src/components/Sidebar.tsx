@@ -24,6 +24,7 @@ import {
   Upload,
   Mail,
   ScanSearch,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { useCompany } from '../contexts/CompanyContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,6 +45,12 @@ const menuItems = [
   { icon: Mail, label: 'Campanhas', path: '/app/campaigns', tourId: 'sidebar-campaigns' },
   { icon: CheckSquare, label: 'Tarefas', path: '/app/tasks', tourId: 'sidebar-tasks' },
   { icon: BarChart3, label: 'Relatórios', path: '/app/reports', tourId: 'sidebar-reports' },
+  {
+    icon: MessageSquarePlus,
+    label: 'Sugestões',
+    path: '/app/suggestions',
+    tourId: 'sidebar-suggestions',
+  },
   {
     icon: ScanSearch,
     label: 'Inteligência de Mercado',

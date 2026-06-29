@@ -222,6 +222,7 @@ import deepResearchRoutes from './routes/deepResearch.js';
 import empreendimentoRoutes from './routes/empreendimentos.js';
 import playbookRoutes from './routes/playbooks.js';
 import roadmapRoutes from './routes/roadmaps.js';
+import suggestionRoutes from './routes/suggestions.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -300,6 +301,7 @@ v1Router.use('/deep-research', csrfProtection);
 v1Router.use('/empreendimentos', csrfProtection);
 v1Router.use('/playbooks', csrfProtection);
 v1Router.use('/roadmaps', csrfProtection);
+v1Router.use('/suggestions', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -351,6 +353,7 @@ v1Router.use('/deep-research', deepResearchRoutes);
 v1Router.use('/empreendimentos', empreendimentoRoutes);
 v1Router.use('/playbooks', playbookRoutes);
 v1Router.use('/roadmaps', roadmapRoutes);
+v1Router.use('/suggestions', suggestionRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 
