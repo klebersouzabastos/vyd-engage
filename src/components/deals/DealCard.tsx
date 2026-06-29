@@ -29,6 +29,8 @@ export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }:
     deal.status && deal.status !== 'OPEN' ? STATUS_BADGE[deal.status] : undefined;
   const qual = deal.qualification ?? 0;
   const taskCount = deal.taskCount ?? 0;
+  // Empresa da negociação (Deal.company) tem prioridade; cai para a empresa do contato.
+  const companyName = deal.company?.name ?? deal.lead?.company ?? null;
 
   return (
     <div
@@ -70,13 +72,13 @@ export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }:
         </div>
       </div>
 
-      {deal.lead?.company && (
+      {companyName && (
         <p
           className="text-xs text-gray-500 truncate flex items-center gap-1 mb-2"
-          title={deal.lead.company}
+          title={companyName}
         >
           <Building2 size={10} />
-          {deal.lead.company}
+          {companyName}
         </p>
       )}
 

@@ -12,6 +12,7 @@ export interface PipelineDeal {
   expectedCloseDate?: string | null;
   leadId?: string | null;
   lead?: { id: string; name: string; email?: string; company?: string | null } | null;
+  company?: { id: string; name: string } | null;
   assignedTo?: string | null;
   assignedUser?: { id: string; name: string; email?: string } | null;
   notes?: string | null;

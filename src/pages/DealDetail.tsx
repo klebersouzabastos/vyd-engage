@@ -35,6 +35,7 @@ import {
   ClipboardList,
   FileSignature,
   CheckSquare,
+  Building2,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { apiClient, ConfigItem, DealContact } from '../services/api/client';
@@ -992,6 +993,15 @@ export function DealDetail() {
 
               {/* Details */}
               <div className="space-y-3">
+                {deal.company && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Building2 size={14} className="text-gray-400 flex-shrink-0" />
+                    <div>
+                      <span className="text-xs text-gray-500 block">Empresa</span>
+                      <span className="text-gray-700">{deal.company.name}</span>
+                    </div>
+                  </div>
+                )}
                 {deal.expectedCloseDate && (
                   <div className="flex items-center gap-3 text-sm">
                     <Calendar size={14} className="text-gray-400 flex-shrink-0" />

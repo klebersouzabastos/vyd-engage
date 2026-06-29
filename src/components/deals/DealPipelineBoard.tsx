@@ -118,6 +118,7 @@ function pipelineDealToDeal(d: PipelineDeal): Deal {
     expectedCloseDate: d.expectedCloseDate,
     leadId: d.leadId,
     lead: d.lead ? { ...d.lead, phone: undefined, company: d.lead.company ?? undefined } : null,
+    company: d.company ?? null,
     assignedTo: d.assignedTo,
     assignedUser: d.assignedUser || null,
     notes: d.notes,

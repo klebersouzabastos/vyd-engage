@@ -93,6 +93,7 @@ export const funnelService = {
               include: {
                 lead: { select: { id: true, name: true, email: true, company: true } },
                 assignedUser: { select: { id: true, name: true, email: true } },
+                company: { select: { id: true, name: true } },
                 _count: { select: { tasks: true } },
               },
             },
