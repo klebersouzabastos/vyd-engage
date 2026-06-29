@@ -28,7 +28,7 @@ import {
   Pencil,
   Sparkles,
 } from 'lucide-react';
-import { apiClient } from '../services/api/client';
+import { apiClient, ConfigItem } from '../services/api/client';
 import { DealForm } from '../components/deals/DealForm';
 import { DealProducts } from '../components/deals/DealProducts';
 import { DealAIScore } from '../components/deals/DealAIScore';
@@ -151,9 +151,20 @@ export function DealDetail() {
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
-  const [lostReason, setLostReason] = useState('');
+  const [lostReasonId, setLostReasonId] = useState('');
+  const [lostReasonsList, setLostReasonsList] = useState<ConfigItem[]>([]);
   const [lostCompetitor, setLostCompetitor] = useState('');
   const [stageHistoryOpen, setStageHistoryOpen] = useState(false);
+
+  // Carrega os motivos de perda configuráveis (req 22) quando o modal de perda abre.
+  useEffect(() => {
+    if (showLostModal && lostReasonsList.length === 0) {
+      apiClient
+        .getLostReasons(true)
+        .then((res) => setLostReasonsList(res.data || []))
+        .catch(() => {});
+    }
+  }, [showLostModal, lostReasonsList.length]);
 
   const fetchDeal = useCallback(async () => {
     if (!id) return;
@@ -222,16 +233,20 @@ export function DealDetail() {
   };
 
   const handleConfirmLost = async () => {
-    if (!id) return;
+    if (!id || !lostReasonId) return;
     try {
-      const result = await apiClient.updateDeal(id, { stage: 'LOST', lostReason, lostCompetitor });
-      setDeal({ ...result, value: Number(result.value) });
-      toast.success('Deal marcado como perdido');
-    } catch {
-      toast.error('Erro ao atualizar deal');
+      const res = await apiClient.markDealLost(id, lostReasonId);
+      const updated = (res.data ?? res) as Record<string, unknown>;
+      if (lostCompetitor.trim()) {
+        await apiClient.updateDeal(id, { lostCompetitor: lostCompetitor.trim() }).catch(() => {});
+      }
+      setDeal({ ...(updated as unknown as Deal), value: Number(updated.value) });
+      toast.success('Negociação marcada como perdida');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao marcar perda');
     } finally {
       setShowLostModal(false);
-      setLostReason('');
+      setLostReasonId('');
       setLostCompetitor('');
     }
   };
@@ -653,17 +668,16 @@ export function DealDetail() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Motivo</Label>
-              <Select value={lostReason} onValueChange={setLostReason}>
+              <Select value={lostReasonId} onValueChange={setLostReasonId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o motivo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Preço">Preço</SelectItem>
-                  <SelectItem value="Concorrente">Concorrente</SelectItem>
-                  <SelectItem value="Timing">Timing</SelectItem>
-                  <SelectItem value="Sem orçamento">Sem orçamento</SelectItem>
-                  <SelectItem value="Não qualificado">Não qualificado</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
+                  {lostReasonsList.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.label ?? r.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -679,7 +693,7 @@ export function DealDetail() {
               <Button variant="ghost" onClick={() => setShowLostModal(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleConfirmLost} disabled={!lostReason}>
+              <Button onClick={handleConfirmLost} disabled={!lostReasonId}>
                 Confirmar
               </Button>
             </div>
