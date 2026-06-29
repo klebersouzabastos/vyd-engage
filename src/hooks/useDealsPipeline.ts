@@ -11,12 +11,16 @@ export interface PipelineDeal {
   probability: number;
   expectedCloseDate?: string | null;
   leadId?: string | null;
-  lead?: { id: string; name: string; email?: string } | null;
+  lead?: { id: string; name: string; email?: string; company?: string | null } | null;
   assignedTo?: string | null;
   assignedUser?: { id: string; name: string; email?: string } | null;
   notes?: string | null;
   lostReason?: string | null;
   positionInColumn: number;
+  // Gestão de Negócios (RD parity) — enriquecimento do card (req 35)
+  status?: string | null;
+  qualification?: number | null;
+  _count?: { tasks?: number };
   createdAt: string;
   updatedAt: string;
 }

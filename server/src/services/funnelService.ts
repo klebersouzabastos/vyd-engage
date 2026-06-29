@@ -91,8 +91,9 @@ export const funnelService = {
             deals: {
               orderBy: { positionInColumn: 'asc' },
               include: {
-                lead: { select: { id: true, name: true, email: true } },
+                lead: { select: { id: true, name: true, email: true, company: true } },
                 assignedUser: { select: { id: true, name: true, email: true } },
+                _count: { select: { tasks: true } },
               },
             },
           },

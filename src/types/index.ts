@@ -282,6 +282,11 @@ export interface Deal {
   funnelColumnId?: string | null;
   positionInColumn?: number;
   closedAt?: string | null;
+  /** Gestão de Negócios (RD parity) — campos opcionais usados no card/detalhe. */
+  status?: string | null;
+  qualification?: number | null;
+  /** Contagem de tarefas vinculadas (vinda do _count da query do funil). */
+  taskCount?: number;
   /** Stored AI close-propensity score (0-100); null until first computed. */
   aiScore?: number | null;
   /** ISO timestamp of the last AI score computation. */
