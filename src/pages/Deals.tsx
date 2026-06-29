@@ -130,6 +130,66 @@ export function Deals() {
   const [editingFunnelName, setEditingFunnelName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Filtros da visão pipeline (req 37) — aplicados client-side sobre as colunas do funil.
+  const [pipelineSearch, setPipelineSearch] = useState('');
+  const [pipelineAssignee, setPipelineAssignee] = useState('ALL');
+  const [pipelineStatus, setPipelineStatus] = useState('ALL');
+  const [pipelineSort, setPipelineSort] = useState('default');
+
+  const pipelineAssignees = useMemo(() => {
+    const map = new Map<string, string>();
+    dealColumns.forEach((col) =>
+      col.deals.forEach((d) => {
+        if (d.assignedUser?.id) map.set(d.assignedUser.id, d.assignedUser.name);
+      })
+    );
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [dealColumns]);
+
+  const filteredDealColumns = useMemo(() => {
+    const q = pipelineSearch.trim().toLowerCase();
+    return dealColumns.map((col) => {
+      let ds = col.deals;
+      if (q) {
+        ds = ds.filter(
+          (d) =>
+            d.name.toLowerCase().includes(q) ||
+            (d.lead?.name || '').toLowerCase().includes(q) ||
+            (d.lead?.company || '').toLowerCase().includes(q)
+        );
+      }
+      if (pipelineAssignee !== 'ALL') {
+        ds = ds.filter((d) =>
+          pipelineAssignee === 'NONE'
+            ? !d.assignedUser
+            : d.assignedUser?.id === pipelineAssignee
+        );
+      }
+      if (pipelineStatus !== 'ALL') {
+        ds = ds.filter((d) => (d.status || 'OPEN') === pipelineStatus);
+      }
+      if (pipelineSort !== 'default') {
+        ds = [...ds].sort((a, b) => {
+          switch (pipelineSort) {
+            case 'value_desc':
+              return Number(b.value) - Number(a.value);
+            case 'value_asc':
+              return Number(a.value) - Number(b.value);
+            case 'qualification_desc':
+              return (b.qualification || 0) - (a.qualification || 0);
+            case 'created_desc':
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            case 'created_asc':
+              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            default:
+              return 0;
+          }
+        });
+      }
+      return { ...col, deals: ds };
+    });
+  }, [dealColumns, pipelineSearch, pipelineAssignee, pipelineStatus, pipelineSort]);
+
   const handleSearch = useCallback(() => {
     const filters: any = { page: 1 };
     if (search.trim()) filters.search = search.trim();
@@ -590,6 +650,65 @@ export function Deals() {
           </div>
         )}
 
+        {/* Filtros da visão pipeline (req 37) — responsável, status, ordenação e busca */}
+        {viewMode === 'pipeline' && (
+          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                aria-hidden="true"
+              />
+              <Input
+                placeholder="Buscar no funil..."
+                value={pipelineSearch}
+                onChange={(e) => setPipelineSearch(e.target.value)}
+                className="pl-10"
+                aria-label="Buscar negociações no funil"
+              />
+            </div>
+            <Select value={pipelineAssignee} onValueChange={setPipelineAssignee}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos responsáveis</SelectItem>
+                <SelectItem value="NONE">Sem responsável</SelectItem>
+                {pipelineAssignees.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={pipelineStatus} onValueChange={setPipelineStatus}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos os status</SelectItem>
+                <SelectItem value="OPEN">Em andamento</SelectItem>
+                <SelectItem value="WON">Ganho</SelectItem>
+                <SelectItem value="LOST">Perdido</SelectItem>
+                <SelectItem value="PAUSED">Pausado</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={pipelineSort} onValueChange={setPipelineSort}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Ordem padrão</SelectItem>
+                <SelectItem value="value_desc">Maior valor</SelectItem>
+                <SelectItem value="value_asc">Menor valor</SelectItem>
+                <SelectItem value="qualification_desc">Maior qualificação</SelectItem>
+                <SelectItem value="created_desc">Mais recentes</SelectItem>
+                <SelectItem value="created_asc">Mais antigas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Content */}
         {viewMode === 'pipeline' ? (
           pipelineLoading ? (
@@ -600,7 +719,7 @@ export function Deals() {
               onStageChange={handleStageUpdate}
               onEdit={handleEdit}
               onClick={(deal) => navigate(`/app/deals/${deal.id}`)}
-              funnelColumns={dealColumns}
+              funnelColumns={filteredDealColumns}
               onMoveDeal={moveDealInPipeline}
             />
           )
