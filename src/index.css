@@ -2945,3 +2945,21 @@
 .hover\:text-red-600:hover {
   color: #dc2626;
 }
+
+/* Utilities ausentes usadas pelos cards/abas de negócios (badges e botão de e-mail) */
+.text-\[10px\] {
+  font-size: 10px;
+  line-height: 1.2;
+}
+.bg-purple-50 {
+  background-color: #faf5ff;
+}
+.text-purple-700 {
+  color: #7e22ce;
+}
+.border-purple-300 {
+  border-color: #d8b4fe;
+}
+.hover\:bg-purple-50:hover {
+  background-color: #faf5ff;
+}
