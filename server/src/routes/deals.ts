@@ -31,6 +31,12 @@ const createDealSchema = z.object({
   lostReason: z.string().optional(),
   funnelId: z.string().uuid().optional().nullable(),
   funnelColumnId: z.string().uuid().optional().nullable(),
+  // Gestão de Negócios (RD parity) — P0
+  qualification: z.number().int().min(1).max(5).optional().nullable(),
+  sourceId: z.string().uuid().optional().nullable(),
+  originCampaignId: z.string().uuid().optional().nullable(),
+  oneTimeValue: z.number().min(0).optional().nullable(),
+  recurringValue: z.number().min(0).optional().nullable(),
 });
 
 const updateDealSchema = createDealSchema.partial().extend({
@@ -309,6 +315,62 @@ router.put('/:id', async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     }
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/win - Marcar venda (ganho) — req 20
+router.post('/:id/win', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const deal = await dealService.markWon(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: deal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/lose - Marcar perda (exige motivo da lista configurável) — reqs 21/22
+const loseSchema = z.object({ lostReasonId: z.string().uuid() });
+router.post('/:id/lose', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const { lostReasonId } = loseSchema.parse(req.body);
+    const deal = await dealService.markLost(req.user.tenantId, req.params.id, lostReasonId);
+    res.json({ status: 200, data: deal });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(
+        createError(
+          'Informe o motivo da perda (lostReasonId).',
+          400,
+          'VALIDATION_ERROR',
+          error.errors
+        )
+      );
+    }
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/pause - Pausar negociação — req 23
+router.post('/:id/pause', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const deal = await dealService.pause(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: deal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/resume - Retomar negociação — req 23
+router.post('/:id/resume', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const deal = await dealService.resume(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: deal });
+  } catch (error) {
     next(error);
   }
 });
