@@ -22,22 +22,31 @@ async function checkStaleDeals() {
     let totalCreated = 0;
 
     for (const tenant of tenants) {
-      const staleDays = tenant.staleDays ?? 5;
-      const staleThreshold = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
+      const tenantStaleDays = tenant.staleDays ?? 5;
 
-      // Open deals (not WON, LOST, or soft-deleted)
+      // Open deals (not WON/LOST, not paused, not soft-deleted) — req 23: pausado não esfria
       const openDeals = await prisma.deal.findMany({
         where: {
           tenantId: tenant.id,
           stage: { notIn: ['WON', 'LOST'] },
+          status: { not: 'PAUSED' },
           deletedAt: null,
         },
         select: {
           id: true,
           name: true,
           assignedTo: true,
+          funnelColumn: { select: { coolingEnabled: true, coolingDays: true } },
         },
       });
+
+      // Esfriamento por etapa (req 42): usa coolingDays da etapa quando habilitado;
+      // fallback no limite global do tenant; se nenhum válido, não destaca.
+      const dealCoolingDays = (deal: (typeof openDeals)[number]): number | null => {
+        const col = deal.funnelColumn;
+        if (col?.coolingEnabled && col.coolingDays && col.coolingDays > 0) return col.coolingDays;
+        return tenantStaleDays > 0 ? tenantStaleDays : null;
+      };
 
       if (openDeals.length === 0) continue;
 
@@ -58,16 +67,19 @@ async function checkStaleDeals() {
         }
       }
 
-      // Identify stale deals
+      // Identify stale deals (limite por etapa)
       const staleDeals = openDeals.filter((deal) => {
+        const days = dealCoolingDays(deal);
+        if (!days) return false;
+        const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
         const lastActivity = lastActivityByDeal.get(deal.id);
-        return !lastActivity || lastActivity < staleThreshold;
+        return !lastActivity || lastActivity < threshold;
       });
 
       if (staleDeals.length === 0) continue;
 
-      // Deduplication: check DEAL_AT_RISK notifications created within the last staleDays for these deals
-      const dedupeWindowStart = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
+      // Deduplication: check DEAL_AT_RISK notifications created within the dedup window
+      const dedupeWindowStart = new Date(Date.now() - tenantStaleDays * 24 * 60 * 60 * 1000);
       const existingNotifications = await prisma.notification.findMany({
         where: {
           tenantId: tenant.id,
@@ -92,7 +104,7 @@ async function checkStaleDeals() {
         const lastActivity = lastActivityByDeal.get(deal.id);
         const daysSinceActivity = lastActivity
           ? Math.floor((Date.now() - lastActivity.getTime()) / (24 * 60 * 60 * 1000))
-          : staleDays;
+          : (dealCoolingDays(deal) ?? tenantStaleDays);
 
         await prisma.notification
           .create({

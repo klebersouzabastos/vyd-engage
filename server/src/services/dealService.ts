@@ -47,6 +47,15 @@ const dealInclude = {
   assignedUser: { select: { id: true, name: true, email: true } },
 } as const;
 
+const contactLeadSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  position: true,
+  company: true,
+} as const;
+
 function isFilled(v: unknown): boolean {
   if (v === null || v === undefined) return false;
   if (typeof v === 'string') return v.trim() !== '';
@@ -484,6 +493,41 @@ export const dealService = {
     });
     emitToTenant(tenantId, 'deal:updated', { deal });
     return deal;
+  },
+
+  // ── Múltiplos contatos da negociação (req 16) ──
+
+  async listContacts(tenantId: string, dealId: string) {
+    await this.findById(tenantId, dealId);
+    return prisma.dealContact.findMany({
+      where: { dealId },
+      include: { lead: { select: contactLeadSelect } },
+      orderBy: { createdAt: 'asc' },
+    });
+  },
+
+  async addContact(tenantId: string, dealId: string, leadId: string, roleInDeal?: string | null) {
+    await this.findById(tenantId, dealId);
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId } });
+    if (!lead) {
+      throw createError('Contato não encontrado', 404, 'CONTACT_NOT_FOUND');
+    }
+    return prisma.dealContact.upsert({
+      where: { dealId_leadId: { dealId, leadId } },
+      update: { roleInDeal: roleInDeal ?? null },
+      create: { dealId, leadId, roleInDeal: roleInDeal ?? null },
+      include: { lead: { select: contactLeadSelect } },
+    });
+  },
+
+  async removeContact(tenantId: string, dealId: string, contactId: string) {
+    await this.findById(tenantId, dealId);
+    const dc = await prisma.dealContact.findFirst({ where: { id: contactId, dealId } });
+    if (!dc) {
+      throw createError('Contato não encontrado', 404, 'DEAL_CONTACT_NOT_FOUND');
+    }
+    await prisma.dealContact.delete({ where: { id: dc.id } });
+    return { deleted: true };
   },
 
   async delete(tenantId: string, id: string) {

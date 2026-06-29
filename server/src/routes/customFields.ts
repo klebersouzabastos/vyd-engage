@@ -4,7 +4,7 @@ import { customFieldService } from '../services/customFieldService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { CustomFieldType } from '@prisma/client';
+import { CustomFieldType, CustomFieldEntity, CustomFieldVisibility } from '@prisma/client';
 
 const router = Router();
 
@@ -17,6 +17,8 @@ const createCustomFieldSchema = z.object({
   options: z.array(z.string()).optional(),
   required: z.boolean().optional(),
   order: z.number().int().optional(),
+  entity: z.nativeEnum(CustomFieldEntity).optional().nullable(),
+  visibility: z.nativeEnum(CustomFieldVisibility).optional(),
 });
 
 const updateCustomFieldSchema = createCustomFieldSchema.extend({
@@ -31,7 +33,12 @@ router.get('/', async (req, res, next) => {
     }
 
     const activeOnly = req.query.active === 'true';
-    const fields = await customFieldService.findAll(req.user.tenantId, activeOnly);
+    const entityParam = req.query.entity as CustomFieldEntity | undefined;
+    const entity =
+      entityParam && Object.values(CustomFieldEntity).includes(entityParam)
+        ? entityParam
+        : undefined;
+    const fields = await customFieldService.findAll(req.user.tenantId, activeOnly, entity);
     res.json(fields);
   } catch (error) {
     next(error);

@@ -375,6 +375,58 @@ router.post('/:id/resume', async (req, res, next) => {
   }
 });
 
+// ── Múltiplos contatos da negociação (req 16) ──
+// GET /api/deals/:id/contacts
+router.get('/:id/contacts', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const data = await dealService.listContacts(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const addContactSchema = z.object({
+  leadId: z.string().uuid(),
+  roleInDeal: z.string().max(120).optional().nullable(),
+});
+
+// POST /api/deals/:id/contacts
+router.post('/:id/contacts', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const body = addContactSchema.parse(req.body);
+    const data = await dealService.addContact(
+      req.user.tenantId,
+      req.params.id,
+      body.leadId,
+      body.roleInDeal
+    );
+    res.status(201).json({ status: 201, data });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// DELETE /api/deals/:id/contacts/:contactId
+router.delete('/:id/contacts/:contactId', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const data = await dealService.removeContact(
+      req.user.tenantId,
+      req.params.id,
+      req.params.contactId
+    );
+    res.json({ status: 200, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/deals/:id - Delete deal
 router.delete('/:id', async (req, res, next) => {
   try {
