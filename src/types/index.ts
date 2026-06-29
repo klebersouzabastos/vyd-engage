@@ -71,10 +71,12 @@ export interface Task {
 export interface CustomField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
+  type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'textarea' | 'checkbox';
   options?: string[];
   required: boolean;
   defaultValue?: string | number | boolean;
+  /** Entidade-alvo (DEAL|COMPANY|CONTACT|PRODUCT); ausente/null = legado (todas). */
+  entity?: string | null;
 }
 
 export interface Tag {

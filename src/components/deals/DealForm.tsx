@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Deal, DealStage } from '../../types';
+import { Deal, DealStage, CustomField } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Loader2, Search, Star } from 'lucide-react';
 import { apiClient, ConfigItem } from '../../services/api/client';
+import { CustomFieldInput } from '../CustomFieldInput';
 import { FieldError } from '../register/FieldError';
 import { dealFormSchema } from '../../utils/validation/formSchemas';
 import { useFormValidation } from '../../hooks/useFormValidation';
@@ -54,6 +55,8 @@ export function DealForm({
   const [originCampaignId, setOriginCampaignId] = useState('');
   const [oneTimeValue, setOneTimeValue] = useState('');
   const [recurringValue, setRecurringValue] = useState('');
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, unknown>>({});
   const [sources, setSources] = useState<ConfigItem[]>([]);
   const [campaigns, setCampaigns] = useState<ConfigItem[]>([]);
   const [saving, setSaving] = useState(false);
@@ -156,6 +159,7 @@ export function DealForm({
       setOriginCampaignId((d.originCampaignId as string) || '');
       setOneTimeValue(d.oneTimeValue != null ? String(d.oneTimeValue) : '');
       setRecurringValue(d.recurringValue != null ? String(d.recurringValue) : '');
+      setCustomFieldValues((d.customFields as Record<string, unknown>) || {});
     } else {
       setName('');
       setValue('');
@@ -172,6 +176,7 @@ export function DealForm({
       setOriginCampaignId('');
       setOneTimeValue('');
       setRecurringValue('');
+      setCustomFieldValues({});
     }
   }, [deal, open, defaultLeadId, defaultFunnelId]);
 
@@ -185,6 +190,22 @@ export function DealForm({
     apiClient
       .getOriginCampaigns(true)
       .then((r) => setCampaigns(r.data || []))
+      .catch(() => {});
+    // Campos personalizados da entidade Negociação (reqs 8, 12) — render por entidade.
+    apiClient
+      .getCustomFields(true, 'DEAL')
+      .then((raw) =>
+        setCustomFieldDefs(
+          (raw || []).map((f: any) => ({
+            id: f.id,
+            name: f.name,
+            type: f.type,
+            options: Array.isArray(f.options) ? f.options : undefined,
+            required: !!f.required,
+            entity: f.entity ?? null,
+          }))
+        )
+      )
       .catch(() => {});
   }, [open]);
 
@@ -223,6 +244,7 @@ export function DealForm({
         originCampaignId: originCampaignId || null,
         oneTimeValue: oneTimeValue !== '' ? parseFloat(oneTimeValue) : null,
         recurringValue: recurringValue !== '' ? parseFloat(recurringValue) : null,
+        customFields: customFieldValues,
       });
       onClose();
     } catch {
@@ -524,6 +546,23 @@ export function DealForm({
               rows={3}
             />
           </div>
+
+          {/* Campos personalizados da Negociação (reqs 8, 9, 12) */}
+          {customFieldDefs.length > 0 && (
+            <div className="space-y-4 border-t border-gray-200 pt-4">
+              <p className="text-sm font-medium text-gray-700">Campos personalizados</p>
+              {customFieldDefs.map((f) => (
+                <CustomFieldInput
+                  key={f.id}
+                  field={f}
+                  value={customFieldValues[f.id]}
+                  onChange={(v) =>
+                    setCustomFieldValues((prev) => ({ ...prev, [f.id]: v }))
+                  }
+                />
+              ))}
+            </div>
+          )}
 
           {stage === 'LOST' && (
             <div>

@@ -65,6 +65,7 @@ export function CustomFields() {
       date: 'Data',
       textarea: 'Texto Longo',
       select: 'Seleção',
+      multiselect: 'Seleção múltipla',
       checkbox: 'Checkbox',
     };
     return labels[type];

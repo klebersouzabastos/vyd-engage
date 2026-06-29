@@ -13,8 +13,14 @@ interface CustomFieldInputProps {
 }
 
 export function CustomFieldInput({ field, value, onChange, error }: CustomFieldInputProps) {
+  // Normaliza o tipo para ser robusto a maiúsculas/minúsculas (o backend usa o enum
+  // UPPERCASE TEXT/NUMBER/MULTI_SELECT; telas antigas usam lowercase). Também unifica
+  // MULTI_SELECT/multi_select → 'multiselect'.
+  const normalizedType = String(field.type || '')
+    .toLowerCase()
+    .replace('multi_select', 'multiselect');
   const renderInput = () => {
-    switch (field.type) {
+    switch (normalizedType) {
       case 'text':
         return (
           <Input
@@ -81,12 +87,37 @@ export function CustomFieldInput({ field, value, onChange, error }: CustomFieldI
           </Select>
         );
 
+      case 'multiselect': {
+        const selected: string[] = Array.isArray(value) ? value : [];
+        return (
+          <div className={`space-y-1.5 ${error ? 'rounded border border-red-500 p-2' : ''}`}>
+            {field.options?.map((option) => {
+              const checked = selected.includes(option);
+              return (
+                <label
+                  key={option}
+                  className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(c) =>
+                      onChange(c ? [...selected, option] : selected.filter((o) => o !== option))
+                    }
+                  />
+                  {option}
+                </label>
+              );
+            })}
+          </div>
+        );
+      }
+
       default:
         return null;
     }
   };
 
-  if (field.type === 'checkbox') {
+  if (normalizedType === 'checkbox') {
     return (
       <div>
         {renderInput()}

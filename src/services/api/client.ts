@@ -1095,8 +1095,14 @@ class ApiClient {
   }
 
   // Custom Fields
-  async getCustomFields(activeOnly?: boolean) {
-    const query = activeOnly ? '?active=true' : '';
+  async getCustomFields(
+    activeOnly?: boolean,
+    entity?: 'DEAL' | 'COMPANY' | 'CONTACT' | 'PRODUCT'
+  ) {
+    const params = new URLSearchParams();
+    if (activeOnly) params.set('active', 'true');
+    if (entity) params.set('entity', entity);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<Array<Record<string, unknown>>>(`/api/v1/custom-fields${query}`);
   }
 
