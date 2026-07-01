@@ -39,11 +39,13 @@ export const companyService = {
     return company;
   },
 
-  async findById(tenantId: string, id: string) {
+  async findById(tenantId: string, id: string, ownerId?: string) {
+    // Analista (USER): a empresa só mostra os leads/deals/interações do próprio (req 4).
     const company = await prisma.company.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: {
         leads: {
+          where: ownerId ? { assignedTo: ownerId } : {},
           select: {
             id: true,
             name: true,
@@ -57,6 +59,7 @@ export const companyService = {
           orderBy: { createdAt: 'desc' },
         },
         deals: {
+          where: ownerId ? { assignedTo: ownerId } : {},
           select: {
             id: true,
             name: true,
@@ -69,6 +72,15 @@ export const companyService = {
           orderBy: { createdAt: 'desc' },
         },
         interactions: {
+          where: ownerId
+            ? {
+                OR: [
+                  { userId: ownerId },
+                  { lead: { assignedTo: ownerId } },
+                  { deal: { assignedTo: ownerId } },
+                ],
+              }
+            : {},
           select: {
             id: true,
             type: true,

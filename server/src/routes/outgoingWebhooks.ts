@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { webhookService, SELECTABLE_WEBHOOK_EVENTS } from '../services/webhookService.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 
@@ -9,6 +9,8 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+// Webhooks de saída são integração — item exclusivo de ADMIN (req 13, defesa em profundidade).
+router.use(requireRole('ADMIN'));
 
 // Events selectable on creation are exactly the 9 from req 10.
 const selectableEvent = z.enum(SELECTABLE_WEBHOOK_EVENTS as unknown as [string, ...string[]]);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { importLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
@@ -32,6 +32,8 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+// Importação de dados é item exclusivo de ADMIN (req 13, defesa em profundidade).
+router.use(requireRole('ADMIN'));
 // 5 imports/hour/tenant (spec req 29). Keyed by tenantId; GETs are skipped.
 router.use(importLimiter);
 
