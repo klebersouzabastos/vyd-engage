@@ -81,7 +81,7 @@ router.get('/', async (req, res, next) => {
       typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
         ? (typeParam as FunnelType)
         : undefined;
-    const funnels = await funnelService.findAll(req.user.tenantId, type);
+    const funnels = await funnelService.findAll(req.user.tenantId, type, ownerScope(req.user));
     res.json({ status: 200, data: funnels });
   } catch (error) {
     next(error);

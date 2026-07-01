@@ -48,13 +48,19 @@ const DEFAULT_DEAL_COLUMNS = [
 
 export const funnelService = {
   /**
-   * Get all funnels for a tenant, including columns and lead/deal counts
+   * Get all funnels for a tenant, including columns and lead/deal counts.
+   * Para o analista (USER), `ownerId` restringe as contagens por coluna aos
+   * PRÓPRIOS registros — o seletor de funil não deve revelar volumes do time
+   * (spec papeis-comerciais req 4/5).
    */
-  async findAll(tenantId: string, type?: FunnelType) {
+  async findAll(tenantId: string, type?: FunnelType, ownerId?: string) {
     const where: { tenantId: string; type?: FunnelType } = { tenantId };
     if (type) {
       where.type = type;
     }
+
+    // Filtro de posse aplicado às contagens de leads/deals (vazio = tenant-wide).
+    const ownerWhere = ownerId ? { assignedTo: ownerId } : {};
 
     const funnels = await prisma.funnel.findMany({
       where,
@@ -63,7 +69,12 @@ export const funnelService = {
         columns: {
           orderBy: { order: 'asc' },
           include: {
-            _count: { select: { leads: true, deals: true } },
+            _count: {
+              select: {
+                leads: { where: ownerWhere },
+                deals: { where: ownerWhere },
+              },
+            },
           },
         },
       },
