@@ -89,6 +89,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Gate do design-system (spec design-system-migration, Fase 8): 0 cor
+      # codificada. BLOQUEANTE — sem continue-on-error, um hex faz o CI falhar.
+      - name: Design System — gate de cores
+        run: npm run check:colors && npm run lint:css
+
       - name: Lint
         run: npm run lint
         continue-on-error: true

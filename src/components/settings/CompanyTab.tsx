@@ -8,8 +8,8 @@ import { useCompany } from '../../contexts/CompanyContext';
 import { resizeImage, isValidImageFile, isValidFileSize } from '../../utils/imageUtils';
 
 // Cor de marca do tenant = DADO DO USUÁRIO (editável no color-picker nativo, que
-// exige hex literal). Default = azul-blueprint do DS (#1E5FC4 = --vyd-action-primary
-// resolvido). Fora do escopo de tema; entra na allowlist do gate.
+// exige hex literal). Default = azul-blueprint do DS (--vyd-action-primary resolvido).
+// Fora do escopo de tema; escape pontual do gate na linha do valor.
 const DEFAULT_BRAND_COLOR = '#1E5FC4'; // gate-allow: user color
 
 export function CompanyTab() {

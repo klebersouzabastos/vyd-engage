@@ -288,7 +288,7 @@ function HighlightElement({ selector }: { selector: string }) {
         width: rect.width + 8,
         height: rect.height + 8,
         borderRadius: 8,
-        boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+        boxShadow: '0 0 0 9999px color-mix(in oklab, var(--vyd-neutral-0) 55%, transparent)',
         zIndex: 10000,
         pointerEvents: 'none',
         background: 'transparent',
