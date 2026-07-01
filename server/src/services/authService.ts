@@ -27,6 +27,9 @@ export interface AuthResponse {
     name: string;
     role: UserRole;
     tenantId: string;
+    // Identidade do ambiente (nome/logo do tenant) para o front exibir o branding
+    // correto já no login, sem depender de um reload que dispara /auth/me.
+    tenant?: { id: string; name: string; slug: string; logo: string | null };
   };
   accessToken: string;
   refreshToken: string;
@@ -143,6 +146,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
       name: user.name,
       role: user.role,
       tenantId: tenant.id,
+      tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug, logo: tenant.logo },
     },
     accessToken,
     refreshToken,
@@ -205,6 +209,14 @@ export async function login(data: LoginData): Promise<AuthResponse> {
       name: user.name,
       role: user.role,
       tenantId: user.tenantId,
+      tenant: user.tenant
+        ? {
+            id: user.tenant.id,
+            name: user.tenant.name,
+            slug: user.tenant.slug,
+            logo: user.tenant.logo,
+          }
+        : undefined,
     },
     accessToken,
     refreshToken,
