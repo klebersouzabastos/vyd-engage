@@ -312,11 +312,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'deep-research/painel',
-        element: RoadmapPanelView,
+        element: guard(RoadmapPanelView, MANAGER_ROLES),
       },
       {
         path: 'deep-research/desdobramento/:id',
-        element: RoadmapView,
+        element: guard(RoadmapView, MANAGER_ROLES),
       },
       {
         path: 'deep-research/:id',

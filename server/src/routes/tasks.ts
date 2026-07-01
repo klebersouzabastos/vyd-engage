@@ -111,6 +111,8 @@ router.post('/', async (req, res, next) => {
 
     // Tasks don't have plan limits, but we could add if needed
     const data = createTaskSchema.parse(req.body);
+    // Analista (USER) só cria tarefas atribuídas a si mesmo (req 8) — paridade com deals.
+    if (isAnalyst(req.user)) data.assignedTo = req.user.userId;
     const task = await taskService.create(req.user.tenantId, data);
 
     // Notify assignee if task is assigned to someone other than the creator
