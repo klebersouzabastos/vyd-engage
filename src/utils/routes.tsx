@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { AppLayout } from '../components/AppLayout';
 import { RequireAuth } from '../components/RequireAuth';
@@ -23,6 +23,15 @@ function lazyNamed<T extends Record<string, any>>(factory: () => Promise<T>, nam
       </Suspense>
     </ErrorBoundary>
   );
+}
+
+// Gating por papel (spec papeis-comerciais). Envolve o elemento da rota exigindo
+// papéis específicos; navegação direta a rota sem permissão é bloqueada no front
+// (a API também bloqueia — defesa em profundidade).
+const MANAGER_ROLES = ['ADMIN', 'GESTOR']; // estrategista + admin
+const ADMIN_ROLES = ['ADMIN'];
+function guard(element: ReactNode, roles: string[]) {
+  return <RequireAuth requiredRoles={roles}>{element}</RequireAuth>;
 }
 
 // Public pages
@@ -145,7 +154,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings/deal-config',
-        element: DealSettings,
+        element: guard(DealSettings, MANAGER_ROLES),
       },
       {
         path: 'leads',
@@ -193,7 +202,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'team',
-        element: TeamManagement,
+        element: guard(TeamManagement, ADMIN_ROLES),
       },
       {
         path: 'pipeline',
@@ -255,7 +264,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'billing',
-        element: Billing,
+        element: guard(Billing, ADMIN_ROLES),
       },
       {
         path: 'whatsapp/templates',
@@ -295,7 +304,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'performance',
-        element: TeamPerformance,
+        element: guard(TeamPerformance, MANAGER_ROLES),
       },
       {
         path: 'deep-research',
@@ -315,33 +324,33 @@ export const router = createBrowserRouter([
       },
       {
         path: 'reports/win-loss',
-        element: WinLossReport,
+        element: guard(WinLossReport, MANAGER_ROLES),
       },
       {
         path: 'settings/products',
-        element: Products,
+        element: guard(Products, MANAGER_ROLES),
       },
       {
         path: 'settings/import',
-        element: Import,
+        element: guard(Import, ADMIN_ROLES),
       },
       {
         path: 'webhooks',
-        element: Webhooks,
+        element: guard(Webhooks, ADMIN_ROLES),
       },
       {
         // Spec-required path for the API Hub webhooks page (API-1.2, req 8).
         path: 'settings/webhooks',
-        element: Webhooks,
+        element: guard(Webhooks, ADMIN_ROLES),
       },
       {
         path: 'api-keys',
-        element: ApiKeys,
+        element: guard(ApiKeys, ADMIN_ROLES),
       },
       {
         // Spec-required path for the API keys page with scopes (API-2.1, req 21).
         path: 'settings/api-keys',
-        element: ApiKeys,
+        element: guard(ApiKeys, ADMIN_ROLES),
       },
       {
         path: 'admin',

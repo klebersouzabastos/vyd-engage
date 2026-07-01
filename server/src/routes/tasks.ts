@@ -4,6 +4,7 @@ import { taskService } from '../services/taskService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { ownerScope } from '../utils/roleScope.js';
 import { TaskStatus, TaskPriority, TaskType, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import { googleCalendarService } from '../services/googleCalendarService.js';
@@ -54,6 +55,7 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
+    filters.assignedTo = ownerScope(req.user, filters.assignedTo);
     const result = await taskService.findAll(req.user.tenantId, filters);
     res.json(result);
   } catch (error) {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireManagerForWrites } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import prisma from '../config/database.js';
@@ -9,6 +9,7 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+router.use(requireManagerForWrites);
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 

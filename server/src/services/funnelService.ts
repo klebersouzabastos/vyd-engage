@@ -75,7 +75,9 @@ export const funnelService = {
   /**
    * Get a single funnel with columns and leads/deals
    */
-  async findById(tenantId: string, funnelId: string) {
+  async findById(tenantId: string, funnelId: string, assignedTo?: string) {
+    // Escopo do analista (USER): board mostra só os leads/deals do próprio responsável.
+    const ownerWhere = assignedTo ? { assignedTo } : {};
     const funnel = await prisma.funnel.findFirst({
       where: { id: funnelId, tenantId },
       include: {
@@ -83,12 +85,14 @@ export const funnelService = {
           orderBy: { order: 'asc' },
           include: {
             leads: {
+              where: ownerWhere,
               orderBy: { positionInColumn: 'asc' },
               include: {
                 tags: { include: { tag: true } },
               },
             },
             deals: {
+              where: ownerWhere,
               orderBy: { positionInColumn: 'asc' },
               include: {
                 lead: { select: { id: true, name: true, email: true, company: true } },

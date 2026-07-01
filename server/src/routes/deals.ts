@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { dealService } from '../services/dealService.js';
 import { forecastService } from '../services/forecastService.js';
@@ -8,6 +8,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { aiLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
+import { ownerScope, isAnalyst } from '../utils/roleScope.js';
 import { DealStage } from '@prisma/client';
 import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
@@ -76,7 +77,7 @@ router.get('/forecast', async (req, res, next) => {
 
     const forecast = await forecastService.getForecast(req.user.tenantId, {
       months,
-      assignedTo,
+      assignedTo: ownerScope(req.user, assignedTo),
       stage,
     });
     res.json({ status: 200, data: forecast });
@@ -93,7 +94,7 @@ router.get('/trend', async (req, res, next) => {
     }
 
     const months = req.query.months ? Number(req.query.months) : 6;
-    const trend = await forecastService.getTrend(req.user.tenantId, months);
+    const trend = await forecastService.getTrend(req.user.tenantId, months, ownerScope(req.user));
     res.json({ status: 200, data: trend });
   } catch (error) {
     next(error);
@@ -107,7 +108,7 @@ router.get('/stats', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const stats = await dealService.getStats(req.user.tenantId);
+    const stats = await dealService.getStats(req.user.tenantId, ownerScope(req.user));
     res.json({ status: 200, data: stats });
   } catch (error) {
     next(error);
@@ -122,7 +123,7 @@ router.get('/action-summary', async (req, res, next) => {
     }
 
     const limit = req.query.limit ? Number(req.query.limit) : 5;
-    const actions = await getActionSummary(req.user.tenantId, limit);
+    const actions = await getActionSummary(req.user.tenantId, limit, ownerScope(req.user));
     res.json({ status: 200, data: actions });
   } catch (error) {
     next(error);
@@ -141,6 +142,7 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
+    filters.assignedTo = ownerScope(req.user, filters.assignedTo);
     const result = await dealService.findAll(req.user.tenantId, filters);
     res.json(result);
   } catch (error) {
@@ -150,6 +152,30 @@ router.get('/', async (req, res, next) => {
     next(error);
   }
 });
+
+// Guard de posse (reqs 6,7): o analista (USER) só acessa negócios em que é o
+// responsável; caso contrário recebe 404 (sem vazar existência). GESTOR/ADMIN/
+// platform-admin (e VIEWER, só-leitura) passam direto. Aplica a todas as rotas /:id*.
+async function enforceDealOwnership(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    if (!isAnalyst(req.user)) return next();
+    const owned = await prisma.deal.findFirst({
+      where: {
+        id: req.params.id,
+        tenantId: req.user.tenantId,
+        deletedAt: null,
+        assignedTo: req.user.userId,
+      },
+      select: { id: true },
+    });
+    if (!owned) return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
+    return next();
+  } catch (err) {
+    next(err);
+  }
+}
+router.use('/:id', enforceDealOwnership);
 
 // GET /api/deals/:id/audit - Get audit trail for a deal
 router.get('/:id/audit', async (req, res, next) => {
@@ -268,6 +294,8 @@ router.post('/', async (req, res, next) => {
     }
 
     const data = createDealSchema.parse(req.body);
+    // Analista (USER) só cria negócios atribuídos a si mesmo (req 8).
+    if (isAnalyst(req.user)) data.assignedTo = req.user.userId;
     const deal = await dealService.create(req.user.tenantId, data);
 
     dispatchTrigger(
@@ -305,6 +333,8 @@ router.put('/:id', async (req, res, next) => {
       ...body,
       id: req.params.id,
     });
+    // Analista (USER) não pode reatribuir o negócio para outra pessoa (req 8).
+    if (isAnalyst(req.user)) delete data.assignedTo;
 
     // Fetch existing deal for audit diff
     const existing = await prisma.deal.findUnique({

@@ -5,9 +5,11 @@ import { Loader2 } from 'lucide-react';
 
 interface RequireAuthProps {
   children: ReactNode;
+  /** Papéis permitidos. Vazio/ausente = qualquer autenticado. Platform-admin sempre passa. */
+  requiredRoles?: string[];
 }
 
-export function RequireAuth({ children }: RequireAuthProps) {
+export function RequireAuth({ children, requiredRoles }: RequireAuthProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -21,6 +23,17 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Gating por papel (spec papeis-comerciais): quem não tem o papel exigido é
+  // redirecionado ao dashboard. A API também bloqueia (defesa em profundidade).
+  if (
+    requiredRoles &&
+    requiredRoles.length > 0 &&
+    !user.isPlatformAdmin &&
+    !requiredRoles.includes(user.role)
+  ) {
+    return <Navigate to="/app" replace />;
   }
 
   return <>{children}</>;

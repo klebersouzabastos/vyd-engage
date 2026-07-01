@@ -63,7 +63,8 @@ export const interactionService = {
       type?: string;
       page?: number;
       limit?: number;
-    }
+    },
+    ownerId?: string
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
@@ -83,6 +84,16 @@ export const interactionService = {
 
     if (filters?.type) {
       where.type = filters.type;
+    }
+
+    // Escopo do analista (USER): só interações que ele criou ou de negociações/leads
+    // dos quais ele é responsável (spec papeis-comerciais, req 4).
+    if (ownerId) {
+      where.OR = [
+        { userId: ownerId },
+        { deal: { assignedTo: ownerId } },
+        { lead: { assignedTo: ownerId } },
+      ];
     }
 
     const [interactions, total] = await Promise.all([

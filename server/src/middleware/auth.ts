@@ -78,6 +78,19 @@ export function requireRole(...roles: string[]) {
 }
 
 /**
+ * Configuração do processo comercial (funis/etapas/campos/motivos/fontes/produtos):
+ * leitura (GET/HEAD/OPTIONS) é livre para qualquer autenticado (necessária para
+ * preencher formulários), mas escrita exige GESTOR ou ADMIN (spec papeis-comerciais,
+ * reqs 9 e 10).
+ */
+export function requireManagerForWrites(req: Request, res: Response, next: NextFunction): void {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  return requireRole('ADMIN', 'GESTOR')(req, res, next);
+}
+
+/**
  * Exige que o usuário autenticado seja super-admin da plataforma (cross-tenant).
  * Usa a flag já carregada por `authenticate` (sem query extra).
  */

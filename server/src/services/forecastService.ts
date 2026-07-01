@@ -214,7 +214,11 @@ export const forecastService = {
   /**
    * Won vs Lost trend for the last N months.
    */
-  async getTrend(tenantId: string, months: number = 6): Promise<TrendResponse> {
+  async getTrend(
+    tenantId: string,
+    months: number = 6,
+    assignedTo?: string
+  ): Promise<TrendResponse> {
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
 
@@ -224,6 +228,7 @@ export const forecastService = {
         deletedAt: null,
         stage: { in: [DealStage.WON, DealStage.LOST] },
         closedAt: { not: null, gte: startDate },
+        ...(assignedTo ? { assignedTo } : {}),
       },
       select: {
         stage: true,

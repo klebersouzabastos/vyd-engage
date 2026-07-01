@@ -543,7 +543,9 @@ export const dealService = {
     emitToTenant(tenantId, 'deal:deleted', { dealId: id });
   },
 
-  async getStats(tenantId: string) {
+  async getStats(tenantId: string, assignedTo?: string) {
+    // Escopo por responsável (analista/USER vê só os próprios) — spec papeis-comerciais.
+    const scope = assignedTo ? { assignedTo } : {};
     const activeStages: DealStage[] = [
       DealStage.QUALIFICATION,
       DealStage.PROPOSAL,
@@ -555,26 +557,26 @@ export const dealService = {
     const [totalCount, stageGroups, activeAgg, wonAgg, lostAgg, wonCycleTimeDeals] =
       await Promise.all([
         // Total deal count
-        prisma.deal.count({ where: { tenantId, deletedAt: null } }),
+        prisma.deal.count({ where: { tenantId, deletedAt: null, ...scope } }),
 
         // Group by stage: count + sum value
         prisma.deal.groupBy({
           by: ['stage'],
-          where: { tenantId, deletedAt: null },
+          where: { tenantId, deletedAt: null, ...scope },
           _count: { id: true },
           _sum: { value: true },
         }),
 
         // Active pipeline aggregation (sum value for active stages)
         prisma.deal.aggregate({
-          where: { tenantId, deletedAt: null, stage: { in: activeStages } },
+          where: { tenantId, deletedAt: null, stage: { in: activeStages }, ...scope },
           _sum: { value: true },
           _count: { id: true },
         }),
 
         // Won deals aggregation
         prisma.deal.aggregate({
-          where: { tenantId, deletedAt: null, stage: DealStage.WON },
+          where: { tenantId, deletedAt: null, stage: DealStage.WON, ...scope },
           _sum: { value: true },
           _count: { id: true },
           _avg: { value: true },
@@ -582,14 +584,14 @@ export const dealService = {
 
         // Lost deals aggregation
         prisma.deal.aggregate({
-          where: { tenantId, deletedAt: null, stage: DealStage.LOST },
+          where: { tenantId, deletedAt: null, stage: DealStage.LOST, ...scope },
           _sum: { value: true },
           _count: { id: true },
         }),
 
         // Won deals with closedAt for cycle time calculation (lightweight select)
         prisma.deal.findMany({
-          where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null } },
+          where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null }, ...scope },
           select: { createdAt: true, closedAt: true },
         }),
       ]);

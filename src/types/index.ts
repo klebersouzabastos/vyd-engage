@@ -1,7 +1,7 @@
 // Tipos compartilhados do sistema
 
-// Aligned with Prisma UserRole enum
-export type UserRole = 'ADMIN' | 'USER' | 'VIEWER';
+// Aligned with Prisma UserRole enum (hierarquia ADMIN > GESTOR > USER > VIEWER)
+export type UserRole = 'ADMIN' | 'GESTOR' | 'USER' | 'VIEWER';
 
 // Aligned with Prisma LeadStatus enum
 export type LeadStatus =
