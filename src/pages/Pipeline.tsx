@@ -64,9 +64,10 @@ import { apiClient } from '../services/api/client';
 import { useFunnels, type FunnelLead } from '../hooks/useFunnels';
 import { mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
 import { PageSkeleton } from '../components/PageSkeleton';
+import { CHART_PALETTE } from '@/utils/designTokens';
 
-// Pipeline column colors stored in DB as hex — cannot use CSS var() references here
-const PIPELINE_COLUMN_COLORS = ['#3B82F6', '#EAB308', '#16A34A', '#8B5CF6', '#EC4899', '#6366F1'];
+// Pipeline column colors — design-system chart palette tokens (var(--color-chart-*))
+const PIPELINE_COLUMN_COLORS = [...CHART_PALETTE];
 
 export function Pipeline() {
   const navigate = useNavigate();

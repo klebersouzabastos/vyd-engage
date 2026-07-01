@@ -16,6 +16,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { CHART_COLORS } from '@/utils/designTokens';
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
@@ -89,14 +90,14 @@ async function fetchWinLoss(period: Period): Promise<WinLossData> {
 }
 
 const PIE_COLORS = [
-  '#ef4444',
-  '#f97316',
-  '#eab308',
-  '#8b5cf6',
-  '#06b6d4',
-  '#ec4899',
-  '#6366f1',
-  '#14b8a6',
+  CHART_COLORS.red,
+  CHART_COLORS.orange,
+  CHART_COLORS.yellow,
+  CHART_COLORS.purple,
+  CHART_COLORS.blue,
+  CHART_COLORS.pink,
+  CHART_COLORS.indigo,
+  CHART_COLORS.green,
 ];
 
 function formatMonthLabel(month: string): string {
@@ -313,13 +314,13 @@ export function WinLossReport() {
                       data={barChartData}
                       margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--vyd-border)" />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                       <Legend />
-                      <Bar dataKey="Ganhos" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Perdidos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Ganhos" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Perdidos" fill={CHART_COLORS.red} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

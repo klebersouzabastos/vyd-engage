@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { CampaignPreview } from '../components/campaigns/CampaignPreview';
+import { CHART_COLORS } from '@/utils/designTokens';
 import {
   apiClient,
   type CampaignStatus,
@@ -239,7 +240,7 @@ function ResultsPanel({ campaignName, stats }: { campaignName: string; stats: Ca
               <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Bar dataKey="opens" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="opens" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

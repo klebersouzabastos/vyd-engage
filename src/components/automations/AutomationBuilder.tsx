@@ -26,10 +26,10 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 /** Aplica rótulo Sim/Não e cor às arestas que saem dos ramos da condição. */
 function decorateEdge<T extends Edge | Connection>(edge: T): T {
   if (edge.sourceHandle === 'true') {
-    return { ...edge, label: 'Sim', style: { stroke: '#22c55e' } } as T;
+    return { ...edge, label: 'Sim', style: { stroke: 'var(--vyd-success)' } } as T;
   }
   if (edge.sourceHandle === 'false') {
-    return { ...edge, label: 'Não', style: { stroke: '#ef4444' } } as T;
+    return { ...edge, label: 'Não', style: { stroke: 'var(--vyd-danger)' } } as T;
   }
   return edge;
 }

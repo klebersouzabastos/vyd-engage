@@ -7,13 +7,18 @@ import { Upload, X } from 'lucide-react';
 import { useCompany } from '../../contexts/CompanyContext';
 import { resizeImage, isValidImageFile, isValidFileSize } from '../../utils/imageUtils';
 
+// Cor de marca do tenant = DADO DO USUÁRIO (editável no color-picker nativo, que
+// exige hex literal). Default = azul-blueprint do DS (#1E5FC4 = --vyd-action-primary
+// resolvido). Fora do escopo de tema; entra na allowlist do gate.
+const DEFAULT_BRAND_COLOR = '#1E5FC4'; // gate-allow: user color
+
 export function CompanyTab() {
   const { logo, companyName, setLogo, setCompanyName } = useCompany();
   const [logoPreview, setLogoPreview] = useState<string | null>(logo);
   const [companyData, setCompanyData] = useState({
     name: companyName,
     website: 'https://minhaempresa.com',
-    primaryColor: '#2563EB',
+    primaryColor: DEFAULT_BRAND_COLOR,
   });
 
   useEffect(() => {
@@ -154,10 +159,10 @@ export function CompanyTab() {
               <Input
                 id="primary-color"
                 type="color"
-                defaultValue="#2563EB"
+                defaultValue={DEFAULT_BRAND_COLOR}
                 className="w-20 h-10 p-1"
               />
-              <Input defaultValue="#2563EB" className="flex-1" />
+              <Input defaultValue={DEFAULT_BRAND_COLOR} className="flex-1" />
             </div>
           </div>
         </div>

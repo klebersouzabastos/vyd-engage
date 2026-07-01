@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { useForecast } from '../hooks/useForecast';
+import { CHART_COLORS } from '@/utils/designTokens';
 import {
   BarChart,
   Bar,
@@ -218,7 +219,7 @@ export function Forecast() {
                   data={forecastChartData}
                   margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--vyd-border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -251,19 +252,19 @@ export function Forecast() {
                     <>
                       <Bar
                         dataKey="conservativeValue"
-                        fill="#60A5FA"
+                        fill={CHART_COLORS.blue}
                         radius={[4, 4, 0, 0]}
                         name="conservativeValue"
                       />
                       <Bar
                         dataKey="weightedValue"
-                        fill="#8B5CF6"
+                        fill={CHART_COLORS.purple}
                         radius={[4, 4, 0, 0]}
                         name="weightedValue"
                       />
                       <Bar
                         dataKey="optimisticValue"
-                        fill="#4ADE80"
+                        fill={CHART_COLORS.green}
                         radius={[4, 4, 0, 0]}
                         name="optimisticValue"
                       />
@@ -272,13 +273,13 @@ export function Forecast() {
                     <>
                       <Bar
                         dataKey="totalValue"
-                        fill="#93C5FD"
+                        fill={CHART_COLORS.blue}
                         radius={[4, 4, 0, 0]}
                         name="totalValue"
                       />
                       <Bar
                         dataKey="weightedValue"
-                        fill="#8B5CF6"
+                        fill={CHART_COLORS.purple}
                         radius={[4, 4, 0, 0]}
                         name="weightedValue"
                       />
@@ -304,7 +305,7 @@ export function Forecast() {
                   data={trendChartData}
                   margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--vyd-border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -321,7 +322,7 @@ export function Forecast() {
                   <Line
                     type="monotone"
                     dataKey="wonValue"
-                    stroke="#16A34A"
+                    stroke={CHART_COLORS.green}
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     name="wonValue"
@@ -329,7 +330,7 @@ export function Forecast() {
                   <Line
                     type="monotone"
                     dataKey="lostValue"
-                    stroke="#DC2626"
+                    stroke={CHART_COLORS.red}
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     name="lostValue"

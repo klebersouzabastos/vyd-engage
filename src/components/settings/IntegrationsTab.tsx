@@ -16,7 +16,7 @@ import { EmailConfigForm } from '../email/EmailConfigForm';
 
 const scrollbarStyle = {
   scrollbarWidth: 'thin' as const,
-  scrollbarColor: '#cbd5e1 #f3f4f6',
+  scrollbarColor: 'var(--vyd-border) var(--vyd-border)',
   overflowX: 'scroll' as const,
   overflowY: 'scroll' as const,
 };

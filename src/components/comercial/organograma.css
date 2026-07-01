@@ -9,7 +9,7 @@
 .organograma .org-children {
   margin-left: 0.75rem;
   padding-left: 1rem;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--vyd-border-default);
 }
 
 .organograma .org-node {

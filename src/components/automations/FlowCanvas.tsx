@@ -102,13 +102,13 @@ function ConditionFlowNode({ id, data, selected }: NodeProps) {
         id="true"
         type="source"
         position={Position.Bottom}
-        style={{ background: '#22c55e' }}
+        style={{ background: 'var(--vyd-success)' }}
       />
       <Handle
         id="false"
         type="source"
         position={Position.Right}
-        style={{ background: '#ef4444' }}
+        style={{ background: 'var(--vyd-danger)' }}
       />
     </div>
   );
@@ -201,7 +201,7 @@ function FlowCanvasInner({
       deleteKeyCode={['Backspace', 'Delete']}
       proOptions={{ hideAttribution: true }}
     >
-      <Background gap={20} color="#e5e7eb" />
+      <Background gap={20} color="var(--vyd-border)" />
       <Controls />
       <MiniMap pannable zoomable />
       <Panel position="top-right">

@@ -57,7 +57,8 @@ export function TagsProvider({ children }: { children: ReactNode }) {
     [tags]
   );
 
-  const createTag = useCallback(async (name: string, color: string = '#2563EB'): Promise<Tag> => {
+  const createTag = useCallback(
+    async (name: string, color: string = 'var(--vyd-action-primary)'): Promise<Tag> => {
     try {
       const newTag = await apiClient.createTag({ name, color });
       setTags((prev) => [...prev, newTag]);

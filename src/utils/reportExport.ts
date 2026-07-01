@@ -11,6 +11,26 @@ import {
 } from './reportData';
 
 /**
+ * REPORT_PALETTE — paleta print/light do vyd-design-system para documentos
+ * SELF-CONTAINED (PDF via janela de impressão, Excel via ExcelJS). Esses
+ * documentos NÃO carregam theme.css, logo NÃO podem usar var(--vyd-*): usam os
+ * valores hex/ARGB RESOLVIDOS do DS (tema light, apropriado para papel/planilha
+ * branca). Arquivo na allowlist do gate (documento self-contained).
+ * Referência: vyd-design-system/dist/variables.css.
+ */
+export const REPORT_PALETTE = {
+  text: '#1F2630', // --vyd-neutral-100 (texto principal em fundo claro)
+  muted: '#7B8794', // --vyd-neutral-500
+  accent: '#1E5FC4', // --vyd-blueprint-500 (marca)
+  accentDark: '#143F86', // --vyd-blueprint-700
+  border: '#C2CAD3', // --vyd-neutral-700 (borda em fundo claro)
+  subtleBg: '#F2F5F8', // --vyd-neutral-900 (fundo sutil)
+  argbText: 'FF1F2630',
+  argbAccent: 'FF1E5FC4',
+  argbMuted: 'FF7B8794',
+} as const; // gate-allow: self-contained document
+
+/**
  * Converte uma imagem base64 para Buffer
  */
 function base64ToBuffer(base64: string): Buffer {
@@ -38,7 +58,7 @@ async function addLogoToReportWorksheet(
   // Linha 1: Nome da aplicação
   const cellA1 = worksheet.getCell('A1');
   cellA1.value = companyName;
-  cellA1.font = { size: 24, bold: true, color: { argb: 'FF1F2937' } };
+  cellA1.font = { size: 24, bold: true, color: { argb: 'FF1F2630' } };
   cellA1.alignment = { vertical: 'middle', horizontal: 'left' };
   worksheet.getRow(1).height = 30;
   worksheet.mergeCells('A1:D1'); // Mesclar células para o nome
@@ -64,7 +84,7 @@ async function addLogoToReportWorksheet(
       console.error('Erro ao adicionar logo:', error);
       const cellA2 = worksheet.getCell('A2');
       cellA2.value = companyName.charAt(0).toUpperCase();
-      cellA2.font = { size: 32, bold: true, color: { argb: 'FF2563EB' } };
+      cellA2.font = { size: 32, bold: true, color: { argb: 'FF1E5FC4' } };
       cellA2.alignment = { vertical: 'middle', horizontal: 'center' };
       worksheet.getRow(2).height = 80;
       worksheet.getColumn(1).width = 15;
@@ -72,7 +92,7 @@ async function addLogoToReportWorksheet(
   } else {
     const cellA2 = worksheet.getCell('A2');
     cellA2.value = companyName.charAt(0).toUpperCase();
-    cellA2.font = { size: 32, bold: true, color: { argb: 'FF2563EB' } };
+    cellA2.font = { size: 32, bold: true, color: { argb: 'FF1E5FC4' } };
     cellA2.alignment = { vertical: 'middle', horizontal: 'center' };
     worksheet.getRow(2).height = 80;
     worksheet.getColumn(1).width = 15;
@@ -135,7 +155,7 @@ export function exportReportToPDF(report: Report) {
         }
         body {
           font-family: Arial, sans-serif;
-          color: #1F2937;
+          color: #1F2630;
           line-height: 1.6;
           max-width: 800px;
           margin: 0 auto;
@@ -145,7 +165,7 @@ export function exportReportToPDF(report: Report) {
           display: flex;
           align-items: center;
           gap: 20px;
-          border-bottom: 3px solid #2563EB;
+          border-bottom: 3px solid #1E5FC4;
           padding-bottom: 20px;
           margin-bottom: 30px;
         }
@@ -155,9 +175,9 @@ export function exportReportToPDF(report: Report) {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid #E5E7EB;
+          border: 2px solid #C2CAD3;
           border-radius: 8px;
-          background-color: #F9FAFB;
+          background-color: #F2F5F8;
           flex-shrink: 0;
         }
         .logo-container img {
@@ -169,12 +189,12 @@ export function exportReportToPDF(report: Report) {
           flex: 1;
         }
         h1 {
-          color: #1F2937;
+          color: #1F2630;
           margin: 0 0 10px 0;
           font-size: 28px;
         }
         .subtitle {
-          color: #6B7280;
+          color: #7B8794;
           font-size: 14px;
           margin: 0;
         }
@@ -183,7 +203,7 @@ export function exportReportToPDF(report: Report) {
           gap: 30px;
           margin: 20px 0;
           padding: 15px;
-          background-color: #F9FAFB;
+          background-color: #F2F5F8;
           border-radius: 8px;
         }
         .meta-item {
@@ -191,38 +211,38 @@ export function exportReportToPDF(report: Report) {
         }
         .meta-label {
           font-size: 12px;
-          color: #6B7280;
+          color: #7B8794;
           margin-bottom: 5px;
         }
         .meta-value {
           font-size: 14px;
-          color: #1F2937;
+          color: #1F2630;
           font-weight: 600;
         }
         .widget {
           margin: 30px 0;
           padding: 20px;
-          border: 1px solid #E5E7EB;
+          border: 1px solid #C2CAD3;
           border-radius: 8px;
           page-break-inside: avoid;
         }
         .widget-title {
           font-size: 18px;
           font-weight: 600;
-          color: #1F2937;
+          color: #1F2630;
           margin-bottom: 15px;
-          border-bottom: 2px solid #E5E7EB;
+          border-bottom: 2px solid #C2CAD3;
           padding-bottom: 10px;
         }
         .metric-value {
           font-size: 32px;
           font-weight: bold;
-          color: #2563EB;
+          color: #1E5FC4;
           margin: 10px 0;
         }
         .metric-label {
           font-size: 14px;
-          color: #6B7280;
+          color: #7B8794;
         }
         table {
           width: 100%;
@@ -230,7 +250,7 @@ export function exportReportToPDF(report: Report) {
           margin-top: 15px;
         }
         th {
-          background-color: #2563EB;
+          background-color: #1E5FC4;
           color: white;
           padding: 12px;
           text-align: left;
@@ -238,29 +258,29 @@ export function exportReportToPDF(report: Report) {
         }
         td {
           padding: 10px 12px;
-          border-bottom: 1px solid #E5E7EB;
+          border-bottom: 1px solid #C2CAD3;
         }
         tr:hover {
-          background-color: #F9FAFB;
+          background-color: #F2F5F8;
         }
         .funnel-stage {
           margin: 15px 0;
         }
         .funnel-label {
           font-size: 14px;
-          color: #6B7280;
+          color: #7B8794;
           margin-bottom: 5px;
         }
         .funnel-bar {
           height: 30px;
-          background-color: #E5E7EB;
+          background-color: #C2CAD3;
           border-radius: 4px;
           position: relative;
           overflow: hidden;
         }
         .funnel-fill {
           height: 100%;
-          background-color: #2563EB;
+          background-color: #1E5FC4;
           display: flex;
           align-items: center;
           justify-content: flex-end;
@@ -271,30 +291,30 @@ export function exportReportToPDF(report: Report) {
         .footer {
           margin-top: 50px;
           padding-top: 20px;
-          border-top: 1px solid #E5E7EB;
+          border-top: 1px solid #C2CAD3;
           text-align: center;
           font-size: 12px;
-          color: #6B7280;
+          color: #7B8794;
         }
       </style>
     </head>
     <body>
       <!-- Linha 1: Nome da aplicação -->
-      <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #E5E7EB;">
-        <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #1F2937;">${companyName}</h1>
+      <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #C2CAD3;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #1F2630;">${companyName}</h1>
       </div>
       
       <!-- Linha 2: Logo -->
-      <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #2563EB;">
+      <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #1E5FC4;">
         ${
           logo
             ? `
-          <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; padding: 5px;">
+          <div style="width: 80px; height: 80px; border: 2px solid #C2CAD3; border-radius: 8px; background-color: #F2F5F8; display: inline-flex; align-items: center; justify-content: center; padding: 5px;">
             <img src="${logo}" alt="${companyName}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
           </div>
         `
             : `
-          <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #2563EB;">
+          <div style="width: 80px; height: 80px; border: 2px solid #C2CAD3; border-radius: 8px; background-color: #F2F5F8; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #1E5FC4;">
             ${companyName.charAt(0).toUpperCase()}
           </div>
         `
@@ -303,8 +323,8 @@ export function exportReportToPDF(report: Report) {
       
       <!-- Linha 3: Título do relatório -->
       <div style="margin-bottom: 10px;">
-        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #1F2937;">${report.name}</h2>
-        ${report.description ? `<p class="subtitle" style="margin: 5px 0 0 0; font-size: 14px; color: #6B7280;">${report.description}</p>` : ''}
+        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #1F2630;">${report.name}</h2>
+        ${report.description ? `<p class="subtitle" style="margin: 5px 0 0 0; font-size: 14px; color: #7B8794;">${report.description}</p>` : ''}
       </div>
 
       <div class="meta-info">
@@ -545,7 +565,7 @@ export async function exportReportToExcel(report: Report) {
     // Adicionar título do relatório (linha 3)
     const cellA3 = worksheet.getCell('A3');
     cellA3.value = report.name;
-    cellA3.font = { size: 18, bold: true, color: { argb: 'FF1F2937' } };
+    cellA3.font = { size: 18, bold: true, color: { argb: 'FF1F2630' } };
     worksheet.getRow(3).height = 25;
     worksheet.mergeCells('A3:D3');
 
@@ -555,7 +575,7 @@ export async function exportReportToExcel(report: Report) {
       currentRow = 4;
       const cellA4 = worksheet.getCell('A4');
       cellA4.value = report.description;
-      cellA4.font = { size: 14, color: { argb: 'FF6B7280' } };
+      cellA4.font = { size: 14, color: { argb: 'FF7B8794' } };
       worksheet.getRow(4).height = 20;
       worksheet.mergeCells('A4:D4');
       currentRow = 6;
@@ -763,7 +783,7 @@ export async function exportReportToExcel(report: Report) {
     worksheet.mergeCells(`A${footerRow}:B${footerRow}`);
     const footerCell = worksheet.getCell(`A${footerRow}`);
     footerCell.value = `${companyName} - Sistema de Gestão de Leads | Relatório gerado em ${new Date().toLocaleString('pt-BR')}`;
-    footerCell.font = { size: 11, color: { argb: 'FF6B7280' } };
+    footerCell.font = { size: 11, color: { argb: 'FF7B8794' } };
     footerCell.alignment = { horizontal: 'center' };
 
     // Gerar arquivo e fazer download
@@ -808,7 +828,7 @@ export async function exportReportToExcel(report: Report) {
           gap: 20px;
           margin-bottom: 30px;
           padding-bottom: 20px;
-          border-bottom: 3px solid #2563EB;
+          border-bottom: 3px solid #1E5FC4;
         }
         .logo-container {
           width: 80px;
@@ -816,9 +836,9 @@ export async function exportReportToExcel(report: Report) {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid #E5E7EB;
+          border: 2px solid #C2CAD3;
           border-radius: 8px;
-          background-color: #F9FAFB;
+          background-color: #F2F5F8;
         }
         .logo-container img {
           max-width: 100%;
@@ -828,34 +848,34 @@ export async function exportReportToExcel(report: Report) {
         .header-text {
           flex: 1;
         }
-        h1 { color: #1F2937; margin-bottom: 10px; font-size: 24px; margin: 0; }
-        h2 { color: #6B7280; font-size: 16px; margin-bottom: 20px; margin-top: 5px; }
+        h1 { color: #1F2630; margin-bottom: 10px; font-size: 24px; margin: 0; }
+        h2 { color: #7B8794; font-size: 16px; margin-bottom: 20px; margin-top: 5px; }
         .info-section { margin-bottom: 30px; }
         table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th { background-color: #2563EB; color: white; padding: 12px; text-align: left; font-weight: bold; border: 1px solid #1E40AF; }
-        td { padding: 10px; border: 1px solid #E5E7EB; }
-        tr:nth-child(even) { background-color: #F9FAFB; }
+        th { background-color: #1E5FC4; color: white; padding: 12px; text-align: left; font-weight: bold; border: 1px solid #143F86; }
+        td { padding: 10px; border: 1px solid #C2CAD3; }
+        tr:nth-child(even) { background-color: #F2F5F8; }
         .widget-section { margin-top: 30px; page-break-after: always; }
-        .widget-title { font-size: 18px; font-weight: bold; color: #1F2937; margin-bottom: 15px; }
+        .widget-title { font-size: 18px; font-weight: bold; color: #1F2630; margin-bottom: 15px; }
       </style>
     </head>
     <body>
       <!-- Linha 1: Nome da aplicação -->
-      <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #E5E7EB;">
-        <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #1F2937;">${companyNameHtml}</h1>
+      <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #C2CAD3;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #1F2630;">${companyNameHtml}</h1>
       </div>
       
       <!-- Linha 2: Logo -->
-      <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #2563EB;">
+      <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #1E5FC4;">
         ${
           logoHtml
             ? `
-          <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; padding: 5px;">
+          <div style="width: 80px; height: 80px; border: 2px solid #C2CAD3; border-radius: 8px; background-color: #F2F5F8; display: inline-flex; align-items: center; justify-content: center; padding: 5px;">
             <img src="${logoHtml}" alt="${companyNameHtml}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
           </div>
         `
             : `
-          <div style="width: 80px; height: 80px; border: 2px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #2563EB;">
+          <div style="width: 80px; height: 80px; border: 2px solid #C2CAD3; border-radius: 8px; background-color: #F2F5F8; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #1E5FC4;">
             ${companyNameHtml.charAt(0).toUpperCase()}
           </div>
         `
@@ -864,8 +884,8 @@ export async function exportReportToExcel(report: Report) {
       
       <!-- Linha 3: Título do relatório -->
       <div style="margin-bottom: 10px;">
-        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #1F2937;">${report.name}</h2>
-        ${report.description ? `<h3 style="margin: 5px 0 0 0; font-size: 14px; color: #6B7280;">${report.description}</h3>` : ''}
+        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #1F2630;">${report.name}</h2>
+        ${report.description ? `<h3 style="margin: 5px 0 0 0; font-size: 14px; color: #7B8794;">${report.description}</h3>` : ''}
       </div>
       
       <div class="info-section">
@@ -1001,7 +1021,7 @@ export async function exportReportToExcel(report: Report) {
   });
 
   htmlContent += `
-      <div style="margin-top: 50px; text-align: center; color: #6B7280; font-size: 12px;">
+      <div style="margin-top: 50px; text-align: center; color: #7B8794; font-size: 12px;">
         <p>Relatório gerado em ${new Date().toLocaleString('pt-BR')}</p>
         <p>VYD Engage - Sistema de Gestão de Leads</p>
       </div>
