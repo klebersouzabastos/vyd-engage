@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -21,6 +21,7 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import {
   Dialog,
@@ -97,6 +98,7 @@ export function RoadmapView() {
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addActionOpen, setAddActionOpen] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [registerTask, setRegisterTask] = useState<RoadmapTask | null>(null);
 
   const tasks = [...(roadmap?.tasks ?? [])].sort((a, b) => {
     const da = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
@@ -320,15 +322,18 @@ export function RoadmapView() {
                               )}
                             </button>
                             <div className="min-w-0 flex-1">
-                              <p
-                                className={`truncate text-sm font-medium ${
+                              <button
+                                type="button"
+                                onClick={() => setRegisterTask(t)}
+                                title="Registrar ação"
+                                className={`w-full truncate text-left text-sm font-medium hover:underline ${
                                   t.status === 'COMPLETED'
                                     ? 'text-slate-400 line-through'
                                     : 'text-slate-900'
                                 }`}
                               >
                                 {t.title}
-                              </p>
+                              </button>
                               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                                 {t.type && (
                                   <Badge variant="outline" className="text-xs">
@@ -418,6 +423,12 @@ export function RoadmapView() {
           />
         </>
       )}
+
+      <RegisterActionDialog
+        task={registerTask}
+        onClose={() => setRegisterTask(null)}
+        onDone={() => invalidate(id)}
+      />
     </div>
   );
 }
@@ -725,6 +736,122 @@ function AddActionDialog({
           <Button onClick={submit} disabled={!title.trim() || saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Adicionar ação
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Dialog: registrar desfecho de uma ação ─────────
+function RegisterActionDialog({
+  task,
+  onClose,
+  onDone,
+}: {
+  task: RoadmapTask | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [outcome, setOutcome] = useState<'REALIZADA' | 'SEM_CONTATO' | 'REAGENDAR'>('REALIZADA');
+  const [note, setNote] = useState('');
+  const [date, setDate] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (task) {
+      setOutcome('REALIZADA');
+      setNote('');
+      setDate(new Date().toISOString().slice(0, 10));
+      setNewDueDate(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '');
+    }
+  }, [task]);
+
+  const submit = async () => {
+    if (!task) return;
+    if (outcome === 'REAGENDAR' && !newDueDate) {
+      toast.error('Informe a nova data.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiClient.registerTaskAction(task.id, {
+        outcome,
+        note: note.trim() || undefined,
+        date: date || undefined,
+        newDueDate: outcome === 'REAGENDAR' ? newDueDate : undefined,
+      });
+      onDone();
+      onClose();
+    } catch {
+      toast.error('Não foi possível registrar a ação.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!task} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>Registrar ação</DialogTitle>
+          <DialogDescription>{task?.title}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Desfecho</Label>
+            <Select value={outcome} onValueChange={(v) => setOutcome(v as typeof outcome)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="REALIZADA">Realizada</SelectItem>
+                <SelectItem value="SEM_CONTATO">Sem contato</SelectItem>
+                <SelectItem value="REAGENDAR">Reagendar</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="rg-date">Data</Label>
+              <Input
+                id="rg-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            {outcome === 'REAGENDAR' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="rg-newdate">Nova data</Label>
+                <Input
+                  id="rg-newdate"
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rg-note">Nota</Label>
+            <Textarea
+              id="rg-note"
+              rows={4}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="O que aconteceu nesta ação?"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Registrar
           </Button>
         </DialogFooter>
       </DialogContent>
