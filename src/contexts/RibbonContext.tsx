@@ -71,11 +71,13 @@ export function ScreenRibbon({ groups }: { groups: RibbonGroupDef[] }) {
 
   // Conta ribbons ativas para o shell saber quando mostrar o título default.
   // useLayoutEffect roda antes do paint → sem flicker do título.
+  // groups=[] NÃO conta: cai no título default do shell (caso extremo req 10).
+  const groupCount = groups.length;
   useLayoutEffect(() => {
-    if (!ctx) return;
+    if (!ctx || groupCount === 0) return;
     ctx.inc();
     return () => ctx.dec();
-  }, [ctx]);
+  }, [ctx, groupCount]);
 
   if (!ctx?.slot || groups.length === 0) return null;
 
