@@ -23,6 +23,7 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  GESTOR
   USER
   VIEWER
 }

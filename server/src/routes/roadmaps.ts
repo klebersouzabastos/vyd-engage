@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { CommercialRoadmapStatus, StakeholderRole, StakeholderPosture } from '@prisma/client';
 import { roadmapService } from '../services/roadmapService.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 
@@ -10,6 +10,9 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+// "Desdobramento comercial" é painel de nível-time (req 11): só GESTOR/ADMIN,
+// imposto no backend (a UI apenas esconde a aba).
+router.use(requireRole('ADMIN', 'GESTOR'));
 
 const createSchema = z.object({
   title: z.string().min(1),

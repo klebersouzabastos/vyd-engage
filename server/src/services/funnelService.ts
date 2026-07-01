@@ -48,13 +48,19 @@ const DEFAULT_DEAL_COLUMNS = [
 
 export const funnelService = {
   /**
-   * Get all funnels for a tenant, including columns and lead/deal counts
+   * Get all funnels for a tenant, including columns and lead/deal counts.
+   * Para o analista (USER), `ownerId` restringe as contagens por coluna aos
+   * PRÓPRIOS registros — o seletor de funil não deve revelar volumes do time
+   * (spec papeis-comerciais req 4/5).
    */
-  async findAll(tenantId: string, type?: FunnelType) {
+  async findAll(tenantId: string, type?: FunnelType, ownerId?: string) {
     const where: { tenantId: string; type?: FunnelType } = { tenantId };
     if (type) {
       where.type = type;
     }
+
+    // Filtro de posse aplicado às contagens de leads/deals (vazio = tenant-wide).
+    const ownerWhere = ownerId ? { assignedTo: ownerId } : {};
 
     const funnels = await prisma.funnel.findMany({
       where,
@@ -63,7 +69,12 @@ export const funnelService = {
         columns: {
           orderBy: { order: 'asc' },
           include: {
-            _count: { select: { leads: true, deals: true } },
+            _count: {
+              select: {
+                leads: { where: ownerWhere },
+                deals: { where: ownerWhere },
+              },
+            },
           },
         },
       },
@@ -75,7 +86,9 @@ export const funnelService = {
   /**
    * Get a single funnel with columns and leads/deals
    */
-  async findById(tenantId: string, funnelId: string) {
+  async findById(tenantId: string, funnelId: string, assignedTo?: string) {
+    // Escopo do analista (USER): board mostra só os leads/deals do próprio responsável.
+    const ownerWhere = assignedTo ? { assignedTo } : {};
     const funnel = await prisma.funnel.findFirst({
       where: { id: funnelId, tenantId },
       include: {
@@ -83,12 +96,14 @@ export const funnelService = {
           orderBy: { order: 'asc' },
           include: {
             leads: {
+              where: ownerWhere,
               orderBy: { positionInColumn: 'asc' },
               include: {
                 tags: { include: { tag: true } },
               },
             },
             deals: {
+              where: ownerWhere,
               orderBy: { positionInColumn: 'asc' },
               include: {
                 lead: { select: { id: true, name: true, email: true, company: true } },
@@ -371,9 +386,16 @@ export const funnelService = {
   /**
    * Move a lead to a different column (drag-and-drop)
    */
-  async moveLead(tenantId: string, leadId: string, targetColumnId: string, position: number) {
+  async moveLead(
+    tenantId: string,
+    leadId: string,
+    targetColumnId: string,
+    position: number,
+    ownerId?: string
+  ) {
+    // Posse (reqs 6/8): analista (USER) só move os próprios; não-dono → 404.
     const lead = await prisma.lead.findFirst({
-      where: { id: leadId, tenantId, deletedAt: null },
+      where: { id: leadId, tenantId, deletedAt: null, ...(ownerId ? { assignedTo: ownerId } : {}) },
     });
 
     if (!lead) {
@@ -429,9 +451,16 @@ export const funnelService = {
   /**
    * Move a deal to a different column (drag-and-drop)
    */
-  async moveDeal(tenantId: string, dealId: string, targetColumnId: string, position: number) {
+  async moveDeal(
+    tenantId: string,
+    dealId: string,
+    targetColumnId: string,
+    position: number,
+    ownerId?: string
+  ) {
+    // Posse (reqs 6/8): analista (USER) só move os próprios; não-dono → 404.
     const deal = await prisma.deal.findFirst({
-      where: { id: dealId, tenantId, deletedAt: null },
+      where: { id: dealId, tenantId, deletedAt: null, ...(ownerId ? { assignedTo: ownerId } : {}) },
     });
 
     if (!deal) {

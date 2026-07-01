@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z, ZodError } from 'zod';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireManagerForWrites } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import {
@@ -34,6 +34,7 @@ function configRouter(service: ConfigService, labelField: 'name' | 'label') {
   const router = Router();
   router.use(authenticate);
   router.use(tenantScope);
+  router.use(requireManagerForWrites);
 
   const createSchema = z.object({ [labelField]: z.string().min(1).max(120) });
   const updateSchema = z.object({

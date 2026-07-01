@@ -13,6 +13,7 @@ import { FieldError } from '../register/FieldError';
 import { dealFormSchema } from '../../utils/validation/formSchemas';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useAutoFocus, useFocusReturn } from '../../hooks/useFocusManagement';
+import { useAuth } from '../../contexts/AuthContext';
 
 const STAGES: { value: DealStage; label: string }[] = [
   { value: 'QUALIFICATION', label: 'Qualificação' },
@@ -60,6 +61,9 @@ export function DealForm({
   const [sources, setSources] = useState<ConfigItem[]>([]);
   const [campaigns, setCampaigns] = useState<ConfigItem[]>([]);
   const [saving, setSaving] = useState(false);
+  // Analista (USER) só pode atribuir a si mesmo — campo Responsável travado (req 8).
+  const { user: currentUser } = useAuth();
+  const isAnalyst = currentUser?.role === 'USER';
   const {
     fieldErrors,
     touchedFields,
@@ -167,7 +171,7 @@ export function DealForm({
       setProbability('20');
       setExpectedCloseDate('');
       setLeadId(defaultLeadId || '');
-      setAssignedTo('');
+      setAssignedTo(isAnalyst && currentUser ? currentUser.id : '');
       setNotes('');
       setLostReason('');
       setFunnelId(defaultFunnelId || '');
@@ -497,6 +501,7 @@ export function DealForm({
               <Select
                 value={assignedTo || 'none'}
                 onValueChange={(v) => setAssignedTo(v === 'none' ? '' : v)}
+                disabled={isAnalyst}
               >
                 <SelectTrigger id="deal-assigned">
                   <SelectValue placeholder="Nenhum" />

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { API_SCOPES } from '../middleware/apiKeyAuth.js';
@@ -15,6 +15,8 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+// API keys são integração — item exclusivo de ADMIN (req 13, defesa em profundidade).
+router.use(requireRole('ADMIN'));
 
 // GET /api/api-keys - List all API keys
 router.get('/', async (req, res, next) => {

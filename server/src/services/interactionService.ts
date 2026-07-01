@@ -63,7 +63,8 @@ export const interactionService = {
       type?: string;
       page?: number;
       limit?: number;
-    }
+    },
+    ownerId?: string
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
@@ -83,6 +84,16 @@ export const interactionService = {
 
     if (filters?.type) {
       where.type = filters.type;
+    }
+
+    // Escopo do analista (USER): só interações que ele criou ou de negociações/leads
+    // dos quais ele é responsável (spec papeis-comerciais, req 4).
+    if (ownerId) {
+      where.OR = [
+        { userId: ownerId },
+        { deal: { assignedTo: ownerId } },
+        { lead: { assignedTo: ownerId } },
+      ];
     }
 
     const [interactions, total] = await Promise.all([
@@ -115,11 +126,21 @@ export const interactionService = {
     };
   },
 
-  async findByLeadId(tenantId: string, leadId: string) {
+  async findByLeadId(tenantId: string, leadId: string, ownerId?: string) {
     return prisma.interaction.findMany({
       where: {
         tenantId,
         leadId,
+        // Analista (USER): só interações que criou ou do lead/negócio do qual é dono (req 4).
+        ...(ownerId
+          ? {
+              OR: [
+                { userId: ownerId },
+                { lead: { assignedTo: ownerId } },
+                { deal: { assignedTo: ownerId } },
+              ],
+            }
+          : {}),
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -146,7 +167,8 @@ export const interactionService = {
       search?: string;
       page?: number;
       limit?: number;
-    }
+    },
+    ownerId?: string
   ) {
     const page = filters.page || 1;
     const limit = filters.limit || 30;
@@ -167,6 +189,10 @@ export const interactionService = {
       type: { in: channelTypes },
       leadId: { not: null },
     };
+    // Analista (USER): só conversas dos próprios leads (ou que ele criou) — req 4/12.
+    if (ownerId) {
+      where.OR = [{ userId: ownerId }, { lead: { assignedTo: ownerId } }];
+    }
 
     // Get distinct lead IDs that have interactions
     const leadInteractions = await prisma.interaction.groupBy({

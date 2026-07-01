@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import prisma from '../config/database.js';
@@ -10,6 +10,8 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+// "Metas do time" é painel de nível-time (req 11): visível/gerenciável só por GESTOR/ADMIN.
+router.use(requireRole('ADMIN', 'GESTOR'));
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 

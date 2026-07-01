@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { funnelService } from '../services/funnelService.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireManagerForWrites } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { ownerScope } from '../utils/roleScope.js';
 import { LeadStatus, FunnelType } from '@prisma/client';
 
 const router = Router();
@@ -11,6 +12,13 @@ const router = Router();
 // All routes require authentication and tenant scope
 router.use(authenticate);
 router.use(tenantScope);
+// Escrita de CONFIG do funil (criar/editar/excluir funil e colunas) exige GESTOR/ADMIN.
+// Exceção: move-deal/move-lead são OPERACIONAIS — o analista (USER) move os PRÓPRIOS
+// registros no kanban; a posse é imposta no serviço (não aqui). (spec papeis-comerciais)
+router.use((req, res, next) => {
+  if (req.path === '/move-deal' || req.path === '/move-lead') return next();
+  return requireManagerForWrites(req, res, next);
+});
 
 // Validation schemas
 const createFunnelSchema = z.object({
@@ -73,7 +81,7 @@ router.get('/', async (req, res, next) => {
       typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
         ? (typeParam as FunnelType)
         : undefined;
-    const funnels = await funnelService.findAll(req.user.tenantId, type);
+    const funnels = await funnelService.findAll(req.user.tenantId, type, ownerScope(req.user));
     res.json({ status: 200, data: funnels });
   } catch (error) {
     next(error);
@@ -100,7 +108,11 @@ router.get('/default', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    const funnel = await funnelService.findById(req.user.tenantId, req.params.id);
+    const funnel = await funnelService.findById(
+      req.user.tenantId,
+      req.params.id,
+      ownerScope(req.user)
+    );
     res.json({ status: 200, data: funnel });
   } catch (error) {
     next(error);
@@ -225,7 +237,8 @@ router.post('/move-lead', async (req, res, next) => {
       req.user.tenantId,
       data.leadId,
       data.targetColumnId,
-      data.position
+      data.position,
+      ownerScope(req.user)
     );
     res.json({ status: 200, data: lead });
   } catch (error) {
@@ -245,7 +258,8 @@ router.post('/move-deal', async (req, res, next) => {
       req.user.tenantId,
       data.dealId,
       data.targetColumnId,
-      data.position
+      data.position,
+      ownerScope(req.user)
     );
     res.json({ status: 200, data: deal });
   } catch (error) {

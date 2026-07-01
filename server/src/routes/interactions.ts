@@ -4,6 +4,7 @@ import { interactionService } from '../services/interactionService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { ownerScope } from '../utils/roleScope.js';
 import { InteractionType, InteractionDirection } from '@prisma/client';
 
 const router = Router();
@@ -38,7 +39,11 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
-    const result = await interactionService.findAll(req.user.tenantId, filters);
+    const result = await interactionService.findAll(
+      req.user.tenantId,
+      filters,
+      ownerScope(req.user)
+    );
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -58,12 +63,11 @@ router.get('/inbox', async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 30;
 
-    const conversations = await interactionService.getInboxConversations(req.user.tenantId, {
-      channel,
-      search,
-      page,
-      limit,
-    });
+    const conversations = await interactionService.getInboxConversations(
+      req.user.tenantId,
+      { channel, search, page, limit },
+      ownerScope(req.user)
+    );
 
     res.json({ status: 200, data: conversations });
   } catch (error) {
@@ -79,7 +83,8 @@ router.get('/leads/:leadId', async (req, res, next) => {
 
     const interactions = await interactionService.findByLeadId(
       req.user.tenantId,
-      req.params.leadId
+      req.params.leadId,
+      ownerScope(req.user)
     );
     res.json(interactions);
   } catch (error) {

@@ -6,6 +6,7 @@ import { tenantScope } from '../middleware/tenant.js';
 import { ReportType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { forecastService } from '../services/forecastService.js';
+import { ownerScope, isManager } from '../utils/roleScope.js';
 
 const router = Router();
 
@@ -58,7 +59,7 @@ router.get('/funnel-conversion', async (req, res, next) => {
       from: from as string | undefined,
       to: to as string | undefined,
       source: source as string | undefined,
-      assignedTo: assignedTo as string | undefined,
+      assignedTo: ownerScope(req.user, assignedTo as string | undefined),
     });
 
     res.json({ status: 200, data });
@@ -72,6 +73,8 @@ router.get('/metrics', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const tenantId = req.user.tenantId;
+    // Escopo do analista (USER): métricas refletem só os próprios registros (req 4).
+    const owner = ownerScope(req.user);
 
     const { from, to } = req.query;
 
@@ -87,6 +90,7 @@ router.get('/metrics', async (req, res, next) => {
         where: {
           tenantId,
           deletedAt: null,
+          ...(owner ? { assignedTo: owner } : {}),
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
         },
         select: { id: true, status: true, source: true, createdAt: true },
@@ -95,6 +99,7 @@ router.get('/metrics', async (req, res, next) => {
         where: {
           tenantId,
           deletedAt: null,
+          ...(owner ? { assignedTo: owner } : {}),
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
         },
         select: {
@@ -109,6 +114,15 @@ router.get('/metrics', async (req, res, next) => {
       prisma.interaction.findMany({
         where: {
           tenantId,
+          ...(owner
+            ? {
+                OR: [
+                  { userId: owner },
+                  { deal: { assignedTo: owner } },
+                  { lead: { assignedTo: owner } },
+                ],
+              }
+            : {}),
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
         },
         select: { id: true, type: true, direction: true, leadId: true, createdAt: true },
@@ -319,8 +333,10 @@ router.get('/metrics', async (req, res, next) => {
 router.get('/team-performance', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    if (!['admin', 'gestor'].includes(req.user.role)) {
-      return next(createError('Forbidden', 403));
+    // Painel de time (req 11): apenas GESTOR/ADMIN. (Corrige checagem que comparava
+    // role MAIÚSCULO contra ['admin','gestor'] minúsculo, bloqueando até ADMIN.)
+    if (!isManager(req.user)) {
+      return next(createError('Forbidden', 403, 'INSUFFICIENT_PERMISSIONS'));
     }
     const tenantId = req.user.tenantId;
     const { from, to, funnelId } = req.query;
@@ -417,6 +433,9 @@ router.get('/team-performance', async (req, res, next) => {
 router.get('/win-loss', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
+    if (!isManager(req.user)) {
+      return next(createError('Forbidden', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
     const tenantId = req.user.tenantId;
     const { from, to } = req.query;
 
@@ -501,6 +520,9 @@ router.get('/win-loss', async (req, res, next) => {
 router.get('/pipeline-health', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
+    if (!isManager(req.user)) {
+      return next(createError('Forbidden', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
     const tenantId = req.user.tenantId;
 
     const { getPipelineHealth } = await import('../services/pipelineHealthService.js');

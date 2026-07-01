@@ -145,7 +145,12 @@ export const forecastService = {
 
     // Summary KPIs (reuse all deals for pipeline value)
     const allActiveDeals = await prisma.deal.findMany({
-      where: { tenantId, deletedAt: null, stage: { in: ACTIVE_STAGES } },
+      where: {
+        tenantId,
+        deletedAt: null,
+        stage: { in: ACTIVE_STAGES },
+        ...(filters?.assignedTo ? { assignedTo: filters.assignedTo } : {}),
+      },
       select: { value: true, probability: true },
     });
 
@@ -166,12 +171,30 @@ export const forecastService = {
     // Win rate and avg cycle time from closed deals
     const [wonAgg, lostCount, wonCycleDeals] = await Promise.all([
       prisma.deal.aggregate({
-        where: { tenantId, deletedAt: null, stage: DealStage.WON },
+        where: {
+          tenantId,
+          deletedAt: null,
+          stage: DealStage.WON,
+          ...(filters?.assignedTo ? { assignedTo: filters.assignedTo } : {}),
+        },
         _count: { id: true },
       }),
-      prisma.deal.count({ where: { tenantId, deletedAt: null, stage: DealStage.LOST } }),
+      prisma.deal.count({
+        where: {
+          tenantId,
+          deletedAt: null,
+          stage: DealStage.LOST,
+          ...(filters?.assignedTo ? { assignedTo: filters.assignedTo } : {}),
+        },
+      }),
       prisma.deal.findMany({
-        where: { tenantId, deletedAt: null, stage: DealStage.WON, closedAt: { not: null } },
+        where: {
+          tenantId,
+          deletedAt: null,
+          stage: DealStage.WON,
+          closedAt: { not: null },
+          ...(filters?.assignedTo ? { assignedTo: filters.assignedTo } : {}),
+        },
         select: { createdAt: true, closedAt: true },
       }),
     ]);
@@ -214,7 +237,11 @@ export const forecastService = {
   /**
    * Won vs Lost trend for the last N months.
    */
-  async getTrend(tenantId: string, months: number = 6): Promise<TrendResponse> {
+  async getTrend(
+    tenantId: string,
+    months: number = 6,
+    assignedTo?: string
+  ): Promise<TrendResponse> {
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
 
@@ -224,6 +251,7 @@ export const forecastService = {
         deletedAt: null,
         stage: { in: [DealStage.WON, DealStage.LOST] },
         closedAt: { not: null, gte: startDate },
+        ...(assignedTo ? { assignedTo } : {}),
       },
       select: {
         stage: true,

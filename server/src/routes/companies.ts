@@ -4,6 +4,7 @@ import { companyService } from '../services/companyService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { ownerScope } from '../utils/roleScope.js';
 import { CompanySize } from '@prisma/client';
 
 const router = Router();
@@ -75,7 +76,11 @@ router.get('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const company = await companyService.findById(req.user.tenantId, req.params.id);
+    const company = await companyService.findById(
+      req.user.tenantId,
+      req.params.id,
+      ownerScope(req.user)
+    );
     res.json(company);
   } catch (error) {
     next(error);

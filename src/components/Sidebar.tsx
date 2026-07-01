@@ -56,7 +56,7 @@ const menuItems = [
     label: 'Config. Negócios',
     path: '/app/settings/deal-config',
     tourId: 'sidebar-deal-config',
-    adminOnly: true,
+    managerOnly: true,
   },
   {
     icon: ScanSearch,
@@ -69,12 +69,43 @@ const menuItems = [
     label: 'Performance',
     path: '/app/performance',
     tourId: 'sidebar-performance',
+    managerOnly: true,
   },
-  { icon: CreditCard, label: 'Billing', path: '/app/billing', tourId: 'sidebar-billing' },
-  { icon: Webhook, label: 'Webhooks', path: '/app/settings/webhooks', tourId: 'sidebar-webhooks' },
-  { icon: KeyRound, label: 'API Keys', path: '/app/settings/api-keys', tourId: 'sidebar-api-keys' },
-  { icon: Package, label: 'Produtos', path: '/app/settings/products', tourId: 'sidebar-products' },
-  { icon: Upload, label: 'Importar', path: '/app/settings/import', tourId: 'sidebar-import' },
+  {
+    icon: CreditCard,
+    label: 'Billing',
+    path: '/app/billing',
+    tourId: 'sidebar-billing',
+    adminOnly: true,
+  },
+  {
+    icon: Webhook,
+    label: 'Webhooks',
+    path: '/app/settings/webhooks',
+    tourId: 'sidebar-webhooks',
+    adminOnly: true,
+  },
+  {
+    icon: KeyRound,
+    label: 'API Keys',
+    path: '/app/settings/api-keys',
+    tourId: 'sidebar-api-keys',
+    adminOnly: true,
+  },
+  {
+    icon: Package,
+    label: 'Produtos',
+    path: '/app/settings/products',
+    tourId: 'sidebar-products',
+    managerOnly: true,
+  },
+  {
+    icon: Upload,
+    label: 'Importar',
+    path: '/app/settings/import',
+    tourId: 'sidebar-import',
+    adminOnly: true,
+  },
   { icon: Settings, label: 'Configurações', path: '/app/settings', tourId: 'sidebar-settings' },
   {
     icon: Shield,
@@ -213,7 +244,13 @@ export function Sidebar({
         {menuItems
           .filter(
             (item) =>
-              (!item.adminOnly || user?.role === 'ADMIN') &&
+              // adminOnly: só ADMIN (ou platform-admin). managerOnly: GESTOR/ADMIN
+              // (painéis de time). platformAdminOnly: super-admin. (spec papeis-comerciais)
+              (!item.adminOnly || user?.role === 'ADMIN' || user?.isPlatformAdmin) &&
+              (!item.managerOnly ||
+                user?.role === 'ADMIN' ||
+                user?.role === 'GESTOR' ||
+                user?.isPlatformAdmin) &&
               (!item.platformAdminOnly || user?.isPlatformAdmin)
           )
           .map((item) => {

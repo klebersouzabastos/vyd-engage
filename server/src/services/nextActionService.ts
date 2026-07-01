@@ -442,8 +442,14 @@ export interface ActionSummaryItem {
   action: NextAction;
 }
 
-export async function getActionSummary(tenantId: string, limit = 5): Promise<ActionSummaryItem[]> {
+export async function getActionSummary(
+  tenantId: string,
+  limit = 5,
+  assignedTo?: string
+): Promise<ActionSummaryItem[]> {
   const results: ActionSummaryItem[] = [];
+  // Escopo por responsável (analista/USER só vê os próprios) — spec papeis-comerciais.
+  const scope = assignedTo ? { assignedTo } : {};
 
   // Fetch active leads (not WON/LOST, limited to recent/relevant)
   const leads = await prisma.lead.findMany({
@@ -451,6 +457,7 @@ export async function getActionSummary(tenantId: string, limit = 5): Promise<Act
       tenantId,
       deletedAt: null,
       status: { notIn: [LeadStatus.WON, LeadStatus.LOST] },
+      ...scope,
     },
     select: { id: true, name: true },
     orderBy: { updatedAt: 'desc' },
@@ -463,6 +470,7 @@ export async function getActionSummary(tenantId: string, limit = 5): Promise<Act
       tenantId,
       deletedAt: null,
       stage: { notIn: [DealStage.WON, DealStage.LOST] },
+      ...scope,
     },
     select: { id: true, name: true },
     orderBy: { updatedAt: 'desc' },

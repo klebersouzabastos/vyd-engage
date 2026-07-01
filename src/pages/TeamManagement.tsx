@@ -477,6 +477,7 @@ export function TeamManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="GESTOR">Gestor</SelectItem>
                   <SelectItem value="USER">Usuário</SelectItem>
                   <SelectItem value="VIEWER">Visualizador</SelectItem>
                 </SelectContent>
@@ -538,6 +539,7 @@ export function TeamManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="GESTOR">Gestor</SelectItem>
                   <SelectItem value="USER">Usuário</SelectItem>
                   <SelectItem value="VIEWER">Visualizador</SelectItem>
                 </SelectContent>

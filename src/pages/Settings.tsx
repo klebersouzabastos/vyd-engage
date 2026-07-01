@@ -28,10 +28,15 @@ import { ApiKeysTab } from '../components/settings/ApiKeysTab';
 import { CalendarTab } from '../components/settings/CalendarTab';
 import { AISettingsTab } from '../components/settings/AISettingsTab';
 import { GoalsTab } from '../components/settings/GoalsTab';
+import { useAuth } from '../contexts/AuthContext';
+import { isManagerRole } from '../utils/roles';
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'company';
+  const { user } = useAuth();
+  // "Metas" é painel de nível-time (req 11): só GESTOR/ADMIN veem a aba.
+  const canSeeGoals = isManagerRole(user);
 
   return (
     <div className="min-h-screen">
@@ -125,13 +130,15 @@ export function Settings() {
                   <Key size={16} className="mr-2" />
                   API Keys
                 </TabsTrigger>
-                <TabsTrigger
-                  value="goals"
-                  className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
-                >
-                  <TrendingUp size={16} className="mr-2" />
-                  Metas
-                </TabsTrigger>
+                {canSeeGoals && (
+                  <TabsTrigger
+                    value="goals"
+                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
+                  >
+                    <TrendingUp size={16} className="mr-2" />
+                    Metas
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="security"
                   className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
@@ -186,9 +193,11 @@ export function Settings() {
               <ApiKeysTab />
             </TabsContent>
 
-            <TabsContent value="goals" className="p-6">
-              <GoalsTab />
-            </TabsContent>
+            {canSeeGoals && (
+              <TabsContent value="goals" className="p-6">
+                <GoalsTab />
+              </TabsContent>
+            )}
 
             <TabsContent value="security" className="p-6">
               <TwoFactorSetup />
