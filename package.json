@@ -112,7 +112,7 @@
     "lint:fix": "eslint src/ --fix",
     "lint:css": "stylelint \"src/**/*.css\"",
     "check:colors": "node scripts/check-hardcoded-colors.mjs",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "test": "vitest run",
