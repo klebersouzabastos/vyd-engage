@@ -7,6 +7,7 @@ import { getLeadNextActionWithReasoning } from './nextActionService.js';
 export interface CreateInteractionData {
   leadId?: string;
   dealId?: string;
+  companyId?: string;
   type: InteractionType;
   direction: InteractionDirection;
   subject?: string;
@@ -23,6 +24,7 @@ export const interactionService = {
         tenantId,
         leadId: data.leadId || null,
         dealId: data.dealId || null,
+        companyId: data.companyId || null,
         type: data.type,
         direction: data.direction,
         subject: data.subject || null,

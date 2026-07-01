@@ -733,6 +733,22 @@ class ApiClient {
     });
   }
 
+  // Registra o desfecho de uma ação da agenda (desdobramento): loga interação + conclui/reagenda.
+  async registerTaskAction(
+    id: string,
+    data: {
+      outcome: 'REALIZADA' | 'SEM_CONTATO' | 'REAGENDAR';
+      note?: string;
+      date?: string;
+      newDueDate?: string;
+    }
+  ) {
+    return this.request<Record<string, unknown>>(`/api/v1/tasks/${id}/register`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async deleteTask(id: string) {
     return this.request(`/api/v1/tasks/${id}`, {
       method: 'DELETE',

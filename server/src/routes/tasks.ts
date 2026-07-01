@@ -32,8 +32,17 @@ const createTaskSchema = z.object({
   roadmapId: z.string().uuid().optional(),
 });
 
-const updateTaskSchema = createTaskSchema.extend({
+const updateTaskSchema = createTaskSchema.partial().extend({
   id: z.string().uuid(),
+  // Update parcial: title não é obrigatório; dueDate aceita null p/ limpar.
+  dueDate: z.coerce.date().nullable().optional(),
+});
+
+const registerActionSchema = z.object({
+  outcome: z.enum(['REALIZADA', 'SEM_CONTATO', 'REAGENDAR']),
+  note: z.string().max(2000).optional(),
+  date: z.coerce.date().optional(),
+  newDueDate: z.coerce.date().optional(),
 });
 
 const querySchema = z.object({
@@ -211,6 +220,33 @@ router.delete('/:id', async (req, res, next) => {
 
     res.status(204).send();
   } catch (error) {
+    next(error);
+  }
+});
+
+// Registrar desfecho de uma ação da agenda (desdobramento): loga interação no
+// histórico do CRM e conclui/reagenda a tarefa conforme o desfecho.
+router.post('/:id/register', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const input = registerActionSchema.parse(req.body);
+    if (input.outcome === 'REAGENDAR' && !input.newDueDate) {
+      return next(createError('Nova data é obrigatória para reagendar', 400, 'VALIDATION_ERROR'));
+    }
+    const task = await taskService.registerAction(
+      req.user.tenantId,
+      req.params.id,
+      input,
+      req.user.userId
+    );
+    emitToTenant(req.user.tenantId, 'task:updated', { task });
+    res.json(task);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

@@ -1,5 +1,11 @@
 import prisma from '../config/database.js';
-import { TaskStatus, TaskPriority, TaskType } from '@prisma/client';
+import {
+  TaskStatus,
+  TaskPriority,
+  TaskType,
+  InteractionType,
+  InteractionDirection,
+} from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
@@ -20,8 +26,26 @@ export interface CreateTaskData {
   dueDate?: Date | string;
 }
 
-export interface UpdateTaskData extends Partial<CreateTaskData> {
+export interface UpdateTaskData extends Partial<Omit<CreateTaskData, 'dueDate'>> {
   id: string;
+  // null limpa a data; undefined não toca (evita apagar em updates parciais).
+  dueDate?: Date | string | null;
+}
+
+/** Mapeia o tipo de ação da agenda para o tipo de interação do histórico. */
+function mapTaskTypeToInteraction(type: TaskType | null): InteractionType {
+  switch (type) {
+    case TaskType.LIGACAO:
+      return InteractionType.CALL;
+    case TaskType.REUNIAO:
+    case TaskType.VISITA:
+    case TaskType.APRESENTACAO:
+      return InteractionType.MEETING;
+    case TaskType.EMAIL:
+      return InteractionType.EMAIL;
+    default:
+      return InteractionType.NOTE;
+  }
 }
 
 export const taskService = {
@@ -176,8 +200,12 @@ export const taskService = {
       priority: data.priority,
       assignedTo: data.assignedTo,
       leadId: data.leadId,
-      dueDate: data.dueDate ? new Date(data.dueDate) : null,
     };
+    // Só toca dueDate quando explicitamente enviado (data, ou null p/ limpar);
+    // senão updates parciais (concluir/atribuir) apagariam a data da ação.
+    if (data.dueDate !== undefined) {
+      updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+    }
 
     // If marking as completed, set completedAt
     if (data.status === 'COMPLETED') {
@@ -220,6 +248,63 @@ export const taskService = {
     }
 
     return task;
+  },
+
+  /**
+   * Registra o desfecho de uma ação da agenda (desdobramento comercial): cria uma
+   * Interação no histórico do CRM (vinculada a lead/deal/empresa quando houver) e
+   * conclui ou reagenda a tarefa conforme o desfecho escolhido.
+   */
+  async registerAction(
+    tenantId: string,
+    taskId: string,
+    input: {
+      outcome: 'REALIZADA' | 'SEM_CONTATO' | 'REAGENDAR';
+      note?: string;
+      date?: Date | string;
+      newDueDate?: Date | string;
+    },
+    userId?: string
+  ) {
+    const task = await this.findById(tenantId, taskId);
+
+    const when = input.date ? new Date(input.date) : new Date();
+    const outcomeLabel =
+      input.outcome === 'REALIZADA'
+        ? 'Realizada'
+        : input.outcome === 'SEM_CONTATO'
+          ? 'Sem contato'
+          : 'Reagendada';
+    const note = input.note?.trim();
+    const content = note
+      ? `[${outcomeLabel}] ${note}`
+      : `Ação ${outcomeLabel.toLowerCase()}: ${task.title}`;
+
+    // Loga no histórico do CRM. Import dinâmico evita ciclo de módulos.
+    const { interactionService } = await import('./interactionService.js');
+    await interactionService.create(tenantId, {
+      type: mapTaskTypeToInteraction(task.type ?? null),
+      direction: InteractionDirection.OUTBOUND,
+      subject: task.title,
+      content,
+      leadId: task.leadId ?? undefined,
+      dealId: task.dealId ?? undefined,
+      companyId: task.companyId ?? undefined,
+      userId,
+      metadata: {
+        source: 'roadmap_action',
+        taskId: task.id,
+        outcome: input.outcome,
+        executedAt: when.toISOString(),
+      },
+    });
+
+    // Atualiza a tarefa conforme o desfecho.
+    if (input.outcome === 'REAGENDAR') {
+      return this.update(tenantId, { id: taskId, dueDate: input.newDueDate ?? null });
+    }
+    // REALIZADA / SEM_CONTATO → concluída (a ação foi executada/tentada).
+    return this.update(tenantId, { id: taskId, status: TaskStatus.COMPLETED });
   },
 
   async delete(tenantId: string, id: string) {
