@@ -1,197 +1,253 @@
+/* =====================================================================
+   VYD Engage — entry CSS (Opção A da spec design-system-migration).
+   Fonte única de verdade visual: vyd-design-system (var(--vyd-*)).
+   Ordem de cascata: theme.css (DS) → tailwind → preset(@config) → pontes.
+   NUNCA editar src/index.css (artefato pré-compilado, descontinuado).
+   ===================================================================== */
+
+@import 'vyd-design-system/theme.css';
 @import 'tailwindcss';
 
-@theme {
-  /* VYD Engage Design System */
+/* Preset Tailwind do DS (cores + tipografia + espaçamento + radius). v3-style,
+   carregado no v4 via @config (decisão: visual completo do DS). */
+@config '../../tailwind.config.js';
 
-  /* Primary Colors */
-  --color-primary: #2563eb;
-  --color-primary-dark: #1e40af;
-  --color-primary-light: #3b82f6;
-  --color-primary-50: #eff6ff;
+/* `dark:` no JSX segue o mecanismo do DS: atributo [data-vyd-theme="dark"]
+   (não a classe .dark). next-themes injeta data-vyd-theme no <html>. */
+@custom-variant dark (&:where([data-vyd-theme="dark"], [data-vyd-theme="dark"] *));
 
-  /* Neutral Colors */
-  --color-gray-900: #1f2937;
-  --color-gray-700: #374151;
-  --color-gray-600: #6b7280;
-  --color-gray-500: #4b5563;
-  --color-gray-400: #9ca3af;
-  --color-gray-300: #e5e7eb;
-  --color-gray-200: #f3f4f6;
-  --color-gray-100: #f9fafb;
-  --color-gray-50: #ffffff;
+/* ─────────────────────────────────────────────────────────────────────
+   Ponte shadcn → DS
+   Os primitivos shadcn (src/components/ui/*) consomem --background/--card/
+   --primary/etc. Aqui apontam para os tokens semânticos do DS, que já
+   alternam dark/light sozinhos via [data-vyd-theme] (dark = :root default).
+   Uma definição só — o flip é responsabilidade do DS.
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  --background: var(--vyd-bg-canvas);
+  --foreground: var(--vyd-text-primary);
+  --card: var(--vyd-bg-panel);
+  --card-foreground: var(--vyd-text-primary);
+  --popover: var(--vyd-bg-panel);
+  --popover-foreground: var(--vyd-text-primary);
+  --primary: var(--vyd-action-primary);
+  --primary-foreground: var(--vyd-text-on-accent);
+  --secondary: var(--vyd-bg-elevated);
+  --secondary-foreground: var(--vyd-text-primary);
+  --muted: var(--vyd-bg-elevated);
+  --muted-foreground: var(--vyd-text-secondary);
+  --accent: var(--vyd-bg-elevated);
+  --accent-foreground: var(--vyd-text-primary);
+  --destructive: var(--vyd-danger);
+  --destructive-foreground: var(--vyd-text-on-accent);
+  --border: var(--vyd-border-default);
+  --input: var(--vyd-border-default);
+  --ring: var(--vyd-border-accent);
+  --radius: var(--vyd-radius-lg);
 
-  /* Status Colors */
-  --color-success: #16a34a;
-  --color-warning: #ea580c;
-  --color-error: #dc2626;
-  --color-amber: #f59e0b;
+  /* Sidebar (shadcn sidebar primitive) */
+  --sidebar: var(--vyd-bg-chrome);
+  --sidebar-foreground: var(--vyd-text-primary);
+  --sidebar-primary: var(--vyd-action-primary);
+  --sidebar-primary-foreground: var(--vyd-text-on-accent);
+  --sidebar-accent: var(--vyd-bg-elevated);
+  --sidebar-accent-foreground: var(--vyd-text-primary);
+  --sidebar-border: var(--vyd-border-default);
+  --sidebar-ring: var(--vyd-border-accent);
 
-  /* ── Lead Status Tokens ── */
-  --color-status-new-bg: #dbeafe;
-  --color-status-new-text: #1d4ed8;
-  --color-status-contacted-bg: #fef9c3;
-  --color-status-contacted-text: #a16207;
-  --color-status-qualified-bg: #dcfce7;
-  --color-status-qualified-text: #15803d;
-  --color-status-converted-bg: #dcfce7;
-  --color-status-converted-text: #15803d;
-  --color-status-lost-bg: #fee2e2;
-  --color-status-lost-text: #b91c1c;
-
-  /* ── Priority Tokens ── */
-  --color-priority-low-bg: #dbeafe;
-  --color-priority-low-text: #1d4ed8;
-  --color-priority-low-border: #bfdbfe;
-  --color-priority-medium-bg: #fef9c3;
-  --color-priority-medium-text: #a16207;
-  --color-priority-medium-border: #fde68a;
-  --color-priority-high-bg: #fee2e2;
-  --color-priority-high-text: #b91c1c;
-  --color-priority-high-border: #fecaca;
-  --color-priority-urgent-bg: #fecdd3;
-  --color-priority-urgent-text: #9f1239;
-  --color-priority-urgent-border: #fda4af;
-
-  /* ── Score Tokens ── */
-  --color-score-hot-bg: #fef2f2;
-  --color-score-hot-text: #dc2626;
-  --color-score-warm-bg: #fff7ed;
-  --color-score-warm-text: #ea580c;
-  --color-score-cold-bg: #eff6ff;
-  --color-score-cold-text: #2563eb;
-  --color-score-frozen-bg: #f9fafb;
-  --color-score-frozen-text: #4b5563;
-
-  /* ── Deal Stage Tokens ── */
-  --color-stage-qualification-bg: #dbeafe;
-  --color-stage-qualification-text: #1d4ed8;
-  --color-stage-qualification-accent: #3b82f6;
-  --color-stage-proposal-bg: #fef9c3;
-  --color-stage-proposal-text: #a16207;
-  --color-stage-proposal-accent: #eab308;
-  --color-stage-negotiation-bg: #ffedd5;
-  --color-stage-negotiation-text: #c2410c;
-  --color-stage-negotiation-accent: #f97316;
-  --color-stage-closing-bg: #ede9fe;
-  --color-stage-closing-text: #6d28d9;
-  --color-stage-closing-accent: #8b5cf6;
-  --color-stage-won-bg: #dcfce7;
-  --color-stage-won-text: #15803d;
-  --color-stage-won-accent: #16a34a;
-  --color-stage-lost-bg: #fee2e2;
-  --color-stage-lost-text: #b91c1c;
-  --color-stage-lost-accent: #dc2626;
-
-  /* ── Chart Palette ── */
-  --color-chart-blue: #3b82f6;
-  --color-chart-red: #dc2626;
-  --color-chart-green: #16a34a;
-  --color-chart-yellow: #eab308;
-  --color-chart-orange: #f97316;
-  --color-chart-purple: #8b5cf6;
-  --color-chart-pink: #ec4899;
-  --color-chart-indigo: #6366f1;
-  --color-chart-gray: #6b7280;
-
-  /* Spacing System */
-  --spacing-xs: 8px;
-  --spacing-sm: 16px;
-  --spacing-md: 24px;
-  --spacing-lg: 32px;
-  --spacing-xl: 48px;
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  /* Séries default do Recharts (ui/chart consome --chart-1..5) */
+  --chart-1: var(--vyd-viz-1);
+  --chart-2: var(--vyd-viz-2);
+  --chart-3: var(--vyd-viz-3);
+  --chart-4: var(--vyd-viz-4);
+  --chart-5: var(--vyd-viz-5);
 }
 
-/* Dark Mode Overrides */
-.dark {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-primary-light: #60a5fa;
-  --color-primary-50: #1e293b;
-
-  --color-gray-900: #f9fafb;
-  --color-gray-700: #e5e7eb;
-  --color-gray-600: #d1d5db;
-  --color-gray-500: #9ca3af;
-  --color-gray-400: #6b7280;
-  --color-gray-300: #374151;
-  --color-gray-200: #1f2937;
-  --color-gray-100: #111827;
-  --color-gray-50: #0f172a;
-
-  --color-success: #22c55e;
-  --color-warning: #f97316;
-  --color-error: #ef4444;
-  --color-amber: #fbbf24;
-
-  /* ── Lead Status (Dark) ── */
-  --color-status-new-bg: #1e3a5f;
-  --color-status-new-text: #93c5fd;
-  --color-status-contacted-bg: #422006;
-  --color-status-contacted-text: #fde68a;
-  --color-status-qualified-bg: #14532d;
-  --color-status-qualified-text: #86efac;
-  --color-status-converted-bg: #14532d;
-  --color-status-converted-text: #86efac;
-  --color-status-lost-bg: #450a0a;
-  --color-status-lost-text: #fca5a5;
-
-  /* ── Priority (Dark) ── */
-  --color-priority-low-bg: #1e3a5f;
-  --color-priority-low-text: #93c5fd;
-  --color-priority-low-border: #1e40af;
-  --color-priority-medium-bg: #422006;
-  --color-priority-medium-text: #fde68a;
-  --color-priority-medium-border: #92400e;
-  --color-priority-high-bg: #450a0a;
-  --color-priority-high-text: #fca5a5;
-  --color-priority-high-border: #991b1b;
-  --color-priority-urgent-bg: #4c0519;
-  --color-priority-urgent-text: #fda4af;
-  --color-priority-urgent-border: #881337;
-
-  /* ── Score (Dark) ── */
-  --color-score-hot-bg: #450a0a;
-  --color-score-hot-text: #fca5a5;
-  --color-score-warm-bg: #431407;
-  --color-score-warm-text: #fdba74;
-  --color-score-cold-bg: #1e3a5f;
-  --color-score-cold-text: #93c5fd;
-  --color-score-frozen-bg: #1f2937;
-  --color-score-frozen-text: #9ca3af;
-
-  /* ── Deal Stage (Dark) ── */
-  --color-stage-qualification-bg: #1e3a5f;
-  --color-stage-qualification-text: #93c5fd;
-  --color-stage-proposal-bg: #422006;
-  --color-stage-proposal-text: #fde68a;
-  --color-stage-negotiation-bg: #431407;
-  --color-stage-negotiation-text: #fdba74;
-  --color-stage-closing-bg: #2e1065;
-  --color-stage-closing-text: #c4b5fd;
-  --color-stage-won-bg: #14532d;
-  --color-stage-won-text: #86efac;
-  --color-stage-lost-bg: #450a0a;
-  --color-stage-lost-text: #fca5a5;
+/* ─────────────────────────────────────────────────────────────────────
+   Ramp de cinzas do projeto → escala neutra do DS, com flip por tema.
+   O app usa bg-gray-100 (fundo) … text-gray-900 (texto). Preserva o flip
+   que o antigo bloco .dark fazia, agora via [data-vyd-theme].
+   ───────────────────────────────────────────────────────────────────── */
+:root,
+[data-vyd-theme='dark'] {
+  --gray-50: var(--vyd-neutral-0);
+  --gray-100: var(--vyd-neutral-50);
+  --gray-200: var(--vyd-neutral-100);
+  --gray-300: var(--vyd-neutral-200);
+  --gray-400: var(--vyd-neutral-400);
+  --gray-500: var(--vyd-neutral-500);
+  --gray-600: var(--vyd-neutral-600);
+  --gray-700: var(--vyd-neutral-700);
+  --gray-800: var(--vyd-neutral-800);
+  --gray-900: var(--vyd-neutral-900);
+  --gray-950: var(--vyd-neutral-1000);
+}
+[data-vyd-theme='light'] {
+  --gray-50: var(--vyd-neutral-1000);
+  --gray-100: var(--vyd-neutral-900);
+  --gray-200: var(--vyd-neutral-800);
+  --gray-300: var(--vyd-neutral-700);
+  --gray-400: var(--vyd-neutral-600);
+  --gray-500: var(--vyd-neutral-500);
+  --gray-600: var(--vyd-neutral-400);
+  --gray-700: var(--vyd-neutral-300);
+  --gray-800: var(--vyd-neutral-200);
+  --gray-900: var(--vyd-neutral-100);
+  --gray-950: var(--vyd-neutral-0);
 }
 
-/* Sidebar Layout — explicit CSS to avoid Tailwind v4 spacing issues */
+/* ─────────────────────────────────────────────────────────────────────
+   Tokens semânticos do CRM (status/prioridade/score/estágio/chart).
+   Texto = cor semântica do DS; fundo = tinta derivada via color-mix
+   (sem literais — color-mix sobre tokens do DS). Consumidos pelas classes
+   .badge-* (abaixo) e por designTokens.ts.
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  /* Status/base */
+  --color-primary-dark: var(--vyd-action-primary-active);
+  --color-primary-light: var(--vyd-action-primary-hover);
+  --color-primary-50: color-mix(in oklab, var(--vyd-action-primary) 14%, var(--vyd-bg-panel));
+  --color-success: var(--vyd-success);
+  --color-warning: var(--vyd-warning);
+  --color-error: var(--vyd-danger);
+  --color-amber: var(--vyd-warning);
+
+  /* Lead Status */
+  --color-status-new-bg: color-mix(in oklab, var(--vyd-info) 16%, var(--vyd-bg-panel));
+  --color-status-new-text: var(--vyd-info);
+  --color-status-contacted-bg: color-mix(in oklab, var(--vyd-warning) 16%, var(--vyd-bg-panel));
+  --color-status-contacted-text: var(--vyd-warning);
+  --color-status-qualified-bg: color-mix(in oklab, var(--vyd-success) 16%, var(--vyd-bg-panel));
+  --color-status-qualified-text: var(--vyd-success);
+  --color-status-converted-bg: color-mix(in oklab, var(--vyd-success) 16%, var(--vyd-bg-panel));
+  --color-status-converted-text: var(--vyd-success);
+  --color-status-lost-bg: color-mix(in oklab, var(--vyd-danger) 16%, var(--vyd-bg-panel));
+  --color-status-lost-text: var(--vyd-danger);
+
+  /* Priority */
+  --color-priority-low-bg: color-mix(in oklab, var(--vyd-info) 16%, var(--vyd-bg-panel));
+  --color-priority-low-text: var(--vyd-info);
+  --color-priority-low-border: color-mix(in oklab, var(--vyd-info) 32%, var(--vyd-bg-panel));
+  --color-priority-medium-bg: color-mix(in oklab, var(--vyd-warning) 16%, var(--vyd-bg-panel));
+  --color-priority-medium-text: var(--vyd-warning);
+  --color-priority-medium-border: color-mix(in oklab, var(--vyd-warning) 32%, var(--vyd-bg-panel));
+  --color-priority-high-bg: color-mix(in oklab, var(--vyd-danger) 16%, var(--vyd-bg-panel));
+  --color-priority-high-text: var(--vyd-danger);
+  --color-priority-high-border: color-mix(in oklab, var(--vyd-danger) 32%, var(--vyd-bg-panel));
+  --color-priority-urgent-bg: color-mix(in oklab, var(--vyd-danger) 24%, var(--vyd-bg-panel));
+  --color-priority-urgent-text: var(--vyd-danger);
+  --color-priority-urgent-border: color-mix(in oklab, var(--vyd-danger) 44%, var(--vyd-bg-panel));
+
+  /* Score */
+  --color-score-hot-bg: color-mix(in oklab, var(--vyd-danger) 16%, var(--vyd-bg-panel));
+  --color-score-hot-text: var(--vyd-danger);
+  --color-score-warm-bg: color-mix(in oklab, var(--vyd-warning) 16%, var(--vyd-bg-panel));
+  --color-score-warm-text: var(--vyd-warning);
+  --color-score-cold-bg: color-mix(in oklab, var(--vyd-info) 16%, var(--vyd-bg-panel));
+  --color-score-cold-text: var(--vyd-info);
+  --color-score-frozen-bg: var(--vyd-bg-elevated);
+  --color-score-frozen-text: var(--vyd-text-secondary);
+
+  /* Deal Stage (badge bg/text) */
+  --color-stage-qualification-bg: color-mix(in oklab, var(--vyd-info) 16%, var(--vyd-bg-panel));
+  --color-stage-qualification-text: var(--vyd-info);
+  --color-stage-qualification-accent: var(--vyd-viz-1);
+  --color-stage-proposal-bg: color-mix(in oklab, var(--vyd-warning) 16%, var(--vyd-bg-panel));
+  --color-stage-proposal-text: var(--vyd-warning);
+  --color-stage-proposal-accent: var(--vyd-viz-3);
+  --color-stage-negotiation-bg: color-mix(in oklab, var(--vyd-warning) 20%, var(--vyd-bg-panel));
+  --color-stage-negotiation-text: var(--vyd-warning);
+  --color-stage-negotiation-accent: var(--vyd-viz-3);
+  --color-stage-closing-bg: color-mix(in oklab, var(--vyd-viz-2) 18%, var(--vyd-bg-panel));
+  --color-stage-closing-text: var(--vyd-viz-2);
+  --color-stage-closing-accent: var(--vyd-viz-2);
+  --color-stage-won-bg: color-mix(in oklab, var(--vyd-success) 16%, var(--vyd-bg-panel));
+  --color-stage-won-text: var(--vyd-success);
+  --color-stage-won-accent: var(--vyd-viz-4);
+  --color-stage-lost-bg: color-mix(in oklab, var(--vyd-danger) 16%, var(--vyd-bg-panel));
+  --color-stage-lost-text: var(--vyd-danger);
+  --color-stage-lost-accent: var(--vyd-viz-5);
+
+  /* Chart palette (designTokens.ts CHART_COLORS) → dataviz do DS.
+     O DS tem 6 categóricas + 5 sequenciais; roxo/rosa/índigo usam a
+     sequência azul-blueprint para manter séries distinguíveis. */
+  --color-chart-blue: var(--vyd-viz-1);
+  --color-chart-red: var(--vyd-viz-5);
+  --color-chart-green: var(--vyd-viz-4);
+  --color-chart-yellow: var(--vyd-viz-3);
+  --color-chart-orange: var(--vyd-viz-2);
+  --color-chart-purple: var(--vyd-viz-seq-4);
+  --color-chart-pink: var(--vyd-viz-seq-2);
+  --color-chart-indigo: var(--vyd-viz-seq-5);
+  --color-chart-gray: var(--vyd-viz-6);
+}
+
+/* Expor as pontes como utilities do Tailwind (bg-background, text-muted-foreground,
+   bg-gray-100, text-success, …). `inline` = utilities referenciam a var (flip runtime). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Ramp de cinzas */
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-gray-950: var(--gray-950);
+
+  /* Raios shadcn derivados do --radius (DS radius-lg = 8px) */
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Sidebar Layout — CSS explícito (dimensões, sem cor) */
 @media (min-width: 768px) {
   aside[data-sidebar] {
-    width: 16rem; /* 256px */
+    width: 16rem;
     transition: width 300ms ease-in-out;
   }
   aside[data-sidebar='collapsed'] {
-    width: 4rem; /* 64px */
+    width: 4rem;
   }
   #main-content {
     margin-left: 16rem;
@@ -208,13 +264,8 @@
   }
 
   body {
-    @apply bg-gray-100 text-gray-900;
-    font-family:
-      'Inter',
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      sans-serif;
+    @apply bg-background text-foreground;
+    font-family: var(--vyd-font-sans);
   }
 
   h1 {
@@ -260,7 +311,7 @@
   }
 }
 
-/* ── Design Token Utility Classes ── */
+/* ── Classes utilitárias de badge (consomem os tokens semânticos acima) ── */
 @layer utilities {
   /* Lead Status */
   .badge-status-novo {

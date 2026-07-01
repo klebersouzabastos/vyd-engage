@@ -11,7 +11,13 @@ import { PostHogProvider } from './lib/posthog';
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider
+        attribute="data-vyd-theme"
+        defaultTheme="dark"
+        enableSystem={false}
+        storageKey="vyd-theme"
+        disableTransitionOnChange
+      >
         <PostHogProvider>
           <QueryProvider>
             <AppProviders>

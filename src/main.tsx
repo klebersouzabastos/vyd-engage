@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
-import './index.css';
+import './styles/globals.css';
 import { initSentry } from './utils/sentry';
 import { reportWebVitals } from './utils/webVitals';
 import { reloadForChunkError } from './utils/chunkReload';
