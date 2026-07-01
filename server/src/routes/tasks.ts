@@ -1,10 +1,11 @@
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
+import prisma from '../config/database.js';
 import { taskService } from '../services/taskService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope } from '../utils/roleScope.js';
+import { ownerScope, isAnalyst } from '../utils/roleScope.js';
 import { TaskStatus, TaskPriority, TaskType, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import { googleCalendarService } from '../services/googleCalendarService.js';
@@ -65,6 +66,29 @@ router.get('/', async (req, res, next) => {
     next(error);
   }
 });
+
+// Guard de posse (req 6): analista (USER) só acessa tarefas em que é o responsável;
+// caso contrário 404 (sem vazar existência). Cobre todas as rotas /tasks/:id*.
+async function enforceTaskOwnership(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    if (!isAnalyst(req.user)) return next();
+    const owned = await prisma.task.findFirst({
+      where: {
+        id: req.params.id,
+        tenantId: req.user.tenantId,
+        deletedAt: null,
+        assignedTo: req.user.userId,
+      },
+      select: { id: true },
+    });
+    if (!owned) return next(createError('Task not found', 404, 'TASK_NOT_FOUND'));
+    return next();
+  } catch (err) {
+    next(err);
+  }
+}
+router.use('/:id', enforceTaskOwnership);
 
 router.get('/:id', async (req, res, next) => {
   try {
@@ -128,6 +152,8 @@ router.put('/:id', async (req, res, next) => {
       ...req.body,
       id: req.params.id,
     });
+    // Analista (USER) não reatribui tarefa para outra pessoa (req 8).
+    if (isAnalyst(req.user)) delete data.assignedTo;
     const task = await taskService.update(req.user.tenantId, data);
 
     // Notify new assignee if task was reassigned to someone else

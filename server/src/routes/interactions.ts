@@ -63,12 +63,11 @@ router.get('/inbox', async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 30;
 
-    const conversations = await interactionService.getInboxConversations(req.user.tenantId, {
-      channel,
-      search,
-      page,
-      limit,
-    });
+    const conversations = await interactionService.getInboxConversations(
+      req.user.tenantId,
+      { channel, search, page, limit },
+      ownerScope(req.user)
+    );
 
     res.json({ status: 200, data: conversations });
   } catch (error) {
@@ -84,7 +83,8 @@ router.get('/leads/:leadId', async (req, res, next) => {
 
     const interactions = await interactionService.findByLeadId(
       req.user.tenantId,
-      req.params.leadId
+      req.params.leadId,
+      ownerScope(req.user)
     );
     res.json(interactions);
   } catch (error) {

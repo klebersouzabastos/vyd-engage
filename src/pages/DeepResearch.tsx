@@ -35,6 +35,7 @@ import {
   useDeepResearchActions,
 } from '../hooks/useDeepResearch';
 import { useAuth } from '../contexts/AuthContext';
+import { isManagerRole } from '../utils/roles';
 import { apiClient } from '../services/api/client';
 import type { DeepResearch as DeepResearchType } from '../types/deepResearch';
 
@@ -42,6 +43,8 @@ export function DeepResearch() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isPlatformAdmin = !!user?.isPlatformAdmin;
+  // "Desdobramento comercial" é painel de nível-time (req 11): só GESTOR/ADMIN.
+  const canSeeDesdobramentos = isManagerRole(user);
 
   const listQuery = useDeepResearchList();
   const templatesQuery = useDeepResearchTemplates();
@@ -81,7 +84,9 @@ export function DeepResearch() {
         <Tabs defaultValue="pesquisas" className="space-y-6">
           <TabsList className="w-fit">
             <TabsTrigger value="pesquisas">Pesquisas</TabsTrigger>
-            <TabsTrigger value="desdobramentos">Desdobramentos</TabsTrigger>
+            {canSeeDesdobramentos && (
+              <TabsTrigger value="desdobramentos">Desdobramentos</TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="pesquisas" className="space-y-6">
             {/* Hero — ações principais consolidadas aqui */}
@@ -215,9 +220,11 @@ export function DeepResearch() {
               )}
             </section>
           </TabsContent>
-          <TabsContent value="desdobramentos">
-            <DesdobramentosTab />
-          </TabsContent>
+          {canSeeDesdobramentos && (
+            <TabsContent value="desdobramentos">
+              <DesdobramentosTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

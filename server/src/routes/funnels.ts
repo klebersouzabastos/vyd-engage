@@ -12,7 +12,13 @@ const router = Router();
 // All routes require authentication and tenant scope
 router.use(authenticate);
 router.use(tenantScope);
-router.use(requireManagerForWrites);
+// Escrita de CONFIG do funil (criar/editar/excluir funil e colunas) exige GESTOR/ADMIN.
+// Exceção: move-deal/move-lead são OPERACIONAIS — o analista (USER) move os PRÓPRIOS
+// registros no kanban; a posse é imposta no serviço (não aqui). (spec papeis-comerciais)
+router.use((req, res, next) => {
+  if (req.path === '/move-deal' || req.path === '/move-lead') return next();
+  return requireManagerForWrites(req, res, next);
+});
 
 // Validation schemas
 const createFunnelSchema = z.object({
@@ -231,7 +237,8 @@ router.post('/move-lead', async (req, res, next) => {
       req.user.tenantId,
       data.leadId,
       data.targetColumnId,
-      data.position
+      data.position,
+      ownerScope(req.user)
     );
     res.json({ status: 200, data: lead });
   } catch (error) {
@@ -251,7 +258,8 @@ router.post('/move-deal', async (req, res, next) => {
       req.user.tenantId,
       data.dealId,
       data.targetColumnId,
-      data.position
+      data.position,
+      ownerScope(req.user)
     );
     res.json({ status: 200, data: deal });
   } catch (error) {
