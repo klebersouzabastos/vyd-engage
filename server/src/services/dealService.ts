@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { DealStage, CommercialRoadmapStatus } from '@prisma/client';
+import { DealStage, DealStatus, CommercialRoadmapStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
@@ -30,10 +30,68 @@ export interface CreateDealData {
   lostReason?: string;
   funnelId?: string | null;
   funnelColumnId?: string | null;
+  // Gestão de Negócios (RD parity) — P0
+  qualification?: number | null;
+  sourceId?: string | null;
+  originCampaignId?: string | null;
+  oneTimeValue?: number | null;
+  recurringValue?: number | null;
 }
 
 export interface UpdateDealData extends Partial<CreateDealData> {
   id: string;
+}
+
+const dealInclude = {
+  lead: { select: { id: true, name: true, email: true } },
+  assignedUser: { select: { id: true, name: true, email: true } },
+} as const;
+
+const contactLeadSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  position: true,
+  company: true,
+} as const;
+
+function isFilled(v: unknown): boolean {
+  if (v === null || v === undefined) return false;
+  if (typeof v === 'string') return v.trim() !== '';
+  if (Array.isArray(v)) return v.length > 0;
+  return true;
+}
+
+/**
+ * Trava o avanço de uma negociação para uma etapa cujos campos obrigatórios
+ * (StageRequiredField) ainda não estão preenchidos. Lança 400 com a lista de
+ * campos pendentes (reqs 4 e 10). Checa o valor tanto por nome quanto por id do
+ * CustomField em `customFields` (o JSON do deal é chaveado por nome ou id).
+ */
+export async function assertStageRequiredFieldsFilled(
+  destColumnId: string,
+  customFields: Record<string, unknown>
+) {
+  const required = await prisma.stageRequiredField.findMany({
+    where: { funnelColumnId: destColumnId },
+    include: { customField: { select: { id: true, name: true } } },
+  });
+  const pending = required
+    .filter(
+      (r) =>
+        !isFilled(customFields?.[r.customField.name]) && !isFilled(customFields?.[r.customField.id])
+    )
+    .map((r) => r.customField.name);
+  if (pending.length > 0) {
+    const err = createError(
+      `Preencha os campos obrigatórios da etapa antes de avançar: ${pending.join(', ')}`,
+      400,
+      'STAGE_REQUIRED_FIELDS_MISSING'
+    ) as Error & { details?: unknown };
+    err.details = { pendingFields: pending };
+    throw err;
+  }
 }
 
 export const dealService = {
@@ -70,11 +128,13 @@ export const dealService = {
         lostReason: data.lostReason || null,
         funnelId: data.funnelId || null,
         funnelColumnId,
+        qualification: data.qualification ?? null,
+        sourceId: data.sourceId || null,
+        originCampaignId: data.originCampaignId || null,
+        oneTimeValue: data.oneTimeValue ?? null,
+        recurringValue: data.recurringValue ?? null,
       },
-      include: {
-        lead: { select: { id: true, name: true, email: true } },
-        assignedUser: { select: { id: true, name: true, email: true } },
-      },
+      include: dealInclude,
     });
 
     // Dispatch webhook event
@@ -92,6 +152,7 @@ export const dealService = {
       include: {
         lead: { select: { id: true, name: true, email: true, phone: true, company: true } },
         assignedUser: { select: { id: true, name: true, email: true } },
+        company: { select: { id: true, name: true } },
       },
     });
 
@@ -207,6 +268,11 @@ export const dealService = {
       lostReason: data.lostReason,
       funnelId: data.funnelId,
       funnelColumnId: data.funnelColumnId,
+      qualification: data.qualification,
+      sourceId: data.sourceId,
+      originCampaignId: data.originCampaignId,
+      oneTimeValue: data.oneTimeValue,
+      recurringValue: data.recurringValue,
     };
 
     // Auto-set closedAt when moving to WON or LOST
@@ -233,6 +299,14 @@ export const dealService = {
     });
     if (!verified) {
       throw createError('Deal not found', 404, 'DEAL_NOT_FOUND');
+    }
+
+    // Enforcement: bloquear avanço se a etapa de destino tem campos obrigatórios vazios (reqs 4/10)
+    if (data.funnelColumnId && data.funnelColumnId !== existing.funnelColumnId) {
+      await assertStageRequiredFieldsFilled(data.funnelColumnId, {
+        ...((existing.customFields as Record<string, unknown>) || {}),
+        ...(data.customFields || {}),
+      });
     }
 
     const deal = await prisma.deal.update({
@@ -347,6 +421,114 @@ export const dealService = {
     emitToTenant(tenantId, 'deal:updated', { deal });
 
     return deal;
+  },
+
+  // ── Gestão de Negócios (RD parity) — ações de status dedicadas (reqs 19-23) ──
+
+  async markWon(tenantId: string, id: string) {
+    await this.findById(tenantId, id);
+    const deal = await prisma.deal.update({
+      where: { id },
+      data: {
+        status: DealStatus.WON,
+        stage: DealStage.WON,
+        probability: 100,
+        wonAt: new Date(),
+        closedAt: new Date(),
+      },
+      include: dealInclude,
+    });
+    if (deal.leadId) {
+      await prisma.lead
+        .update({ where: { id: deal.leadId }, data: { status: 'WON' } })
+        .catch(() => {});
+    }
+    webhookDispatcher.emitDealEvent(tenantId, 'deal.won', deal);
+    notifyDealWon(tenantId, deal).catch(() => {});
+    emitToTenant(tenantId, 'deal:updated', { deal });
+    return deal;
+  },
+
+  async markLost(tenantId: string, id: string, lostReasonId: string) {
+    await this.findById(tenantId, id);
+    const reason = await prisma.lostReason.findFirst({ where: { id: lostReasonId, tenantId } });
+    if (!reason) {
+      throw createError('Motivo de perda inválido', 400, 'INVALID_LOST_REASON');
+    }
+    const deal = await prisma.deal.update({
+      where: { id },
+      data: {
+        status: DealStatus.LOST,
+        stage: DealStage.LOST,
+        probability: 0,
+        lostAt: new Date(),
+        closedAt: new Date(),
+        lostReasonId,
+        lostReason: reason.label,
+      },
+      include: dealInclude,
+    });
+    webhookDispatcher.emitDealEvent(tenantId, 'deal.lost', deal, { lost_reason: reason.label });
+    notifyDealLost(tenantId, deal).catch(() => {});
+    emitToTenant(tenantId, 'deal:updated', { deal });
+    return deal;
+  },
+
+  async pause(tenantId: string, id: string) {
+    await this.findById(tenantId, id);
+    const deal = await prisma.deal.update({
+      where: { id },
+      data: { status: DealStatus.PAUSED, pausedAt: new Date() },
+      include: dealInclude,
+    });
+    emitToTenant(tenantId, 'deal:updated', { deal });
+    return deal;
+  },
+
+  async resume(tenantId: string, id: string) {
+    await this.findById(tenantId, id);
+    const deal = await prisma.deal.update({
+      where: { id },
+      data: { status: DealStatus.OPEN, pausedAt: null },
+      include: dealInclude,
+    });
+    emitToTenant(tenantId, 'deal:updated', { deal });
+    return deal;
+  },
+
+  // ── Múltiplos contatos da negociação (req 16) ──
+
+  async listContacts(tenantId: string, dealId: string) {
+    await this.findById(tenantId, dealId);
+    return prisma.dealContact.findMany({
+      where: { dealId },
+      include: { lead: { select: contactLeadSelect } },
+      orderBy: { createdAt: 'asc' },
+    });
+  },
+
+  async addContact(tenantId: string, dealId: string, leadId: string, roleInDeal?: string | null) {
+    await this.findById(tenantId, dealId);
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, tenantId } });
+    if (!lead) {
+      throw createError('Contato não encontrado', 404, 'CONTACT_NOT_FOUND');
+    }
+    return prisma.dealContact.upsert({
+      where: { dealId_leadId: { dealId, leadId } },
+      update: { roleInDeal: roleInDeal ?? null },
+      create: { dealId, leadId, roleInDeal: roleInDeal ?? null },
+      include: { lead: { select: contactLeadSelect } },
+    });
+  },
+
+  async removeContact(tenantId: string, dealId: string, contactId: string) {
+    await this.findById(tenantId, dealId);
+    const dc = await prisma.dealContact.findFirst({ where: { id: contactId, dealId } });
+    if (!dc) {
+      throw createError('Contato não encontrado', 404, 'DEAL_CONTACT_NOT_FOUND');
+    }
+    await prisma.dealContact.delete({ where: { id: dc.id } });
+    return { deleted: true };
   },
 
   async delete(tenantId: string, id: string) {

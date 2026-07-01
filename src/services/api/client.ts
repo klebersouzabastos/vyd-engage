@@ -581,6 +581,123 @@ class ApiClient {
     );
   }
 
+  // ── Gestão de Negócios (RD parity) — ações de status da negociação ──
+  async markDealWon(id: string) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/deals/${id}/win`,
+      { method: 'POST' }
+    );
+  }
+  async markDealLost(id: string, lostReasonId: string) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/deals/${id}/lose`,
+      { method: 'POST', body: JSON.stringify({ lostReasonId }) }
+    );
+  }
+  async pauseDeal(id: string) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/deals/${id}/pause`,
+      { method: 'POST' }
+    );
+  }
+  async resumeDeal(id: string) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/deals/${id}/resume`,
+      { method: 'POST' }
+    );
+  }
+
+  // ── Múltiplos contatos da negociação ──
+  async getDealContacts(id: string) {
+    return this.request<{ status: number; data: DealContact[] }>(`/api/v1/deals/${id}/contacts`);
+  }
+  async addDealContact(id: string, data: { leadId: string; roleInDeal?: string | null }) {
+    return this.request<{ status: number; data: DealContact }>(`/api/v1/deals/${id}/contacts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+  async removeDealContact(id: string, contactId: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/deals/${id}/contacts/${contactId}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Listas de configuração (Motivos de perda / Fontes / Campanhas de origem) ──
+  async getLostReasons(activeOnly = false) {
+    return this.request<{ status: number; data: ConfigItem[] }>(
+      `/api/v1/lost-reasons${activeOnly ? '?active=true' : ''}`
+    );
+  }
+  async createLostReason(label: string) {
+    return this.request<{ status: number; data: ConfigItem }>('/api/v1/lost-reasons', {
+      method: 'POST',
+      body: JSON.stringify({ label }),
+    });
+  }
+  async updateLostReason(id: string, data: { label?: string; active?: boolean; order?: number }) {
+    return this.request<{ status: number; data: ConfigItem }>(`/api/v1/lost-reasons/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteLostReason(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/lost-reasons/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+  async getDealSources(activeOnly = false) {
+    return this.request<{ status: number; data: ConfigItem[] }>(
+      `/api/v1/deal-sources${activeOnly ? '?active=true' : ''}`
+    );
+  }
+  async createDealSource(name: string) {
+    return this.request<{ status: number; data: ConfigItem }>('/api/v1/deal-sources', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+  async updateDealSource(id: string, data: { name?: string; active?: boolean; order?: number }) {
+    return this.request<{ status: number; data: ConfigItem }>(`/api/v1/deal-sources/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteDealSource(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/deal-sources/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+  async getOriginCampaigns(activeOnly = false) {
+    return this.request<{ status: number; data: ConfigItem[] }>(
+      `/api/v1/origin-campaigns${activeOnly ? '?active=true' : ''}`
+    );
+  }
+  async createOriginCampaign(name: string) {
+    return this.request<{ status: number; data: ConfigItem }>('/api/v1/origin-campaigns', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+  async updateOriginCampaign(
+    id: string,
+    data: { name?: string; active?: boolean; order?: number }
+  ) {
+    return this.request<{ status: number; data: ConfigItem }>(`/api/v1/origin-campaigns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteOriginCampaign(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/origin-campaigns/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
   // Tasks
   async getTasks(filters?: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
@@ -978,8 +1095,14 @@ class ApiClient {
   }
 
   // Custom Fields
-  async getCustomFields(activeOnly?: boolean) {
-    const query = activeOnly ? '?active=true' : '';
+  async getCustomFields(
+    activeOnly?: boolean,
+    entity?: 'DEAL' | 'COMPANY' | 'CONTACT' | 'PRODUCT'
+  ) {
+    const params = new URLSearchParams();
+    if (activeOnly) params.set('active', 'true');
+    if (entity) params.set('entity', entity);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<Array<Record<string, unknown>>>(`/api/v1/custom-fields${query}`);
   }
 
@@ -2436,6 +2559,31 @@ export interface Suggestion {
   updatedAt: string;
   resolvedAt: string | null;
   user?: { id: string; name: string; email: string };
+}
+
+// ── Gestão de Negócios (RD parity) types ──
+export interface DealContact {
+  id: string;
+  dealId: string;
+  leadId: string;
+  roleInDeal: string | null;
+  lead?: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    position: string | null;
+    company: string | null;
+  };
+}
+
+/** Item de lista de configuração (Motivo de perda usa `label`; Fonte/Campanha usam `name`). */
+export interface ConfigItem {
+  id: string;
+  name?: string;
+  label?: string;
+  active: boolean;
+  order: number;
 }
 
 export interface EmailTemplateListItem {

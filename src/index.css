@@ -2923,3 +2923,43 @@
 .hover\:bg-red-700:hover {
   background-color: #b91c1c;
 }
+
+/* Utilities ausentes usadas pela config de negócios (Tailwind pré-compilado) */
+.line-through {
+  text-decoration-line: line-through;
+}
+.divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e5e7eb;
+}
+.divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #d1d5db;
+}
+
+/* Utilities ausentes usadas pelo detalhe da negociação em abas (stepper/contatos) */
+.justify-start {
+  justify-content: flex-start;
+}
+.max-h-40 {
+  max-height: 10rem;
+}
+.hover\:text-red-600:hover {
+  color: #dc2626;
+}
+
+/* Utilities ausentes usadas pelos cards/abas de negócios (badges e botão de e-mail) */
+.text-\[10px\] {
+  font-size: 10px;
+  line-height: 1.2;
+}
+.bg-purple-50 {
+  background-color: #faf5ff;
+}
+.text-purple-700 {
+  color: #7e22ce;
+}
+.border-purple-300 {
+  border-color: #d8b4fe;
+}
+.hover\:bg-purple-50:hover {
+  background-color: #faf5ff;
+}

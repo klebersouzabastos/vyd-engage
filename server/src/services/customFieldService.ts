@@ -1,13 +1,15 @@
 import prisma from '../config/database.js';
-import { Prisma, CustomFieldType } from '@prisma/client';
+import { Prisma, CustomFieldType, CustomFieldEntity, CustomFieldVisibility } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 export interface CreateCustomFieldData {
   name: string;
   type: CustomFieldType;
-  options?: string[]; // For select type
+  options?: string[]; // For select / multi-select type
   required?: boolean;
   order?: number;
+  entity?: CustomFieldEntity | null; // DEAL|COMPANY|CONTACT|PRODUCT; null = legado (todas)
+  visibility?: CustomFieldVisibility;
 }
 
 export interface UpdateCustomFieldData extends Partial<CreateCustomFieldData> {
@@ -37,6 +39,8 @@ export const customFieldService = {
         name: data.name,
         type: data.type,
         options: data.options || Prisma.JsonNull,
+        entity: data.entity ?? null,
+        visibility: data.visibility ?? CustomFieldVisibility.VISIBLE,
         required: data.required || false,
         order: data.order || 0,
         active: true,
@@ -46,10 +50,15 @@ export const customFieldService = {
     return field;
   },
 
-  async findAll(tenantId: string, activeOnly: boolean = false) {
+  async findAll(tenantId: string, activeOnly: boolean = false, entity?: CustomFieldEntity) {
     const where: any = { tenantId };
     if (activeOnly) {
       where.active = true;
+    }
+    // Por entidade: inclui os campos da entidade pedida + os legados (entity=null,
+    // visíveis em todas as entidades por compatibilidade).
+    if (entity) {
+      where.OR = [{ entity }, { entity: null }];
     }
 
     return prisma.customField.findMany({
@@ -98,6 +107,8 @@ export const customFieldService = {
     if (data.required !== undefined) updateData.required = data.required;
     if (data.order !== undefined) updateData.order = data.order;
     if (data.active !== undefined) updateData.active = data.active;
+    if (data.entity !== undefined) updateData.entity = data.entity;
+    if (data.visibility !== undefined) updateData.visibility = data.visibility;
 
     return prisma.customField.update({
       where: { id: data.id },

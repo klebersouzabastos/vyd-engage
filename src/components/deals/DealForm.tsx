@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Deal, DealStage } from '../../types';
+import { Deal, DealStage, CustomField } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
-import { Loader2, Search } from 'lucide-react';
-import { apiClient } from '../../services/api/client';
+import { Loader2, Search, Star } from 'lucide-react';
+import { apiClient, ConfigItem } from '../../services/api/client';
+import { CustomFieldInput } from '../CustomFieldInput';
 import { FieldError } from '../register/FieldError';
 import { dealFormSchema } from '../../utils/validation/formSchemas';
 import { useFormValidation } from '../../hooks/useFormValidation';
@@ -49,6 +50,15 @@ export function DealForm({
   const [notes, setNotes] = useState('');
   const [lostReason, setLostReason] = useState('');
   const [funnelId, setFunnelId] = useState('');
+  const [qualification, setQualification] = useState<number>(0);
+  const [sourceId, setSourceId] = useState('');
+  const [originCampaignId, setOriginCampaignId] = useState('');
+  const [oneTimeValue, setOneTimeValue] = useState('');
+  const [recurringValue, setRecurringValue] = useState('');
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, unknown>>({});
+  const [sources, setSources] = useState<ConfigItem[]>([]);
+  const [campaigns, setCampaigns] = useState<ConfigItem[]>([]);
   const [saving, setSaving] = useState(false);
   const {
     fieldErrors,
@@ -133,6 +143,7 @@ export function DealForm({
 
   useEffect(() => {
     if (deal) {
+      const d = deal as unknown as Record<string, unknown>;
       setName(deal.name);
       setValue(String(deal.value));
       setStage(deal.stage);
@@ -143,6 +154,12 @@ export function DealForm({
       setNotes(deal.notes || '');
       setLostReason(deal.lostReason || '');
       setFunnelId(deal.funnelId || '');
+      setQualification(typeof d.qualification === 'number' ? (d.qualification as number) : 0);
+      setSourceId((d.sourceId as string) || '');
+      setOriginCampaignId((d.originCampaignId as string) || '');
+      setOneTimeValue(d.oneTimeValue != null ? String(d.oneTimeValue) : '');
+      setRecurringValue(d.recurringValue != null ? String(d.recurringValue) : '');
+      setCustomFieldValues((d.customFields as Record<string, unknown>) || {});
     } else {
       setName('');
       setValue('');
@@ -154,8 +171,43 @@ export function DealForm({
       setNotes('');
       setLostReason('');
       setFunnelId(defaultFunnelId || '');
+      setQualification(0);
+      setSourceId('');
+      setOriginCampaignId('');
+      setOneTimeValue('');
+      setRecurringValue('');
+      setCustomFieldValues({});
     }
   }, [deal, open, defaultLeadId, defaultFunnelId]);
+
+  // Carrega fontes e campanhas de origem configuráveis (reqs 14/18) quando o form abre.
+  useEffect(() => {
+    if (!open) return;
+    apiClient
+      .getDealSources(true)
+      .then((r) => setSources(r.data || []))
+      .catch(() => {});
+    apiClient
+      .getOriginCampaigns(true)
+      .then((r) => setCampaigns(r.data || []))
+      .catch(() => {});
+    // Campos personalizados da entidade Negociação (reqs 8, 12) — render por entidade.
+    apiClient
+      .getCustomFields(true, 'DEAL')
+      .then((raw) =>
+        setCustomFieldDefs(
+          (raw || []).map((f: any) => ({
+            id: f.id,
+            name: f.name,
+            type: f.type,
+            options: Array.isArray(f.options) ? f.options : undefined,
+            required: !!f.required,
+            entity: f.entity ?? null,
+          }))
+        )
+      )
+      .catch(() => {});
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,6 +239,12 @@ export function DealForm({
         notes: notes.trim() || undefined,
         lostReason: stage === 'LOST' ? lostReason.trim() || undefined : undefined,
         funnelId: funnelId || null,
+        qualification: qualification > 0 ? qualification : null,
+        sourceId: sourceId || null,
+        originCampaignId: originCampaignId || null,
+        oneTimeValue: oneTimeValue !== '' ? parseFloat(oneTimeValue) : null,
+        recurringValue: recurringValue !== '' ? parseFloat(recurringValue) : null,
+        customFields: customFieldValues,
       });
       onClose();
     } catch {
@@ -302,6 +360,91 @@ export function DealForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <Label htmlFor="deal-onetime">Valor único (R$)</Label>
+              <Input
+                id="deal-onetime"
+                type="number"
+                min="0"
+                step="0.01"
+                value={oneTimeValue}
+                onChange={(e) => setOneTimeValue(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="deal-recurring">Valor recorrente (R$)</Label>
+              <Input
+                id="deal-recurring"
+                type="number"
+                min="0"
+                step="0.01"
+                value={recurringValue}
+                onChange={(e) => setRecurringValue(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Qualificação</Label>
+              <div className="mt-1 flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setQualification(n === qualification ? 0 : n)}
+                    aria-label={`${n} estrela${n > 1 ? 's' : ''}`}
+                    className="text-amber-700 hover:opacity-90"
+                  >
+                    <Star size={20} fill={n <= qualification ? 'currentColor' : 'none'} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="deal-source">Fonte</Label>
+              <Select
+                value={sourceId || 'none'}
+                onValueChange={(v) => setSourceId(v === 'none' ? '' : v)}
+              >
+                <SelectTrigger id="deal-source">
+                  <SelectValue placeholder="Nenhuma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  {sources.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="deal-campaign">Campanha de origem</Label>
+            <Select
+              value={originCampaignId || 'none'}
+              onValueChange={(v) => setOriginCampaignId(v === 'none' ? '' : v)}
+            >
+              <SelectTrigger id="deal-campaign">
+                <SelectValue placeholder="Nenhuma" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {campaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="deal-lead">Lead Associado</Label>
               <Select
                 value={leadId || 'none'}
@@ -403,6 +546,23 @@ export function DealForm({
               rows={3}
             />
           </div>
+
+          {/* Campos personalizados da Negociação (reqs 8, 9, 12) */}
+          {customFieldDefs.length > 0 && (
+            <div className="space-y-4 border-t border-gray-200 pt-4">
+              <p className="text-sm font-medium text-gray-700">Campos personalizados</p>
+              {customFieldDefs.map((f) => (
+                <CustomFieldInput
+                  key={f.id}
+                  field={f}
+                  value={customFieldValues[f.id]}
+                  onChange={(v) =>
+                    setCustomFieldValues((prev) => ({ ...prev, [f.id]: v }))
+                  }
+                />
+              ))}
+            </div>
+          )}
 
           {stage === 'LOST' && (
             <div>

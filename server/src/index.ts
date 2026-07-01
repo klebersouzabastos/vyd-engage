@@ -223,6 +223,7 @@ import empreendimentoRoutes from './routes/empreendimentos.js';
 import playbookRoutes from './routes/playbooks.js';
 import roadmapRoutes from './routes/roadmaps.js';
 import suggestionRoutes from './routes/suggestions.js';
+import { lostReasonRoutes, dealSourceRoutes, originCampaignRoutes } from './routes/dealConfig.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -302,6 +303,9 @@ v1Router.use('/empreendimentos', csrfProtection);
 v1Router.use('/playbooks', csrfProtection);
 v1Router.use('/roadmaps', csrfProtection);
 v1Router.use('/suggestions', csrfProtection);
+v1Router.use('/lost-reasons', csrfProtection);
+v1Router.use('/deal-sources', csrfProtection);
+v1Router.use('/origin-campaigns', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -354,6 +358,9 @@ v1Router.use('/empreendimentos', empreendimentoRoutes);
 v1Router.use('/playbooks', playbookRoutes);
 v1Router.use('/roadmaps', roadmapRoutes);
 v1Router.use('/suggestions', suggestionRoutes);
+v1Router.use('/lost-reasons', lostReasonRoutes);
+v1Router.use('/deal-sources', dealSourceRoutes);
+v1Router.use('/origin-campaigns', originCampaignRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

@@ -71,10 +71,12 @@ export interface Task {
 export interface CustomField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
+  type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'textarea' | 'checkbox';
   options?: string[];
   required: boolean;
   defaultValue?: string | number | boolean;
+  /** Entidade-alvo (DEAL|COMPANY|CONTACT|PRODUCT); ausente/null = legado (todas). */
+  entity?: string | null;
 }
 
 export interface Tag {
@@ -273,6 +275,8 @@ export interface Deal {
   expectedCloseDate?: string | null;
   leadId?: string | null;
   lead?: { id: string; name: string; email?: string; phone?: string; company?: string } | null;
+  /** Empresa-alvo da negociação (Deal.companyId → Company) — distinta da empresa do contato. */
+  company?: { id: string; name: string } | null;
   assignedTo?: string | null;
   assignedUser?: { id: string; name: string; email: string } | null;
   notes?: string | null;
@@ -282,6 +286,11 @@ export interface Deal {
   funnelColumnId?: string | null;
   positionInColumn?: number;
   closedAt?: string | null;
+  /** Gestão de Negócios (RD parity) — campos opcionais usados no card/detalhe. */
+  status?: string | null;
+  qualification?: number | null;
+  /** Contagem de tarefas vinculadas (vinda do _count da query do funil). */
+  taskCount?: number;
   /** Stored AI close-propensity score (0-100); null until first computed. */
   aiScore?: number | null;
   /** ISO timestamp of the last AI score computation. */

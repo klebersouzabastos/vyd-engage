@@ -86,6 +86,7 @@ const DeepResearchView = lazyNamed(() => import('../pages/DeepResearchView'), 'D
 const RoadmapView = lazyNamed(() => import('../pages/RoadmapView'), 'RoadmapView');
 const RoadmapPanelView = lazyNamed(() => import('../pages/RoadmapPanelView'), 'RoadmapPanelView');
 const Suggestions = lazyNamed(() => import('../pages/Suggestions'), 'Suggestions');
+const DealSettings = lazyNamed(() => import('../pages/DealSettings'), 'DealSettings');
 
 export const router = createBrowserRouter([
   {
@@ -141,6 +142,10 @@ export const router = createBrowserRouter([
       {
         path: 'suggestions',
         element: Suggestions,
+      },
+      {
+        path: 'settings/deal-config',
+        element: DealSettings,
       },
       {
         path: 'leads',
