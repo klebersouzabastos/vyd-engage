@@ -26,6 +26,8 @@ const SRC = join(ROOT, 'src');
 const ALLOWLIST_FILES = {
   'src/utils/reportExport.ts':
     'Documento self-contained (PDF via print + Excel via ExcelJS ARGB); não carrega theme.css, usa REPORT_PALETTE (hex resolvidos do DS).',
+  'src/utils/excelExport.ts':
+    'Documento self-contained (Excel via ExcelJS ARGB); não carrega theme.css, usa EXCEL_PALETTE (ARGB resolvidos do DS).',
   'src/components/email/GrapesEmailBuilder.tsx':
     'E-mail HTML exige cor inline literal (clientes de e-mail não suportam var()); usa EMAIL_PALETTE (hex resolvidos do DS).',
   'src/components/ui/chart.tsx':
@@ -41,7 +43,10 @@ const IGNORE_FILES = new Set(['src/index.css']);
 // hex 3/4/6/8 dígitos. (?<!&) exclui entidades HTML numéricas (&#123; = "{").
 const HEX = /(?<!&)#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b/;
 // rgb()/rgba()/hsl()/hsla() NÃO seguidos de var( — literais proibidos (color-mix é permitido).
-const FUNC = /\b(?:rgba?|hsla?)\(\s*(?!var\()/;
+// Flag i: pega também RGB(/HSL( maiúsculos (case-insensitive em CSS/JS).
+const FUNC = /\b(?:rgba?|hsla?)\(\s*(?!var\()/i;
+// ARGB do ExcelJS (argb: 'FFRRGGBB') — cor literal SEM '#', que o regex HEX não pega.
+const ARGB = /\bargb\s*:\s*['"][0-9a-fA-F]{8}\b/i;
 
 function walk(dir) {
   const out = [];
@@ -68,8 +73,8 @@ for (const file of walk(SRC)) {
   const lines = readFileSync(file, 'utf8').split(/\r?\n/);
   lines.forEach((line, i) => {
     if (line.includes('gate-allow')) return; // escape pontual por linha
-    if (HEX.test(line) || FUNC.test(line)) {
-      const m = line.match(HEX) || line.match(FUNC);
+    if (HEX.test(line) || FUNC.test(line) || ARGB.test(line)) {
+      const m = line.match(HEX) || line.match(FUNC) || line.match(ARGB);
       violations.push({ rel, line: i + 1, text: line.trim().slice(0, 100), match: m[0] });
     }
   });
