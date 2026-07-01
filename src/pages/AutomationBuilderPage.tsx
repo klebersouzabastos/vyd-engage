@@ -97,7 +97,7 @@ export function AutomationBuilderPage() {
 
   if (loading || !flowData) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="absolute inset-0 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );

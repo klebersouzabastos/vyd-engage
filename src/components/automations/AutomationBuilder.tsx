@@ -7,7 +7,6 @@ import {
   type Edge,
   type Connection,
 } from '@xyflow/react';
-import { NodePalette } from './NodePalette';
 import { FlowCanvas } from './FlowCanvas';
 import { layoutFlow } from './flowLayout';
 import {
@@ -21,7 +20,48 @@ import type { FlowNode, FlowData } from '../../utils/automationFlowConverter';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ScreenRibbon, type RibbonGroupDef } from '@/contexts/RibbonContext';
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  Zap,
+  Mail,
+  MessageSquare,
+  CheckSquare,
+  Tag,
+  Globe,
+  Timer,
+  GitBranch,
+  RefreshCw,
+  UserPlus,
+  FileText,
+  ArrowRightLeft,
+  BarChart3,
+  type LucideIcon,
+} from 'lucide-react';
+
+// Ícones dos gatilhos/ações (migrados da antiga NodePalette) como LucideIcon.
+const TRIGGER_ICON: Record<string, LucideIcon> = {
+  lead_created: UserPlus,
+  lead_updated: RefreshCw,
+  status_changed: ArrowRightLeft,
+  tag_added: Tag,
+  deal_created: BarChart3,
+  deal_stage_changed: ArrowRightLeft,
+  task_completed: CheckSquare,
+  form_submitted: FileText,
+};
+const ACTION_ICON: Record<string, LucideIcon> = {
+  send_email: Mail,
+  create_task: CheckSquare,
+  update_field: RefreshCw,
+  add_tag: Tag,
+  remove_tag: Tag,
+  send_webhook: Globe,
+  wait_delay: Timer,
+  send_whatsapp: MessageSquare,
+};
 
 /** Aplica rótulo Sim/Não e cor às arestas que saem dos ramos da condição. */
 function decorateEdge<T extends Edge | Connection>(edge: T): T {
@@ -260,39 +300,73 @@ export function AutomationBuilder({
     onSave({ name, description, isActive, flowData, trigger, steps, conditions });
   };
 
-  return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Top bar */}
-      <div className="h-14 bg-card border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
-        <div className="flex items-center gap-3">
+  // Ribbon da tela-âncora: Gatilhos/Ações/Lógica (ex-NodePalette) + Automação
+  // (nome, Ativo, Salvar, Voltar). Nenhum comando novo — só reposicionados.
+  const ribbonGroups: RibbonGroupDef[] = [
+    {
+      label: 'Automação',
+      content: (
+        <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
             <ArrowLeft size={16} />
             Voltar
           </Button>
-          <div className="h-6 w-px bg-gray-200" />
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nome da automação"
-            className="w-64 h-8 border-0 shadow-none focus-visible:ring-1 text-sm font-medium"
+            className="w-52 h-8 text-sm"
           />
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">{isActive ? 'Ativo' : 'Inativo'}</span>
+          <label
+            className="flex items-center gap-2 text-xs whitespace-nowrap"
+            style={{ color: 'var(--vyd-text-secondary)' }}
+          >
+            {isActive ? 'Ativo' : 'Inativo'}
             <Switch checked={isActive} onCheckedChange={setIsActive} />
-          </div>
-          <Button onClick={handleSave} disabled={saving || !name.trim()} className="gap-2">
+          </label>
+          <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()} className="gap-2">
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             Salvar
           </Button>
         </div>
-      </div>
+      ),
+    },
+    {
+      label: 'Gatilhos',
+      items: TRIGGER_TYPES.map((t) => ({
+        icon: TRIGGER_ICON[t.value] ?? Zap,
+        label: t.label,
+        onClick: () => handleAddNode('trigger', t.value),
+        disabled: hasTrigger,
+        title: hasTrigger ? 'Apenas 1 gatilho por automação. Remova o atual para trocar.' : t.label,
+      })),
+    },
+    {
+      label: 'Ações',
+      items: ACTION_TYPES.map((a) => ({
+        icon: ACTION_ICON[a.value] ?? Zap,
+        label: a.label,
+        onClick: () => handleAddNode('action', a.value),
+      })),
+    },
+    {
+      label: 'Lógica',
+      items: [
+        {
+          icon: GitBranch,
+          label: 'Condição',
+          onClick: () => handleAddNode('condition', 'condition'),
+        },
+      ],
+    },
+  ];
 
-      {/* Main area */}
-      <div className="flex flex-1 overflow-hidden">
-        <NodePalette onAddNode={handleAddNode} hasTrigger={hasTrigger} />
+  return (
+    <>
+      <ScreenRibbon groups={ribbonGroups} />
+
+      {/* O FlowCanvas ocupa todo o .vyd-canvas do shell */}
+      <div className="absolute inset-0">
         <FlowCanvas
           nodes={nodes}
           edges={edges}
@@ -350,6 +424,6 @@ export function AutomationBuilder({
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

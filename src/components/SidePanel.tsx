@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink, Phone, Mail, User, Calendar } from 'lucide-react';
+import { ExternalLink, Phone, Mail, User, Calendar, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -187,6 +187,39 @@ function DealPanelContent({ id }: { id: string }) {
           <ExternalLink size={14} className="mr-2" />
           Ver completo
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Corpo do painel (cabeçalho + conteúdo), SEM o Sheet — para ser hospedado no
+ * `.vyd-rightpanel` do shell no desktop (spec ribbon-shell-global req 15).
+ */
+export function SidePanelBody() {
+  const { type, id, closePanel } = useSidePanel();
+  if (!type || !id) return null;
+  return (
+    <div className="flex flex-col h-full">
+      <div
+        className="px-5 py-3 flex items-center justify-between shrink-0"
+        style={{ borderBottom: 'var(--vyd-border-hairline) solid var(--vyd-border-default)' }}
+      >
+        <span className="text-sm font-medium" style={{ color: 'var(--vyd-text-secondary)' }}>
+          {type === 'lead' ? 'Detalhes do Lead' : 'Detalhes do Deal'}
+        </span>
+        <button
+          type="button"
+          onClick={closePanel}
+          aria-label="Fechar painel"
+          className="p-1 rounded-md hover:bg-muted"
+          style={{ color: 'var(--vyd-text-secondary)' }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {type === 'lead' ? <LeadPanelContent id={id} /> : <DealPanelContent id={id} />}
       </div>
     </div>
   );

@@ -5,7 +5,8 @@ import { Header } from '../components/Header';
 import { LeadModal } from '../components/LeadModal';
 import { EmptyState } from '../components/EmptyState';
 import { PageSkeleton } from '../components/PageSkeleton';
-import { Users, UserCheck, ArrowLeftRight } from 'lucide-react';
+import { Users, UserCheck, ArrowLeftRight, Plus, Upload, Download } from 'lucide-react';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { LeadImportModal } from '../components/leads/LeadImportModal';
 import { LeadBulkActions } from '../components/leads/LeadBulkActions';
 import { LeadFilters } from '../components/leads/LeadFilters';
@@ -611,6 +612,25 @@ export function Leads() {
 
   return (
     <div className="min-h-screen">
+      {/* Ribbon derivada das ações JÁ existentes desta tela (spec req 10/12) */}
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Leads',
+            items: [
+              { icon: Plus, label: 'Novo lead', onClick: () => navigate('/app/leads/new') },
+              { icon: Upload, label: 'Importar', onClick: () => setImportModalOpen(true) },
+            ],
+          },
+          {
+            label: 'Exportar',
+            items: [
+              { icon: Download, label: 'Página atual', onClick: handleExportLeads },
+              { icon: Download, label: 'Tudo filtrado', onClick: handleExportAllFiltered },
+            ],
+          },
+        ]}
+      />
       <Header title={headerTitle} subtitle={headerSubtitle} />
 
       <div className="p-4 md:p-8">

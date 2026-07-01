@@ -6,6 +6,9 @@
    ===================================================================== */
 
 @import 'vyd-design-system/theme.css';
+/* App-shell do DS (ribbon Autodesk) — importado DEPOIS do theme.css
+   (spec ribbon-shell-global req 1). Consome as vars --vyd-layout-*. */
+@import 'vyd-design-system/shell.css';
 @import 'tailwindcss';
 
 /* Preset Tailwind do DS (cores + tipografia + espaçamento + radius). v3-style,
@@ -15,6 +18,52 @@
 /* `dark:` no JSX segue o mecanismo do DS: atributo [data-vyd-theme="dark"]
    (não a classe .dark). next-themes injeta data-vyd-theme no <html>. */
 @custom-variant dark (&:where([data-vyd-theme="dark"], [data-vyd-theme="dark"] *));
+
+/* ─────────────────────────────────────────────────────────────────────
+   Ribbon Shell (spec ribbon-shell-global) — regras de projeto sobre o shell.
+   Só layout; usa tokens do DS (var(--vyd-layout-*) etc.), nada hardcoded.
+   ───────────────────────────────────────────────────────────────────── */
+/* O shell reserva 300px de rightpanel sempre; colapsa a 0 quando não há
+   SidePanel aberto (desktop; ≤1024 o próprio shell esconde o rightpanel). */
+@media (min-width: 1025px) {
+  .vyd-app.app--no-rp {
+    grid-template-columns: var(--vyd-layout-leftrail-w) 1fr 0;
+  }
+  .vyd-app--rail-collapsed.app--no-rp {
+    grid-template-columns: var(--vyd-layout-leftrail-w-min) 1fr 0;
+  }
+}
+/* Conteúdo de página dentro do .vyd-canvas ocupa a altura toda. */
+.vyd-canvas__content {
+  min-height: 100%;
+}
+/* Navegação mobile: ≤640 o leftrail some (shell); acesso por drawer via topbar. */
+.vyd-nav-drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--vyd-layout-leftrail-w);
+  z-index: var(--vyd-z-modal);
+  background: var(--vyd-bg-panel);
+  border-inline-end: var(--vyd-border-hairline) solid var(--vyd-border-default);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.vyd-nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--vyd-z-overlay);
+  background: color-mix(in oklab, var(--vyd-neutral-0) 55%, transparent);
+}
+/* Botão de navegação da topbar: visível só quando o leftrail some (≤640). */
+.vyd-topbar__navbtn {
+  display: none;
+}
+@media (max-width: 640px) {
+  .vyd-topbar__navbtn {
+    display: inline-flex;
+  }
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    Ponte shadcn → DS

@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router';
-import { AppLayout } from '../components/AppLayout';
+import { AppShell } from '../components/shell/AppShell';
 import { RequireAuth } from '../components/RequireAuth';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
@@ -139,7 +139,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <ErrorBoundary>
-          <AppLayout />
+          <AppShell />
         </ErrorBoundary>
       </RequireAuth>
     ),
