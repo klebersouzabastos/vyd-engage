@@ -130,7 +130,7 @@ export function TaskCard({
               ? 'bg-red-50 border-red-200'
               : isDueToday
                 ? 'bg-yellow-50 border-yellow-200'
-                : 'bg-white border-gray-300 hover:shadow-md'
+                : 'bg-card border-gray-300 hover:shadow-md'
         }
       `}
     >

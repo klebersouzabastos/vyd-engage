@@ -556,7 +556,7 @@ export function Deals() {
 
         {/* Pipeline Funnel Selector (shown only in pipeline view) */}
         {viewMode === 'pipeline' && (
-          <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-300">
+          <div className="mb-6 bg-card rounded-lg p-4 shadow-sm border border-gray-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
                 <FunnelIcon size={20} className="text-gray-600" />
@@ -599,7 +599,7 @@ export function Deals() {
                       <select
                         value={currentDealFunnelId || ''}
                         onChange={(e) => switchDealFunnel(e.target.value)}
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       >
                         {dealFunnels.map((funnel) => (
                           <option key={funnel.id} value={funnel.id}>
@@ -820,7 +820,7 @@ export function Deals() {
 
       {/* Create Pipeline Dialog */}
       <Dialog open={createFunnelOpen} onOpenChange={setCreateFunnelOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-card">
           <DialogHeader className="text-left space-y-0 pb-4">
             <DialogTitle className="text-lg font-semibold text-gray-900">
               Criar Novo Pipeline

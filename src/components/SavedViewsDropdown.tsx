@@ -92,7 +92,7 @@ export function SavedViewsDropdown({
             />
 
             {/* Dropdown */}
-            <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-72 bg-card rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
               <div className="p-3 border-b border-gray-100">
                 <button
                   onClick={() => {
@@ -150,7 +150,7 @@ export function SavedViewsDropdown({
 
       {/* Save Modal */}
       <Dialog open={saveModalOpen} onOpenChange={setSaveModalOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-card">
           <DialogHeader>
             <DialogTitle>Salvar Visualização</DialogTitle>
           </DialogHeader>

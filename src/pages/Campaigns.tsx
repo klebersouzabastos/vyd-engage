@@ -77,7 +77,7 @@ export function Campaigns() {
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
         ) : campaigns.length === 0 ? (
-          <div className="rounded-lg border border-gray-300 bg-white py-16 text-center">
+          <div className="rounded-lg border border-gray-300 bg-card py-16 text-center">
             <Mail className="mx-auto mb-4 h-12 w-12 text-gray-300" />
             <h3 className="mb-2 text-lg font-medium text-gray-900">Nenhuma campanha ainda</h3>
             <p className="mb-4 text-gray-500">Crie sua primeira campanha de email para começar.</p>
@@ -86,7 +86,7 @@ export function Campaigns() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-300 bg-white">
+          <div className="overflow-hidden rounded-lg border border-gray-300 bg-card">
             <table className="w-full text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase text-gray-500">
                 <tr>

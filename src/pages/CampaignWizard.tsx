@@ -281,7 +281,7 @@ export function CampaignWizard() {
           })}
         </ol>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 bg-card p-6">
           {/* Step: Nome */}
           {step.id === 'name' && (
             <div className="space-y-3">

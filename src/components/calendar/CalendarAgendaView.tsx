@@ -49,7 +49,7 @@ export function CalendarAgendaView({
         const dayTasks = tasksByDate.get(dateKey) || [];
 
         return (
-          <div key={dateKey} className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+          <div key={dateKey} className="bg-card rounded-lg border border-gray-300 overflow-hidden">
             {/* Day header */}
             <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700 capitalize">

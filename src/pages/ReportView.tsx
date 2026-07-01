@@ -151,7 +151,7 @@ export function ReportView() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-gray-600">Tipo</p>
@@ -171,7 +171,7 @@ export function ReportView() {
         </div>
 
         {showFilters && report.filters && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
+          <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300 mb-6">
             <h3 className="text-gray-900 font-medium mb-4">Filtros Aplicados</h3>
             <ReportFilters
               filters={report.filters}
@@ -186,7 +186,7 @@ export function ReportView() {
 
         <div className="space-y-6">
           {report.widgets.length === 0 ? (
-            <div className="bg-white rounded-lg p-12 text-center border border-gray-300">
+            <div className="bg-card rounded-lg p-12 text-center border border-gray-300">
               <p className="text-gray-600">Este relatório não possui widgets configurados.</p>
             </div>
           ) : !metricsLoaded ? (

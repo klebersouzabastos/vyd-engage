@@ -149,7 +149,7 @@ export function AISummaryCard({ leadId }: AISummaryCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-purple-200 mb-4 overflow-hidden">
+    <div className="bg-card rounded-lg shadow-sm border border-purple-200 mb-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-purple-50/60">
         <button

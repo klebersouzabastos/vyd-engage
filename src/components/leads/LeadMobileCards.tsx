@@ -30,7 +30,7 @@ export function LeadMobileCards({
   return (
     <div className="space-y-3 mb-4">
       {leads.map((lead) => (
-        <div key={lead.id} className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+        <div key={lead.id} className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <Checkbox

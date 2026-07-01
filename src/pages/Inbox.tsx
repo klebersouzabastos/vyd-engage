@@ -351,7 +351,7 @@ export function Inbox() {
 
       <div className="flex-1 flex overflow-hidden h-[calc(100vh-80px)]">
         {/* Left Panel - Conversation List */}
-        <div className="w-full md:w-96 lg:w-[420px] border-r border-gray-200 flex flex-col bg-white flex-shrink-0">
+        <div className="w-full md:w-96 lg:w-[420px] border-r border-gray-200 flex flex-col bg-card flex-shrink-0">
           {/* Filters */}
           <div className="p-3 border-b border-gray-200 space-y-2">
             <div className="flex items-center gap-1">
@@ -489,7 +489,7 @@ export function Inbox() {
           ) : (
             <>
               {/* Thread Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+              <div className="bg-card border-b border-gray-200 px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <User size={20} className="text-primary" />
@@ -547,7 +547,7 @@ export function Inbox() {
                             className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                               isOutbound
                                 ? 'bg-primary text-white rounded-br-md'
-                                : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'
+                                : 'bg-card text-gray-900 border border-gray-200 rounded-bl-md'
                             }`}
                           >
                             {msg.subject && (
@@ -602,7 +602,7 @@ export function Inbox() {
               </div>
 
               {/* Compose */}
-              <div className="bg-white border-t border-gray-200 p-4">
+              <div className="bg-card border-t border-gray-200 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <button
                     onClick={() => setComposeChannel('whatsapp')}

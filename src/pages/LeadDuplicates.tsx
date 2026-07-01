@@ -155,7 +155,7 @@ export function LeadDuplicates() {
         {!loading && (
           <>
             {/* Summary */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-300 mb-6">
+            <div className="bg-card rounded-lg p-4 shadow-sm border border-gray-300 mb-6">
               <p className="text-gray-700 font-medium">
                 {groups.length > 0
                   ? `${groups.length} grupo(s) de duplicados encontrado(s)`
@@ -165,7 +165,7 @@ export function LeadDuplicates() {
 
             {/* Empty state */}
             {groups.length === 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-12 text-center">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-12 text-center">
                 <CheckCircle2 size={48} className="mx-auto text-green-500 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Nenhum duplicado encontrado
@@ -180,7 +180,7 @@ export function LeadDuplicates() {
             {groups.map((group, groupIndex) => (
               <div
                 key={`${group.matchField}-${group.matchValue}-${groupIndex}`}
-                className="bg-white rounded-lg shadow-sm border border-gray-300 mb-6 overflow-hidden"
+                className="bg-card rounded-lg shadow-sm border border-gray-300 mb-6 overflow-hidden"
               >
                 {/* Group header */}
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-300">

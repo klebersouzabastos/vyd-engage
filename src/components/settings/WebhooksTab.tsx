@@ -347,7 +347,7 @@ export function WebhooksTab() {
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {/* Event selector for test */}
                   <select
-                    className="text-xs border border-gray-300 rounded px-1 py-1 bg-white max-w-[140px]"
+                    className="text-xs border border-gray-300 rounded px-1 py-1 bg-card max-w-[140px]"
                     value={testEvent[webhook.id] || ''}
                     onChange={(e) =>
                       setTestEvent((prev) => ({ ...prev, [webhook.id]: e.target.value }))
@@ -467,7 +467,7 @@ export function WebhooksTab() {
         >
           <div
             role="presentation"
-            className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-card rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >

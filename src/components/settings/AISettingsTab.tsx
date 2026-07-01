@@ -74,7 +74,7 @@ export function AISettingsTab() {
       </div>
 
       {/* Status */}
-      <div className="p-4 rounded-lg border border-gray-200 bg-white">
+      <div className="p-4 rounded-lg border border-gray-200 bg-card">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-700">Status da IA</p>
@@ -134,7 +134,7 @@ export function AISettingsTab() {
 
       {/* Test connection */}
       {config?.configured && (
-        <div className="p-4 rounded-lg border border-gray-200 bg-white">
+        <div className="p-4 rounded-lg border border-gray-200 bg-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-700">Testar Conexao</p>

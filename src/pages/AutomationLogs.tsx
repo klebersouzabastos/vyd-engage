@@ -307,13 +307,13 @@ export function AutomationLogs() {
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('logs')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'logs' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'logs' ? 'bg-card text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Logs
             </button>
             <button
               onClick={() => setActiveTab('metrics')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'bg-card text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <BarChart3 size={14} className="inline mr-1" />
               Métricas
@@ -323,31 +323,31 @@ export function AutomationLogs() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Total</p>
             <p className="text-2xl font-semibold text-gray-900">
               {statsLoading ? '…' : (stats?.total ?? 0)}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Sucesso</p>
             <p className="text-2xl font-semibold text-success">
               {statsLoading ? '…' : (stats?.successCount ?? 0)}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Erros</p>
             <p className="text-2xl font-semibold text-error">
               {statsLoading ? '…' : (stats?.errorCount ?? 0)}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg p-5 shadow-sm border border-gray-300">
             <p className="text-sm text-gray-600 mb-1">Pulados</p>
             <p className="text-2xl font-semibold text-warning">
               {statsLoading ? '…' : (stats?.skippedCount ?? 0)}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg p-5 shadow-sm border border-gray-300">
             <div className="flex items-center gap-1 mb-1">
               <TrendingUp size={14} className="text-gray-500" />
               <p className="text-sm text-gray-600">Taxa de Sucesso</p>
@@ -363,7 +363,7 @@ export function AutomationLogs() {
         {/* Execution Detail Modal */}
         {executionId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="bg-card rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] flex flex-col">
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-300">
                 <div>
                   <h3 className="font-medium text-gray-900">Detalhes da Execução</h3>
@@ -427,7 +427,7 @@ export function AutomationLogs() {
         ) : activeTab === 'metrics' ? (
           <div className="space-y-6">
             {/* Daily Chart */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+            <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
               <h3 className="text-gray-900 font-medium mb-4">
                 Execuções por Dia (últimos 14 dias)
               </h3>
@@ -470,7 +470,7 @@ export function AutomationLogs() {
             </div>
 
             {/* Per-automation metrics */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300">
               <div className="px-6 py-4 border-b border-gray-300">
                 <h3 className="text-gray-900 font-medium">Métricas por Automação</h3>
               </div>
@@ -512,7 +512,7 @@ export function AutomationLogs() {
         ) : (
           /* Logs Table */
           <>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full" aria-label="Logs de automação">
                   <thead className="bg-gray-100 border-b border-gray-300">
@@ -540,7 +540,7 @@ export function AutomationLogs() {
                           <select
                             value={filterAutomation}
                             onChange={(e) => setFilterAutomation(e.target.value)}
-                            className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
+                            className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-card w-full"
                           >
                             <option value="">Todas</option>
                             {automations.map((a) => (
@@ -566,7 +566,7 @@ export function AutomationLogs() {
                           <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-white w-full"
+                            className="h-8 px-2 text-xs border border-gray-300 rounded-md bg-card w-full"
                           >
                             <option value="">Todos</option>
                             <option value="SUCCESS">Sucesso</option>

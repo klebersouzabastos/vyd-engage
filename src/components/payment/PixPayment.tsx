@@ -66,7 +66,7 @@ export function PixPayment({ pixData, onCheckStatus, isLoading = false }: PixPay
       </div>
 
       {pixData.qrCodeBase64 && (
-        <div className="flex justify-center p-4 bg-white border border-gray-300 rounded-lg">
+        <div className="flex justify-center p-4 bg-card border border-gray-300 rounded-lg">
           <img
             src={`data:image/png;base64,${pixData.qrCodeBase64}`}
             alt="QR Code PIX"
@@ -80,7 +80,7 @@ export function PixPayment({ pixData, onCheckStatus, isLoading = false }: PixPay
       )}
 
       {pixData.qrCode && !pixData.qrCodeBase64 && (
-        <div className="flex justify-center p-4 bg-white border border-gray-300 rounded-lg">
+        <div className="flex justify-center p-4 bg-card border border-gray-300 rounded-lg">
           <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
             <QrCode size={64} className="text-gray-400" />
           </div>

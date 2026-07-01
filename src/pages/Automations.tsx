@@ -176,7 +176,7 @@ export function Automations() {
                 return (
                   <div
                     key={automation.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow"
+                    className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow"
                   >
                     <div className="p-6 border-b border-gray-300">
                       <div className="flex items-start justify-between mb-3">
@@ -285,7 +285,7 @@ export function Automations() {
             </div>
 
             {/* Summary Stats */}
-            <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+            <div className="mt-8 bg-card rounded-lg p-6 shadow-sm border border-gray-300">
               <h3 className="text-gray-900 mb-4">Visão Geral</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>

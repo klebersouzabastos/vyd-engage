@@ -60,7 +60,7 @@ export function CompanyTab() {
             <div className="mt-1.5 space-y-3">
               {logoPreview && (
                 <div className="relative inline-block">
-                  <div className="w-32 h-32 border-2 border-gray-300 rounded-lg p-2 bg-white flex items-center justify-center">
+                  <div className="w-32 h-32 border-2 border-gray-300 rounded-lg p-2 bg-card flex items-center justify-center">
                     <img
                       src={logoPreview}
                       alt="Logo da empresa"

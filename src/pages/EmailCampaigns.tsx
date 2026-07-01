@@ -455,7 +455,7 @@ export function EmailCampaigns() {
         </div>
 
         {configs.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-lg border border-gray-300">
+          <div className="text-center py-16 bg-card rounded-lg border border-gray-300">
             <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nenhuma configuração de email
@@ -468,7 +468,7 @@ export function EmailCampaigns() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Recipients */}
-            <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+            <div className="bg-card rounded-lg border border-gray-300 overflow-hidden">
               <div className="p-4 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-medium text-gray-900 flex items-center gap-2">
@@ -542,7 +542,7 @@ export function EmailCampaigns() {
             {/* Center + Right: Compose */}
             <div className="lg:col-span-2 space-y-4">
               {/* Config selector */}
-              <div className="bg-white rounded-lg border border-gray-300 p-4">
+              <div className="bg-card rounded-lg border border-gray-300 p-4">
                 <label
                   htmlFor="email-config"
                   className="block text-sm font-medium text-gray-700 mb-2"
@@ -569,7 +569,7 @@ export function EmailCampaigns() {
               </div>
 
               {/* Subject */}
-              <div className="bg-white rounded-lg border border-gray-300 p-4">
+              <div className="bg-card rounded-lg border border-gray-300 p-4">
                 <label
                   htmlFor="email-subject"
                   className="block text-sm font-medium text-gray-700 mb-2"
@@ -585,7 +585,7 @@ export function EmailCampaigns() {
               </div>
 
               {/* Body editor */}
-              <div className="bg-white rounded-lg border border-gray-300 p-4">
+              <div className="bg-card rounded-lg border border-gray-300 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor="email-body" className="block text-sm font-medium text-gray-700">
                     Corpo do Email (HTML)
@@ -605,13 +605,13 @@ export function EmailCampaigns() {
                     </div>
                     <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs">
                       <button
-                        className={`px-3 py-1 transition-colors ${editorMode === 'basic' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        className={`px-3 py-1 transition-colors ${editorMode === 'basic' ? 'bg-gray-800 text-white' : 'bg-card text-gray-600 hover:bg-gray-50'}`}
                         onClick={() => setEditorMode('basic')}
                       >
                         Básico
                       </button>
                       <button
-                        className={`px-3 py-1 transition-colors ${editorMode === 'visual' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        className={`px-3 py-1 transition-colors ${editorMode === 'visual' ? 'bg-gray-800 text-white' : 'bg-card text-gray-600 hover:bg-gray-50'}`}
                         onClick={() => setEditorMode('visual')}
                       >
                         Visual
@@ -637,7 +637,7 @@ export function EmailCampaigns() {
               </div>
 
               {/* Template save */}
-              <div className="bg-white rounded-lg border border-gray-300 p-4">
+              <div className="bg-card rounded-lg border border-gray-300 p-4">
                 <div className="flex items-center gap-2">
                   <Input
                     placeholder="Nome do template..."
@@ -660,7 +660,7 @@ export function EmailCampaigns() {
 
               {/* Preview */}
               {showPreview && (
-                <div className="bg-white rounded-lg border border-gray-300 p-4">
+                <div className="bg-card rounded-lg border border-gray-300 p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">
                     Preview (com dados de exemplo)
                   </h4>
@@ -698,7 +698,7 @@ export function EmailCampaigns() {
               )}
 
               {/* Send mode toggle + actions */}
-              <div className="bg-white rounded-lg border border-gray-300 p-4 space-y-4">
+              <div className="bg-card rounded-lg border border-gray-300 p-4 space-y-4">
                 {/* Mode toggle */}
                 <div className="flex items-center gap-3">
                   <button
@@ -799,7 +799,7 @@ export function EmailCampaigns() {
 
               {/* Scheduled campaigns list */}
               {scheduledCampaigns.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-300 p-4">
+                <div className="bg-card rounded-lg border border-gray-300 p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                     <Clock size={14} /> Campanhas Agendadas
                   </h4>
@@ -875,7 +875,7 @@ export function EmailCampaigns() {
             }}
           >
             <div
-              className="w-96 bg-white h-full shadow-xl overflow-y-auto"
+              className="w-96 bg-card h-full shadow-xl overflow-y-auto"
               role="button"
               tabIndex={0}
               onClick={(e) => e.stopPropagation()}

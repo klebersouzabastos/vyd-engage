@@ -188,7 +188,7 @@ export function Forecast() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Forecast Bar Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Forecast Ponderado por Mês</h3>
             {/* Scenario summary cards when data available */}
             {hasScenarios && scenarioTotals && (
@@ -295,7 +295,7 @@ export function Forecast() {
           </div>
 
           {/* Won vs Lost Line Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">
               Tendência: Ganhos vs Perdidos
             </h3>
@@ -347,7 +347,7 @@ export function Forecast() {
 
         {/* Detailed Table */}
         {forecast && forecast.monthly.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Detalhamento Mensal</h3>
             </div>
@@ -411,7 +411,7 @@ export function Forecast() {
 
         {/* Won vs Lost Trend Table */}
         {trend && trend.months.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Tendência Won vs Lost</h3>
             </div>
@@ -486,7 +486,7 @@ function StatCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">

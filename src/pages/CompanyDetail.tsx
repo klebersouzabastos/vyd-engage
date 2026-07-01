@@ -197,7 +197,7 @@ export function CompanyDetail() {
         </button>
 
         {/* Company header card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -277,7 +277,7 @@ export function CompanyDetail() {
 
         {/* Tab content */}
         {activeTab === 'leads' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
             {!company.leads || company.leads.length === 0 ? (
               <div className="text-center py-12">
                 <Users size={40} className="mx-auto text-gray-300 mb-3" />
@@ -333,7 +333,7 @@ export function CompanyDetail() {
         )}
 
         {activeTab === 'deals' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
             {!company.deals || company.deals.length === 0 ? (
               <div className="text-center py-12">
                 <Handshake size={40} className="mx-auto text-gray-300 mb-3" />
@@ -396,7 +396,7 @@ export function CompanyDetail() {
         {activeTab === 'empreendimentos' && id && <EmpreendimentosManager companyId={id} />}
 
         {activeTab === 'timeline' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             {!company.interactions || company.interactions.length === 0 ? (
               <div className="text-center py-12">
                 <FileText size={40} className="mx-auto text-gray-300 mb-3" />
@@ -438,7 +438,7 @@ export function CompanyDetail() {
         )}
 
         {activeTab === 'info' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InfoItem icon={<Building2 size={16} />} label="Nome" value={company.name} />
               <InfoItem icon={<Globe size={16} />} label="Dominio" value={company.domain} />

@@ -92,7 +92,7 @@ export function ReportWidgetRenderer({ widget, globalFilters }: ReportWidgetRend
       return renderFunnel(widget, data);
     default:
       return (
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+        <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
           <h3 className="text-gray-900">{widget.title}</h3>
           <p className="text-sm text-gray-600 mt-2">Tipo de widget não suportado: {widget.type}</p>
         </div>
@@ -277,7 +277,7 @@ function renderChart(widget: ReportWidget, data: any) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
         <p className="text-sm text-gray-600">Nenhum dado disponível</p>
       </div>
@@ -286,7 +286,7 @@ function renderChart(widget: ReportWidget, data: any) {
 
   if (chartType === 'pie') {
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
@@ -323,7 +323,7 @@ function renderChart(widget: ReportWidget, data: any) {
 
   if (chartType === 'line') {
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={chartData}>
@@ -339,7 +339,7 @@ function renderChart(widget: ReportWidget, data: any) {
 
   if (chartType === 'area') {
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
         <h3 className="text-gray-900 mb-4">{widget.title}</h3>
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={chartData}>
@@ -361,7 +361,7 @@ function renderChart(widget: ReportWidget, data: any) {
 
   // Bar chart (default)
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
       <h3 className="text-gray-900 mb-4">{widget.title}</h3>
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={chartData}>
@@ -419,7 +419,7 @@ function renderTable(widget: ReportWidget, data: any) {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
       <h3 className="text-gray-900 mb-4">{widget.title}</h3>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -460,7 +460,7 @@ function renderFunnel(widget: ReportWidget, data: any) {
   const maxValue = Math.max(...stages.map((s: any) => s.count || 0), 1);
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
       <h3 className="text-gray-900 mb-4">{widget.title}</h3>
       <div className="space-y-4">
         {stages.map((stage: any, index: number) => {

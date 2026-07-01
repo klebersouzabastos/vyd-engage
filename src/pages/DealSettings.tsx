@@ -90,7 +90,7 @@ function ConfigSection({
   };
 
   return (
-    <div className="rounded-lg border border-gray-300 bg-white shadow-sm">
+    <div className="rounded-lg border border-gray-300 bg-card shadow-sm">
       <div className="border-b border-gray-300 p-4">
         <h3 className="font-semibold text-gray-900">{title}</h3>
         <p className="text-xs text-gray-500">{description}</p>

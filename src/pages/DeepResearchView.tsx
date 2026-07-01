@@ -177,7 +177,7 @@ function StatusState({
   }[status];
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card py-16 text-center">
       {config.icon}
       <p className="mt-3 font-medium text-slate-900">{config.title}</p>
       <p className="mt-1 max-w-md text-sm text-slate-500">{config.desc}</p>

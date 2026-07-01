@@ -197,7 +197,7 @@ export function ApiKeys() {
 
       <div className="p-4 md:p-8 space-y-6">
         {/* Keys list */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300">
           <div className="p-4 md:p-6 border-b border-gray-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
@@ -329,7 +329,7 @@ export function ApiKeys() {
         </div>
 
         {/* Usage instructions */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 md:p-6">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Terminal size={20} className="text-gray-700" />
             <h3 className="text-lg font-semibold text-gray-900">Como usar</h3>

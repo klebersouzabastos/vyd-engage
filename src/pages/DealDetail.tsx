@@ -492,7 +492,7 @@ export function DealDetail() {
 
         {/* Stepper de etapas (req 24) — clicável, com tempo na etapa e badge de esfriamento (req 26) */}
         {funnelColumns.length > 0 && (
-          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+          <div className="mb-6 bg-card rounded-lg shadow-sm border border-gray-300 p-4">
             <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <h3 className="text-sm font-semibold text-gray-900">Etapas do funil</h3>
               <div className="flex items-center gap-2 flex-wrap">
@@ -521,7 +521,7 @@ export function DealDetail() {
                     className={`text-xs px-3 py-1.5 rounded-full border border-gray-300 transition-colors ${
                       isCurrent
                         ? 'bg-primary text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                        : 'bg-card text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     {(col.abbreviation as string) || (col.title as string)}
@@ -568,7 +568,7 @@ export function DealDetail() {
 
               {/* Aba Histórico — timeline + filtro por tipo + criar anotação (reqs 27, 28) */}
               <TabsContent value="historico" className="space-y-4">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
                   <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
                     <h2 className="text-lg font-semibold text-gray-900">Atividades</h2>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -683,7 +683,7 @@ export function DealDetail() {
             </div>
 
             {/* Audit Trail */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <History size={18} />
                 Histórico de alterações
@@ -693,7 +693,7 @@ export function DealDetail() {
 
             {/* Stage History */}
             {stageHistory.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
                 <button
                   className="w-full flex items-center justify-between text-left"
                   onClick={() => setStageHistoryOpen((v) => !v)}
@@ -738,7 +738,7 @@ export function DealDetail() {
 
               {/* Aba E-mail (req 32, P1) */}
               <TabsContent value="email">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
                   <p className="text-sm text-gray-600">
                     Gere um rascunho de e-mail com IA para esta negociação. A sincronização completa
                     da thread de e-mails será adicionada em seguida.
@@ -756,7 +756,7 @@ export function DealDetail() {
 
               {/* Aba Tarefas (req 29, P1) */}
               <TabsContent value="tarefas">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 text-center">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 text-center">
                   <CheckSquare size={36} className="mx-auto text-gray-300 mb-3" />
                   <p className="text-sm text-gray-500">
                     As tarefas vinculadas a esta negociação aparecerão aqui.
@@ -774,7 +774,7 @@ export function DealDetail() {
 
               {/* Aba Produtos (reqs 17, 27) */}
               <TabsContent value="produtos">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
                   <DealProducts
                     dealId={deal.id}
                     currentValue={Number(deal.value)}
@@ -789,7 +789,7 @@ export function DealDetail() {
 
               {/* Aba Arquivos (req 30, P1) */}
               <TabsContent value="arquivos">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 text-center">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 text-center">
                   <Paperclip size={36} className="mx-auto text-gray-300 mb-3" />
                   <p className="text-sm text-gray-500">Anexos da negociação em breve.</p>
                 </div>
@@ -797,7 +797,7 @@ export function DealDetail() {
 
               {/* Aba Propostas (req 31, P1) */}
               <TabsContent value="propostas">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
                   <p className="text-sm text-gray-600">
                     Exporte a proposta em PDF. Modelos e histórico de propostas serão adicionados em
                     seguida.
@@ -820,7 +820,7 @@ export function DealDetail() {
 
               {/* Aba Questionários (req 33, P2) */}
               <TabsContent value="questionarios">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 text-center">
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 text-center">
                   <ClipboardList size={36} className="mx-auto text-gray-300 mb-3" />
                   <p className="text-sm text-gray-500">Questionários configuráveis em breve.</p>
                 </div>
@@ -837,7 +837,7 @@ export function DealDetail() {
               </div>
             )}
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
               {/* Value highlight + AI close-propensity score */}
               <div className="flex items-center justify-between gap-4">
                 <p className="text-3xl font-bold text-gray-900">{formatCurrency(deal.value)}</p>

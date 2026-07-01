@@ -44,7 +44,7 @@ export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }:
         }
       }}
       className={cn(
-        'relative bg-white rounded-lg border p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none',
+        'relative bg-card rounded-lg border p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none',
         isOverlay ? 'shadow-lg border-primary ring-2 ring-primary/20' : 'border-gray-200'
       )}
     >

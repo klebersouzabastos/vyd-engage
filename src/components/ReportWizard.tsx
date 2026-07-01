@@ -210,7 +210,7 @@ export function ReportWizard({ onComplete, onCancel }: ReportWizardProps) {
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-8 mb-6">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-8 mb-6">
           {/* Step 1: Nome */}
           {step === 1 && (
             <div className="space-y-6">

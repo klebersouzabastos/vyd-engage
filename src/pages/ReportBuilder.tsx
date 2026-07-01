@@ -296,7 +296,7 @@ export function ReportBuilder() {
       </Dialog>
 
       <div className="p-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300">
           <Tabs defaultValue="general" className="w-full">
             <div className="border-b border-gray-300 px-6">
               <div className="flex items-center justify-between">

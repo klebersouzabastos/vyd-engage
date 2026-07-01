@@ -126,7 +126,7 @@ export function CalendarTab() {
         </p>
       </div>
 
-      <div className="p-5 rounded-lg border border-gray-300 bg-white">
+      <div className="p-5 rounded-lg border border-gray-300 bg-card">
         <div className="flex items-start gap-4">
           {/* Google Calendar icon */}
           <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">

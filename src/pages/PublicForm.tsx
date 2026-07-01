@@ -75,7 +75,7 @@ export function PublicForm() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/10 to-gray-100 flex flex-col items-center justify-center p-4">
         <VYDEcosystemBanner />
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={32} className="text-green-600" />
           </div>
@@ -96,7 +96,7 @@ export function PublicForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-gray-100 flex flex-col items-center justify-center p-4">
       <VYDEcosystemBanner />
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+      <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
             <span className="text-white text-2xl font-bold">E</span>

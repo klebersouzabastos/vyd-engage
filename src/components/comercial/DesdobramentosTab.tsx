@@ -74,7 +74,7 @@ export function DesdobramentosTab() {
       {listQuery.isLoading ? (
         <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
       ) : roadmaps.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card py-16 text-center">
           <GitBranch className="h-10 w-10 text-slate-300" />
           <p className="mt-3 font-medium text-slate-900">Nenhum desdobramento ainda</p>
           <p className="mt-1 max-w-sm text-sm text-slate-500">
@@ -90,7 +90,7 @@ export function DesdobramentosTab() {
           {roadmaps.map((r) => (
             <li
               key={r.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-card p-4 transition-colors hover:border-slate-300"
             >
               <button
                 type="button"

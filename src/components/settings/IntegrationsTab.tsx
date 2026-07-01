@@ -406,7 +406,7 @@ function WebhookCaptureSection() {
                   Copie sua chave agora — ela nao sera exibida novamente:
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="text-xs bg-white px-2 py-1 rounded border border-yellow-300 font-mono flex-1 break-all">
+                  <code className="text-xs bg-card px-2 py-1 rounded border border-yellow-300 font-mono flex-1 break-all">
                     {newKeyValue}
                   </code>
                   <button

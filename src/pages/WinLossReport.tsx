@@ -139,7 +139,7 @@ function StatCard({
     purple: 'bg-purple-50 text-purple-600',
   };
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] ?? colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">
@@ -260,7 +260,7 @@ export function WinLossReport() {
             {/* Charts row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Pie chart — loss reasons */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Motivos de Perda</h3>
                 {isLoading ? (
                   <Skeleton className="h-[280px] w-full" />
@@ -298,7 +298,7 @@ export function WinLossReport() {
               </div>
 
               {/* Bar chart — won vs lost per month */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Ganhos vs Perdidos por Mês
                 </h3>
@@ -329,7 +329,7 @@ export function WinLossReport() {
 
             {/* Competitors table */}
             {(isLoading || (data?.competitors && data.competitors.length > 0)) && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
                 <div className="p-4 border-b border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-900">Concorrentes Mencionados</h3>
                 </div>

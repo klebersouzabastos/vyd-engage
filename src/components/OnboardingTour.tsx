@@ -205,7 +205,7 @@ export function OnboardingTour() {
       {/* Tooltip */}
       <div
         style={tooltipStyle}
-        className={`bg-white rounded-lg shadow-xl border border-gray-300 p-5 z-[10001] ${
+        className={`bg-card rounded-lg shadow-xl border border-gray-300 p-5 z-[10001] ${
           isWelcome ? 'w-96 text-center' : 'w-80'
         }`}
       >

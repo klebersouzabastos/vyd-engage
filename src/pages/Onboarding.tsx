@@ -65,7 +65,7 @@ export function Onboarding() {
               <div
                 className={`
                 w-10 h-10 rounded-full flex items-center justify-center
-                ${step >= num ? 'bg-primary text-white' : 'bg-white text-gray-600 border-2 border-gray-300'}
+                ${step >= num ? 'bg-primary text-white' : 'bg-card text-gray-600 border-2 border-gray-300'}
               `}
               >
                 {step > num ? <Check size={20} /> : num}
@@ -78,7 +78,7 @@ export function Onboarding() {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-8">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-8">
           {step === 1 && (
             <div>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -104,7 +104,7 @@ export function Onboarding() {
                     id="companySize"
                     value={formData.companySize}
                     onChange={(e) => setFormData({ ...formData, companySize: e.target.value })}
-                    className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                    className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-card text-gray-900"
                   >
                     <option value="">Selecione</option>
                     <option value="1-10">1-10 pessoas</option>

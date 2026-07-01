@@ -21,7 +21,7 @@ export function StatCard({
   iconColor = 'text-primary',
 }: StatCardProps) {
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-gray-300">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm text-gray-600 mb-1">{title}</p>

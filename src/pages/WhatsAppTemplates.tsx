@@ -212,7 +212,7 @@ export function WhatsAppTemplates() {
         </div>
 
         {connections.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-lg border border-gray-300">
+          <div className="text-center py-16 bg-card rounded-lg border border-gray-300">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma conexão WhatsApp</h3>
             <p className="text-gray-500 mb-4">
@@ -226,7 +226,7 @@ export function WhatsAppTemplates() {
             <span className="text-gray-500">Buscando templates da API...</span>
           </div>
         ) : templates.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-lg border border-gray-300">
+          <div className="text-center py-16 bg-card rounded-lg border border-gray-300">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum template encontrado</h3>
             <p className="text-gray-500 mb-4">
@@ -249,7 +249,7 @@ export function WhatsAppTemplates() {
                 return (
                   <div
                     key={template.id || template.name}
-                    className="bg-white rounded-lg border border-gray-300 overflow-hidden hover:shadow-md transition-shadow"
+                    className="bg-card rounded-lg border border-gray-300 overflow-hidden hover:shadow-md transition-shadow"
                   >
                     <div className="p-4 border-b border-gray-200">
                       <div className="flex items-start justify-between mb-2">

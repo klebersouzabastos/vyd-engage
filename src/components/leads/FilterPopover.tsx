@@ -58,7 +58,7 @@ export function FilterPopover({
         data-filter={filterId}
         className={cn(
           buttonVariants({ variant: 'outline' }),
-          'gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer'
+          'gap-2 border border-gray-300 bg-card hover:bg-gray-50 cursor-pointer'
         )}
         onClick={() => setOpen(!open)}
       >
@@ -74,7 +74,7 @@ export function FilterPopover({
         />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white rounded-md border border-gray-300 shadow-lg p-3">
+        <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-card rounded-md border border-gray-300 shadow-lg p-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-300">
               <span className="text-sm font-medium text-gray-900">{label}</span>
