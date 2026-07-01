@@ -76,7 +76,7 @@ export function CustomFields() {
       <Header title="Campos Customizados" subtitle="Crie campos personalizados para seus leads" />
 
       <div className="p-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300">
           <div className="p-6 border-b border-gray-300">
             <div className="flex items-center justify-between">
               <div>
@@ -108,7 +108,7 @@ export function CustomFields() {
                   fields.map((field) => (
                     <div
                       key={field.id}
-                      className={`flex items-center gap-4 p-4 border rounded-lg bg-white hover:shadow-md transition-shadow ${
+                      className={`flex items-center gap-4 p-4 border rounded-lg bg-card hover:shadow-md transition-shadow ${
                         editingField?.id === field.id
                           ? 'border-primary border-2'
                           : 'border-gray-300'

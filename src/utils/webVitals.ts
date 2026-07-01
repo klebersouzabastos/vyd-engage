@@ -103,12 +103,14 @@ function logVital(metric: WebVitalMetric) {
   const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 
   if (import.meta.env.DEV) {
+    // Cores do console DEV (%c) exigem hex literal — o console não resolve var().
+    // Valores resolvidos do DS (success/warning/danger). gate-allow: dev console.
     const color =
       metric.rating === 'good'
-        ? '#16A34A'
+        ? '#2E9E6B' // gate-allow: dev console
         : metric.rating === 'needs-improvement'
-          ? '#F59E0B'
-          : '#DC2626';
+          ? '#D9920A' // gate-allow: dev console
+          : '#D24545'; // gate-allow: dev console
     console.log(
       `%c[Web Vital] ${metric.name}: ${Math.round(metric.value)}ms (${metric.rating})`,
       `color: ${color}; font-weight: bold;`

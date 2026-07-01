@@ -3,6 +3,34 @@ import { Buffer } from 'buffer';
 import { formatCustomFieldValue } from './customFields';
 
 /**
+ * EXCEL_PALETTE — paleta ARGB do vyd-design-system para planilhas (ExcelJS).
+ * ExcelJS exige cor no formato ARGB literal (FFRRGGBB); documentos self-contained
+ * não carregam theme.css, logo não podem usar var(--vyd-*). Valores resolvidos do
+ * DS (tema light/print, pois planilhas têm fundo branco). Arquivo na allowlist do
+ * gate. Referência: vyd-design-system/dist/variables.css.
+ */
+const EXCEL_PALETTE = {
+  text: 'FF1F2630', // --vyd-neutral-100
+  muted: 'FF7B8794', // --vyd-neutral-500
+  accent: 'FF1E5FC4', // --vyd-blueprint-500 (marca)
+  accentDark: 'FF143F86', // --vyd-blueprint-700
+  onAccent: 'FFFFFFFF', // --vyd-neutral-1000
+  border: 'FFC2CAD3', // --vyd-neutral-700 (borda clara)
+  subtleBg: 'FFF2F5F8', // --vyd-neutral-900 (linha alternada)
+  success: 'FF2E9E6B', // --vyd-success
+  warning: 'FFD9920A', // --vyd-warning
+  danger: 'FFD24545', // --vyd-danger
+  // Tintas de badge de status (planilha light) derivadas das semânticas do DS.
+  statusNewBg: 'FFEAF1FB', // --vyd-blueprint-50
+  statusContactBg: 'FFF6ECD2', // tinta warning
+  statusContactText: 'FF7A5200', // warning escuro
+  statusWonBg: 'FFDCF0E6', // tinta success
+  statusWonText: 'FF1C6B49', // success escuro
+  statusLostBg: 'FFF6DEDE', // tinta danger
+  statusLostText: 'FF8B2E2E', // danger escuro
+} as const; // gate-allow: self-contained document (ExcelJS ARGB)
+
+/**
  * Converte uma imagem base64 para Buffer
  */
 function base64ToBuffer(base64: string): Buffer {
@@ -31,7 +59,7 @@ async function addHeaderToWorksheet(
   // Linha 1: Nome da aplicação
   const cellA1 = worksheet.getCell('A1');
   cellA1.value = companyName;
-  cellA1.font = { size: 24, bold: true, color: { argb: 'FF1F2937' } };
+  cellA1.font = { size: 24, bold: true, color: { argb: EXCEL_PALETTE.text } };
   cellA1.alignment = { vertical: 'middle', horizontal: 'left' };
   worksheet.getRow(1).height = 30;
   worksheet.mergeCells('A1:D1'); // Mesclar células para o nome
@@ -62,7 +90,7 @@ async function addHeaderToWorksheet(
       // Se falhar, adicionar apenas inicial
       const cellA2 = worksheet.getCell('A2');
       cellA2.value = companyName.charAt(0).toUpperCase();
-      cellA2.font = { size: 32, bold: true, color: { argb: 'FF2563EB' } };
+      cellA2.font = { size: 32, bold: true, color: { argb: EXCEL_PALETTE.accent } };
       cellA2.alignment = { vertical: 'middle', horizontal: 'center' };
       worksheet.getRow(2).height = 80;
       worksheet.getColumn(1).width = 15;
@@ -71,7 +99,7 @@ async function addHeaderToWorksheet(
     // Sem logo, adicionar apenas inicial
     const cellA2 = worksheet.getCell('A2');
     cellA2.value = companyName.charAt(0).toUpperCase();
-    cellA2.font = { size: 32, bold: true, color: { argb: 'FF2563EB' } };
+    cellA2.font = { size: 32, bold: true, color: { argb: EXCEL_PALETTE.accent } };
     cellA2.alignment = { vertical: 'middle', horizontal: 'center' };
     worksheet.getRow(2).height = 80;
     worksheet.getColumn(1).width = 15;
@@ -106,14 +134,14 @@ export async function exportAutomationLogsToExcel(
   // Adicionar título do relatório (linha 3)
   const cellA3 = worksheet.getCell('A3');
   cellA3.value = 'Logs de Automação';
-  cellA3.font = { size: 18, bold: true, color: { argb: 'FF1F2937' } };
+  cellA3.font = { size: 18, bold: true, color: { argb: EXCEL_PALETTE.text } };
   worksheet.getRow(3).height = 25;
   worksheet.mergeCells('A3:D3');
 
   // Data de geração (linha 4)
   const cellA4 = worksheet.getCell('A4');
   cellA4.value = `Relatório gerado em ${new Date().toLocaleString('pt-BR')}`;
-  cellA4.font = { size: 12, color: { argb: 'FF9CA3AF' } };
+  cellA4.font = { size: 12, color: { argb: EXCEL_PALETTE.muted } };
   worksheet.getRow(4).height = 20;
   worksheet.mergeCells('A4:D4');
 
@@ -124,23 +152,23 @@ export async function exportAutomationLogsToExcel(
 
   worksheet.getCell('A6').value = 'Total de Registros';
   worksheet.getCell('B6').value = logs.length;
-  worksheet.getCell('A6').font = { size: 11, color: { argb: 'FF6B7280' } };
+  worksheet.getCell('A6').font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
   worksheet.getCell('B6').font = { size: 14, bold: true };
 
   worksheet.getCell('A7').value = 'Enviados';
   worksheet.getCell('B7').value = sentCount;
-  worksheet.getCell('A7').font = { size: 11, color: { argb: 'FF6B7280' } };
-  worksheet.getCell('B7').font = { size: 14, bold: true, color: { argb: 'FF16A34A' } };
+  worksheet.getCell('A7').font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
+  worksheet.getCell('B7').font = { size: 14, bold: true, color: { argb: EXCEL_PALETTE.success } };
 
   worksheet.getCell('A8').value = 'Erros';
   worksheet.getCell('B8').value = errorCount;
-  worksheet.getCell('A8').font = { size: 11, color: { argb: 'FF6B7280' } };
-  worksheet.getCell('B8').font = { size: 14, bold: true, color: { argb: 'FFDC2626' } };
+  worksheet.getCell('A8').font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
+  worksheet.getCell('B8').font = { size: 14, bold: true, color: { argb: EXCEL_PALETTE.danger } };
 
   worksheet.getCell('A9').value = 'Pendentes';
   worksheet.getCell('B9').value = pendingCount;
-  worksheet.getCell('A9').font = { size: 11, color: { argb: 'FF6B7280' } };
-  worksheet.getCell('B9').font = { size: 14, bold: true, color: { argb: 'FFEA580C' } };
+  worksheet.getCell('A9').font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
+  worksheet.getCell('B9').font = { size: 14, bold: true, color: { argb: EXCEL_PALETTE.warning } };
 
   // Adicionar tabela de logs
   const headerRow = 11;
@@ -159,18 +187,18 @@ export async function exportAutomationLogsToExcel(
   headers.forEach((header, index) => {
     const cell = worksheet.getCell(headerRow, index + 1);
     cell.value = header;
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.font = { bold: true, color: { argb: EXCEL_PALETTE.onAccent } };
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF2563EB' },
+      fgColor: { argb: EXCEL_PALETTE.accent },
     };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
     cell.border = {
-      top: { style: 'thin', color: { argb: 'FF1E40AF' } },
-      left: { style: 'thin', color: { argb: 'FF1E40AF' } },
-      bottom: { style: 'thin', color: { argb: 'FF1E40AF' } },
-      right: { style: 'thin', color: { argb: 'FF1E40AF' } },
+      top: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
+      left: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
+      bottom: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
+      right: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
     };
   });
 
@@ -193,29 +221,29 @@ export async function exportAutomationLogsToExcel(
     // Colorir status
     const statusCell = worksheet.getCell(row, 6);
     if (log.status === 'sent') {
-      statusCell.font = { color: { argb: 'FF16A34A' }, bold: true };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.success }, bold: true };
     } else if (log.status === 'error') {
-      statusCell.font = { color: { argb: 'FFDC2626' }, bold: true };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.danger }, bold: true };
     } else {
-      statusCell.font = { color: { argb: 'FFEA580C' }, bold: true };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.warning }, bold: true };
     }
 
     // Colorir canal
     const channelCell = worksheet.getCell(row, 5);
     if (log.channel === 'whatsapp') {
-      channelCell.font = { color: { argb: 'FF16A34A' } };
+      channelCell.font = { color: { argb: EXCEL_PALETTE.success } };
     } else {
-      channelCell.font = { color: { argb: 'FF2563EB' } };
+      channelCell.font = { color: { argb: EXCEL_PALETTE.accent } };
     }
 
     // Adicionar bordas
     for (let col = 1; col <= headers.length; col++) {
       const cell = worksheet.getCell(row, col);
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        top: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
+        left: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
+        bottom: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
+        right: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
       };
 
       // Alternar cor de fundo
@@ -223,7 +251,7 @@ export async function exportAutomationLogsToExcel(
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFF9FAFB' },
+          fgColor: { argb: EXCEL_PALETTE.subtleBg },
         };
       }
     }
@@ -231,7 +259,7 @@ export async function exportAutomationLogsToExcel(
     // Estilizar mensagem de erro se houver
     if (log.errorMessage) {
       const errorCell = worksheet.getCell(row, 8);
-      errorCell.font = { color: { argb: 'FFDC2626' }, italic: true, size: 11 };
+      errorCell.font = { color: { argb: EXCEL_PALETTE.danger }, italic: true, size: 11 };
     }
   });
 
@@ -259,7 +287,7 @@ export async function exportAutomationLogsToExcel(
   worksheet.mergeCells(`A${footerRow}:H${footerRow}`);
   const footerCell = worksheet.getCell(`A${footerRow}`);
   footerCell.value = `${companyName} - Sistema de Gestão de Leads | Relatório gerado em ${new Date().toLocaleString('pt-BR')}`;
-  footerCell.font = { size: 11, color: { argb: 'FF6B7280' } };
+  footerCell.font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
   footerCell.alignment = { horizontal: 'center' };
 
   // Gerar arquivo e fazer download
@@ -333,7 +361,7 @@ export async function exportLeadsToExcel(
   // Adicionar título do relatório (linha 3)
   const cellA3 = worksheet.getCell('A3');
   cellA3.value = 'Relatório de Leads';
-  cellA3.font = { size: 18, bold: true, color: { argb: 'FF1F2937' } };
+  cellA3.font = { size: 18, bold: true, color: { argb: EXCEL_PALETTE.text } };
   worksheet.getRow(3).height = 25;
   const totalColumns3 = 8 + customFields.length;
   const lastColumn3 = getColumnLetter(totalColumns3);
@@ -344,7 +372,7 @@ export async function exportLeadsToExcel(
   const currentTime = new Date().toLocaleTimeString('pt-BR');
   const cellA4 = worksheet.getCell('A4');
   cellA4.value = `Relatório gerado em ${currentDate} às ${currentTime}`;
-  cellA4.font = { size: 12, color: { argb: 'FF9CA3AF' } };
+  cellA4.font = { size: 12, color: { argb: EXCEL_PALETTE.muted } };
   worksheet.getRow(4).height = 20;
   const totalColumns4 = 8 + customFields.length;
   const lastColumn4 = getColumnLetter(totalColumns4);
@@ -353,7 +381,7 @@ export async function exportLeadsToExcel(
   // Informações resumidas (linha 6)
   worksheet.getCell('A6').value = 'Total de Leads';
   worksheet.getCell('B6').value = leads.length;
-  worksheet.getCell('A6').font = { size: 11, color: { argb: 'FF6B7280' } };
+  worksheet.getCell('A6').font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
   worksheet.getCell('B6').font = { size: 14, bold: true };
 
   // Filtros aplicados (linha 7)
@@ -395,7 +423,7 @@ export async function exportLeadsToExcel(
   filterText += filterParts.length > 0 ? filterParts.join('; ') : 'Nenhum';
 
   worksheet.getCell('A7').value = filterText;
-  worksheet.getCell('A7').font = { size: 11, color: { argb: 'FF6B7280' } };
+  worksheet.getCell('A7').font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
   const totalColumns7 = 8 + customFields.length;
   const lastColumn7 = getColumnLetter(totalColumns7);
   worksheet.mergeCells(`A7:${lastColumn7}7`);
@@ -423,18 +451,18 @@ export async function exportLeadsToExcel(
   headers.forEach((header, index) => {
     const cell = worksheet.getCell(headerRow, index + 1);
     cell.value = header;
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.font = { bold: true, color: { argb: EXCEL_PALETTE.onAccent } };
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF2563EB' },
+      fgColor: { argb: EXCEL_PALETTE.accent },
     };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
     cell.border = {
-      top: { style: 'thin', color: { argb: 'FF1E40AF' } },
-      left: { style: 'thin', color: { argb: 'FF1E40AF' } },
-      bottom: { style: 'thin', color: { argb: 'FF1E40AF' } },
-      right: { style: 'thin', color: { argb: 'FF1E40AF' } },
+      top: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
+      left: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
+      bottom: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
+      right: { style: 'thin', color: { argb: EXCEL_PALETTE.accentDark } },
     };
   });
 
@@ -466,27 +494,27 @@ export async function exportLeadsToExcel(
     // Colorir status
     const statusCell = worksheet.getCell(row, 5);
     if (lead.status === 'novo') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
-      statusCell.font = { color: { argb: 'FF1E40AF' }, bold: true };
+      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_PALETTE.statusNewBg } };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.accentDark }, bold: true };
     } else if (lead.status === 'contato') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
-      statusCell.font = { color: { argb: 'FF92400E' }, bold: true };
+      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_PALETTE.statusContactBg } };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.statusContactText }, bold: true };
     } else if (lead.status === 'fechado') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-      statusCell.font = { color: { argb: 'FF065F46' }, bold: true };
+      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_PALETTE.statusWonBg } };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.statusWonText }, bold: true };
     } else if (lead.status === 'perdido') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-      statusCell.font = { color: { argb: 'FF991B1B' }, bold: true };
+      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_PALETTE.statusLostBg } };
+      statusCell.font = { color: { argb: EXCEL_PALETTE.statusLostText }, bold: true };
     }
 
     // Adicionar bordas
     for (let col = 1; col <= headers.length; col++) {
       const cell = worksheet.getCell(row, col);
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-        right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        top: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
+        left: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
+        bottom: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
+        right: { style: 'thin', color: { argb: EXCEL_PALETTE.border } },
       };
 
       // Alternar cor de fundo
@@ -494,7 +522,7 @@ export async function exportLeadsToExcel(
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFF9FAFB' },
+          fgColor: { argb: EXCEL_PALETTE.subtleBg },
         };
       }
     }
@@ -533,7 +561,7 @@ export async function exportLeadsToExcel(
   worksheet.mergeCells(`A${footerRow}:${lastColumn}${footerRow}`);
   const footerCell = worksheet.getCell(`A${footerRow}`);
   footerCell.value = `${companyName} - Sistema de Gestão de Leads | Relatório gerado em ${currentDate} às ${currentTime}`;
-  footerCell.font = { size: 11, color: { argb: 'FF6B7280' } };
+  footerCell.font = { size: 11, color: { argb: EXCEL_PALETTE.muted } };
   footerCell.alignment = { horizontal: 'center' };
 
   // Gerar arquivo e fazer download

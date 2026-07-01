@@ -16,6 +16,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { CHART_COLORS } from '@/utils/designTokens';
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
@@ -89,14 +90,14 @@ async function fetchWinLoss(period: Period): Promise<WinLossData> {
 }
 
 const PIE_COLORS = [
-  '#ef4444',
-  '#f97316',
-  '#eab308',
-  '#8b5cf6',
-  '#06b6d4',
-  '#ec4899',
-  '#6366f1',
-  '#14b8a6',
+  CHART_COLORS.red,
+  CHART_COLORS.orange,
+  CHART_COLORS.yellow,
+  CHART_COLORS.purple,
+  CHART_COLORS.blue,
+  CHART_COLORS.pink,
+  CHART_COLORS.indigo,
+  CHART_COLORS.green,
 ];
 
 function formatMonthLabel(month: string): string {
@@ -138,7 +139,7 @@ function StatCard({
     purple: 'bg-purple-50 text-purple-600',
   };
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] ?? colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">
@@ -259,7 +260,7 @@ export function WinLossReport() {
             {/* Charts row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Pie chart — loss reasons */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Motivos de Perda</h3>
                 {isLoading ? (
                   <Skeleton className="h-[280px] w-full" />
@@ -297,7 +298,7 @@ export function WinLossReport() {
               </div>
 
               {/* Bar chart — won vs lost per month */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Ganhos vs Perdidos por Mês
                 </h3>
@@ -313,13 +314,13 @@ export function WinLossReport() {
                       data={barChartData}
                       margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--vyd-border)" />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                       <Legend />
-                      <Bar dataKey="Ganhos" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Perdidos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Ganhos" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Perdidos" fill={CHART_COLORS.red} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -328,7 +329,7 @@ export function WinLossReport() {
 
             {/* Competitors table */}
             {(isLoading || (data?.competitors && data.competitors.length > 0)) && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+              <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
                 <div className="p-4 border-b border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-900">Concorrentes Mencionados</h3>
                 </div>

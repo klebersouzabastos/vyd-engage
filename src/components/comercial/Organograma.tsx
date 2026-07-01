@@ -62,7 +62,7 @@ export function Organograma({ stakeholders, onUpdate, onRemove }: Props) {
       <ul>
         {nodes.map((s) => (
           <li key={s.id} className="org-node">
-            <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-3">
+            <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-card p-3">
               <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
                 <UserRound className="h-4 w-4 text-slate-500" />
               </div>

@@ -111,7 +111,7 @@ export function TagSelector({
         </Button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50">
+          <div className="absolute top-full left-0 right-0 mt-1 w-full bg-card border border-gray-300 rounded-md shadow-lg z-50">
             <div className="p-3 border-b border-gray-300">
               <Input
                 ref={inputRef}

@@ -1,0 +1,2 @@
+# Gate de 0 cor codificada (spec design-system-migration, Fase 8).
+npm run check:colors && npm run lint:css

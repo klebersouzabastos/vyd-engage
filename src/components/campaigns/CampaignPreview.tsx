@@ -39,7 +39,7 @@ interface CampaignPreviewProps {
  */
 export function CampaignPreview({ blocks, lead = SAMPLE_LEAD }: CampaignPreviewProps) {
   return (
-    <div className="mx-auto max-w-[600px] bg-white text-gray-900">
+    <div className="mx-auto max-w-[600px] bg-card text-gray-900">
       {blocks.map((block) => {
         switch (block.type) {
           case 'text':

@@ -64,9 +64,10 @@ import { apiClient } from '../services/api/client';
 import { useFunnels, type FunnelLead } from '../hooks/useFunnels';
 import { mapStatusFromBackend, mapSourceFromBackend } from '../utils/leadEnums';
 import { PageSkeleton } from '../components/PageSkeleton';
+import { CHART_PALETTE } from '@/utils/designTokens';
 
-// Pipeline column colors stored in DB as hex — cannot use CSS var() references here
-const PIPELINE_COLUMN_COLORS = ['#3B82F6', '#EAB308', '#16A34A', '#8B5CF6', '#EC4899', '#6366F1'];
+// Pipeline column colors — design-system chart palette tokens (var(--color-chart-*))
+const PIPELINE_COLUMN_COLORS = [...CHART_PALETTE];
 
 export function Pipeline() {
   const navigate = useNavigate();
@@ -464,7 +465,7 @@ export function Pipeline() {
 
       <div className="p-8">
         {/* Funnel Selector */}
-        <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-300">
+        <div className="mb-6 bg-card rounded-lg p-4 shadow-sm border border-gray-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1">
               <FunnelIcon size={20} className="text-gray-600" />
@@ -507,7 +508,7 @@ export function Pipeline() {
                     <select
                       value={currentFunnelId || ''}
                       onChange={(e) => handleFunnelChange(e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       {funnels.map((funnel) => (
                         <option key={funnel.id} value={funnel.id}>
@@ -575,7 +576,7 @@ export function Pipeline() {
               type="button"
               className={cn(
                 buttonVariants({ variant: 'outline' }),
-                'gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer'
+                'gap-2 border border-gray-300 bg-card hover:bg-gray-50 cursor-pointer'
               )}
               aria-expanded={filterPopoverOpen}
               aria-haspopup="true"
@@ -602,7 +603,7 @@ export function Pipeline() {
               />
             </button>
             {filterPopoverOpen && (
-              <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white rounded-md border border-gray-300 shadow-lg p-3">
+              <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-card rounded-md border border-gray-300 shadow-lg p-3">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-300">
                     <span className="text-sm font-medium text-gray-900">Filtrar por Origem</span>
@@ -727,7 +728,7 @@ export function Pipeline() {
                       ) : (
                         <>
                           <h3 className="text-gray-900">{column.title}</h3>
-                          <span className="text-sm text-gray-600 bg-white px-2 py-0.5 rounded">
+                          <span className="text-sm text-gray-600 bg-card px-2 py-0.5 rounded">
                             {column.leads.length}
                           </span>
                         </>
@@ -839,7 +840,7 @@ export function Pipeline() {
           </div>
           <DragOverlay>
             {activeLead ? (
-              <div className="bg-white rounded-lg p-4 shadow-lg border-2 border-primary w-[288px]">
+              <div className="bg-card rounded-lg p-4 shadow-lg border-2 border-primary w-[288px]">
                 <h4 className="font-medium text-gray-900">{activeLead.name}</h4>
               </div>
             ) : null}
@@ -847,7 +848,7 @@ export function Pipeline() {
         </DndContext>
 
         {/* Stats Summary */}
-        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-300">
+        <div className="mt-8 bg-card rounded-lg p-6 shadow-sm border border-gray-300">
           <h3 className="text-gray-900 mb-4">Resumo do Funil</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
@@ -870,7 +871,7 @@ export function Pipeline() {
 
       {/* Create Column Dialog */}
       <Dialog open={createColumnOpen} onOpenChange={setCreateColumnOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-card">
           <DialogHeader className="text-left space-y-0 pb-4">
             <DialogTitle className="text-lg font-semibold text-gray-900">
               Criar Nova Coluna
@@ -979,7 +980,7 @@ export function Pipeline() {
 
       {/* Create Funnel Dialog */}
       <Dialog open={createFunnelOpen} onOpenChange={setCreateFunnelOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-card">
           <DialogHeader className="text-left space-y-0 pb-4">
             <DialogTitle className="text-lg font-semibold text-gray-900">
               Criar Novo Funil
@@ -1092,7 +1093,7 @@ export function Pipeline() {
 
       {/* Pipeline Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-lg bg-white">
+        <DialogContent className="sm:max-w-lg bg-card">
           <DialogHeader className="text-left space-y-0 pb-4">
             <DialogTitle className="text-lg font-semibold text-gray-900">
               Configurações do Pipeline
@@ -1230,7 +1231,7 @@ function DraggableLeadCard({
       {...listeners}
       onClick={(e) => onCardClick(e, lead)}
       className={cn(
-        'bg-white rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150',
+        'bg-card rounded-lg p-4 shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150',
         isDragging && 'shadow-2xl ring-2 ring-primary/60 scale-[1.02] z-50 rotate-1'
       )}
     >

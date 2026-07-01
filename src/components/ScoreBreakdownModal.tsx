@@ -74,7 +74,7 @@ export function ScoreBreakdownModal({ leadId, open, onClose }: ScoreBreakdownMod
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-white">
+      <DialogContent className="sm:max-w-lg bg-card">
         <DialogHeader className="text-left space-y-0 pb-4">
           <DialogTitle className="text-lg font-semibold text-gray-900">
             Detalhes do Score

@@ -60,7 +60,7 @@ export function LeadFilters({
   const navigate = useNavigate();
 
   return (
-    <div className="bg-white rounded-lg p-3 md:p-4 shadow-sm border border-gray-300 mb-4 md:mb-6">
+    <div className="bg-card rounded-lg p-3 md:p-4 shadow-sm border border-gray-300 mb-4 md:mb-6">
       <div className="flex flex-wrap items-center gap-2 md:gap-4">
         <div className="flex-1 min-w-[160px] md:min-w-[200px] w-full md:w-auto">
           <Input

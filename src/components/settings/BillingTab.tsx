@@ -125,7 +125,7 @@ export function BillingTab() {
                     ? 'border-primary bg-primary/5'
                     : plan.highlighted
                       ? 'border-amber bg-amber/5'
-                      : 'border-gray-300 bg-white'
+                      : 'border-gray-300 bg-card'
                 }`}
               >
                 {plan.highlighted && !isCurrentPlan && (

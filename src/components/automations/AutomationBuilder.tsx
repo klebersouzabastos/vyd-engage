@@ -26,10 +26,10 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 /** Aplica rótulo Sim/Não e cor às arestas que saem dos ramos da condição. */
 function decorateEdge<T extends Edge | Connection>(edge: T): T {
   if (edge.sourceHandle === 'true') {
-    return { ...edge, label: 'Sim', style: { stroke: '#22c55e' } } as T;
+    return { ...edge, label: 'Sim', style: { stroke: 'var(--vyd-success)' } } as T;
   }
   if (edge.sourceHandle === 'false') {
-    return { ...edge, label: 'Não', style: { stroke: '#ef4444' } } as T;
+    return { ...edge, label: 'Não', style: { stroke: 'var(--vyd-danger)' } } as T;
   }
   return edge;
 }
@@ -263,7 +263,7 @@ export function AutomationBuilder({
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top bar */}
-      <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
+      <div className="h-14 bg-card border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
             <ArrowLeft size={16} />
@@ -323,7 +323,7 @@ export function AutomationBuilder({
             }}
           />
           <div
-            className="fixed z-50 w-56 max-h-80 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-1"
+            className="fixed z-50 w-56 max-h-80 overflow-y-auto bg-card rounded-lg shadow-xl border border-gray-200 py-1"
             style={{ left: createMenu.screen.x, top: createMenu.screen.y }}
           >
             <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">

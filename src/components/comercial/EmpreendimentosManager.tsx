@@ -33,7 +33,7 @@ export function EmpreendimentosManager({ companyId }: { companyId: string }) {
   const { deleteEmpreendimento } = useEmpreendimentoActions();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
           <Briefcase size={16} className="text-gray-400" />

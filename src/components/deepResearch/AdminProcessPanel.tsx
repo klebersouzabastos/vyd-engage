@@ -92,7 +92,7 @@ export function AdminProcessPanel({ research, onSaved }: AdminProcessPanelProps)
         readOnly
         value={research.promptUsed ?? ''}
         rows={6}
-        className="mt-1 bg-white font-mono text-xs"
+        className="mt-1 bg-card font-mono text-xs"
       />
 
       <div className="mt-4 flex items-center justify-between">
@@ -113,7 +113,7 @@ export function AdminProcessPanel({ research, onSaved }: AdminProcessPanelProps)
         value={reportMarkdown}
         onChange={(e) => setReportMarkdown(e.target.value)}
         rows={6}
-        className="mt-1 bg-white font-mono text-xs"
+        className="mt-1 bg-card font-mono text-xs"
         placeholder="Cole aqui o relatório em markdown…"
       />
       <div className="mt-2 flex items-center justify-between">

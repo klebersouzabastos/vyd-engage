@@ -118,7 +118,7 @@ export function PublicSchedule() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-md p-8">
+      <div className="bg-card rounded-xl shadow-sm border border-gray-200 w-full max-w-md p-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{avail.title}</h1>
           <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">

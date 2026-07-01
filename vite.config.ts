@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
@@ -14,8 +16,10 @@ export default defineConfig({
         name: 'VYD Engage',
         short_name: 'VYD',
         description: 'CRM inteligente para equipes de vendas',
-        theme_color: '#2563eb',
-        background_color: '#ffffff',
+        // Chrome do PWA no tema dark do DS (--vyd-bg-chrome = --vyd-neutral-0).
+        // Manifest não lê var(); valor dark resolvido do DS. gate-allow: PWA manifest
+        theme_color: '#0D1117',
+        background_color: '#0D1117',
         display: 'standalone',
         scope: '/',
         start_url: '/app/dashboard',

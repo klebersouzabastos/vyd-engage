@@ -94,7 +94,7 @@ function StatCard({
     orange: 'bg-orange-50 text-orange-600',
   };
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] ?? colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">
@@ -248,7 +248,7 @@ export function TeamPerformance() {
         ) : null}
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
           {error ? (
             <div className="flex flex-col items-center justify-center p-16 text-center">
               <AlertTriangle className="h-10 w-10 text-amber-500 mb-3" />

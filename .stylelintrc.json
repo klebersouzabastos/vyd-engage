@@ -1,0 +1,41 @@
+{
+  "extends": "stylelint-config-standard",
+  "ignoreFiles": ["src/index.css", "**/node_modules/**", "build/**", "dist/**"],
+  "rules": {
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-no-unknown": [true, { "ignoreFunctions": ["var", "calc", "color-mix", "theme"] }],
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "theme",
+          "config",
+          "custom-variant",
+          "apply",
+          "tailwind",
+          "variant",
+          "utility",
+          "source",
+          "plugin",
+          "reference",
+          "layer"
+        ]
+      }
+    ],
+    "at-rule-no-deprecated": null,
+    "import-notation": null,
+    "no-descending-specificity": null,
+    "no-duplicate-selectors": null,
+    "selector-class-pattern": null,
+    "keyframes-name-pattern": null,
+    "custom-property-pattern": null,
+    "media-feature-range-notation": null,
+    "value-keyword-case": null,
+    "declaration-empty-line-before": null,
+    "custom-property-empty-line-before": null,
+    "comment-empty-line-before": null,
+    "rule-empty-line-before": null,
+    "no-invalid-position-at-import-rule": null
+  }
+}

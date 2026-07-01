@@ -86,7 +86,7 @@ export function SavedViewsBar({
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
             activeViewId === null
               ? 'bg-primary text-white border-primary'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+              : 'bg-card text-gray-700 border-gray-300 hover:bg-gray-100'
           }`}
         >
           Todos
@@ -100,7 +100,7 @@ export function SavedViewsBar({
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-l-full text-sm font-medium transition-colors border border-r-0 ${
                 activeViewId === view.id
                   ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                  : 'bg-card text-gray-700 border-gray-300 hover:bg-gray-100'
               }`}
             >
               <Bookmark size={12} />
@@ -115,7 +115,7 @@ export function SavedViewsBar({
                   className={`inline-flex items-center px-1.5 py-1.5 rounded-r-full text-sm transition-colors border border-l-0 ${
                     activeViewId === view.id
                       ? 'bg-primary text-white border-primary hover:bg-primary/90'
-                      : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'
+                      : 'bg-card text-gray-500 border-gray-300 hover:bg-gray-100'
                   }`}
                 >
                   <MoreHorizontal size={14} />
@@ -197,7 +197,7 @@ export function SavedViewsBar({
 
       {/* Rename Dialog */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-card">
           <DialogHeader>
             <DialogTitle>Renomear visualizacao</DialogTitle>
           </DialogHeader>

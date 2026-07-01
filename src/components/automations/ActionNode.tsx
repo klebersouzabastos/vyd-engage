@@ -159,7 +159,7 @@ function ActionConfigFields({
             const label = ACTION_TYPES.find((a) => a.value === newType)?.label || newType;
             onUpdate({ ...config, _nodeType: newType, _label: label });
           }}
-          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
         >
           {ACTION_TYPES.map((a) => (
             <option key={a.value} value={a.value}>
@@ -245,7 +245,7 @@ function ActionConfigFields({
             <select
               value={config.field || 'status'}
               onChange={(e) => onUpdate({ ...config, field: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
             >
               <option value="status">Status</option>
               <option value="assignedTo">Responsável</option>
@@ -259,7 +259,7 @@ function ActionConfigFields({
               <select
                 value={config.value || ''}
                 onChange={(e) => onUpdate({ ...config, value: e.target.value })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
               >
                 <option value="">Selecione...</option>
                 <option value="NEW">Novo</option>
@@ -312,7 +312,7 @@ function ActionConfigFields({
             <select
               value={config.method || 'POST'}
               onChange={(e) => onUpdate({ ...config, method: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
             >
               <option value="POST">POST</option>
               <option value="GET">GET</option>
@@ -337,7 +337,7 @@ function ActionConfigFields({
             <select
               value={config.unit || 'd'}
               onChange={(e) => onUpdate({ ...config, unit: e.target.value })}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
             >
               <option value="n">Minutos</option>
               <option value="h">Horas</option>
@@ -365,8 +365,8 @@ function ActionConfigPanel({
 
   return (
     <>
-      <div className="absolute left-full top-0 ml-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-30 max-h-[500px] overflow-y-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white">
+      <div className="absolute left-full top-0 ml-4 w-80 bg-card rounded-lg shadow-lg border border-gray-200 z-30 max-h-[500px] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-card">
           <h4 className="font-medium text-sm text-gray-900">Configurar Ação</h4>
           <div className="flex items-center gap-0.5">
             <button
@@ -387,7 +387,7 @@ function ActionConfigPanel({
       </div>
 
       <Dialog open={expanded} onOpenChange={setExpanded}>
-        <DialogContent className="sm:max-w-2xl bg-white max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl bg-card max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar Ação{actionLabel ? ` — ${actionLabel}` : ''}</DialogTitle>
           </DialogHeader>
@@ -465,7 +465,7 @@ export function ActionNode({
             <X size={14} className="text-blue-600" />
           </button>
         </div>
-        <div className="bg-white rounded-b-lg px-4 py-3">
+        <div className="bg-card rounded-b-lg px-4 py-3">
           <p className="text-sm font-medium text-gray-900">{label}</p>
           {configSummary && <p className="text-xs text-gray-500 mt-1 truncate">{configSummary}</p>}
           <p className="text-xs text-gray-400 mt-1">Clique duplo para configurar</p>

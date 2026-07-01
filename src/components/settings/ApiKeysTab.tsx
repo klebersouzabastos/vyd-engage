@@ -154,7 +154,7 @@ export function ApiKeysTab() {
                 Copie sua chave agora. Ela nao sera exibida novamente.
               </p>
               <div className="flex items-center gap-2">
-                <code className="text-xs bg-white px-3 py-2 rounded border border-yellow-300 font-mono flex-1 break-all">
+                <code className="text-xs bg-card px-3 py-2 rounded border border-yellow-300 font-mono flex-1 break-all">
                   {newFullKey}
                 </code>
                 <Button variant="outline" size="sm" onClick={() => copyToClipboard(newFullKey)}>
@@ -215,7 +215,7 @@ export function ApiKeysTab() {
             <div
               role="group"
               aria-labelledby="apikey-scopes-label"
-              className="space-y-3 max-h-52 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white"
+              className="space-y-3 max-h-52 overflow-y-auto border border-gray-200 rounded-md p-3 bg-card"
             >
               {SCOPE_GROUPS.map((group) => (
                 <div key={group.resource}>
@@ -270,7 +270,7 @@ export function ApiKeysTab() {
             <div
               key={apiKey.id}
               className={`p-4 border rounded-lg flex items-center justify-between gap-4 ${
-                apiKey.active ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'
+                apiKey.active ? 'border-gray-300 bg-card' : 'border-gray-200 bg-gray-50 opacity-60'
               }`}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -344,10 +344,10 @@ export function ApiKeysTab() {
         <h4 className="text-sm font-medium text-blue-900 mb-2">Como usar</h4>
         <p className="text-sm text-blue-800 mb-2">
           Inclua a chave no header{' '}
-          <code className="bg-white px-1 py-0.5 rounded text-xs">X-API-Key</code> de cada
+          <code className="bg-card px-1 py-0.5 rounded text-xs">X-API-Key</code> de cada
           requisicao.
         </p>
-        <code className="text-xs bg-white px-3 py-2 rounded border border-blue-200 font-mono block">
+        <code className="text-xs bg-card px-3 py-2 rounded border border-blue-200 font-mono block">
           curl -H "X-API-Key: fcrm_sua_chave" /api/v1/leads
         </code>
       </div>

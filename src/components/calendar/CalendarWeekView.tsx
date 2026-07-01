@@ -47,7 +47,7 @@ export function CalendarWeekView({
       role="grid"
       aria-label="Calendário semanal"
       className={`
-        bg-white rounded-lg border border-gray-300 overflow-hidden
+        bg-card rounded-lg border border-gray-300 overflow-hidden
         ${isMobile ? 'flex flex-col' : 'grid grid-cols-7'}
       `}
     >

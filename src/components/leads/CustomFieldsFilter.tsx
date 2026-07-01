@@ -50,7 +50,7 @@ export function CustomFieldsFilter({
         data-filter="customFields"
         className={cn(
           buttonVariants({ variant: 'outline' }),
-          'gap-2 border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer'
+          'gap-2 border border-gray-300 bg-card hover:bg-gray-50 cursor-pointer'
         )}
         onClick={() => setOpen(!open)}
       >
@@ -66,7 +66,7 @@ export function CustomFieldsFilter({
         />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-80 bg-white rounded-md border border-gray-300 shadow-lg p-4 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-2 z-50 w-80 bg-card rounded-md border border-gray-300 shadow-lg p-4 max-h-96 overflow-y-auto">
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-300">
               <span className="text-sm font-medium text-gray-900">

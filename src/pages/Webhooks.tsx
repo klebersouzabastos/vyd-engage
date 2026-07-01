@@ -268,7 +268,7 @@ export function Webhooks() {
       <Header title="Webhooks" subtitle="Gerencie webhooks de saida para integracoes externas" />
 
       <div className="p-4 md:p-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300">
           {/* Toolbar */}
           <div className="p-4 md:p-6 border-b border-gray-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
@@ -416,7 +416,7 @@ export function Webhooks() {
                           {webhookLogs[webhook.id].map((log) => (
                             <div
                               key={log.id}
-                              className="flex items-center gap-3 bg-white rounded border border-gray-200 px-3 py-2 text-sm"
+                              className="flex items-center gap-3 bg-card rounded border border-gray-200 px-3 py-2 text-sm"
                             >
                               {/* success indicator (req 14) */}
                               {log.success ? (

@@ -206,7 +206,7 @@ export function InteractionTimeline({
             <Plus size={20} />
           </div>
           <div className="flex-1">
-            <div className="bg-white border-2 border-primary rounded-lg p-4 shadow-sm">
+            <div className="bg-card border-2 border-primary rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h5 className="font-semibold text-gray-900 text-sm">Nova Interação</h5>
                 <button
@@ -338,7 +338,7 @@ export function InteractionTimeline({
 
                 {/* Conteúdo */}
                 <div className="flex-1 pb-6">
-                  <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                  <div className="bg-card border border-gray-300 rounded-lg p-4 shadow-sm">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-gray-600">{label}</span>

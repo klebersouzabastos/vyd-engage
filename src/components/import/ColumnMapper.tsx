@@ -29,7 +29,7 @@ interface ColumnMapperProps {
  */
 export function ColumnMapper({ fileColumns, targets, mapping, onChange }: ColumnMapperProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+    <div className="bg-card rounded-lg border border-gray-300 overflow-hidden">
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase">
         <span>Coluna do arquivo</span>
         <span className="px-2" aria-hidden="true" />

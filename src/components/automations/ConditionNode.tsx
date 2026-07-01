@@ -26,7 +26,7 @@ function ConditionConfigPanel({
   const config = node.data.config;
 
   return (
-    <div className="absolute left-full top-0 ml-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-30">
+    <div className="absolute left-full top-0 ml-4 w-80 bg-card rounded-lg shadow-lg border border-gray-200 z-30">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
         <h4 className="font-medium text-sm text-gray-900">Configurar Condição</h4>
         <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -39,7 +39,7 @@ function ConditionConfigPanel({
           <select
             value={config.field || 'status'}
             onChange={(e) => onUpdate({ ...config, field: e.target.value })}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
           >
             <option value="status">Status</option>
             <option value="source">Fonte</option>
@@ -56,7 +56,7 @@ function ConditionConfigPanel({
           <select
             value={config.operator || 'equals'}
             onChange={(e) => onUpdate({ ...config, operator: e.target.value })}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
           >
             {CONDITION_OPERATORS.map((op) => (
               <option key={op.value} value={op.value}>
@@ -169,7 +169,7 @@ export function ConditionNode({
             <X size={14} className="text-amber-600" />
           </button>
         </div>
-        <div className="bg-white rounded-b-lg px-4 py-3">
+        <div className="bg-card rounded-b-lg px-4 py-3">
           <p className="text-sm font-medium text-gray-900">
             Se {field} {op} {value}
           </p>

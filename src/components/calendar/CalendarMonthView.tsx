@@ -49,7 +49,7 @@ export function CalendarMonthView({
     <div
       role="grid"
       aria-label="Calendário mensal"
-      className="bg-white rounded-lg border border-gray-300 overflow-hidden"
+      className="bg-card rounded-lg border border-gray-300 overflow-hidden"
     >
       {/* Header */}
       <div role="row" className="grid grid-cols-7 border-b border-gray-200">

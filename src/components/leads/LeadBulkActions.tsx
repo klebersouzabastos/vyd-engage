@@ -43,7 +43,7 @@ export function LeadBulkActions({
             variant="ghost"
             size="sm"
             onClick={onClearSelection}
-            className="text-white hover:bg-white/20 h-8 px-2"
+            className="text-white hover:bg-card/20 h-8 px-2"
           >
             <X size={14} />
           </Button>

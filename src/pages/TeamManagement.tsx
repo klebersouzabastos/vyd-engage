@@ -280,7 +280,7 @@ export function TeamManagement() {
       <div className="min-h-screen">
         <Header title="Equipe" subtitle="Gerenciamento de membros e convites" />
         <div className="p-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300">
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <ShieldAlert size={48} className="text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Acesso restrito</h3>
@@ -299,7 +299,7 @@ export function TeamManagement() {
       <Header title="Equipe" subtitle="Gerencie membros e convites da sua equipe" />
 
       <div className="p-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300">
           {/* Top bar with invite button */}
           <div className="p-6 border-b border-gray-300">
             <div className="flex items-center justify-between">

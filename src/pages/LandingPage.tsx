@@ -240,12 +240,12 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-card">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
 
       {/* Header */}
-      <header className="sticky top-10 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-300 z-[99]">
+      <header className="sticky top-10 left-0 right-0 bg-card/95 backdrop-blur-sm border-b border-gray-300 z-[99]">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link
@@ -306,7 +306,7 @@ export function LandingPage() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-300 bg-white">
+          <div className="md:hidden border-t border-gray-300 bg-card">
             <nav className="flex flex-col px-6 py-4 gap-4">
               <a
                 href="#features"
@@ -418,7 +418,7 @@ export function LandingPage() {
             {trustedCompanies.map((company, index) => (
               <div
                 key={index}
-                className="flex items-center justify-center h-16 px-4 bg-white rounded-lg border border-gray-300 hover:border-primary hover:shadow-sm transition-all grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
+                className="flex items-center justify-center h-16 px-4 bg-card rounded-lg border border-gray-300 hover:border-primary hover:shadow-sm transition-all grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
                 title={company.name}
               >
                 <ImageWithFallback
@@ -522,7 +522,7 @@ export function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="p-6 rounded-lg bg-white border border-gray-300 shadow-sm">
+              <div key={index} className="p-6 rounded-lg bg-card border border-gray-300 shadow-sm">
                 <div className="flex gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} size={16} className="fill-amber text-amber" />
@@ -557,7 +557,7 @@ export function LandingPage() {
               <div
                 key={index}
                 className={`
-                  p-8 rounded-lg bg-white border-2 
+                  p-8 rounded-lg bg-card border-2 
                   ${plan.highlighted ? 'border-primary shadow-xl scale-105' : 'border-gray-300'}
                 `}
               >
@@ -584,7 +584,7 @@ export function LandingPage() {
                     className={`w-full ${
                       plan.highlighted
                         ? 'bg-primary hover:bg-primary-dark'
-                        : 'bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white'
+                        : 'bg-card border-2 border-primary text-primary hover:bg-primary hover:text-white'
                     }`}
                   >
                     Começar Agora
@@ -607,7 +607,7 @@ export function LandingPage() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="rounded-lg bg-white border border-gray-300 overflow-hidden"
+                className="rounded-lg bg-card border border-gray-300 overflow-hidden"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
@@ -638,7 +638,7 @@ export function LandingPage() {
             Junte-se a centenas de empresas que já estão vendendo mais com o VYD Engage
           </p>
           <Link to="/register">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+            <Button size="lg" className="bg-card text-primary hover:bg-card/90">
               Começar Agora - É Grátis
             </Button>
           </Link>

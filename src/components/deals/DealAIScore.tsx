@@ -41,9 +41,9 @@ const ERROR_MESSAGES: Record<ErrorKind, string> = {
 
 /** Color band by score: red < 30, yellow 30-70, green > 70 (spec req 19). */
 function bandColor(score: number): string {
-  if (score < 30) return 'var(--color-error, #dc2626)';
-  if (score <= 70) return 'var(--color-warning, #ca8a04)';
-  return 'var(--color-success, #16a34a)';
+  if (score < 30) return 'var(--color-error, var(--vyd-danger))';
+  if (score <= 70) return 'var(--color-warning, var(--vyd-warning))';
+  return 'var(--color-success, var(--vyd-success))';
 }
 
 function bandTextClass(score: number): string {
@@ -68,7 +68,7 @@ function Gauge({ score, dim }: { score: number; dim: number }) {
         cy={dim / 2}
         r={radius}
         fill="none"
-        stroke="#e5e7eb"
+        stroke="var(--vyd-border)"
         strokeWidth={stroke}
       />
       <circle

@@ -85,7 +85,7 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
       </div>
 
       {/* Forecast by Stage Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+      <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-900">Forecast por Stage</h3>
         </div>
@@ -134,17 +134,17 @@ export function DealAnalytics({ stats, compact = false }: DealAnalyticsProps) {
 
       {/* Extra stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Tamanho Médio</span>
           <p className="text-lg font-bold text-gray-900 mt-1">
             {formatCurrency(stats.avgDealSize)}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Ciclo Médio</span>
           <p className="text-lg font-bold text-gray-900 mt-1">{stats.avgCycleTime} dias</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Deals Ativos</span>
           <p className="text-lg font-bold text-gray-900 mt-1">{stats.activeDeals}</p>
         </div>
@@ -172,7 +172,7 @@ function StatCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div>

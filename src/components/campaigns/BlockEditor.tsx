@@ -158,7 +158,7 @@ function SortableBlock({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-start gap-2 rounded-lg border border-gray-200 bg-white p-3"
+      className="flex items-start gap-2 rounded-lg border border-gray-200 bg-card p-3"
     >
       {/* Drag handle */}
       <button

@@ -210,7 +210,7 @@ export function FunnelConversion() {
                 id="funnel-source-filter"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white"
+                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-card"
               >
                 {SOURCE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -263,7 +263,7 @@ export function FunnelConversion() {
 
         {/* Funnel Chart */}
         {data && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mb-8">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 mb-8">
             <h3 className="text-sm font-semibold text-gray-900 mb-6">Funil de Leads</h3>
             <FunnelChart stages={data.stages} total={data.total} />
           </div>
@@ -271,7 +271,7 @@ export function FunnelConversion() {
 
         {/* Conversion Rate Table */}
         {conversionTable.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Taxas de Conversão por Etapa</h3>
             </div>
@@ -382,7 +382,7 @@ function SummaryCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">

@@ -111,7 +111,7 @@ export function TagManager() {
             return (
               <div
                 key={tag.id}
-                className="p-4 border border-gray-300 rounded-lg bg-white hover:shadow-md transition-shadow"
+                className="p-4 border border-gray-300 rounded-lg bg-card hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-3">
                   <TagBadge tag={tag} size="md" />
@@ -141,7 +141,7 @@ export function TagManager() {
 
       {/* Formulário de criar/editar - inline na mesma tela */}
       {isCreateDialogOpen && (
-        <div className="border border-gray-300 rounded-lg bg-white p-6 shadow-sm">
+        <div className="border border-gray-300 rounded-lg bg-card p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-semibold text-gray-900">
               {editingTag ? 'Editar Tag' : 'Nova Tag'}

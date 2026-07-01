@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { CampaignPreview } from '../components/campaigns/CampaignPreview';
+import { CHART_COLORS } from '@/utils/designTokens';
 import {
   apiClient,
   type CampaignStatus,
@@ -132,7 +133,7 @@ export function CampaignDetail() {
 
           <TabsContent value="overview" className="pt-4">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-5 text-sm">
+              <div className="space-y-3 rounded-lg border border-gray-200 bg-card p-5 text-sm">
                 <div>
                   <span className="text-gray-500">Remetente: </span>
                   {campaign.fromName || '—'}
@@ -194,7 +195,7 @@ export function CampaignDetail() {
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-gray-200 bg-card p-4">
       <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-gray-900 tabular-nums">{value}</p>
     </div>
@@ -227,7 +228,7 @@ function ResultsPanel({ campaignName, stats }: { campaignName: string; stats: Ca
       </div>
 
       {/* Opens-by-hour chart, first 48h (req 32) */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
+      <div className="rounded-lg border border-gray-200 bg-card p-5">
         <h3 className="mb-4 text-sm font-medium text-gray-900">
           Aberturas por hora (primeiras 48h)
         </h3>
@@ -239,14 +240,14 @@ function ResultsPanel({ campaignName, stats }: { campaignName: string; stats: Ca
               <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Bar dataKey="opens" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="opens" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
 
       {/* Recipients table (req 31) + CSV export (req 33) */}
-      <div className="rounded-lg border border-gray-200 bg-white">
+      <div className="rounded-lg border border-gray-200 bg-card">
         <div className="flex items-center justify-between border-b border-gray-200 p-4">
           <h3 className="text-sm font-medium text-gray-900">
             Destinatários ({stats.recipients.length})

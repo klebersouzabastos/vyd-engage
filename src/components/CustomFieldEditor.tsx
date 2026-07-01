@@ -159,7 +159,7 @@ export function CustomFieldEditor({
                 {formData.options.map((option) => (
                   <span
                     key={option}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-gray-300 rounded text-sm"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-card border border-gray-300 rounded text-sm"
                   >
                     {option}
                     <button

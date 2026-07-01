@@ -205,7 +205,7 @@ export function OnboardingTour() {
       {/* Tooltip */}
       <div
         style={tooltipStyle}
-        className={`bg-white rounded-lg shadow-xl border border-gray-300 p-5 z-[10001] ${
+        className={`bg-card rounded-lg shadow-xl border border-gray-300 p-5 z-[10001] ${
           isWelcome ? 'w-96 text-center' : 'w-80'
         }`}
       >
@@ -288,7 +288,7 @@ function HighlightElement({ selector }: { selector: string }) {
         width: rect.width + 8,
         height: rect.height + 8,
         borderRadius: 8,
-        boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+        boxShadow: '0 0 0 9999px color-mix(in oklab, var(--vyd-neutral-0) 55%, transparent)',
         zIndex: 10000,
         pointerEvents: 'none',
         background: 'transparent',

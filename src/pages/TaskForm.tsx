@@ -118,7 +118,7 @@ export function TaskForm() {
           </Button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 max-w-2xl relative overflow-visible">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 max-w-2xl relative overflow-visible">
           <div className="p-6 border-b border-gray-300">
             <h2 className="text-xl font-semibold text-gray-900">
               {task ? 'Editar Tarefa' : 'Nova Tarefa'}
@@ -142,7 +142,7 @@ export function TaskForm() {
                 >
                   <SelectValue placeholder="Selecione um lead" />
                 </SelectTrigger>
-                <SelectContent className="z-[9999] bg-white border-2 border-primary shadow-lg max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
+                <SelectContent className="z-[9999] bg-card border-2 border-primary shadow-lg max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
                   {leads.length > 0 ? (
                     leads.map((lead: any) => (
                       <SelectItem key={lead.id} value={lead.id.toString()}>

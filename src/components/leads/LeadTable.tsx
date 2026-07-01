@@ -57,7 +57,7 @@ export function LeadTable({
   const navigate = useNavigate();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full" aria-label="Lista de leads">
           <thead className="bg-gray-100 border-b border-gray-300">

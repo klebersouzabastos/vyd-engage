@@ -341,7 +341,7 @@ export function LeadForm() {
           </Button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
           <div className="p-6 border-b border-gray-300 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
               {lead ? 'Editar Lead' : 'Novo Lead'}
@@ -455,7 +455,7 @@ export function LeadForm() {
                         onChange={(e) =>
                           setFormData({ ...formData, source: e.target.value as any })
                         }
-                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-card"
                       >
                         <option value="meta">Meta Ads</option>
                         <option value="google">Google Ads</option>
@@ -472,7 +472,7 @@ export function LeadForm() {
                         onChange={(e) =>
                           setFormData({ ...formData, status: e.target.value as any })
                         }
-                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                        className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-card"
                       >
                         {pipelineColumns.map((column) => (
                           <option key={column.id} value={column.id}>
@@ -490,7 +490,7 @@ export function LeadForm() {
                         availableAutomations.map((automation) => (
                           <div
                             key={automation.id}
-                            className="flex items-center gap-3 p-2 rounded-md hover:bg-white transition-colors"
+                            className="flex items-center gap-3 p-2 rounded-md hover:bg-card transition-colors"
                           >
                             <Checkbox
                               id={`automation-${automation.id}`}

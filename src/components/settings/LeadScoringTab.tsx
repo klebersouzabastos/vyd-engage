@@ -199,7 +199,7 @@ export function LeadScoringTab() {
         {rules.map((rule) => (
           <div
             key={rule.id}
-            className={`border rounded-lg p-4 ${rule.active ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'}`}
+            className={`border rounded-lg p-4 ${rule.active ? 'border-gray-200 bg-card' : 'border-gray-100 bg-gray-50 opacity-60'}`}
           >
             {editingId === rule.id ? (
               /* Edit form inline */
@@ -308,7 +308,7 @@ export function LeadScoringTab() {
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${rule.active ? 'bg-primary' : 'bg-gray-300'}`}
                   >
                     <span
-                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${rule.active ? 'translate-x-4' : 'translate-x-0.5'}`}
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-card transition-transform ${rule.active ? 'translate-x-4' : 'translate-x-0.5'}`}
                     />
                   </button>
                   <Button variant="ghost" size="sm" onClick={() => startEdit(rule)}>

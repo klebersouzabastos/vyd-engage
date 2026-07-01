@@ -10,6 +10,7 @@ import {
   LabelList,
 } from 'recharts';
 import { FunnelConversionStage } from '../../types';
+import { CHART_COLORS } from '@/utils/designTokens';
 
 const STAGE_NAMES: Record<string, string> = {
   NEW: 'Novo',
@@ -22,13 +23,13 @@ const STAGE_NAMES: Record<string, string> = {
 };
 
 const STAGE_COLORS: Record<string, string> = {
-  NEW: '#6B7280',
-  CONTACTED: '#3B82F6',
-  QUALIFIED: '#8B5CF6',
-  PROPOSAL: '#F59E0B',
-  NEGOTIATION: '#F97316',
-  WON: '#16A34A',
-  LOST: '#DC2626',
+  NEW: CHART_COLORS.gray,
+  CONTACTED: CHART_COLORS.blue,
+  QUALIFIED: CHART_COLORS.purple,
+  PROPOSAL: CHART_COLORS.yellow,
+  NEGOTIATION: CHART_COLORS.orange,
+  WON: CHART_COLORS.green,
+  LOST: CHART_COLORS.red,
 };
 
 interface FunnelChartProps {
@@ -80,7 +81,7 @@ export function FunnelChart({ stages, total, compact = false }: FunnelChartProps
                     className="h-10 rounded-md flex items-center px-3 transition-all duration-300"
                     style={{
                       width: `${widthPct}%`,
-                      backgroundColor: STAGE_COLORS[item.stage] || '#6B7280',
+                      backgroundColor: STAGE_COLORS[item.stage] || CHART_COLORS.gray,
                       minWidth: '80px',
                     }}
                   >
@@ -132,7 +133,7 @@ export function FunnelChart({ stages, total, compact = false }: FunnelChartProps
           <div className="flex items-center gap-2">
             <div
               className="h-8 rounded-md flex items-center px-3"
-              style={{ backgroundColor: '#DC2626', minWidth: '60px' }}
+              style={{ backgroundColor: CHART_COLORS.red, minWidth: '60px' }}
             >
               <span className="text-white text-sm font-semibold">{lostStage.count}</span>
             </div>
@@ -163,12 +164,12 @@ export function FunnelChart({ stages, total, compact = false }: FunnelChartProps
             />
             <Bar dataKey="count" radius={[0, 4, 4, 0]}>
               {chartData.map((entry) => (
-                <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] || '#6B7280'} />
+                <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] || CHART_COLORS.gray} />
               ))}
               <LabelList
                 dataKey="count"
                 position="right"
-                style={{ fontSize: 11, fill: '#374151' }}
+                style={{ fontSize: 11, fill: 'var(--vyd-text-secondary)' }}
               />
             </Bar>
           </BarChart>
@@ -199,7 +200,7 @@ function CompactFunnel({ stages, total }: { stages: FunnelConversionStage[]; tot
                 className="h-6 rounded flex items-center px-2 transition-all"
                 style={{
                   width: `${widthPct}%`,
-                  backgroundColor: STAGE_COLORS[s.stage] || '#6B7280',
+                  backgroundColor: STAGE_COLORS[s.stage] || CHART_COLORS.gray,
                   minWidth: '40px',
                 }}
               >

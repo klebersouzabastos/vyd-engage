@@ -620,7 +620,7 @@ export function Leads() {
             onClick={() => handleTabChange('leads')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'leads'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-card text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -631,7 +631,7 @@ export function Leads() {
             onClick={() => handleTabChange('contacts')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'contacts'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-card text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -642,7 +642,7 @@ export function Leads() {
             onClick={() => handleTabChange('all')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'all'
-                ? 'bg-white text-gray-900 shadow-sm'
+                ? 'bg-card text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -766,7 +766,7 @@ export function Leads() {
 
         {/* Empty State */}
         {filteredLeads.length === 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300">
             <EmptyState
               icon={Users}
               title="Nenhum lead encontrado"

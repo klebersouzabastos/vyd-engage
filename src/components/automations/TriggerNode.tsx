@@ -49,7 +49,7 @@ function TriggerConfigPanel({
   const config = node.data.config;
 
   return (
-    <div className="absolute left-full top-0 ml-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-30">
+    <div className="absolute left-full top-0 ml-4 w-80 bg-card rounded-lg shadow-lg border border-gray-200 z-30">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
         <h4 className="font-medium text-sm text-gray-900">Configurar Gatilho</h4>
         <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -66,7 +66,7 @@ function TriggerConfigPanel({
               const label = TRIGGER_TYPES.find((t) => t.value === newType)?.label || newType;
               onUpdate({ ...config, _nodeType: newType, _label: label });
             }}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
           >
             {TRIGGER_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -82,7 +82,7 @@ function TriggerConfigPanel({
             <select
               value={config.status || ''}
               onChange={(e) => onUpdate({ ...config, status: e.target.value || undefined })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
             >
               <option value="">Qualquer mudança</option>
               <option value="NEW">Novo</option>
@@ -102,7 +102,7 @@ function TriggerConfigPanel({
             <select
               value={config.source || ''}
               onChange={(e) => onUpdate({ ...config, source: e.target.value || undefined })}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-card text-sm"
             >
               <option value="">Qualquer fonte</option>
               <option value="WEBSITE">Website</option>
@@ -199,7 +199,7 @@ export function TriggerNode({
             <X size={14} className="text-green-600" />
           </button>
         </div>
-        <div className="bg-white rounded-b-lg px-4 py-3">
+        <div className="bg-card rounded-b-lg px-4 py-3">
           <p className="text-sm font-medium text-gray-900">{label}</p>
           {configSummary && <p className="text-xs text-gray-500 mt-1">{configSummary}</p>}
           <p className="text-xs text-gray-400 mt-1">Clique duplo para configurar</p>

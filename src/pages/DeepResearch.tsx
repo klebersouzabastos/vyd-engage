@@ -92,7 +92,7 @@ export function DeepResearch() {
             {/* Hero — ações principais consolidadas aqui */}
             <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
               <div className="max-w-2xl">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-blue-100">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-card/10 px-3 py-1 text-xs font-medium text-blue-100">
                   <Sparkles className="h-3.5 w-3.5" />
                   Inteligência de Mercado
                 </span>
@@ -106,7 +106,7 @@ export function DeepResearch() {
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button
                     size="lg"
-                    className="bg-white text-slate-900 hover:bg-slate-100"
+                    className="bg-card text-slate-900 hover:bg-slate-100"
                     onClick={openNewResearch}
                   >
                     <Plus className="mr-1.5 h-4 w-4" />
@@ -116,7 +116,7 @@ export function DeepResearch() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                      className="border-white/30 bg-transparent text-white hover:bg-card/10 hover:text-white"
                       onClick={() => setTemplatesOpen(true)}
                     >
                       <SlidersHorizontal className="mr-1.5 h-4 w-4" />
@@ -149,7 +149,7 @@ export function DeepResearch() {
               {listQuery.isLoading ? (
                 <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
               ) : researches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card py-16 text-center">
                   <ScanSearch className="h-10 w-10 text-slate-300" />
                   <p className="mt-3 font-medium text-slate-900">Nenhuma pesquisa ainda</p>
                   <p className="mt-1 max-w-sm text-sm text-slate-500">
@@ -165,7 +165,7 @@ export function DeepResearch() {
                   {researches.map((r) => (
                     <li
                       key={r.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-card p-4 transition-colors hover:border-slate-300"
                     >
                       <button
                         type="button"

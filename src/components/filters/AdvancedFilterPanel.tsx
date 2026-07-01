@@ -138,7 +138,7 @@ export function AdvancedFilterPanel({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-300 shadow-sm mb-4">
+    <div className="bg-card rounded-lg border border-gray-300 shadow-sm mb-4">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}

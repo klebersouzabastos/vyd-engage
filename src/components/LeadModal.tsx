@@ -385,7 +385,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                       id="source"
                       value={formData.source}
                       onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-card"
                     >
                       <option value="meta">Meta Ads</option>
                       <option value="google">Google Ads</option>
@@ -400,7 +400,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                       id="status"
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      className="w-full mt-1.5 px-3 py-2 border border-gray-300 rounded-md bg-card"
                     >
                       {pipelineColumns.map((column) => (
                         <option key={column.id} value={column.id}>
@@ -418,7 +418,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
                       availableAutomations.map((automation) => (
                         <div
                           key={automation.id}
-                          className="flex items-center gap-3 p-2 rounded-md hover:bg-white transition-colors"
+                          className="flex items-center gap-3 p-2 rounded-md hover:bg-card transition-colors"
                         >
                           <Checkbox
                             id={`automation-${automation.id}`}

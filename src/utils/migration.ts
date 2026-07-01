@@ -136,7 +136,7 @@ export async function migrateDataToAPI(
 
         await apiClient.createTag({
           name: tag.name || tag.label,
-          color: tag.color || '#2563EB',
+          color: tag.color || 'var(--vyd-action-primary)',
         });
       } catch (error: any) {
         console.error('Error migrating tag:', error);

@@ -549,7 +549,7 @@ export function Tasks() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as typeof priorityFilter)}
-              className="px-3 py-2 border border-gray-300 rounded-md bg-white whitespace-nowrap"
+              className="px-3 py-2 border border-gray-300 rounded-md bg-card whitespace-nowrap"
               aria-label="Filtrar por prioridade"
             >
               <option value="all">Todas as prioridades</option>
@@ -650,7 +650,7 @@ export function Tasks() {
                 'px-3 py-1.5 text-sm rounded-lg font-medium border transition-colors ' +
                 (myTasksOnly
                   ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50')
+                  : 'bg-card text-gray-700 border-gray-300 hover:bg-gray-50')
               }
             >
               {myTasksOnly ? 'Minhas tarefas' : 'Todas'}

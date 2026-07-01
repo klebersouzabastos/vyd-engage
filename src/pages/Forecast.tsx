@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { useForecast } from '../hooks/useForecast';
+import { CHART_COLORS } from '@/utils/designTokens';
 import {
   BarChart,
   Bar,
@@ -187,7 +188,7 @@ export function Forecast() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Forecast Bar Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Forecast Ponderado por Mês</h3>
             {/* Scenario summary cards when data available */}
             {hasScenarios && scenarioTotals && (
@@ -218,7 +219,7 @@ export function Forecast() {
                   data={forecastChartData}
                   margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--vyd-border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -251,19 +252,19 @@ export function Forecast() {
                     <>
                       <Bar
                         dataKey="conservativeValue"
-                        fill="#60A5FA"
+                        fill={CHART_COLORS.blue}
                         radius={[4, 4, 0, 0]}
                         name="conservativeValue"
                       />
                       <Bar
                         dataKey="weightedValue"
-                        fill="#8B5CF6"
+                        fill={CHART_COLORS.purple}
                         radius={[4, 4, 0, 0]}
                         name="weightedValue"
                       />
                       <Bar
                         dataKey="optimisticValue"
-                        fill="#4ADE80"
+                        fill={CHART_COLORS.green}
                         radius={[4, 4, 0, 0]}
                         name="optimisticValue"
                       />
@@ -272,13 +273,13 @@ export function Forecast() {
                     <>
                       <Bar
                         dataKey="totalValue"
-                        fill="#93C5FD"
+                        fill={CHART_COLORS.blue}
                         radius={[4, 4, 0, 0]}
                         name="totalValue"
                       />
                       <Bar
                         dataKey="weightedValue"
-                        fill="#8B5CF6"
+                        fill={CHART_COLORS.purple}
                         radius={[4, 4, 0, 0]}
                         name="weightedValue"
                       />
@@ -294,7 +295,7 @@ export function Forecast() {
           </div>
 
           {/* Won vs Lost Line Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">
               Tendência: Ganhos vs Perdidos
             </h3>
@@ -304,7 +305,7 @@ export function Forecast() {
                   data={trendChartData}
                   margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--vyd-border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -321,7 +322,7 @@ export function Forecast() {
                   <Line
                     type="monotone"
                     dataKey="wonValue"
-                    stroke="#16A34A"
+                    stroke={CHART_COLORS.green}
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     name="wonValue"
@@ -329,7 +330,7 @@ export function Forecast() {
                   <Line
                     type="monotone"
                     dataKey="lostValue"
-                    stroke="#DC2626"
+                    stroke={CHART_COLORS.red}
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     name="lostValue"
@@ -346,7 +347,7 @@ export function Forecast() {
 
         {/* Detailed Table */}
         {forecast && forecast.monthly.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden mb-8">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Detalhamento Mensal</h3>
             </div>
@@ -410,7 +411,7 @@ export function Forecast() {
 
         {/* Won vs Lost Trend Table */}
         {trend && trend.months.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Tendência Won vs Lost</h3>
             </div>
@@ -485,7 +486,7 @@ function StatCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>{icon}</div>
         <div className="min-w-0">

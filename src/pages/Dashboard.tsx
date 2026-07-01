@@ -265,7 +265,7 @@ export function Dashboard() {
                 'px-3 py-1.5 text-sm rounded-lg font-medium border transition-colors ' +
                 (myDataOnly
                   ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50')
+                  : 'bg-card text-gray-700 border-gray-300 hover:bg-gray-50')
               }
             >
               {myDataOnly ? 'Meus dados' : 'Todos'}
@@ -299,7 +299,7 @@ export function Dashboard() {
               />
             ))}
           {/* Pipeline Health Widget */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-4 flex flex-col items-center justify-center">
+          <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4 flex flex-col items-center justify-center">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Saúde do Pipeline</p>
             <PipelineHealthGauge compact />
           </div>

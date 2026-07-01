@@ -74,7 +74,7 @@ export function SuggestionDialog({ open, onOpenChange, onCreated }: SuggestionDi
       className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
         type === value
           ? 'bg-primary text-white'
-          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          : 'bg-card text-gray-700 border-gray-300 hover:bg-gray-50'
       }`}
     >
       <Icon size={16} />

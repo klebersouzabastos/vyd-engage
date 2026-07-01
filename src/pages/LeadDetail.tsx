@@ -409,7 +409,7 @@ export function LeadDetail() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left: Activity Timeline (70%) */}
           <div className="lg:w-[70%]">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Atividades</h2>
                 <Button
@@ -507,7 +507,7 @@ export function LeadDetail() {
             </div>
 
             {/* Audit Trail */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 mt-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <History size={18} />
                 Histórico de alterações
@@ -525,7 +525,7 @@ export function LeadDetail() {
               </div>
             )}
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
+            <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 space-y-6 sticky top-4">
               {/* Name and basic info */}
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-1">{lead.name}</h2>

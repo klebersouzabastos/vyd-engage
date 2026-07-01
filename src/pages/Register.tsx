@@ -153,12 +153,12 @@ export function Register() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-card">
       {/* VYD Ecosystem Banner */}
       <VYDEcosystemBanner />
 
       {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-white w-full lg:w-1/2">
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 2xl:px-20 bg-card w-full lg:w-1/2">
         <div className="w-full max-w-2xl sm:max-w-2xl md:max-w-2xl lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-auto py-10 sm:py-12 md:py-14 lg:py-16">
           {/* Back Button */}
           <Link
@@ -252,7 +252,7 @@ export function Register() {
                       },
                     })}
                     error={step1Form.formState.errors.name?.message}
-                    className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-card text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     aria-describedby={step1Form.formState.errors.name ? 'name-error' : undefined}
                   />
                   <FieldSuccess
@@ -299,7 +299,7 @@ export function Register() {
                       },
                     })}
                     error={step1Form.formState.errors.companyName?.message}
-                    className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-card text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     aria-describedby={
                       step1Form.formState.errors.companyName ? 'companyName-error' : undefined
                     }
@@ -363,7 +363,7 @@ export function Register() {
                       },
                     })}
                     error={step2Form.formState.errors.password?.message}
-                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-card text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     aria-describedby={
                       step2Form.formState.errors.password
                         ? 'password-error password-strength'
@@ -414,7 +414,7 @@ export function Register() {
                     placeholder="••••••••"
                     {...step2Form.register('confirmPassword')}
                     error={step2Form.formState.errors.confirmPassword?.message}
-                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 pr-14 border border-gray-300 rounded-lg bg-card text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     aria-describedby={
                       step2Form.formState.errors.confirmPassword
                         ? 'confirmPassword-error'
@@ -493,7 +493,7 @@ export function Register() {
                     required
                     {...step3Form.register('email')}
                     error={step3Form.formState.errors.email?.message}
-                    className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full h-12 sm:h-14 px-4 py-3 border border-gray-300 rounded-lg bg-card text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     aria-describedby={
                       step3Form.formState.errors.email ? 'email-error email-help' : 'email-help'
                     }

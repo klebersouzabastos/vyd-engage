@@ -201,7 +201,7 @@ export function Products() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm border border-gray-300 overflow-hidden">
           {isLoading ? (
             <div className="overflow-x-auto">
               <table className="w-full">

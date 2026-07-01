@@ -56,7 +56,7 @@ export function CustomFieldsTab() {
             ? customFields.map((field) => (
                 <div
                   key={field.id}
-                  className={`flex items-center gap-4 p-4 border rounded-lg bg-white hover:shadow-md transition-shadow ${
+                  className={`flex items-center gap-4 p-4 border rounded-lg bg-card hover:shadow-md transition-shadow ${
                     editingCustomFieldId === field.id
                       ? 'border-primary border-2'
                       : 'border-gray-300'

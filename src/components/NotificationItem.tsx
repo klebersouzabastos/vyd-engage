@@ -47,7 +47,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       <div
         className={`
           p-3 rounded-lg transition-colors
-          ${notification.read ? 'bg-white hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
+          ${notification.read ? 'bg-card hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
         `}
       >
         <div className="flex items-start gap-3">
@@ -83,7 +83,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       }}
       className={`
         p-3 rounded-lg transition-colors cursor-pointer
-        ${notification.read ? 'bg-white hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
+        ${notification.read ? 'bg-card hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
       `}
     >
       <div className="flex items-start gap-3">

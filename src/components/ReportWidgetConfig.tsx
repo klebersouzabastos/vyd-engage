@@ -12,6 +12,8 @@ interface ReportWidgetConfigProps {
   onChange: (updates: Partial<ReportWidget>) => void;
 }
 
+const DEFAULT_WIDGET_COLORS_EXAMPLE = '#3B82F6, #F59E0B, #16A34A'; // gate-allow: user color
+
 const DATA_SOURCES = [
   { value: 'leads', label: 'Leads' },
   { value: 'pipeline', label: 'Pipeline/Funil' },
@@ -312,7 +314,7 @@ export function ReportWidgetConfig({ widget, onChange }: ReportWidgetConfigProps
                     })
                   }
                   className="mt-1.5"
-                  placeholder="#3B82F6, #F59E0B, #16A34A"
+                  placeholder={DEFAULT_WIDGET_COLORS_EXAMPLE}
                 />
               </div>
             )}

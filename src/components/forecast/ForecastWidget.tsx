@@ -4,6 +4,7 @@ import { TrendingUp, DollarSign, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiClient } from '../../services/api/client';
 import { ForecastData } from '../../types';
+import { CHART_COLORS } from '@/utils/designTokens';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -118,7 +119,7 @@ export function ForecastWidget() {
                 formatter={(value: number) => [formatCurrency(value), 'Forecast']}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
               />
-              <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill={CHART_COLORS.purple} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

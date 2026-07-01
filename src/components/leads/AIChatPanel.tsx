@@ -184,7 +184,7 @@ export function AIChatPanel({ leadId }: AIChatPanelProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-purple-200 flex flex-col h-[28rem]">
+    <div className="bg-card rounded-lg shadow-sm border border-purple-200 flex flex-col h-[28rem]">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-purple-50/60 rounded-t-lg">
         <Sparkles size={16} className="text-purple-500" />

@@ -46,7 +46,7 @@ const ACTION_ICONS: Record<string, ReactNode> = {
 
 export function NodePalette({ onAddNode, hasTrigger }: NodePaletteProps) {
   return (
-    <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
+    <div className="w-64 bg-card border-r border-gray-200 overflow-y-auto flex-shrink-0">
       <div className="p-4">
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
           Gatilhos

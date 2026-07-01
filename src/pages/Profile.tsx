@@ -181,7 +181,7 @@ export function Profile() {
       <div className="p-8">
         <div className="max-w-4xl mx-auto">
           {/* Profile Header Card */}
-          <Card className="bg-white border-gray-300 shadow-sm mb-6">
+          <Card className="bg-card border-gray-300 shadow-sm mb-6">
             <div className="p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="relative">
@@ -255,7 +255,7 @@ export function Profile() {
           {/* Profile Information */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Personal Information */}
-            <Card className="bg-white border-gray-300 shadow-sm">
+            <Card className="bg-card border-gray-300 shadow-sm">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações Pessoais</h3>
                 <div className="space-y-4">
@@ -295,7 +295,7 @@ export function Profile() {
             </Card>
 
             {/* Password Security */}
-            <Card className="bg-white border-gray-300 shadow-sm">
+            <Card className="bg-card border-gray-300 shadow-sm">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Segurança e Senha</h3>
                 <div className="space-y-4">
@@ -360,7 +360,7 @@ export function Profile() {
             </Card>
 
             {/* Account Statistics */}
-            <Card className="bg-white border-gray-300 shadow-sm lg:col-span-2">
+            <Card className="bg-card border-gray-300 shadow-sm lg:col-span-2">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Estatísticas da Conta</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
