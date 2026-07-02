@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Search, Menu, LogOut, User as UserIcon } from 'lucide-react';
+import { Search, LogOut, User as UserIcon } from 'lucide-react';
 import { openCommandPalette } from '@/hooks/useCommandPalette';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 /** Topbar do shell (spec req 3-5): marca, tenant, nome da tela, Cmd+K, notificações, avatar. */
-export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
+export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { companyName } = useCompany();
@@ -37,17 +37,6 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
 
   return (
     <header className="vyd-topbar">
-      {/* Hambúrguer mobile — só aparece ≤640 (quando o leftrail some) */}
-      <button
-        type="button"
-        className="vyd-topbar__navbtn items-center justify-center p-1.5 rounded-md hover:bg-muted"
-        style={{ color: 'var(--vyd-text-primary)' }}
-        aria-label="Abrir menu de navegação"
-        onClick={onOpenNav}
-      >
-        <Menu size={20} />
-      </button>
-
       <Link to="/app" className="vyd-topbar__brand" style={{ color: 'var(--vyd-text-primary)' }}>
         VYD Engage
       </Link>
