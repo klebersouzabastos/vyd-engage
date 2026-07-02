@@ -23,26 +23,13 @@
    Ribbon Shell (spec ribbon-shell-global) — regras de projeto sobre o shell.
    Só layout; usa tokens do DS (var(--vyd-layout-*) etc.), nada hardcoded.
    ───────────────────────────────────────────────────────────────────── */
-/* O shell reserva 300px de rightpanel sempre; colapsa a 0 quando não há
-   SidePanel aberto (desktop; ≤1024 o próprio shell esconde o rightpanel). */
-@media (min-width: 1025px) {
-  .vyd-app.app--no-rp {
-    grid-template-columns: var(--vyd-layout-leftrail-w) 1fr 0;
-  }
-}
+/* Shell v2 (vyd-design-system@2) = COLUNA ÚNICA. O grid do shell.css não tem mais
+   áreas leftrail/rightpanel; o canvas ocupa a largura toda. Nada de override de
+   grid-template-columns aqui (AGENTS.md: sem painéis laterais). */
 /* Conteúdo de página dentro do .vyd-canvas ocupa a altura toda. */
 .vyd-canvas__content {
   min-height: 100%;
 }
-/* Navegação vive nas ABAS da ribbon (.vyd-ribbon-tabs) → não há leftrail.
-   Colapsa a coluna do leftrail a 0 em TODOS os breakpoints (o grid do shell.css,
-   base e responsivo, lê essas vars). A var não é reusada com outro valor: é
-   zerada porque a área deixou de existir. */
-.vyd-app--no-rail {
-  --vyd-layout-leftrail-w: 0px;
-  --vyd-layout-leftrail-w-min: 0px;
-}
-
 /* Faixa de NAVEGAÇÃO colapsada: a linha da ribbon some (mantém as categorias).
    O grid do shell lê --vyd-layout-ribbon-h na linha → zerá-la colapsa. */
 .vyd-app--ribbon-collapsed {
