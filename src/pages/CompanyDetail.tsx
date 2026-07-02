@@ -26,6 +26,7 @@ import {
   Calendar,
   Zap,
   ArrowRightLeft,
+  ScanSearch,
 } from 'lucide-react';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
@@ -221,15 +222,28 @@ export function CompanyDetail() {
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => setEditFormOpen(true)}
-            >
-              <Pencil size={14} />
-              Editar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() =>
+                  navigate('/app/deep-research', { state: { companyId: company.id } })
+                }
+              >
+                <ScanSearch size={14} />
+                Pesquisa de mercado
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setEditFormOpen(true)}
+              >
+                <Pencil size={14} />
+                Editar
+              </Button>
+            </div>
           </div>
 
           {/* Stats */}

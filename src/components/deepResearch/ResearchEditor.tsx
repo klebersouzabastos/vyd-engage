@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Sparkles, ListChecks } from 'lucide-react';
 import {
   Dialog,
@@ -12,9 +13,11 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { TemplatePicker } from './TemplatePicker';
 import { friendlyLabel, placeholderExample } from './placeholders';
 import { useDeepResearchActions } from '../../hooks/useDeepResearch';
+import { apiClient } from '../../services/api/client';
 import type {
   DeepResearch,
   DeepResearchStatus,
@@ -24,37 +27,54 @@ import type {
 // Deve bater com CONTEXT_KEY no backend (deepResearchService).
 const CONTEXT_KEY = 'Contexto adicional';
 
+// Placeholder do template que representa a EMPRESA — passa a ser herdado do
+// Select (não digitado). Casa "empresa"/"company" em qualquer caixa.
+const isCompanyKey = (key: string) => /empresa|company/i.test(key);
+
 interface ResearchEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   templates: DeepResearchTemplate[];
   research?: DeepResearch | null;
+  /** Empresa herdada ao abrir a partir de uma empresa (Empresas/Detalhe). */
+  defaultCompanyId?: string;
   onSaved?: (research: DeepResearch) => void;
 }
 
 /**
- * Formulário de pedido de pesquisa. Ordem: tipo → informações → título
- * (auto-sugerido) → contexto → resumo. NÃO expõe o prompt (montado no backend).
+ * Formulário de pedido de pesquisa. A pesquisa é SEMPRE de uma empresa CADASTRADA
+ * (campo Empresa obrigatório, herdado quando aberto a partir de uma empresa).
+ * Ordem: empresa → tipo → informações → título → contexto → resumo.
  */
 export function ResearchEditor({
   open,
   onOpenChange,
   templates,
   research,
+  defaultCompanyId,
   onSaved,
 }: ResearchEditorProps) {
   const { createResearch, updateResearch } = useDeepResearchActions();
 
   const [title, setTitle] = useState('');
   const [titleEdited, setTitleEdited] = useState(false);
+  const [companyId, setCompanyId] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+
+  const companiesQuery = useQuery({
+    queryKey: ['companies', 'research-picker'],
+    queryFn: () => apiClient.getCompanies({ limit: 100 }),
+    enabled: open,
+  });
+  const companies = (companiesQuery.data?.companies ?? []) as Array<{ id: string; name: string }>;
 
   useEffect(() => {
     if (!open) return;
     setTitle(research?.title ?? '');
     setTitleEdited(!!research); // ao editar, não auto-sobrescreve o título existente
+    setCompanyId(defaultCompanyId ?? research?.companyId ?? '');
     setSelectedTemplateId(research?.templateId ?? templates[0]?.id ?? null);
     setVariables((research?.variables as Record<string, string>) ?? {});
     setSaving(false);
@@ -68,9 +88,18 @@ export function ResearchEditor({
 
   const placeholders = selectedTemplate?.placeholders ?? [];
   const outline = selectedTemplate?.outline ?? [];
+  // A empresa vem do Select — não renderiza input livre para o placeholder de empresa.
+  const visiblePlaceholders = placeholders.filter((k) => !isCompanyKey(k));
 
-  // Título sugerido automaticamente a partir do primeiro campo preenchido.
-  const firstValue = placeholders[0] ? (variables[placeholders[0]] ?? '').trim() : '';
+  const companyName = useMemo(
+    () => companies.find((c) => c.id === companyId)?.name ?? '',
+    [companies, companyId]
+  );
+
+  // Título sugerido: a empresa é o sujeito da pesquisa; senão, o 1º campo preenchido.
+  const firstValue =
+    companyName ||
+    (visiblePlaceholders[0] ? (variables[visiblePlaceholders[0]] ?? '').trim() : '');
   useEffect(() => {
     if (titleEdited) return;
     setTitle(firstValue);
@@ -80,20 +109,29 @@ export function ResearchEditor({
     setVariables((prev) => ({ ...prev, [key]: value }));
   };
 
-  const canSave = title.trim().length > 0 && !!selectedTemplateId;
+  // Empresa é obrigatória ao CRIAR (a pesquisa é sempre de uma empresa cadastrada);
+  // na edição, a empresa já foi definida na criação e não muda.
+  const canSave = title.trim().length > 0 && !!selectedTemplateId && (!!research || !!companyId);
 
   const handleSave = async (status: DeepResearchStatus) => {
     if (!canSave) return;
     setSaving(true);
     try {
+      // Injeta o nome da empresa herdada nos placeholders de empresa do template.
+      const vars = { ...variables };
+      placeholders.filter(isCompanyKey).forEach((k) => {
+        vars[k] = companyName;
+      });
+
       let saved: DeepResearch;
       if (research) {
-        saved = await updateResearch(research.id, { title: title.trim(), variables, status });
+        saved = await updateResearch(research.id, { title: title.trim(), variables: vars, status });
       } else {
         saved = await createResearch({
           title: title.trim(),
+          companyId,
           templateId: selectedTemplateId ?? undefined,
-          variables,
+          variables: vars,
           status,
         });
       }
@@ -114,15 +152,42 @@ export function ResearchEditor({
             {research ? 'Editar pesquisa' : 'Nova pesquisa de inteligência'}
           </DialogTitle>
           <DialogDescription>
-            Escolha o tipo, preencha as informações e solicite. Nossa inteligência monta a pesquisa
-            e você recebe um relatório completo.
+            Escolha a empresa e o tipo, preencha as informações e solicite. Nossa inteligência monta
+            a pesquisa e você recebe um relatório completo.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          {/* 1. Tipo */}
+          {/* 1. Empresa (obrigatória, cadastrada) */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold text-gray-800">1. Tipo de pesquisa</Label>
+            <Label className="text-sm font-semibold text-gray-800">1. Empresa</Label>
+            <Select value={companyId} onValueChange={setCompanyId} disabled={!!research}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    companiesQuery.isLoading ? 'Carregando empresas…' : 'Selecione a empresa'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!companyId && (
+              <p className="text-xs text-gray-500">
+                A pesquisa é sempre de uma empresa cadastrada. Cadastre-a em Empresas antes, se ainda
+                não existir.
+              </p>
+            )}
+          </div>
+
+          {/* 2. Tipo */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-800">2. Tipo de pesquisa</Label>
             <TemplatePicker
               templates={templates}
               selectedId={selectedTemplateId}
@@ -132,14 +197,14 @@ export function ResearchEditor({
 
           {selectedTemplate && (
             <>
-              {/* 2. Informações */}
-              {placeholders.length > 0 && (
+              {/* 3. Informações */}
+              {visiblePlaceholders.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-gray-800">
-                    2. Sobre o que é a pesquisa
+                    3. Sobre o que é a pesquisa
                   </Label>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {placeholders.map((key) => {
+                    {visiblePlaceholders.map((key) => {
                       const example = placeholderExample(key);
                       return (
                         <div key={key} className="space-y-1">
@@ -159,10 +224,10 @@ export function ResearchEditor({
                 </div>
               )}
 
-              {/* 3. Título */}
+              {/* 4. Título */}
               <div className="space-y-1">
                 <Label htmlFor="research-title" className="text-sm font-semibold text-gray-800">
-                  3. Título da pesquisa
+                  4. Título da pesquisa
                 </Label>
                 <Input
                   id="research-title"
@@ -175,10 +240,10 @@ export function ResearchEditor({
                 />
               </div>
 
-              {/* 4. Contexto adicional */}
+              {/* 5. Contexto adicional */}
               <div className="space-y-1">
                 <Label htmlFor="extra-context" className="text-sm font-semibold text-gray-800">
-                  4. Informações adicionais{' '}
+                  5. Informações adicionais{' '}
                   <span className="font-normal text-gray-400">(opcional)</span>
                 </Label>
                 <Textarea

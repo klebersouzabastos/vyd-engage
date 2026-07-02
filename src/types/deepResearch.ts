@@ -50,6 +50,8 @@ export interface DeepResearchListItem {
   title: string;
   status: DeepResearchStatus;
   templateId?: string | null;
+  companyId?: string | null;
+  company?: { id: string; name: string } | null;
   createdById?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -70,6 +72,8 @@ export interface DeepResearch extends DeepResearchListItem {
 
 export interface CreateDeepResearchInput {
   title: string;
+  /** Empresa cadastrada (obrigatória) — a pesquisa é sempre de uma empresa do CRM. */
+  companyId: string;
   templateId?: string;
   variables?: Record<string, string>;
   status?: DeepResearchStatus;

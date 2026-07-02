@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { Building2, Globe, Users, Handshake, Pencil, Trash2 } from 'lucide-react';
+import { Building2, Globe, Users, Handshake, Pencil, Trash2, ScanSearch } from 'lucide-react';
 import { Company, CompanySize } from '../../types';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
@@ -19,6 +19,7 @@ function formatDate(date: string | null | undefined): string {
 export function getCompanyColumns(handlers: {
   onEdit: (company: Company) => void;
   onDelete: (company: Company) => void;
+  onResearch: (company: Company) => void;
 }): ColumnDef<Company>[] {
   return [
     {
@@ -98,6 +99,14 @@ export function getCompanyColumns(handlers: {
         return (
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- wrapper apenas impede o clique nos botões de propagar para a linha; não é um controle interativo e não precisa de handler de teclado
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => handlers.onResearch(company)}
+              className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
+              aria-label={`Pesquisa de mercado — ${company.name}`}
+              title="Pesquisa de mercado"
+            >
+              <ScanSearch size={14} aria-hidden="true" />
+            </button>
             <button
               onClick={() => handlers.onEdit(company)}
               className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"

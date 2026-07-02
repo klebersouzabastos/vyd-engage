@@ -44,6 +44,8 @@ const updateTemplateSchema = z.object({
 
 const createResearchSchema = z.object({
   title: z.string().min(1),
+  // Só se cria pesquisa para uma EMPRESA CADASTRADA (o form herda a empresa).
+  companyId: z.string().uuid(),
   templateId: z.string().uuid().optional(),
   variables: z.record(z.string()).optional(),
   status: z.nativeEnum(DeepResearchStatus).optional(),

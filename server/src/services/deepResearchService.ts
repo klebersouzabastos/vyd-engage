@@ -14,6 +14,7 @@ export const CONTEXT_KEY = 'Contexto adicional';
 
 export interface CreateDeepResearchData {
   title: string;
+  companyId: string;
   templateId?: string;
   variables?: Record<string, string>;
   status?: DeepResearchStatus;
@@ -62,12 +63,22 @@ export const deepResearchService = {
     data: CreateDeepResearchData,
     includePrompt = false
   ) {
+    // Só permite pesquisa para uma empresa CADASTRADA do tenant (multi-tenant).
+    const company = await prisma.company.findFirst({
+      where: { id: data.companyId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!company) {
+      throw createError('Empresa não encontrada.', 400, 'COMPANY_NOT_FOUND');
+    }
+
     const promptUsed = await buildPromptForResearch(tenantId, data.templateId, data.variables);
     const research = await prisma.deepResearch.create({
       data: {
         tenantId,
         createdById: createdById || null,
         title: data.title,
+        companyId: data.companyId,
         templateId: data.templateId || null,
         promptUsed,
         variables: data.variables || {},
@@ -85,7 +96,10 @@ export const deepResearchService = {
   async findById(tenantId: string, id: string, includePrompt = false) {
     const research = await prisma.deepResearch.findFirst({
       where: { id, tenantId },
-      include: { template: { select: { id: true, name: true } } },
+      include: {
+        template: { select: { id: true, name: true } },
+        company: { select: { id: true, name: true } },
+      },
     });
     if (!research) {
       throw createError('Deep research not found', 404, 'DEEP_RESEARCH_NOT_FOUND');
@@ -124,6 +138,8 @@ export const deepResearchService = {
           title: true,
           status: true,
           templateId: true,
+          companyId: true,
+          company: { select: { id: true, name: true } },
           createdById: true,
           createdAt: true,
           updatedAt: true,

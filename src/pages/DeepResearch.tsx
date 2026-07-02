@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import {
   Plus,
   Pencil,
@@ -52,21 +52,37 @@ export function DeepResearch() {
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingResearch, setEditingResearch] = useState<DeepResearchType | null>(null);
+  // Empresa herdada ao abrir "Nova pesquisa" a partir de uma empresa (Empresas/Detalhe).
+  const [newResearchCompanyId, setNewResearchCompanyId] = useState<string | undefined>(undefined);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const researches = listQuery.data?.items ?? [];
   const templates = templatesQuery.data?.items ?? [];
 
-  const openNewResearch = () => {
+  const openNewResearch = (companyId?: string) => {
     setEditingResearch(null);
+    setNewResearchCompanyId(typeof companyId === 'string' ? companyId : undefined);
     setEditorOpen(true);
   };
+
+  // Herança: ao navegar de uma empresa (state.companyId), abre "Nova pesquisa"
+  // já com a empresa; limpa o state para não reabrir em re-render/voltar.
+  const location = useLocation();
+  useEffect(() => {
+    const cid = (location.state as { companyId?: string } | null)?.companyId;
+    if (cid) {
+      openNewResearch(cid);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const openEditResearch = async (id: string) => {
     try {
       const detail = await apiClient.getDeepResearch(id);
       setEditingResearch(detail);
+      setNewResearchCompanyId(undefined);
       setEditorOpen(true);
     } catch {
       toast.error('Não foi possível abrir a pesquisa. Recarregue a página e tente novamente.');
@@ -107,7 +123,7 @@ export function DeepResearch() {
                   <Button
                     size="lg"
                     className="bg-card text-gray-900 hover:bg-gray-100"
-                    onClick={openNewResearch}
+                    onClick={() => openNewResearch()}
                   >
                     <Plus className="mr-1.5 h-4 w-4" />
                     Nova pesquisa
@@ -139,7 +155,7 @@ export function DeepResearch() {
                   )}
                 </h3>
                 {researches.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={openNewResearch}>
+                  <Button variant="outline" size="sm" onClick={() => openNewResearch()}>
                     <Plus className="mr-1 h-4 w-4" />
                     Nova
                   </Button>
@@ -155,7 +171,7 @@ export function DeepResearch() {
                   <p className="mt-1 max-w-sm text-sm text-gray-500">
                     Comece criando sua primeira pesquisa de inteligência de mercado.
                   </p>
-                  <Button className="mt-4" onClick={openNewResearch}>
+                  <Button className="mt-4" onClick={() => openNewResearch()}>
                     <Plus className="mr-1 h-4 w-4" />
                     Nova pesquisa
                   </Button>
@@ -233,6 +249,7 @@ export function DeepResearch() {
         onOpenChange={setEditorOpen}
         templates={templates}
         research={editingResearch}
+        defaultCompanyId={newResearchCompanyId}
         onSaved={(saved) => {
           if (saved.status === 'COMPLETED') navigate(`/app/deep-research/${saved.id}`);
         }}

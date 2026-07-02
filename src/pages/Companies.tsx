@@ -148,6 +148,8 @@ export function Companies() {
           setCompanyToDelete(company);
           setDeleteDialogOpen(true);
         },
+        onResearch: (company: Company) =>
+          navigate('/app/deep-research', { state: { companyId: company.id } }),
       }),
 
     []
