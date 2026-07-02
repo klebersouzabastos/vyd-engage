@@ -42,6 +42,7 @@ import {
 } from '../components/ui/select';
 import { Skeleton } from '../components/ui/skeleton';
 import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert, RefreshCw } from 'lucide-react';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api/client';
 
@@ -296,6 +297,20 @@ export function TeamManagement() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Equipe',
+            items: [
+              {
+                icon: UserPlus,
+                label: 'Convidar Membro',
+                onClick: () => setShowInviteModal(true),
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Equipe" subtitle="Gerencie membros e convites da sua equipe" />
 
       <div className="p-8">

@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { apiClient, type CampaignStatus } from '../services/api/client';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 const STATUS_LABELS: Record<CampaignStatus, string> = {
   DRAFT: 'Rascunho',
@@ -63,6 +64,20 @@ export function Campaigns() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Campanhas',
+            items: [
+              {
+                icon: Plus,
+                label: 'Nova Campanha',
+                onClick: () => navigate('/app/campaigns/new'),
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Campanhas de Email" subtitle="Crie, segmente e meça suas campanhas" />
 
       <div className="p-4 md:p-8">

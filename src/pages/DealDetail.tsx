@@ -38,6 +38,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { apiClient, ConfigItem, DealContact } from '../services/api/client';
 import { DealForm } from '../components/deals/DealForm';
 import { DealProducts } from '../components/deals/DealProducts';
@@ -477,8 +478,45 @@ export function DealDetail() {
     );
   }
 
+  const dealStatus = (deal as unknown as Record<string, unknown>).status as string | undefined;
+  const dealClosed = dealStatus === 'WON' || dealStatus === 'LOST';
+  const dealPaused = dealStatus === 'PAUSED';
+
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Negócio',
+            items: [
+              {
+                icon: DollarSign,
+                label: 'Marcar venda',
+                onClick: handleMarkWon,
+                disabled: dealStatus === 'WON',
+              },
+              {
+                icon: Trash2,
+                label: 'Marcar perda',
+                onClick: () => setShowLostModal(true),
+                disabled: dealStatus === 'LOST',
+              },
+              {
+                icon: Clock,
+                label: dealPaused ? 'Retomar' : 'Pausar',
+                onClick: handleTogglePause,
+                disabled: dealClosed,
+                active: dealPaused,
+              },
+              {
+                icon: Pencil,
+                label: 'Editar',
+                onClick: () => setEditFormOpen(true),
+              },
+            ],
+          },
+        ]}
+      />
       <Header title={deal.name} subtitle="Detalhes do negócio" />
 
       <div className="p-8">

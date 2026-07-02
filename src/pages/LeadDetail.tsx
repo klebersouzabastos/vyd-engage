@@ -46,6 +46,7 @@ import { AuditTimeline } from '../components/AuditTimeline';
 import { Deal, DealStage } from '../types';
 import { Handshake, DollarSign } from 'lucide-react';
 import { Timeline, TimelineItem } from '../components/ui/timeline';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 // Number of interactions to show per "page"
 const ITEMS_PER_PAGE = 10;
@@ -390,6 +391,49 @@ export function LeadDetail() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Lead',
+            items: [
+              {
+                icon: Plus,
+                label: 'Adicionar nota',
+                onClick: () => setShowNoteForm((v) => !v),
+                active: showNoteForm,
+              },
+              lead.isContact
+                ? {
+                    icon: ArrowRightLeft,
+                    label: converting ? 'Revertendo...' : 'Reverter para Lead',
+                    onClick: handleRevertToLead,
+                    disabled: converting,
+                  }
+                : {
+                    icon: UserCheck,
+                    label: converting ? 'Convertendo...' : 'Converter para Contato',
+                    onClick: handleConvertToContact,
+                    disabled: converting,
+                  },
+              {
+                icon: Handshake,
+                label: 'Criar Deal',
+                onClick: () => setDealFormOpen(true),
+              },
+              {
+                icon: Sparkles,
+                label: 'Gerar Email',
+                onClick: () => setAiDraftOpen(true),
+              },
+              {
+                icon: Pencil,
+                label: 'Editar',
+                onClick: () => navigate(`/app/leads/${id}/edit`),
+              },
+            ],
+          },
+        ]}
+      />
       <Header title={lead.name} subtitle="Detalhes e historico de atividades" />
 
       <div className="p-8">

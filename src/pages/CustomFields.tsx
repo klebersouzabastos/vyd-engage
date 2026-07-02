@@ -6,6 +6,7 @@ import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import { useCustomFields } from '../contexts/CustomFieldsContext';
 import { CustomField } from '../types';
 import { CustomFieldEditor } from '../components/CustomFieldEditor';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,6 +74,14 @@ export function CustomFields() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Campos',
+            items: [{ icon: Plus, label: 'Novo Campo', onClick: handleCreate }],
+          },
+        ]}
+      />
       <Header title="Campos Customizados" subtitle="Crie campos personalizados para seus leads" />
 
       <div className="p-8">

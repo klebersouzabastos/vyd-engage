@@ -24,6 +24,7 @@ import {
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { EmailFormatToolbar, useEmailFormatter } from '../components/email/EmailFormatToolbar';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 interface Conversation {
   leadId: string;
@@ -347,6 +348,21 @@ export function Inbox() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Inbox',
+            items: [
+              {
+                icon: RefreshCw,
+                label: 'Atualizar',
+                onClick: handleRefresh,
+                disabled: refreshing,
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Inbox" subtitle="Todas as conversas em um só lugar" />
 
       <div className="flex-1 flex overflow-hidden h-[calc(100vh-80px)]">

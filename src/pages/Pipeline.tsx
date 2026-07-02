@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from 'lucide-react';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { useTags } from '../contexts/TagsContext';
 import { TagBadge } from '../components/TagBadge';
 import { Input } from '../components/ui/input';
@@ -461,6 +462,38 @@ export function Pipeline() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Pipeline',
+            items: [
+              {
+                icon: Plus,
+                label: 'Novo Lead',
+                onClick: () => navigate('/app/leads/new'),
+              },
+              {
+                icon: Plus,
+                label: 'Nova Coluna',
+                onClick: () => setCreateColumnOpen(true),
+              },
+              {
+                icon: FunnelIcon,
+                label: 'Novo Funil',
+                onClick: () => setCreateFunnelOpen(true),
+              },
+              {
+                icon: Settings,
+                label: 'Configurações',
+                onClick: () => {
+                  setSettingsColumnOrder(columns.map((c) => c.id));
+                  setSettingsOpen(true);
+                },
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Funil de Vendas" subtitle="Visualize e gerencie seu pipeline" />
 
       <div className="p-8">

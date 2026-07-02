@@ -46,6 +46,7 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { Report, ReportSchedule } from '../types';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { ReportWizard } from '../components/ReportWizard';
 import { createReportFromTemplate } from '../utils/reportTemplates';
 import { apiClient } from '../services/api/client';
@@ -307,6 +308,26 @@ export function Reports() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Relatórios',
+            items: [
+              {
+                icon: Plus,
+                label: 'Novo Relatório',
+                onClick: () => setShowWizard(true),
+              },
+              {
+                icon: viewMode === 'grid' ? List : Grid3x3,
+                label: viewMode === 'grid' ? 'Ver em lista' : 'Ver em grade',
+                onClick: () => setViewMode(viewMode === 'grid' ? 'list' : 'grid'),
+                active: viewMode === 'list',
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Relatórios" subtitle="Crie e gerencie relatórios personalizados" />
 
       <div className="p-8">

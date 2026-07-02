@@ -43,6 +43,41 @@
   --vyd-layout-leftrail-w-min: 0px;
 }
 
+/* Faixa de comandos colapsada (ou tela sem comandos): a linha da ribbon some.
+   O grid do shell lê --vyd-layout-ribbon-h na linha de comando → zerá-la colapsa. */
+.vyd-app--ribbon-collapsed {
+  --vyd-layout-ribbon-h: 0px;
+}
+.vyd-app--ribbon-collapsed .vyd-ribbon {
+  display: none;
+}
+
+/* Faixa de abas: as abas rolam na horizontal; o toggle de colapso fica FIXO à
+   direita (fora do scroll). */
+.vyd-tabs-scroll {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--vyd-space-1);
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+.vyd-ribbon-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 var(--vyd-space-4);
+  color: var(--vyd-text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.vyd-ribbon-toggle:hover {
+  color: var(--vyd-text-primary);
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    Ponte shadcn → DS
    Os primitivos shadcn (src/components/ui/*) consomem --background/--card/

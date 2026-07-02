@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { useForecast } from '../hooks/useForecast';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { CHART_COLORS } from '@/utils/designTokens';
 import {
   BarChart,
@@ -131,6 +132,14 @@ export function Forecast() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Previsão',
+            items: [{ icon: RefreshCw, label: 'Atualizar', onClick: () => refetch() }],
+          },
+        ]}
+      />
       <Header title="Previsão de Receita" subtitle="Forecast baseado no pipeline de deals" />
 
       <div className="p-4 md:p-8">

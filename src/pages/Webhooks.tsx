@@ -47,6 +47,7 @@ import {
   type OutgoingWebhook,
   type OutgoingWebhookLog,
 } from '../services/api/client';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 interface TestResult {
   success: boolean;
@@ -265,6 +266,14 @@ export function Webhooks() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Webhooks',
+            items: [{ icon: Plus, label: 'Criar Webhook', onClick: () => openCreate() }],
+          },
+        ]}
+      />
       <Header title="Webhooks" subtitle="Gerencie webhooks de saida para integracoes externas" />
 
       <div className="p-4 md:p-8">
