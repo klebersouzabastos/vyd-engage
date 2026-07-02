@@ -14,6 +14,7 @@ import {
   Zap,
   Pencil,
 } from 'lucide-react';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { Switch } from '../components/ui/switch';
 import {
   AlertDialog,
@@ -124,6 +125,25 @@ export function Automations() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Automações',
+            items: [
+              {
+                icon: Plus,
+                label: 'Nova Automação',
+                onClick: () => navigate('/app/automations/new/builder'),
+              },
+              {
+                icon: Eye,
+                label: 'Ver Logs',
+                onClick: () => navigate('/app/automations/logs'),
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Automações" subtitle="Configure e gerencie seus fluxos automáticos" />
 
       <div className="p-8">

@@ -13,6 +13,7 @@ import {
 import { PageSkeleton } from '../components/PageSkeleton';
 import { FunnelChart } from '../components/forecast/FunnelChart';
 import { useFunnelConversion } from '../hooks/useFunnelConversion';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 const STAGE_NAMES: Record<string, string> = {
   NEW: 'Novo',
@@ -157,6 +158,26 @@ export function FunnelConversion() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Funil',
+            items: [
+              {
+                icon: Filter,
+                label: 'Filtros',
+                onClick: () => setShowFilters(!showFilters),
+                active: showFilters,
+              },
+              {
+                icon: RefreshCw,
+                label: 'Atualizar',
+                onClick: refetch,
+              },
+            ],
+          },
+        ]}
+      />
       <Header
         title="Funil de Conversão"
         subtitle="Análise de conversão entre etapas do funil de leads"

@@ -22,10 +22,13 @@ import {
   Mail,
   ScanSearch,
   MessageSquarePlus,
+  ChevronUp,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
+import { useRibbon } from '@/contexts/RibbonContext';
 
 interface NavItem {
   icon: LucideIcon;
@@ -131,10 +134,17 @@ function matches(path: string, pathname: string): boolean {
   return pathname === path || pathname.startsWith(path + '/');
 }
 
-export function RibbonTabs() {
+interface RibbonTabsProps {
+  ribbonCollapsed?: boolean;
+  onToggleRibbon?: () => void;
+}
+
+export function RibbonTabs({ ribbonCollapsed, onToggleRibbon }: RibbonTabsProps) {
   const location = useLocation();
   const { user } = useAuth();
   const { tasks } = useTasks();
+  const { activeCount } = useRibbon();
+  const hasCommands = activeCount > 0;
 
   const pendingTasksCount = (() => {
     const now = new Date();
@@ -170,33 +180,49 @@ export function RibbonTabs() {
     .sort((a, b) => b.path.length - a.path.length)[0]?.path;
 
   return (
-    <nav className="vyd-ribbon-tabs" aria-label="Navegação principal">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const active = item.path === activePath;
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            data-tour={item.tourId}
-            aria-selected={active}
-            aria-current={active ? 'page' : undefined}
-            className="vyd-ribbon-tab"
-            style={{ gap: 'var(--vyd-space-2)' }}
-          >
-            <Icon size={14} className="flex-shrink-0" />
-            <span>{item.label}</span>
-            {item.path === '/app/tasks' && pendingTasksCount > 0 && (
-              <span
-                className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-semibold"
-                style={{ background: 'var(--vyd-danger)', color: 'var(--vyd-text-on-accent)' }}
-              >
-                {pendingTasksCount}
-              </span>
-            )}
-          </Link>
-        );
-      })}
+    <nav className="vyd-ribbon-tabs" aria-label="Navegação principal" style={{ gap: 0 }}>
+      <div className="vyd-tabs-scroll">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = item.path === activePath;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              data-tour={item.tourId}
+              aria-selected={active}
+              aria-current={active ? 'page' : undefined}
+              className="vyd-ribbon-tab"
+              style={{ gap: 'var(--vyd-space-2)' }}
+            >
+              <Icon size={14} className="flex-shrink-0" />
+              <span>{item.label}</span>
+              {item.path === '/app/tasks' && pendingTasksCount > 0 && (
+                <span
+                  className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-semibold"
+                  style={{ background: 'var(--vyd-danger)', color: 'var(--vyd-text-on-accent)' }}
+                >
+                  {pendingTasksCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Toggle de colapso da faixa de comandos — só quando a tela tem comandos. */}
+      {hasCommands && onToggleRibbon && (
+        <button
+          type="button"
+          className="vyd-ribbon-toggle"
+          onClick={onToggleRibbon}
+          aria-expanded={!ribbonCollapsed}
+          aria-label={ribbonCollapsed ? 'Expandir faixa de comandos' : 'Recolher faixa de comandos'}
+          title={ribbonCollapsed ? 'Expandir faixa de comandos' : 'Recolher faixa de comandos'}
+        >
+          {ribbonCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+        </button>
+      )}
     </nav>
   );
 }

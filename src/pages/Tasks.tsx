@@ -26,7 +26,10 @@ import {
   Edit2,
   Trash2,
   CheckSquare,
+  Download,
+  Filter,
 } from 'lucide-react';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { EmptyState } from '../components/EmptyState';
 import { ExportButton } from '../components/ExportButton';
@@ -182,6 +185,16 @@ export function Tasks() {
 
   const handleEdit = (task: Task) => {
     navigate(`/app/tasks/${task.id}/edit`);
+  };
+
+  const handleExport = async (format: 'json' | 'csv' | 'xlsx' = 'xlsx') => {
+    const filters: Record<string, string> = {};
+    if (filter === 'overdue') filters.status = 'PENDING';
+    else if (filter === 'completed') filters.status = 'COMPLETED';
+    else if (filter === 'pending') filters.status = 'PENDING';
+    if (priorityFilter !== 'all') filters.priority = priorityFilter;
+    if (searchQuery) filters.search = searchQuery;
+    return apiClient.exportTasksDownload(format, filters);
   };
 
   const handleDelete = async () => {
@@ -486,6 +499,37 @@ export function Tasks() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Tarefas',
+            items: [
+              {
+                icon: Plus,
+                label: 'Nova Tarefa',
+                onClick: () => navigate('/app/tasks/new'),
+              },
+              {
+                icon: Download,
+                label: 'Exportar',
+                onClick: () => handleExport(),
+              },
+              {
+                icon: viewMode === 'list' ? CalendarDays : List,
+                label: viewMode === 'list' ? 'Calendário' : 'Lista',
+                onClick: () => setViewMode(viewMode === 'list' ? 'month' : 'list'),
+                active: viewMode !== 'list',
+              },
+              {
+                icon: Filter,
+                label: myTasksOnly ? 'Minhas tarefas' : 'Todas',
+                onClick: () => setMyTasksOnly((v) => !v),
+                active: myTasksOnly,
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Tarefas" subtitle="Gerencie todas as suas tarefas e lembretes" />
 
       <div className="p-8 overflow-visible">
@@ -657,15 +701,7 @@ export function Tasks() {
             </button>
 
             <ExportButton
-              onExport={async (format) => {
-                const filters: Record<string, string> = {};
-                if (filter === 'overdue') filters.status = 'PENDING';
-                else if (filter === 'completed') filters.status = 'COMPLETED';
-                else if (filter === 'pending') filters.status = 'PENDING';
-                if (priorityFilter !== 'all') filters.priority = priorityFilter;
-                if (searchQuery) filters.search = searchQuery;
-                return apiClient.exportTasksDownload(format, filters);
-              }}
+              onExport={(format) => handleExport(format)}
               filename="tasks-export"
               label="Exportar"
             />

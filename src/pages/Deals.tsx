@@ -38,12 +38,14 @@ import { EmptyState } from '../components/EmptyState';
 import { useDeals } from '../hooks/useDeals';
 import { useDealsPipeline } from '../hooks/useDealsPipeline';
 import { useSidePanel } from '../contexts/SidePanelContext';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { Deal, DealStage } from '../types';
 import {
   Plus,
   Search,
   List,
   LayoutGrid,
+  Download,
   Pencil,
   Trash2,
   ChevronLeft,
@@ -438,6 +440,51 @@ export function Deals() {
 
   return (
     <div className="min-h-screen">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Negócios',
+            items: [
+              {
+                icon: Plus,
+                label: 'Novo Deal',
+                onClick: () => {
+                  setEditingDeal(null);
+                  setFormOpen(true);
+                },
+              },
+              {
+                icon: Download,
+                label: 'Exportar',
+                disabled: viewMode !== 'list',
+                title: viewMode !== 'list' ? 'Disponível na visualização em lista' : undefined,
+                onClick: () => {
+                  const filters: Record<string, string> = {};
+                  if (search.trim()) filters.search = search.trim();
+                  if (stageFilter !== 'ALL') filters.stage = stageFilter;
+                  void apiClient.exportDealsDownload('csv', filters);
+                },
+              },
+              {
+                icon: viewMode === 'list' ? LayoutGrid : List,
+                label: viewMode === 'list' ? 'Ver Pipeline' : 'Ver Lista',
+                active: viewMode === 'pipeline',
+                onClick: () => setViewMode(viewMode === 'list' ? 'pipeline' : 'list'),
+              },
+            ],
+          },
+          {
+            label: 'Pipeline',
+            items: [
+              {
+                icon: Plus,
+                label: 'Criar Pipeline',
+                onClick: () => setCreateFunnelOpen(true),
+              },
+            ],
+          },
+        ]}
+      />
       <Header title="Deals" subtitle="Gerenciamento de negócios" />
 
       <div className="p-8">

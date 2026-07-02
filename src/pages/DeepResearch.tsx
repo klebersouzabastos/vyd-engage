@@ -35,6 +35,7 @@ import {
   useDeepResearchActions,
 } from '../hooks/useDeepResearch';
 import { useAuth } from '../contexts/AuthContext';
+import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { isManagerRole } from '../utils/roles';
 import { apiClient } from '../services/api/client';
 import type { DeepResearch as DeepResearchType } from '../types/deepResearch';
@@ -75,6 +76,25 @@ export function DeepResearch() {
 
   return (
     <div className="min-h-screen bg-slate-50/60">
+      <ScreenRibbon
+        groups={[
+          {
+            label: 'Pesquisa',
+            items: [
+              { icon: Plus, label: 'Nova pesquisa', onClick: openNewResearch },
+              ...(isPlatformAdmin
+                ? [
+                    {
+                      icon: SlidersHorizontal,
+                      label: 'Gerenciar modelos',
+                      onClick: () => setTemplatesOpen(true),
+                    },
+                  ]
+                : []),
+            ],
+          },
+        ]}
+      />
       <Header
         title="Inteligência de Mercado"
         subtitle="Relatórios profundos de inteligência comercial"
