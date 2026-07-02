@@ -26,7 +26,6 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { useAuth } from '../contexts/AuthContext';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { apiClient, Suggestion, SuggestionStatus, SuggestionType } from '../services/api/client';
 
 const STATUS_LABEL: Record<SuggestionStatus, string> = {
@@ -180,16 +179,6 @@ export function Suggestions() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Sugestões',
-            items: [
-              { icon: Plus, label: 'Nova sugestão', onClick: () => setCreateOpen(true) },
-            ],
-          },
-        ]}
-      />
       <Header
         title="Sugestões"
         subtitle={
@@ -251,6 +240,11 @@ export function Suggestions() {
               <option value="BUG">Correção</option>
             </select>
           </div>
+
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus size={16} />
+            Nova sugestão
+          </Button>
         </div>
 
         {/* Status counts (admin + scope=all) */}

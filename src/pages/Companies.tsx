@@ -40,7 +40,6 @@ import {
   Globe,
 } from 'lucide-react';
 import { CompanyForm } from '../components/CompanyForm';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
   MICRO: 'Micro',
@@ -165,23 +164,6 @@ export function Companies() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Empresas',
-            items: [
-              {
-                icon: Plus,
-                label: 'Nova Empresa',
-                onClick: () => {
-                  setEditingCompany(null);
-                  setFormOpen(true);
-                },
-              },
-            ],
-          },
-        ]}
-      />
       <Header title="Empresas" subtitle="Gerenciamento de empresas" />
 
       <div className="p-8">
@@ -216,6 +198,17 @@ export function Companies() {
               </SelectContent>
             </Select>
           </div>
+
+          <Button
+            onClick={() => {
+              setEditingCompany(null);
+              setFormOpen(true);
+            }}
+            className="gap-2"
+          >
+            <Plus size={16} />
+            Nova Empresa
+          </Button>
         </div>
 
         {/* Table */}

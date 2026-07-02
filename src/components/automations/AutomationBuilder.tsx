@@ -20,7 +20,6 @@ import type { FlowNode, FlowData } from '../../utils/automationFlowConverter';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
-import { ScreenRibbon, type RibbonGroupDef } from '@/contexts/RibbonContext';
 import {
   ArrowLeft,
   Save,
@@ -300,37 +299,18 @@ export function AutomationBuilder({
     onSave({ name, description, isActive, flowData, trigger, steps, conditions });
   };
 
-  // Ribbon da tela-âncora: Gatilhos/Ações/Lógica (ex-NodePalette) + Automação
-  // (nome, Ativo, Salvar, Voltar). Nenhum comando novo — só reposicionados.
-  const ribbonGroups: RibbonGroupDef[] = [
-    {
-      label: 'Automação',
-      content: (
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
-            <ArrowLeft size={16} />
-            Voltar
-          </Button>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nome da automação"
-            className="w-52 h-8 text-sm"
-          />
-          <label
-            className="flex items-center gap-2 text-xs whitespace-nowrap"
-            style={{ color: 'var(--vyd-text-secondary)' }}
-          >
-            {isActive ? 'Ativo' : 'Inativo'}
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
-          </label>
-          <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()} className="gap-2">
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            Salvar
-          </Button>
-        </div>
-      ),
-    },
+  // Paleta de nós (ex-NodePalette): Gatilhos / Ações / Lógica. Renderizada como
+  // painel lateral DENTRO do canvas do builder (a faixa do shell virou navegação).
+  const paletteSections: {
+    label: string;
+    items: {
+      icon: LucideIcon;
+      label: string;
+      onClick: () => void;
+      disabled?: boolean;
+      title?: string;
+    }[];
+  }[] = [
     {
       label: 'Gatilhos',
       items: TRIGGER_TYPES.map((t) => ({
@@ -363,21 +343,83 @@ export function AutomationBuilder({
 
   return (
     <>
-      <ScreenRibbon groups={ribbonGroups} />
+      {/* Editor de automação: barra (Voltar/Nome/Ativo/Salvar) + paleta de nós
+          (Gatilhos/Ações/Lógica) + canvas, tudo dentro do .vyd-canvas do shell. */}
+      <div className="absolute inset-0 flex flex-col">
+        <div className="flex items-center gap-2 border-b border-gray-200 bg-card px-3 py-2">
+          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
+            <ArrowLeft size={16} />
+            Voltar
+          </Button>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nome da automação"
+            className="w-52 h-8 text-sm"
+          />
+          <label
+            className="flex items-center gap-2 text-xs whitespace-nowrap"
+            style={{ color: 'var(--vyd-text-secondary)' }}
+          >
+            {isActive ? 'Ativo' : 'Inativo'}
+            <Switch checked={isActive} onCheckedChange={setIsActive} />
+          </label>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving || !name.trim()}
+            className="gap-2 ml-auto"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            Salvar
+          </Button>
+        </div>
 
-      {/* O FlowCanvas ocupa todo o .vyd-canvas do shell */}
-      <div className="absolute inset-0">
-        <FlowCanvas
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onConnectToCreate={handleConnectToCreate}
-          onUpdateNodeConfig={handleUpdateNodeConfig}
-          onDeleteNode={handleDeleteNode}
-          onAutoLayout={handleAutoLayout}
-        />
+        <div className="flex min-h-0 flex-1">
+          {/* Paleta de nós (ex-NodePalette) */}
+          <aside className="w-60 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-card p-3">
+            {paletteSections.map((section) => (
+              <div key={section.label} className="mb-4">
+                <div className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  {section.label}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={item.onClick}
+                        disabled={item.disabled}
+                        title={item.title || item.label}
+                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Icon size={16} className="flex-shrink-0 text-gray-500" />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </aside>
+
+          {/* Canvas */}
+          <div className="relative flex-1">
+            <FlowCanvas
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onConnectToCreate={handleConnectToCreate}
+              onUpdateNodeConfig={handleUpdateNodeConfig}
+              onDeleteNode={handleDeleteNode}
+              onAutoLayout={handleAutoLayout}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Connect-to-create: menu de tipos ao soltar uma conexão no vazio */}

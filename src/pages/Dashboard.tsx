@@ -25,7 +25,6 @@ import { ActionSummaryRow } from '../components/NextActionCard';
 import { GoalProgress } from '../components/GoalProgress';
 import { PipelineHealthGauge } from '../components/PipelineHealthGauge';
 import { useDashboard, DateRange } from '../hooks/useDashboard';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { CHART_COLORS } from '../utils/designTokens';
 import { apiClient } from '../services/api/client';
 import type { ActionSummaryItem } from '../types';
@@ -239,41 +238,6 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen">
-      {/* Ribbon derivada das ações JÁ existentes desta tela (spec req 10/12) */}
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Período',
-            items: (Object.keys(RANGE_LABELS) as RangePreset[]).map((key) => ({
-              label: RANGE_LABELS[key],
-              onClick: () => setRangePreset(key),
-              active: rangePreset === key,
-            })),
-          },
-          {
-            label: 'Dados',
-            items: [
-              {
-                label: myDataOnly ? 'Meus dados' : 'Todos',
-                onClick: () => setMyDataOnly((v) => !v),
-                active: myDataOnly,
-              },
-            ],
-          },
-          {
-            label: 'Ações',
-            items: [
-              { icon: Download, label: 'Exportar', onClick: handleExportCSV },
-              {
-                icon: Settings,
-                label: isEditing ? 'Concluir' : 'Personalizar',
-                onClick: () => setIsEditing(!isEditing),
-                active: isEditing,
-              },
-            ],
-          },
-        ]}
-      />
       <Header title="Dashboard" subtitle="Visão geral do seu CRM" />
 
       <div className="p-4 md:p-8">

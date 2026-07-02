@@ -20,7 +20,6 @@ import { Button } from '../components/ui/button';
 import { apiClient } from '../services/api/client';
 import { useSocket } from '../hooks/useSocket';
 import { toast } from 'sonner';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 const PAGE_SIZE = 50;
 
@@ -298,36 +297,13 @@ export function AutomationLogs() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Logs',
-            items: [
-              {
-                icon: ArrowLeft,
-                label: 'Voltar',
-                onClick: () => navigate('/app/automations'),
-              },
-              {
-                icon: Clock,
-                label: 'Logs',
-                onClick: () => setActiveTab('logs'),
-                active: activeTab === 'logs',
-              },
-              {
-                icon: BarChart3,
-                label: 'Métricas',
-                onClick: () => setActiveTab('metrics'),
-                active: activeTab === 'metrics',
-              },
-            ],
-          },
-        ]}
-      />
       <Header title="Logs de Automação" subtitle="Histórico de execuções e métricas" />
 
       <div className="p-8">
-        <div className="flex items-center justify-end mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="outline" className="gap-2" onClick={() => navigate('/app/automations')}>
+            <ArrowLeft size={16} /> Voltar para Automações
+          </Button>
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('logs')}

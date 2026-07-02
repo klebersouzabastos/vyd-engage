@@ -35,7 +35,6 @@ import {
   useDeepResearchActions,
 } from '../hooks/useDeepResearch';
 import { useAuth } from '../contexts/AuthContext';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { isManagerRole } from '../utils/roles';
 import { apiClient } from '../services/api/client';
 import type { DeepResearch as DeepResearchType } from '../types/deepResearch';
@@ -76,25 +75,6 @@ export function DeepResearch() {
 
   return (
     <div className="min-h-screen bg-slate-50/60">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Pesquisa',
-            items: [
-              { icon: Plus, label: 'Nova pesquisa', onClick: openNewResearch },
-              ...(isPlatformAdmin
-                ? [
-                    {
-                      icon: SlidersHorizontal,
-                      label: 'Gerenciar modelos',
-                      onClick: () => setTemplatesOpen(true),
-                    },
-                  ]
-                : []),
-            ],
-          },
-        ]}
-      />
       <Header
         title="Inteligência de Mercado"
         subtitle="Relatórios profundos de inteligência comercial"
@@ -123,6 +103,27 @@ export function DeepResearch() {
                   Solicite uma pesquisa profunda sobre uma empresa ou um segmento inteiro e receba
                   um relatório completo, pronto para apresentar à sua equipe.
                 </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button
+                    size="lg"
+                    className="bg-card text-slate-900 hover:bg-slate-100"
+                    onClick={openNewResearch}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Nova pesquisa
+                  </Button>
+                  {isPlatformAdmin && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white/30 bg-transparent text-white hover:bg-card/10 hover:text-white"
+                      onClick={() => setTemplatesOpen(true)}
+                    >
+                      <SlidersHorizontal className="mr-1.5 h-4 w-4" />
+                      Gerenciar modelos
+                    </Button>
+                  )}
+                </div>
               </div>
             </section>
 
@@ -137,6 +138,12 @@ export function DeepResearch() {
                     </span>
                   )}
                 </h3>
+                {researches.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={openNewResearch}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Nova
+                  </Button>
+                )}
               </div>
 
               {listQuery.isLoading ? (

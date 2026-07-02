@@ -25,7 +25,6 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { Plus, Search, Pencil, Trash2, Package } from 'lucide-react';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
@@ -181,14 +180,6 @@ export function Products() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Produtos',
-            items: [{ icon: Plus, label: 'Novo produto', onClick: () => openCreate() }],
-          },
-        ]}
-      />
       <Header title="Produtos" subtitle="Catálogo de produtos do seu tenant" />
 
       <div className="p-4 md:p-8">
@@ -203,6 +194,10 @@ export function Products() {
               className="pl-8"
             />
           </div>
+          <Button onClick={openCreate} className="flex items-center gap-2">
+            <Plus size={16} />
+            Novo produto
+          </Button>
         </div>
 
         {/* Table */}

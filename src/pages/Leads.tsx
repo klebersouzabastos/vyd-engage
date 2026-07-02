@@ -5,8 +5,8 @@ import { Header } from '../components/Header';
 import { LeadModal } from '../components/LeadModal';
 import { EmptyState } from '../components/EmptyState';
 import { PageSkeleton } from '../components/PageSkeleton';
-import { Users, UserCheck, ArrowLeftRight, Plus, Upload, Download } from 'lucide-react';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
+import { Users, UserCheck, Plus } from 'lucide-react';
+import { Button } from '../components/ui/button';
 import { LeadImportModal } from '../components/leads/LeadImportModal';
 import { LeadBulkActions } from '../components/leads/LeadBulkActions';
 import { LeadFilters } from '../components/leads/LeadFilters';
@@ -612,62 +612,49 @@ export function Leads() {
 
   return (
     <div className="min-h-screen">
-      {/* Ribbon derivada das ações JÁ existentes desta tela (spec req 10/12) */}
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Leads',
-            items: [
-              { icon: Plus, label: 'Novo lead', onClick: () => navigate('/app/leads/new') },
-              { icon: Upload, label: 'Importar', onClick: () => setImportModalOpen(true) },
-            ],
-          },
-          {
-            label: 'Exportar',
-            items: [
-              { icon: Download, label: 'Página atual', onClick: handleExportLeads },
-              { icon: Download, label: 'Tudo filtrado', onClick: handleExportAllFiltered },
-            ],
-          },
-        ]}
-      />
       <Header title={headerTitle} subtitle={headerSubtitle} />
 
       <div className="p-4 md:p-8">
-        {/* View Tabs: Leads | Contatos | Todos */}
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mb-4 w-fit">
-          <button
-            onClick={() => handleTabChange('leads')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'leads'
-                ? 'bg-card text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Users size={16} />
-            Leads
-          </button>
-          <button
-            onClick={() => handleTabChange('contacts')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'contacts'
-                ? 'bg-card text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <UserCheck size={16} />
-            Contatos
-          </button>
-          <button
-            onClick={() => handleTabChange('all')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'all'
-                ? 'bg-card text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Todos
-          </button>
+        {/* View Tabs + ação primária "Novo lead" */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+            <button
+              onClick={() => handleTabChange('leads')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'leads'
+                  ? 'bg-card text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Users size={16} />
+              Leads
+            </button>
+            <button
+              onClick={() => handleTabChange('contacts')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'contacts'
+                  ? 'bg-card text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <UserCheck size={16} />
+              Contatos
+            </button>
+            <button
+              onClick={() => handleTabChange('all')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-card text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Todos
+            </button>
+          </div>
+          <Button onClick={() => navigate('/app/leads/new')} className="gap-2">
+            <Plus size={16} />
+            Novo lead
+          </Button>
         </div>
         {/* Bulk Actions Bar */}
         {selectedLeads.length > 0 && (
