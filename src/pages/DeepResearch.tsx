@@ -74,7 +74,7 @@ export function DeepResearch() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/60">
+    <div className="min-h-screen bg-gray-50/60">
       <Header
         title="Inteligência de Mercado"
         subtitle="Relatórios profundos de inteligência comercial"
@@ -90,7 +90,7 @@ export function DeepResearch() {
           </TabsList>
           <TabsContent value="pesquisas" className="space-y-6">
             {/* Hero — ações principais consolidadas aqui */}
-            <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
+            <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 px-6 py-8 text-white shadow-sm md:px-10 md:py-10">
               <div className="max-w-2xl">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-card/10 px-3 py-1 text-xs font-medium text-blue-100">
                   <Sparkles className="h-3.5 w-3.5" />
@@ -99,14 +99,14 @@ export function DeepResearch() {
                 <h2 className="mt-3 text-2xl font-bold md:text-3xl">
                   Transforme dados em oportunidades comerciais
                 </h2>
-                <p className="mt-2 text-slate-300">
+                <p className="mt-2 text-gray-300">
                   Solicite uma pesquisa profunda sobre uma empresa ou um segmento inteiro e receba
                   um relatório completo, pronto para apresentar à sua equipe.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button
                     size="lg"
-                    className="bg-card text-slate-900 hover:bg-slate-100"
+                    className="bg-card text-gray-900 hover:bg-gray-100"
                     onClick={openNewResearch}
                   >
                     <Plus className="mr-1.5 h-4 w-4" />
@@ -130,10 +130,10 @@ export function DeepResearch() {
             {/* Lista de pesquisas */}
             <section>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h3 className="text-lg font-semibold text-gray-900">
                   Suas pesquisas
                   {researches.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-slate-400">
+                    <span className="ml-2 text-sm font-normal text-gray-400">
                       {researches.length}
                     </span>
                   )}
@@ -147,12 +147,12 @@ export function DeepResearch() {
               </div>
 
               {listQuery.isLoading ? (
-                <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+                <p className="py-12 text-center text-sm text-gray-500">Carregando…</p>
               ) : researches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card py-16 text-center">
-                  <ScanSearch className="h-10 w-10 text-slate-300" />
-                  <p className="mt-3 font-medium text-slate-900">Nenhuma pesquisa ainda</p>
-                  <p className="mt-1 max-w-sm text-sm text-slate-500">
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-card py-16 text-center">
+                  <ScanSearch className="h-10 w-10 text-gray-300" />
+                  <p className="mt-3 font-medium text-gray-900">Nenhuma pesquisa ainda</p>
+                  <p className="mt-1 max-w-sm text-sm text-gray-500">
                     Comece criando sua primeira pesquisa de inteligência de mercado.
                   </p>
                   <Button className="mt-4" onClick={openNewResearch}>
@@ -165,19 +165,19 @@ export function DeepResearch() {
                   {researches.map((r) => (
                     <li
                       key={r.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-card p-4 transition-colors hover:border-slate-300"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-card p-4 transition-colors hover:border-gray-300"
                     >
                       <button
                         type="button"
                         onClick={() => navigate(`/app/deep-research/${r.id}`)}
                         className="group flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
-                        <FileText className="h-5 w-5 shrink-0 text-slate-400" />
+                        <FileText className="h-5 w-5 shrink-0 text-gray-400" />
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-slate-900 group-hover:text-primary">
+                          <p className="truncate font-medium text-gray-900 group-hover:text-primary">
                             {r.title}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-gray-500">
                             {r.template?.name ? `${r.template.name} · ` : ''}
                             {new Date(r.createdAt).toLocaleDateString('pt-BR')}
                           </p>

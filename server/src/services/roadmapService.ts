@@ -6,6 +6,7 @@ import {
   StakeholderPosture,
   DealStage,
   TaskStatus,
+  CommercialFunction,
 } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { taskService } from './taskService.js';
@@ -22,6 +23,8 @@ export interface CreateRoadmapData {
   status?: CommercialRoadmapStatus;
   targetProposalDate?: string;
   notes?: string;
+  // Mapeamento função comercial → usuário (do tenant) escolhido ao aplicar o playbook.
+  roleAssignments?: { function: CommercialFunction; userId: string }[];
 }
 
 export interface UpdateRoadmapData {
@@ -80,7 +83,8 @@ async function generateActionsFromPlaybook(
     empreendimentoId: string | null;
     playbookTemplateId: string | null;
   },
-  ownerId?: string
+  ownerId?: string,
+  roleAssignments?: Map<CommercialFunction, string>
 ) {
   if (!roadmap.playbookTemplateId) return;
   const tpl = await prisma.playbookTemplate.findFirst({
@@ -92,21 +96,25 @@ async function generateActionsFromPlaybook(
   for (const step of tpl.steps) {
     const due = new Date(start);
     due.setDate(due.getDate() + step.offsetDays);
+    // Atribui ao usuário mapeado para a função do passo; passo sem função ou
+    // função não mapeada → cai no criador do desdobramento (comportamento atual).
+    const assignedTo =
+      (step.responsibleFunction && roleAssignments?.get(step.responsibleFunction)) || ownerId;
     const task = await taskService.create(tenantId, {
       title: step.title,
       description: step.description ?? undefined,
       priority: step.priority,
       type: step.actionType,
-      assignedTo: ownerId,
+      assignedTo,
       companyId: roadmap.companyId,
       empreendimentoId: roadmap.empreendimentoId ?? undefined,
       roadmapId: roadmap.id,
       dueDate: due,
     });
-    // As ações entram na agenda do dono e sincronizam com o Google Calendar
+    // A ação entra na agenda do RESPONSÁVEL e sincroniza com o Google Calendar
     // quando ele estiver conectado (fire-and-forget; nunca quebra a geração).
-    if (ownerId) {
-      googleCalendarService.syncTaskForUser(ownerId, tenantId, task).catch(() => {});
+    if (assignedTo) {
+      googleCalendarService.syncTaskForUser(assignedTo, tenantId, task).catch(() => {});
     }
   }
 }
@@ -133,7 +141,23 @@ export const roadmapService = {
       },
     });
 
-    await generateActionsFromPlaybook(tenantId, roadmap, createdById);
+    // Mapa função→usuário validado: só usuários DO TENANT entram (multi-tenant —
+    // nunca atribui a usuário de outro tenant); ids inválidos são ignorados e o
+    // passo daquela função cai no criador.
+    let roleAssignments: Map<CommercialFunction, string> | undefined;
+    if (data.roleAssignments?.length) {
+      const ids = [...new Set(data.roleAssignments.map((a) => a.userId))];
+      const validUsers = await prisma.user.findMany({
+        where: { id: { in: ids }, tenantId },
+        select: { id: true },
+      });
+      const validIds = new Set(validUsers.map((u) => u.id));
+      roleAssignments = new Map(
+        data.roleAssignments.filter((a) => validIds.has(a.userId)).map((a) => [a.function, a.userId])
+      );
+    }
+
+    await generateActionsFromPlaybook(tenantId, roadmap, createdById, roleAssignments);
     return this.findById(tenantId, roadmap.id);
   },
 

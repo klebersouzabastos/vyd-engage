@@ -15,9 +15,9 @@ const POSTURES = Object.keys(STAKEHOLDER_POSTURE_LABELS) as StakeholderPosture[]
 
 const POSTURE_DOT: Record<StakeholderPosture, string> = {
   FAVORAVEL: 'bg-green-500',
-  NEUTRO: 'bg-slate-400',
+  NEUTRO: 'bg-gray-400',
   CONTRARIO: 'bg-red-500',
-  DESCONHECIDO: 'bg-slate-300',
+  DESCONHECIDO: 'bg-gray-300',
 };
 
 interface Props {
@@ -46,7 +46,7 @@ function buildChildrenMap(stakeholders: RoadmapStakeholder[]) {
 export function Organograma({ stakeholders, onUpdate, onRemove }: Props) {
   if (stakeholders.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-sm text-slate-500">
+      <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center text-sm text-gray-500">
         Nenhum contato no desdobramento ainda. Adicione decisores e influenciadores para montar a
         hierarquia.
       </div>
@@ -62,20 +62,20 @@ export function Organograma({ stakeholders, onUpdate, onRemove }: Props) {
       <ul>
         {nodes.map((s) => (
           <li key={s.id} className="org-node">
-            <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-card p-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                <UserRound className="h-4 w-4 text-slate-500" />
+            <div className="flex items-start gap-2 rounded-lg border border-gray-200 bg-card p-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
+                <UserRound className="h-4 w-4 text-gray-500" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-slate-900">{s.lead.name}</p>
+                  <p className="truncate text-sm font-medium text-gray-900">{s.lead.name}</p>
                   <span
                     className={`h-2 w-2 shrink-0 rounded-full ${POSTURE_DOT[s.posture]}`}
                     title={STAKEHOLDER_POSTURE_LABELS[s.posture]}
                   />
                 </div>
                 {s.lead.position && (
-                  <p className="truncate text-xs text-slate-500">{s.lead.position}</p>
+                  <p className="truncate text-xs text-gray-500">{s.lead.position}</p>
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Select

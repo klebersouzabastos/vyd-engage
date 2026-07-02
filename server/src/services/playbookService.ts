@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { Prisma, TaskType, StakeholderRole, TaskPriority } from '@prisma/client';
+import { Prisma, TaskType, StakeholderRole, TaskPriority, CommercialFunction } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 
 export interface PlaybookStepInput {
@@ -7,6 +7,7 @@ export interface PlaybookStepInput {
   title: string;
   actionType: TaskType;
   targetRole?: StakeholderRole | null;
+  responsibleFunction?: CommercialFunction | null;
   offsetDays: number;
   priority: TaskPriority;
   description?: string | null;
@@ -28,6 +29,7 @@ function stepData(s: PlaybookStepInput) {
     title: s.title,
     actionType: s.actionType,
     targetRole: s.targetRole ?? null,
+    responsibleFunction: s.responsibleFunction ?? null,
     offsetDays: s.offsetDays,
     priority: s.priority,
     description: s.description ?? null,
@@ -124,6 +126,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Mapear decisores e contatos',
         actionType: TaskType.LIGACAO,
         targetRole: StakeholderRole.INFLUENCIADOR,
+        responsibleFunction: CommercialFunction.SDR,
         offsetDays: 0,
         priority: TaskPriority.HIGH,
         description: 'Identificar quem decide e quem influencia.',
@@ -133,6 +136,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Ligação de prospecção',
         actionType: TaskType.LIGACAO,
         targetRole: StakeholderRole.DECISOR,
+        responsibleFunction: CommercialFunction.SDR,
         offsetDays: 2,
         priority: TaskPriority.HIGH,
         description: null,
@@ -142,6 +146,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Reunião de descoberta',
         actionType: TaskType.REUNIAO,
         targetRole: StakeholderRole.DECISOR,
+        responsibleFunction: CommercialFunction.CLOSER,
         offsetDays: 7,
         priority: TaskPriority.MEDIUM,
         description: 'Entender necessidades e critérios.',
@@ -151,6 +156,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Apresentação da empresa',
         actionType: TaskType.APRESENTACAO,
         targetRole: StakeholderRole.DECISOR,
+        responsibleFunction: CommercialFunction.CLOSER,
         offsetDays: 14,
         priority: TaskPriority.MEDIUM,
         description: null,
@@ -160,6 +166,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Visita técnica',
         actionType: TaskType.VISITA,
         targetRole: StakeholderRole.TECNICO,
+        responsibleFunction: CommercialFunction.PRE_VENDAS,
         offsetDays: 21,
         priority: TaskPriority.MEDIUM,
         description: null,
@@ -169,6 +176,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Envio do pedido de proposta',
         actionType: TaskType.PROPOSTA,
         targetRole: StakeholderRole.APROVADOR,
+        responsibleFunction: CommercialFunction.GESTOR,
         offsetDays: 30,
         priority: TaskPriority.URGENT,
         description: null,
@@ -184,6 +192,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Reunião de alinhamento do empreendimento',
         actionType: TaskType.REUNIAO,
         targetRole: StakeholderRole.DECISOR,
+        responsibleFunction: CommercialFunction.CLOSER,
         offsetDays: 0,
         priority: TaskPriority.HIGH,
         description: null,
@@ -193,6 +202,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Visita ao canteiro/obra',
         actionType: TaskType.VISITA,
         targetRole: StakeholderRole.TECNICO,
+        responsibleFunction: CommercialFunction.PRE_VENDAS,
         offsetDays: 5,
         priority: TaskPriority.HIGH,
         description: null,
@@ -202,6 +212,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Apresentação técnica da solução',
         actionType: TaskType.APRESENTACAO,
         targetRole: StakeholderRole.TECNICO,
+        responsibleFunction: CommercialFunction.PRE_VENDAS,
         offsetDays: 12,
         priority: TaskPriority.MEDIUM,
         description: null,
@@ -211,6 +222,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Follow-up com decisor',
         actionType: TaskType.LIGACAO,
         targetRole: StakeholderRole.DECISOR,
+        responsibleFunction: CommercialFunction.CLOSER,
         offsetDays: 20,
         priority: TaskPriority.MEDIUM,
         description: null,
@@ -220,6 +232,7 @@ const BUILTIN_PLAYBOOKS: { name: string; description: string; steps: PlaybookSte
         title: 'Pedido de proposta',
         actionType: TaskType.PROPOSTA,
         targetRole: StakeholderRole.APROVADOR,
+        responsibleFunction: CommercialFunction.GESTOR,
         offsetDays: 28,
         priority: TaskPriority.URGENT,
         description: null,

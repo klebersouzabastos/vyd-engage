@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { TaskType, StakeholderRole, TaskPriority } from '@prisma/client';
+import { TaskType, StakeholderRole, TaskPriority, CommercialFunction } from '@prisma/client';
 import { playbookService } from '../services/playbookService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
@@ -16,6 +16,7 @@ const stepSchema = z.object({
   title: z.string().min(1),
   actionType: z.nativeEnum(TaskType),
   targetRole: z.nativeEnum(StakeholderRole).nullable().optional(),
+  responsibleFunction: z.nativeEnum(CommercialFunction).nullable().optional(),
   offsetDays: z.number().int().min(0),
   priority: z.nativeEnum(TaskPriority),
   description: z.string().nullable().optional(),

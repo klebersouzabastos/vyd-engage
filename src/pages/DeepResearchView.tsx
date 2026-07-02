@@ -53,7 +53,7 @@ export function DeepResearchView() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50/60">
+    <div className="min-h-screen bg-gray-50/60">
       <Header title={item?.title ?? 'Inteligência de Mercado'} subtitle="Inteligência de Mercado" />
 
       <div className="p-4 md:p-8">
@@ -92,9 +92,9 @@ export function DeepResearchView() {
         </div>
 
         {itemQuery.isLoading ? (
-          <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+          <p className="py-12 text-center text-sm text-gray-500">Carregando…</p>
         ) : !item ? (
-          <p className="py-12 text-center text-sm text-slate-500">Pesquisa não encontrada.</p>
+          <p className="py-12 text-center text-sm text-gray-500">Pesquisa não encontrada.</p>
         ) : isPlatformAdmin ? (
           // Platform admin vê o relatório (web page) e o prompt/processamento em
           // abas distintas — o prompt é IP da plataforma e não chega ao usuário comum.
@@ -147,7 +147,7 @@ function StatusState({
       action: null,
     },
     DRAFT: {
-      icon: <FileEdit className="h-10 w-10 text-slate-300" />,
+      icon: <FileEdit className="h-10 w-10 text-gray-300" />,
       title: 'Rascunho',
       desc: 'Complete as informações e solicite a pesquisa para gerar o relatório.',
       action: (
@@ -177,10 +177,10 @@ function StatusState({
   }[status];
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-card py-16 text-center">
       {config.icon}
-      <p className="mt-3 font-medium text-slate-900">{config.title}</p>
-      <p className="mt-1 max-w-md text-sm text-slate-500">{config.desc}</p>
+      <p className="mt-3 font-medium text-gray-900">{config.title}</p>
+      <p className="mt-1 max-w-md text-sm text-gray-500">{config.desc}</p>
       {config.action}
     </div>
   );

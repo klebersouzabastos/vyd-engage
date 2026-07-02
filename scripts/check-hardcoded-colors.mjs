@@ -47,6 +47,27 @@ const HEX = /(?<!&)#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{
 const FUNC = /\b(?:rgba?|hsla?)\(\s*(?!var\()/i;
 // ARGB do ExcelJS (argb: 'FFRRGGBB') — cor literal SEM '#', que o regex HEX não pega.
 const ARGB = /\bargb\s*:\s*['"][0-9a-fA-F]{8}\b/i;
+// Família Tailwind `slate-*` (regressão nomeada) — proibida; use tokens --vyd-*.
+// Casa utilitários de cor: bg-/text-/border-/ring-/from-/to-/via-/divide-/placeholder-/fill-/stroke-/decoration-/outline-/accent-slate-<num>.
+const SLATE =
+  /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-slate-\d{2,3}\b/;
+
+// Escopo ESTRITO: arquivos JÁ 100% tokenizados (primitivos compartilhados + feature
+// de Playbook/Desdobramento). Nestes, QUALQUER família de cor Tailwind crua (fora do
+// mapa de tokens do DS) — gray/zinc/neutral/stone e todo o arco-íris + white/black —
+// é proibida, prevenindo a regressão que os reqs 14/15 corrigiram. Fora deste escopo,
+// o legado (gray-* bridged etc.) permanece — migrá-lo é fora do escopo desta spec.
+const STRICT_SCOPE = new Set([
+  'src/components/ui/RichTextEditor.tsx',
+  'src/components/ui/select.tsx',
+  'src/components/ui/timeline.tsx',
+  'src/components/ui/badge.tsx',
+  'src/components/ui/button.tsx',
+  'src/components/comercial/PlaybooksManager.tsx',
+  'src/components/comercial/RoadmapCreateDialog.tsx',
+]);
+const STRICT_FAMILIES =
+  /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-(?:gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/;
 
 function walk(dir) {
   const out = [];
@@ -77,13 +98,34 @@ for (const file of walk(SRC)) {
       const m = line.match(HEX) || line.match(FUNC) || line.match(ARGB);
       violations.push({ rel, line: i + 1, text: line.trim().slice(0, 100), match: m[0] });
     }
+    if (SLATE.test(line)) {
+      const m = line.match(SLATE);
+      violations.push({
+        rel,
+        line: i + 1,
+        text: line.trim().slice(0, 100),
+        match: m[0],
+        reason: "família de cor Tailwind 'slate-*' proibida — use tokens --vyd-*",
+      });
+    }
+    if (STRICT_SCOPE.has(rel) && STRICT_FAMILIES.test(line)) {
+      const m = line.match(STRICT_FAMILIES);
+      violations.push({
+        rel,
+        line: i + 1,
+        text: line.trim().slice(0, 100),
+        match: m[0],
+        reason: 'família de cor Tailwind crua proibida neste arquivo tokenizado — use tokens do DS',
+      });
+    }
   });
 }
 
 if (violations.length > 0) {
   console.error(`\n✗ Cores codificadas encontradas (${violations.length}) fora da allowlist:\n`);
   for (const v of violations) {
-    console.error(`  ${v.rel}:${v.line}  →  ${v.match}   | ${v.text}`);
+    const why = v.reason ? `   [${v.reason}]` : '';
+    console.error(`  ${v.rel}:${v.line}  →  ${v.match}${why}   | ${v.text}`);
   }
   console.error(
     '\nUse tokens do DS (var(--vyd-*) / classe .vyd-*). Para casos legítimos ' +

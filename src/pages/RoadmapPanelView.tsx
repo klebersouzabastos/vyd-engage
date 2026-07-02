@@ -28,17 +28,17 @@ function TaskRow({ t, onOpen, danger }: { t: PanelTask; onOpen: () => void; dang
     <button
       type="button"
       onClick={onOpen}
-      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50"
+      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50"
     >
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-slate-900">{t.title}</p>
-        <p className="truncate text-xs text-slate-500">
+        <p className="truncate text-sm font-medium text-gray-900">{t.title}</p>
+        <p className="truncate text-xs text-gray-500">
           {t.roadmap?.title ? `${t.roadmap.title} · ` : ''}
           {t.type ? TASK_TYPE_LABELS[t.type] : 'Ação'}
         </p>
       </div>
       <span
-        className={`shrink-0 text-xs ${danger ? 'font-medium text-red-600' : 'text-slate-500'}`}
+        className={`shrink-0 text-xs ${danger ? 'font-medium text-red-600' : 'text-gray-500'}`}
       >
         {fmtDate(t.dueDate)}
       </span>
@@ -61,7 +61,7 @@ export function RoadmapPanelView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/60">
+    <div className="min-h-screen bg-gray-50/60">
       <Header
         title="Não deixar passar"
         subtitle="Próximas ações, atrasadas e desdobramentos em risco"
@@ -96,7 +96,7 @@ export function RoadmapPanelView() {
         </div>
 
         {panelQuery.isLoading ? (
-          <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+          <p className="py-12 text-center text-sm text-gray-500">Carregando…</p>
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Próximas ações */}
@@ -110,13 +110,13 @@ export function RoadmapPanelView() {
               </CardHeader>
               <CardContent className="p-0">
                 {panel && panel.upcoming.length > 0 ? (
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-gray-100">
                     {panel.upcoming.map((t) => (
                       <TaskRow key={t.id} t={t} onOpen={() => openRoadmap(t.roadmap?.id)} />
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 py-8 text-center text-sm text-slate-500">Nada agendado.</p>
+                  <p className="px-4 py-8 text-center text-sm text-gray-500">Nada agendado.</p>
                 )}
               </CardContent>
             </Card>
@@ -132,13 +132,13 @@ export function RoadmapPanelView() {
               </CardHeader>
               <CardContent className="p-0">
                 {panel && panel.overdue.length > 0 ? (
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-gray-100">
                     {panel.overdue.map((t) => (
                       <TaskRow key={t.id} t={t} danger onOpen={() => openRoadmap(t.roadmap?.id)} />
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 py-8 text-center text-sm text-slate-500">
+                  <p className="px-4 py-8 text-center text-sm text-gray-500">
                     Nenhuma ação atrasada.
                   </p>
                 )}
@@ -156,17 +156,17 @@ export function RoadmapPanelView() {
               </CardHeader>
               <CardContent className="p-0">
                 {panel && panel.atRisk.length > 0 ? (
-                  <div className="divide-y divide-slate-100">
+                  <div className="divide-y divide-gray-100">
                     {panel.atRisk.map((r: AtRiskRoadmap) => (
                       <button
                         key={r.id}
                         type="button"
                         onClick={() => openRoadmap(r.id)}
-                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-900">{r.title}</p>
-                          <p className="flex items-center gap-1 truncate text-xs text-slate-500">
+                          <p className="truncate text-sm font-medium text-gray-900">{r.title}</p>
+                          <p className="flex items-center gap-1 truncate text-xs text-gray-500">
                             <Building2 className="h-3 w-3" />
                             {r.company.name}
                             {r.empreendimento ? ` · ${r.empreendimento.name}` : ''}
@@ -178,7 +178,7 @@ export function RoadmapPanelView() {
                               {r.overdueCount} atrasada{r.overdueCount > 1 ? 's' : ''}
                             </Badge>
                           )}
-                          <p className="mt-0.5 text-xs text-slate-400">
+                          <p className="mt-0.5 text-xs text-gray-400">
                             últ. {r.lastActivityAt ? fmtDate(r.lastActivityAt) : 'sem atividade'}
                           </p>
                         </div>
@@ -186,8 +186,8 @@ export function RoadmapPanelView() {
                     ))}
                   </div>
                 ) : (
-                  <div className="px-4 py-8 text-center text-sm text-slate-500">
-                    <GitBranch className="mx-auto mb-2 h-6 w-6 text-slate-300" />
+                  <div className="px-4 py-8 text-center text-sm text-gray-500">
+                    <GitBranch className="mx-auto mb-2 h-6 w-6 text-gray-300" />
                     Nenhum desdobramento em risco.
                   </div>
                 )}

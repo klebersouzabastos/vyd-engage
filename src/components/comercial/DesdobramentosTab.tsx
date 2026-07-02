@@ -47,10 +47,10 @@ export function DesdobramentosTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-slate-900">
+        <h3 className="text-lg font-semibold text-gray-900">
           Desdobramentos
           {roadmaps.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-slate-400">{roadmaps.length}</span>
+            <span className="ml-2 text-sm font-normal text-gray-400">{roadmaps.length}</span>
           )}
         </h3>
         <div className="flex flex-wrap items-center gap-2">
@@ -72,12 +72,12 @@ export function DesdobramentosTab() {
       </div>
 
       {listQuery.isLoading ? (
-        <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+        <p className="py-12 text-center text-sm text-gray-500">Carregando…</p>
       ) : roadmaps.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card py-16 text-center">
-          <GitBranch className="h-10 w-10 text-slate-300" />
-          <p className="mt-3 font-medium text-slate-900">Nenhum desdobramento ainda</p>
-          <p className="mt-1 max-w-sm text-sm text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-card py-16 text-center">
+          <GitBranch className="h-10 w-10 text-gray-300" />
+          <p className="mt-3 font-medium text-gray-900">Nenhum desdobramento ainda</p>
+          <p className="mt-1 max-w-sm text-sm text-gray-500">
             Transforme uma empresa ou empreendimento em uma rota de ações comerciais até a proposta.
           </p>
           <Button className="mt-4" onClick={() => setCreateOpen(true)}>
@@ -90,19 +90,19 @@ export function DesdobramentosTab() {
           {roadmaps.map((r) => (
             <li
               key={r.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-card p-4 transition-colors hover:border-slate-300"
+              className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-card p-4 transition-colors hover:border-gray-300"
             >
               <button
                 type="button"
                 onClick={() => navigate(`/app/deep-research/desdobramento/${r.id}`)}
                 className="group flex min-w-0 flex-1 items-center gap-3 text-left"
               >
-                <GitBranch className="h-5 w-5 shrink-0 text-slate-400" />
+                <GitBranch className="h-5 w-5 shrink-0 text-gray-400" />
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-900 group-hover:text-primary">
+                  <p className="truncate font-medium text-gray-900 group-hover:text-primary">
                     {r.title}
                   </p>
-                  <p className="flex items-center gap-1 text-xs text-slate-500">
+                  <p className="flex items-center gap-1 text-xs text-gray-500">
                     <Building2 className="h-3 w-3" />
                     {r.company.name}
                     {r.empreendimento ? ` · ${r.empreendimento.name}` : ''}

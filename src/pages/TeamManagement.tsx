@@ -44,6 +44,15 @@ import { Skeleton } from '../components/ui/skeleton';
 import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api/client';
+import {
+  COMMERCIAL_FUNCTIONS,
+  COMMERCIAL_FUNCTION_LABELS,
+  type CommercialFunction,
+} from '@/types/comercial';
+
+// Radix Select proíbe SelectItem com value="". Usamos um sentinel para "Sem função"
+// e mapeamos de/para string vazia no estado.
+const NO_COMMERCIAL_FUNCTION = '__none__';
 
 interface TeamUser {
   id: string;
@@ -51,6 +60,7 @@ interface TeamUser {
   email: string;
   role: string;
   status: string;
+  commercialFunction: CommercialFunction | null;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -121,6 +131,7 @@ export function TeamManagement() {
   const [editingUser, setEditingUser] = useState<TeamUser | null>(null);
   const [editRole, setEditRole] = useState('');
   const [editStatus, setEditStatus] = useState(false);
+  const [editCommercialFunction, setEditCommercialFunction] = useState('');
   const [savingUser, setSavingUser] = useState(false);
 
   // Invite modal
@@ -136,12 +147,15 @@ export function TeamManagement() {
   const [resendingId, setResendingId] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
+  // GESTOR também acessa a Gestão de Equipe, mas só para definir a Função comercial;
+  // papel/status seguem restritos a ADMIN (o backend impõe o mesmo em users.ts).
+  const isManager = user?.role === 'ADMIN' || user?.role === 'GESTOR';
 
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
       const data = await apiClient.getUsers();
-      setUsers(data);
+      setUsers(data as TeamUser[]);
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar membros da equipe');
     } finally {
@@ -162,16 +176,16 @@ export function TeamManagement() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchUsers();
-      fetchInvitations();
-    }
-  }, [isAdmin, fetchUsers, fetchInvitations]);
+    // GESTOR carrega os membros (para definir função comercial); convites seguem ADMIN.
+    if (isManager) fetchUsers();
+    if (isAdmin) fetchInvitations();
+  }, [isManager, isAdmin, fetchUsers, fetchInvitations]);
 
   const handleOpenEditModal = (teamUser: TeamUser) => {
     setEditingUser(teamUser);
     setEditRole(teamUser.role);
     setEditStatus(teamUser.status === 'ACTIVE');
+    setEditCommercialFunction(teamUser.commercialFunction || '');
   };
 
   const handleSaveUser = async () => {
@@ -182,6 +196,7 @@ export function TeamManagement() {
       await apiClient.updateUser(editingUser.id, {
         role: editRole,
         status: newStatus,
+        commercialFunction: editCommercialFunction || null,
       });
       toast.success('Membro atualizado com sucesso');
       setEditingUser(null);
@@ -275,7 +290,7 @@ export function TeamManagement() {
   };
 
   // Access control: non-admin users see a forbidden state
-  if (!isAdmin) {
+  if (!isManager) {
     return (
       <div className="min-h-screen">
         <Header title="Equipe" subtitle="Gerenciamento de membros e convites" />
@@ -471,7 +486,7 @@ export function TeamManagement() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Papel</Label>
-              <Select value={editRole} onValueChange={setEditRole}>
+              <Select value={editRole} onValueChange={setEditRole} disabled={!isAdmin}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o papel" />
                 </SelectTrigger>
@@ -484,12 +499,36 @@ export function TeamManagement() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Função comercial</Label>
+              <Select
+                value={editCommercialFunction || NO_COMMERCIAL_FUNCTION}
+                onValueChange={(value) =>
+                  setEditCommercialFunction(value === NO_COMMERCIAL_FUNCTION ? '' : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a função comercial" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_COMMERCIAL_FUNCTION}>Sem função</SelectItem>
+                  {COMMERCIAL_FUNCTIONS.map((fn) => (
+                    <SelectItem key={fn} value={fn}>
+                      {COMMERCIAL_FUNCTION_LABELS[fn]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
                 <Label>Status</Label>
-                <p className="text-sm text-gray-500 mt-0.5">{editStatus ? 'Ativo' : 'Inativo'}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {editStatus ? 'Ativo' : 'Inativo'}
+                </p>
               </div>
-              <Switch checked={editStatus} onCheckedChange={setEditStatus} />
+              <Switch checked={editStatus} onCheckedChange={setEditStatus} disabled={!isAdmin} />
             </div>
           </div>
 

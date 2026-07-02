@@ -21,8 +21,9 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
+import { RichTextEditor } from '../components/ui/RichTextEditor';
+import { stripHtml } from '../lib/richText';
 import {
   Dialog,
   DialogContent,
@@ -155,7 +156,7 @@ export function RoadmapView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/60">
+    <div className="min-h-screen bg-gray-50/60">
       <Header
         title={roadmap?.title ?? 'Desdobramento'}
         subtitle="Rota de ações comerciais até a proposta"
@@ -183,9 +184,9 @@ export function RoadmapView() {
         </Breadcrumb>
 
         {roadmapQuery.isLoading ? (
-          <p className="py-12 text-center text-sm text-slate-500">Carregando…</p>
+          <p className="py-12 text-center text-sm text-gray-500">Carregando…</p>
         ) : !roadmap ? (
-          <p className="py-12 text-center text-sm text-slate-500">Desdobramento não encontrado.</p>
+          <p className="py-12 text-center text-sm text-gray-500">Desdobramento não encontrado.</p>
         ) : (
           <>
             {/* Resumo + progresso + avançar */}
@@ -194,12 +195,12 @@ export function RoadmapView() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-slate-900">{roadmap.title}</h2>
+                      <h2 className="text-xl font-bold text-gray-900">{roadmap.title}</h2>
                       <Badge variant={STATUS_VARIANT[roadmap.status]}>
                         {ROADMAP_STATUS_LABELS[roadmap.status]}
                       </Badge>
                     </div>
-                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <Building2 className="h-3.5 w-3.5" />
                         {roadmap.company.name}
@@ -247,7 +248,7 @@ export function RoadmapView() {
                 </div>
 
                 <div>
-                  <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+                  <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
                     <span>Progresso até a proposta</span>
                     <span>
                       {completed}/{tasks.length} ações · {progress}%
@@ -296,18 +297,26 @@ export function RoadmapView() {
                 </CardHeader>
                 <CardContent>
                   {tasks.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-sm text-slate-500">
+                    <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center text-sm text-gray-500">
                       Nenhuma ação ainda. Escolha um playbook ou adicione ações manualmente.
                     </div>
                   ) : (
                     <ul className="space-y-2">
                       {tasks.map((t) => {
-                        const overdue =
-                          t.status !== 'COMPLETED' && t.dueDate && new Date(t.dueDate) < new Date();
+                        const overdue = (() => {
+                          // "Atrasado" = vencimento no PASSADO (compara só a data, horário
+                          // local): uma ação que vence HOJE ainda não está atrasada.
+                          if (t.status === 'COMPLETED' || !t.dueDate) return false;
+                          const due = new Date(t.dueDate);
+                          due.setHours(0, 0, 0, 0);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return due < today;
+                        })();
                         return (
                           <li
                             key={t.id}
-                            className="flex items-start gap-2 rounded-lg border border-slate-200 p-3"
+                            className="flex items-start gap-2 rounded-lg border border-gray-200 p-3"
                           >
                             <button
                               type="button"
@@ -318,7 +327,7 @@ export function RoadmapView() {
                               {t.status === 'COMPLETED' ? (
                                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                               ) : (
-                                <Circle className="h-5 w-5 text-slate-300" />
+                                <Circle className="h-5 w-5 text-gray-300" />
                               )}
                             </button>
                             <div className="min-w-0 flex-1">
@@ -328,8 +337,8 @@ export function RoadmapView() {
                                 title="Registrar ação"
                                 className={`w-full truncate text-left text-sm font-medium hover:underline ${
                                   t.status === 'COMPLETED'
-                                    ? 'text-slate-400 line-through'
-                                    : 'text-slate-900'
+                                    ? 'text-gray-400 line-through'
+                                    : 'text-gray-900'
                                 }`}
                               >
                                 {t.title}
@@ -342,15 +351,20 @@ export function RoadmapView() {
                                 )}
                                 <span
                                   className={
-                                    overdue ? 'font-medium text-red-600' : 'text-slate-500'
+                                    overdue ? 'font-medium text-destructive' : 'text-gray-500'
                                   }
                                 >
                                   {fmtDate(t.dueDate)}
                                 </span>
-                                {t.lead && <span className="text-slate-500">· {t.lead.name}</span>}
+                                {overdue && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Atrasado
+                                  </Badge>
+                                )}
+                                {t.lead && <span className="text-gray-500">· {t.lead.name}</span>}
                                 <div className="ml-auto flex items-center gap-1">
                                   <select
-                                    className="rounded border border-slate-200 px-1 py-0.5 text-xs text-slate-500"
+                                    className="rounded border border-gray-200 px-1 py-0.5 text-xs text-gray-500"
                                     style={{ maxWidth: 120 }}
                                     value={t.assignedTo ?? ''}
                                     onChange={(e) =>
@@ -367,7 +381,7 @@ export function RoadmapView() {
                                   </select>
                                   <input
                                     type="date"
-                                    className="rounded border border-slate-200 px-1 py-0.5 text-xs text-slate-500"
+                                    className="rounded border border-gray-200 px-1 py-0.5 text-xs text-gray-500"
                                     value={
                                       t.dueDate
                                         ? new Date(t.dueDate).toISOString().slice(0, 10)
@@ -508,7 +522,7 @@ function AddContactDialog({
               </SelectContent>
             </Select>
             {!leadsQuery.isLoading && leads.length === 0 && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-gray-500">
                 Nenhum contato disponível desta empresa. Cadastre contatos vinculados à empresa
                 primeiro.
               </p>
@@ -778,7 +792,7 @@ function RegisterActionDialog({
     try {
       await apiClient.registerTaskAction(task.id, {
         outcome,
-        note: note.trim() || undefined,
+        note: stripHtml(note) ? note : undefined,
         date: date || undefined,
         newDueDate: outcome === 'REAGENDAR' ? newDueDate : undefined,
       });
@@ -836,12 +850,13 @@ function RegisterActionDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="rg-note">Nota</Label>
-            <Textarea
+            <RichTextEditor
               id="rg-note"
-              rows={4}
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={setNote}
               placeholder="O que aconteceu nesta ação?"
+              minHeight={110}
+              ariaLabel="Nota da ação"
             />
           </div>
         </div>

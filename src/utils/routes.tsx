@@ -202,7 +202,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'team',
-        element: guard(TeamManagement, ADMIN_ROLES),
+        element: guard(TeamManagement, MANAGER_ROLES),
       },
       {
         path: 'pipeline',

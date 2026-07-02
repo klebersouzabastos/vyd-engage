@@ -18,7 +18,7 @@ export function TimelineItem({
   description,
   date,
   icon,
-  iconClassName = 'bg-gray-100 text-gray-600',
+  iconClassName = 'bg-muted text-muted-foreground',
 }: TimelineItemProps) {
   return (
     <div className="relative flex gap-4 py-3 group" key={id}>
@@ -32,12 +32,12 @@ export function TimelineItem({
       </div>
       <div className="flex-1 min-w-0 pb-3">
         <div className="flex items-center gap-2 flex-wrap mb-1">
-          <span className="text-sm font-medium text-gray-900">{title}</span>
-          {subtitle && <span className="text-xs text-gray-500">{subtitle}</span>}
-          <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{date}</span>
+          <span className="text-sm font-medium text-foreground">{title}</span>
+          {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
+          <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">{date}</span>
         </div>
         {description && (
-          <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">{description}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{description}</p>
         )}
       </div>
     </div>
@@ -52,7 +52,7 @@ interface TimelineProps {
 export function Timeline({ children, className }: TimelineProps) {
   return (
     <div className={cn('relative', className)}>
-      <div className="absolute left-5 top-0 bottom-0 w-px bg-gray-200 z-0" />
+      <div className="absolute left-5 top-0 bottom-0 w-px bg-border z-0" />
       <div className="space-y-1">{children}</div>
     </div>
   );

@@ -63,6 +63,25 @@ export interface CreateEmpreendimentoInput {
 
 export type UpdateEmpreendimentoInput = Partial<Omit<CreateEmpreendimentoInput, 'companyId'>>;
 
+// ---- Função comercial (função responsável por um passo do playbook) ----
+export type CommercialFunction = 'SDR' | 'CLOSER' | 'PRE_VENDAS' | 'GESTOR' | 'OUTRO';
+
+export const COMMERCIAL_FUNCTIONS: CommercialFunction[] = [
+  'SDR',
+  'CLOSER',
+  'PRE_VENDAS',
+  'GESTOR',
+  'OUTRO',
+];
+
+export const COMMERCIAL_FUNCTION_LABELS: Record<CommercialFunction, string> = {
+  SDR: 'SDR',
+  CLOSER: 'Closer',
+  PRE_VENDAS: 'Pré-vendas',
+  GESTOR: 'Gestor',
+  OUTRO: 'Outro',
+};
+
 // ---- Playbook ----
 export interface PlaybookStep {
   id?: string;
@@ -70,6 +89,7 @@ export interface PlaybookStep {
   title: string;
   actionType: TaskType;
   targetRole?: StakeholderRole | null;
+  responsibleFunction?: CommercialFunction | null;
   offsetDays: number;
   priority: TaskPriority;
   description?: string | null;
@@ -156,6 +176,11 @@ export interface CommercialRoadmap {
   tasks: RoadmapTask[];
 }
 
+export interface RoleAssignment {
+  function: CommercialFunction;
+  userId: string;
+}
+
 export interface CreateRoadmapInput {
   title: string;
   companyId: string;
@@ -165,6 +190,7 @@ export interface CreateRoadmapInput {
   status?: CommercialRoadmapStatus;
   targetProposalDate?: string;
   notes?: string;
+  roleAssignments?: RoleAssignment[];
 }
 
 export interface UpdateRoadmapInput {

@@ -47,6 +47,10 @@ model User {
   // Super-admin da plataforma (cross-tenant). O papel por tenant continua em `role`.
   isPlatformAdmin Boolean @default(false)
 
+  // Função comercial (SDR/Closer/…). Só pré-preenche o mapeamento de playbook;
+  // não altera acesso (role permanece a fonte de verdade de permissões).
+  commercialFunction CommercialFunction?
+
   // Tenant relationship
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1668,6 +1672,16 @@ enum StakeholderPosture {
   DESCONHECIDO
 }
 
+// Função comercial (interna) responsável por um passo do playbook. Mapeada a
+// pessoas reais ao aplicar o playbook. NÃO altera papéis de acesso (UserRole).
+enum CommercialFunction {
+  SDR
+  CLOSER
+  PRE_VENDAS
+  GESTOR
+  OUTRO
+}
+
 model Empreendimento {
   id       String @id @default(uuid())
   tenantId String
@@ -1734,6 +1748,8 @@ model PlaybookStep {
   title       String
   actionType  TaskType         @default(OUTRO)
   targetRole  StakeholderRole?
+  // Função comercial responsável por executar este passo (opcional).
+  responsibleFunction CommercialFunction?
   offsetDays  Int              @default(0)
   priority    TaskPriority     @default(MEDIUM)
   description String?
