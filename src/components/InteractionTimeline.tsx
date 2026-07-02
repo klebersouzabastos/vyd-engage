@@ -30,6 +30,7 @@ import {
 } from './ui/alert-dialog';
 import { useState } from 'react';
 import { sanitizeRichHtml, isRichHtml } from '@/lib/richText';
+import { RICH_CONTENT_CLASS } from '@/components/ui/RichTextEditor';
 
 interface InteractionTimelineProps {
   leadId: number;
@@ -358,7 +359,7 @@ export function InteractionTimeline({
                     </div>
                     {isRichHtml(interaction.content) ? (
                       <div
-                        className="text-sm text-foreground [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:ml-5 [&_ol]:ml-5 [&_a]:text-primary [&_a]:underline [&_p]:my-1"
+                        className={RICH_CONTENT_CLASS}
                         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(interaction.content) }}
                       />
                     ) : (
