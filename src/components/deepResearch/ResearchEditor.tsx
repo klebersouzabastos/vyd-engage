@@ -122,7 +122,7 @@ export function ResearchEditor({
         <div className="space-y-5 py-2">
           {/* 1. Tipo */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold text-slate-800">1. Tipo de pesquisa</Label>
+            <Label className="text-sm font-semibold text-gray-800">1. Tipo de pesquisa</Label>
             <TemplatePicker
               templates={templates}
               selectedId={selectedTemplateId}
@@ -135,7 +135,7 @@ export function ResearchEditor({
               {/* 2. Informações */}
               {placeholders.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-800">
+                  <Label className="text-sm font-semibold text-gray-800">
                     2. Sobre o que é a pesquisa
                   </Label>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -143,7 +143,7 @@ export function ResearchEditor({
                       const example = placeholderExample(key);
                       return (
                         <div key={key} className="space-y-1">
-                          <Label htmlFor={`f-${key}`} className="text-xs text-slate-500">
+                          <Label htmlFor={`f-${key}`} className="text-xs text-gray-500">
                             {friendlyLabel(key)}
                           </Label>
                           <Input
@@ -161,7 +161,7 @@ export function ResearchEditor({
 
               {/* 3. Título */}
               <div className="space-y-1">
-                <Label htmlFor="research-title" className="text-sm font-semibold text-slate-800">
+                <Label htmlFor="research-title" className="text-sm font-semibold text-gray-800">
                   3. Título da pesquisa
                 </Label>
                 <Input
@@ -177,9 +177,9 @@ export function ResearchEditor({
 
               {/* 4. Contexto adicional */}
               <div className="space-y-1">
-                <Label htmlFor="extra-context" className="text-sm font-semibold text-slate-800">
+                <Label htmlFor="extra-context" className="text-sm font-semibold text-gray-800">
                   4. Informações adicionais{' '}
-                  <span className="font-normal text-slate-400">(opcional)</span>
+                  <span className="font-normal text-gray-400">(opcional)</span>
                 </Label>
                 <Textarea
                   id="extra-context"
@@ -192,13 +192,13 @@ export function ResearchEditor({
 
               {/* Resumo */}
               {outline.length > 0 && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                     <ListChecks className="h-4 w-4 text-primary" />O que você vai receber
                   </p>
                   <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                     {outline.map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+                      <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
                         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
                         {item}
                       </li>

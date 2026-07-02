@@ -6,16 +6,21 @@ import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { RichTextEditor } from '../ui/RichTextEditor';
 import { usePlaybooks, usePlaybookActions } from '../../hooks/useComercial';
 import {
   TASK_TYPE_LABELS,
   TASK_PRIORITY_LABELS,
   STAKEHOLDER_ROLE_LABELS,
+  COMMERCIAL_FUNCTIONS,
+  COMMERCIAL_FUNCTION_LABELS,
   type PlaybookStep,
   type PlaybookTemplate,
   type TaskType,
   type TaskPriority,
   type StakeholderRole,
+  type CommercialFunction,
 } from '../../types/comercial';
 
 interface Props {
@@ -34,6 +39,7 @@ function emptyStep(order: number): PlaybookStep {
     title: '',
     actionType: 'LIGACAO',
     targetRole: null,
+    responsibleFunction: null,
     offsetDays: 0,
     priority: 'MEDIUM',
   };
@@ -89,6 +95,7 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
           title: s.title.trim(),
           actionType: s.actionType,
           targetRole: s.targetRole ?? null,
+          responsibleFunction: s.responsibleFunction ?? null,
           offsetDays: Number(s.offsetDays) || 0,
           priority: s.priority,
           description: s.description ?? null,
@@ -125,47 +132,67 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
               </Button>
             </div>
             {playbooksQuery.isLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">Carregando…</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
             ) : (
-              <ul className="space-y-2">
-                {playbooks.map((pb) => (
-                  <li key={pb.id} className="rounded-lg border border-slate-200 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-2 font-medium text-slate-900">
-                          {pb.name}
-                          {pb.isBuiltin && (
-                            <Badge variant="outline" className="gap-1 text-xs">
-                              <Lock className="h-3 w-3" /> padrão
-                            </Badge>
+              <TooltipProvider delayDuration={200}>
+                <ul className="space-y-2">
+                  {playbooks.map((pb) => (
+                    <li key={pb.id} className="rounded-lg border border-border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2 font-medium text-foreground">
+                            {pb.name}
+                            {pb.isBuiltin && (
+                              <Badge variant="outline" className="gap-1 text-xs">
+                                <Lock className="h-3 w-3" /> padrão
+                              </Badge>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{pb.steps.length} passos</p>
+                        </div>
+                        <div className="flex shrink-0 gap-1">
+                          {pb.isBuiltin ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Editar"
+                                    disabled
+                                    className="pointer-events-none"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>Playbook padrão não é editável</TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Editar"
+                              onClick={() => startEdit(pb)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                           )}
-                        </p>
-                        <p className="text-xs text-slate-500">{pb.steps.length} passos</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Excluir"
+                            disabled={pb.isBuiltin}
+                            onClick={() => deletePlaybook(pb.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex shrink-0 gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Editar"
-                          disabled={pb.isBuiltin}
-                          onClick={() => startEdit(pb)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Excluir"
-                          disabled={pb.isBuiltin}
-                          onClick={() => deletePlaybook(pb.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </TooltipProvider>
             )}
           </div>
         ) : (
@@ -202,9 +229,9 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
             <div className="space-y-2">
               <Label>Passos</Label>
               {steps.map((s, i) => (
-                <div key={i} className="space-y-2 rounded-lg border border-slate-200 p-3">
+                <div key={i} className="space-y-2 rounded-lg border border-border p-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-400">#{i + 1}</span>
+                    <span className="text-xs font-semibold text-muted-foreground">#{i + 1}</span>
                     <Input
                       value={s.title}
                       onChange={(e) => setStep(i, { title: e.target.value })}
@@ -217,10 +244,10 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
                       aria-label="Remover passo"
                       onClick={() => removeStep(i)}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     <Select
                       value={s.actionType}
                       onValueChange={(v) => setStep(i, { actionType: v as TaskType })}
@@ -232,6 +259,26 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
                         {TASK_TYPES.map((t) => (
                           <SelectItem key={t} value={t}>
                             {TASK_TYPE_LABELS[t]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={s.responsibleFunction ?? NONE}
+                      onValueChange={(v) =>
+                        setStep(i, {
+                          responsibleFunction: v === NONE ? null : (v as CommercialFunction),
+                        })
+                      }
+                    >
+                      <SelectTrigger aria-label="Função responsável">
+                        <SelectValue placeholder="Função responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE}>Sem função</SelectItem>
+                        {COMMERCIAL_FUNCTIONS.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {COMMERCIAL_FUNCTION_LABELS[f]}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -276,9 +323,20 @@ export function PlaybooksManager({ open, onOpenChange }: Props) {
                         value={s.offsetDays}
                         onChange={(e) => setStep(i, { offsetDays: Number(e.target.value) })}
                         className="w-16"
+                        aria-label="SLA em dias"
                       />
-                      <span className="text-xs text-slate-500">dias</span>
+                      <span className="text-xs text-muted-foreground">SLA (dias)</span>
                     </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Descrição do passo</Label>
+                    <RichTextEditor
+                      value={s.description ?? ''}
+                      onChange={(html) => setStep(i, { description: html })}
+                      placeholder="Detalhe o que fazer neste passo…"
+                      minHeight={90}
+                      ariaLabel={`Descrição do passo ${i + 1}`}
+                    />
                   </div>
                 </div>
               ))}

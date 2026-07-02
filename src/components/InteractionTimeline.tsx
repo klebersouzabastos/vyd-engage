@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { useState } from 'react';
+import { sanitizeRichHtml, isRichHtml } from '@/lib/richText';
 
 interface InteractionTimelineProps {
   leadId: number;
@@ -355,9 +356,16 @@ export function InteractionTimeline({
                         <Trash2 size={16} className="text-red-600" />
                       </button>
                     </div>
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                      {interaction.content}
-                    </p>
+                    {isRichHtml(interaction.content) ? (
+                      <div
+                        className="text-sm text-foreground [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:ml-5 [&_ol]:ml-5 [&_a]:text-primary [&_a]:underline [&_p]:my-1"
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(interaction.content) }}
+                      />
+                    ) : (
+                      <p className="text-sm text-foreground whitespace-pre-wrap">
+                        {interaction.content}
+                      </p>
+                    )}
                     {interaction.metadata && Object.keys(interaction.metadata).length > 0 && (
                       <div className="mt-2 pt-2 border-t border-gray-300">
                         <div className="text-xs text-gray-600 space-y-1">

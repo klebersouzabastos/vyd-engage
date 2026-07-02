@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { CommercialRoadmapStatus, StakeholderRole, StakeholderPosture } from '@prisma/client';
+import {
+  CommercialRoadmapStatus,
+  StakeholderRole,
+  StakeholderPosture,
+  CommercialFunction,
+} from '@prisma/client';
 import { roadmapService } from '../services/roadmapService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
@@ -24,6 +29,10 @@ const createSchema = z.object({
   status: z.nativeEnum(CommercialRoadmapStatus).optional(),
   targetProposalDate: z.string().datetime().optional(),
   notes: z.string().optional(),
+  // Mapeamento função→pessoa escolhido ao aplicar um playbook com funções.
+  roleAssignments: z
+    .array(z.object({ function: z.nativeEnum(CommercialFunction), userId: z.string().uuid() }))
+    .optional(),
 });
 
 const updateSchema = z.object({

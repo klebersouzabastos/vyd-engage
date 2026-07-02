@@ -117,7 +117,7 @@ export function AdminProcessPanel({ research, onSaved }: AdminProcessPanelProps)
         placeholder="Cole aqui o relatório em markdown…"
       />
       <div className="mt-2 flex items-center justify-between">
-        <span className={tooLarge ? 'text-xs text-red-600' : 'text-xs text-slate-400'}>
+        <span className={tooLarge ? 'text-xs text-red-600' : 'text-xs text-gray-400'}>
           {tooLarge
             ? `Máx. ${MAX_REPORT.toLocaleString('pt-BR')} caracteres.`
             : `${reportMarkdown.length.toLocaleString('pt-BR')} caracteres`}

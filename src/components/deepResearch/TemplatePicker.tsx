@@ -11,7 +11,7 @@ interface TemplatePickerProps {
 export function TemplatePicker({ templates, selectedId, onSelect }: TemplatePickerProps) {
   if (!templates.length) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-gray-500">
         Nenhum tipo disponível. Um admin da plataforma precisa criar um modelo.
       </p>
     );
@@ -30,7 +30,7 @@ export function TemplatePicker({ templates, selectedId, onSelect }: TemplatePick
             className={`relative rounded-xl border p-4 text-left transition-all ${
               isSelected
                 ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
             {isSelected && (
@@ -38,9 +38,9 @@ export function TemplatePicker({ templates, selectedId, onSelect }: TemplatePick
                 <Check className="h-3 w-3 text-white" />
               </span>
             )}
-            <p className="pr-6 font-semibold text-slate-900">{t.name}</p>
+            <p className="pr-6 font-semibold text-gray-900">{t.name}</p>
             {t.description && (
-              <p className="mt-1 text-sm leading-snug text-slate-500">{t.description}</p>
+              <p className="mt-1 text-sm leading-snug text-gray-500">{t.description}</p>
             )}
           </button>
         );

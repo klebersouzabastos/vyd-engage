@@ -24,6 +24,7 @@ import {
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { EmailFormatToolbar, useEmailFormatter } from '../components/email/EmailFormatToolbar';
+import { stripHtml } from '@/lib/richText';
 
 interface Conversation {
   leadId: string;
@@ -278,10 +279,7 @@ export function Inbox() {
   };
 
   const truncateContent = (content: string, maxLen = 60) => {
-    const cleaned = content
-      .replace(/<[^>]*>/g, '')
-      .replace(/\n/g, ' ')
-      .trim();
+    const cleaned = stripHtml(content);
     return cleaned.length > maxLen ? cleaned.slice(0, maxLen) + '...' : cleaned;
   };
 
@@ -579,7 +577,7 @@ export function Inbox() {
                                 </a>
                               )}
                             <p className="text-sm whitespace-pre-wrap break-words">
-                              {msg.content.replace(/<[^>]*>/g, '')}
+                              {stripHtml(msg.content)}
                             </p>
                             <div
                               className={`flex items-center gap-1.5 mt-1.5 ${isOutbound ? 'justify-end' : 'justify-start'}`}

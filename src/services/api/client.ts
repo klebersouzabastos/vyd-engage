@@ -1489,13 +1489,18 @@ class ApiClient {
         name: string;
         email: string;
         role: string;
-        status?: string;
-        createdAt?: string;
+        status: string;
+        commercialFunction: string | null;
+        createdAt: string;
+        lastLoginAt: string | null;
       }>
     >('/api/v1/users');
   }
 
-  async updateUser(id: string, data: { role?: string; status?: string }) {
+  async updateUser(
+    id: string,
+    data: { role?: string; status?: string; commercialFunction?: string | null }
+  ) {
     return this.request<{ id: string; name: string; email: string; role: string }>(
       `/api/v1/users/${id}`,
       {
