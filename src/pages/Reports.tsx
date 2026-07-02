@@ -339,14 +339,6 @@ export function Reports() {
               Criar Rápido
             </Button>
           </div>
-
-          <Button
-            className="bg-primary hover:bg-primary-dark gap-2"
-            onClick={() => setShowWizard(true)}
-          >
-            <Plus size={16} />
-            Novo Relatório
-          </Button>
         </div>
 
         {/* Wizard Dialog */}

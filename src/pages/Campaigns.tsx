@@ -81,12 +81,6 @@ export function Campaigns() {
       <Header title="Campanhas de Email" subtitle="Crie, segmente e meça suas campanhas" />
 
       <div className="p-4 md:p-8">
-        <div className="mb-6 flex items-center justify-end">
-          <Button onClick={() => navigate('/app/campaigns/new')} className="gap-2">
-            <Plus size={16} /> Nova Campanha
-          </Button>
-        </div>
-
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />

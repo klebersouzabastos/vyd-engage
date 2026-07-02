@@ -578,27 +578,6 @@ export function Pipeline() {
                 <p className="text-xs text-red-600">{errorMessage}</p>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => {
-                  setSettingsColumnOrder(columns.map((c) => c.id));
-                  setSettingsOpen(true);
-                }}
-              >
-                <Settings size={16} />
-                Configurações
-              </Button>
-              <Button
-                variant="outline"
-                className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
-                onClick={() => setCreateFunnelOpen(true)}
-              >
-                <Plus size={16} />
-                Novo Funil
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -681,24 +660,6 @@ export function Pipeline() {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
-              onClick={() => setCreateColumnOpen(true)}
-            >
-              <Plus size={16} />
-              Nova Coluna
-            </Button>
-            <Button
-              className="bg-primary hover:bg-primary-dark gap-2"
-              onClick={() => navigate('/app/leads/new')}
-            >
-              <Plus size={16} />
-              Novo Lead
-            </Button>
           </div>
         </div>
 

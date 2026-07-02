@@ -59,7 +59,6 @@ import {
   Check,
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
-import { ExportButton } from '../components/ExportButton';
 import { apiClient } from '../services/api/client';
 import { useSavedViews } from '../hooks/useSavedViews';
 import { SavedViewsBar } from '../components/filters/SavedViewsBar';
@@ -546,30 +545,6 @@ export function Deals() {
                 <LayoutGrid size={16} aria-hidden="true" />
               </button>
             </div>
-
-            {viewMode === 'list' && (
-              <ExportButton
-                onExport={async (format) => {
-                  const filters: Record<string, string> = {};
-                  if (search.trim()) filters.search = search.trim();
-                  if (stageFilter !== 'ALL') filters.stage = stageFilter;
-                  return apiClient.exportDealsDownload(format, filters);
-                }}
-                filename="deals-export"
-                label="Exportar"
-              />
-            )}
-
-            <Button
-              onClick={() => {
-                setEditingDeal(null);
-                setFormOpen(true);
-              }}
-              className="gap-2"
-            >
-              <Plus size={16} />
-              Novo Deal
-            </Button>
           </div>
         </div>
 
@@ -682,16 +657,6 @@ export function Deals() {
                 {errorMessage && editingFunnelId && (
                   <p className="text-xs text-red-600">{errorMessage}</p>
                 )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
-                  onClick={() => setCreateFunnelOpen(true)}
-                >
-                  <Plus size={16} />
-                  Novo Pipeline
-                </Button>
               </div>
             </div>
           </div>

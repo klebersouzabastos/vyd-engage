@@ -216,17 +216,6 @@ export function Companies() {
               </SelectContent>
             </Select>
           </div>
-
-          <Button
-            onClick={() => {
-              setEditingCompany(null);
-              setFormOpen(true);
-            }}
-            className="gap-2"
-          >
-            <Plus size={16} />
-            Nova Empresa
-          </Button>
         </div>
 
         {/* Table */}

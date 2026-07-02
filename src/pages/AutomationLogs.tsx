@@ -327,10 +327,7 @@ export function AutomationLogs() {
       <Header title="Logs de Automação" subtitle="Histórico de execuções e métricas" />
 
       <div className="p-8">
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="outline" className="gap-2" onClick={() => navigate('/app/automations')}>
-            <ArrowLeft size={16} /> Voltar para Automações
-          </Button>
+        <div className="flex items-center justify-end mb-6">
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('logs')}

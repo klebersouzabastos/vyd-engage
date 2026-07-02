@@ -215,15 +215,6 @@ export function WhatsAppTemplates() {
                 </SelectContent>
               </Select>
             )}
-            <Button
-              variant="outline"
-              onClick={() => selectedConnectionId && loadTemplates(selectedConnectionId)}
-              disabled={!selectedConnectionId || loadingTemplates}
-              className="gap-2"
-            >
-              <RefreshCw size={16} className={loadingTemplates ? 'animate-spin' : ''} />
-              Atualizar
-            </Button>
           </div>
         </div>
 

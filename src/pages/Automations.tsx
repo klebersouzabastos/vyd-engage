@@ -147,26 +147,6 @@ export function Automations() {
       <Header title="Automações" subtitle="Configure e gerencie seus fluxos automáticos" />
 
       <div className="p-8">
-        {/* Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => navigate('/app/automations/logs')}
-          >
-            <Eye size={16} /> Ver Logs
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              className="bg-primary hover:bg-primary-dark gap-2"
-              onClick={() => navigate('/app/automations/new/builder')}
-            >
-              <Plus size={16} />
-              Nova automação
-            </Button>
-          </div>
-        </div>
-
         {/* Empty State */}
         {automationsList.length === 0 ? (
           <div className="text-center py-16">

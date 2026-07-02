@@ -203,10 +203,6 @@ export function Products() {
               className="pl-8"
             />
           </div>
-          <Button onClick={openCreate} className="flex items-center gap-2">
-            <Plus size={16} />
-            Novo produto
-          </Button>
         </div>
 
         {/* Table */}

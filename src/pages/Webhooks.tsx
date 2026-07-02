@@ -286,10 +286,6 @@ export function Webhooks() {
                 Envie notificacoes em tempo real para URLs externas quando eventos acontecerem.
               </p>
             </div>
-            <Button onClick={openCreate}>
-              <Plus size={16} className="mr-2" />
-              Criar Webhook
-            </Button>
           </div>
 
           {/* Table */}

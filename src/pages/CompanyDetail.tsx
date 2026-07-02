@@ -209,38 +209,27 @@ export function CompanyDetail() {
 
         {/* Company header card */}
         <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 mb-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Building2 size={28} className="text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{company.name}</h2>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                  {company.industry && <span>{company.industry}</span>}
-                  {company.size && (
-                    <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
-                      {SIZE_LABELS[company.size]}
-                    </span>
-                  )}
-                  {company.domain && (
-                    <span className="flex items-center gap-1">
-                      <Globe size={12} />
-                      {company.domain}
-                    </span>
-                  )}
-                </div>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Building2 size={28} className="text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{company.name}</h2>
+              <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                {company.industry && <span>{company.industry}</span>}
+                {company.size && (
+                  <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                    {SIZE_LABELS[company.size]}
+                  </span>
+                )}
+                {company.domain && (
+                  <span className="flex items-center gap-1">
+                    <Globe size={12} />
+                    {company.domain}
+                  </span>
+                )}
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => setEditFormOpen(true)}
-            >
-              <Pencil size={14} />
-              Editar
-            </Button>
           </div>
 
           {/* Stats */}
