@@ -71,7 +71,8 @@
     "tailwind-merge": "*",
     "tailwindcss": "*",
     "vaul": "^1.1.2",
-    "vyd-design-system": "^1.0.0",
+    "vyd-design-system": "^2.0.0",
+    "vyd-react": "^2.0.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^3.22.4"
   },

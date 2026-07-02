@@ -3,10 +3,9 @@ import { NuqsAdapter } from 'nuqs/adapters/react-router/v7';
 import { useState, useEffect } from 'react';
 import { OnboardingTour } from '../OnboardingTour';
 import { CommandPalette } from '../CommandPalette';
-import { SidePanel, SidePanelBody } from '../SidePanel';
-import { SidePanelProvider, useSidePanel } from '@/contexts/SidePanelContext';
+import { SidePanel } from '../SidePanel';
+import { SidePanelProvider } from '@/contexts/SidePanelContext';
 import { SuggestionFab } from '../SuggestionFab';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Topbar } from './Topbar';
 import { RibbonTabs } from './RibbonTabs';
 import { StatusBar } from './StatusBar';
@@ -14,9 +13,6 @@ import { StatusBar } from './StatusBar';
 const RIBBON_COLLAPSED_KEY = 'vyd-ribbon-collapsed';
 
 function ShellInner() {
-  const { open: panelOpen } = useSidePanel();
-  const isDesktop = useMediaQuery('(min-width: 1025px)');
-
   // Colapsar/expandir a FAIXA DE NAVEGAÇÃO (mantém as categorias — padrão Office/Autodesk).
   const [ribbonCollapsed, setRibbonCollapsed] = useState(() => {
     try {
@@ -33,15 +29,10 @@ function ShellInner() {
     }
   }, [ribbonCollapsed]);
 
-  // O SidePanel vira COLUNA (rightpanel) só no desktop; senão é overlay (Sheet).
-  const rpAsColumn = isDesktop && panelOpen;
-
-  const appClass = [
-    'vyd-app',
-    'vyd-app--no-rail',
-    ribbonCollapsed && 'vyd-app--ribbon-collapsed',
-    !rpAsColumn && 'app--no-rp',
-  ]
+  // Shell v2 (vyd-design-system@2, AGENTS.md) = COLUNA ÚNICA: sem leftrail nem
+  // rightpanel. O canvas ocupa a largura toda; detalhes de Lead/Deal são overlay
+  // (Sheet), nunca painel lateral do shell.
+  const appClass = ['vyd-app', ribbonCollapsed && 'vyd-app--ribbon-collapsed']
     .filter(Boolean)
     .join(' ');
 
@@ -69,22 +60,18 @@ function ShellInner() {
         </div>
       </main>
 
-      <aside className="vyd-rightpanel" aria-label="Painel de detalhes">
-        {rpAsColumn && <SidePanelBody />}
-      </aside>
-
       <StatusBar />
 
-      {/* Overlays globais (sem regressão — só mudam de host) */}
+      {/* Overlays globais. O SidePanel é sempre overlay (Sheet) — nunca coluna. */}
       <CommandPalette />
-      {!isDesktop && <SidePanel />}
+      <SidePanel />
       <OnboardingTour />
       <SuggestionFab />
     </div>
   );
 }
 
-/** Chrome global de /app: o app-shell (ribbon Autodesk) do vyd-design-system. */
+/** Chrome global de /app: o app-shell (ribbon Autodesk) do vyd-design-system@2. */
 export function AppShell() {
   return (
     <NuqsAdapter>
