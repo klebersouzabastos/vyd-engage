@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 interface WhatsAppConnection {
   id: string;
@@ -172,21 +171,6 @@ export function WhatsAppTemplates() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Templates',
-            items: [
-              {
-                icon: RefreshCw,
-                label: 'Atualizar',
-                onClick: () => selectedConnectionId && loadTemplates(selectedConnectionId),
-                disabled: !selectedConnectionId || loadingTemplates,
-              },
-            ],
-          },
-        ]}
-      />
       <Header title="Templates WhatsApp" subtitle="Gerencie seus templates de mensagem" />
 
       <div className="p-8">
@@ -215,6 +199,15 @@ export function WhatsAppTemplates() {
                 </SelectContent>
               </Select>
             )}
+            <Button
+              variant="outline"
+              onClick={() => selectedConnectionId && loadTemplates(selectedConnectionId)}
+              disabled={!selectedConnectionId || loadingTemplates}
+              className="gap-2"
+            >
+              <RefreshCw size={16} className={loadingTemplates ? 'animate-spin' : ''} />
+              Atualizar
+            </Button>
           </div>
         </div>
 

@@ -43,8 +43,8 @@
   --vyd-layout-leftrail-w-min: 0px;
 }
 
-/* Faixa de comandos colapsada (ou tela sem comandos): a linha da ribbon some.
-   O grid do shell lê --vyd-layout-ribbon-h na linha de comando → zerá-la colapsa. */
+/* Faixa de NAVEGAÇÃO colapsada: a linha da ribbon some (mantém as categorias).
+   O grid do shell lê --vyd-layout-ribbon-h na linha → zerá-la colapsa. */
 .vyd-app--ribbon-collapsed {
   --vyd-layout-ribbon-h: 0px;
 }
@@ -52,8 +52,22 @@
   display: none;
 }
 
-/* Faixa de abas: as abas rolam na horizontal; o toggle de colapso fica FIXO à
-   direita (fora do scroll). */
+/* A faixa .vyd-ribbon agora hospeda a NAVEGAÇÃO da categoria ativa (itens
+   .vyd-ribbon-item renderizados como <Link>). Centraliza os itens na faixa e
+   remove o sublinhado dos links. */
+.vyd-ribbon {
+  align-items: center;
+  /* Zera o padding vertical do DS (pensado p/ tiles de comando com rótulo de
+     grupo); como itens de navegação são centralizados na faixa, o padding-top
+     assimétrico desalinharia. Mantém o padding horizontal. */
+  padding-block: 0;
+}
+.vyd-ribbon .vyd-ribbon-item {
+  text-decoration: none;
+}
+
+/* Faixa de CATEGORIAS (nível 1): as abas rolam na horizontal; o toggle de colapso
+   fica FIXO à direita (fora do scroll). */
 .vyd-tabs-scroll {
   display: flex;
   align-items: flex-end;

@@ -1,12 +1,11 @@
 import { Outlet } from 'react-router';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7';
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { OnboardingTour } from '../OnboardingTour';
 import { CommandPalette } from '../CommandPalette';
 import { SidePanel, SidePanelBody } from '../SidePanel';
 import { SidePanelProvider, useSidePanel } from '@/contexts/SidePanelContext';
 import { SuggestionFab } from '../SuggestionFab';
-import { RibbonProvider, useRibbon } from '@/contexts/RibbonContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Topbar } from './Topbar';
 import { RibbonTabs } from './RibbonTabs';
@@ -15,11 +14,10 @@ import { StatusBar } from './StatusBar';
 const RIBBON_COLLAPSED_KEY = 'vyd-ribbon-collapsed';
 
 function ShellInner() {
-  const { setSlot, activeCount } = useRibbon();
   const { open: panelOpen } = useSidePanel();
   const isDesktop = useMediaQuery('(min-width: 1025px)');
 
-  // Colapsar/expandir a FAIXA DE COMANDOS (mantém as abas — padrão Office/Autodesk).
+  // Colapsar/expandir a FAIXA DE NAVEGAÇÃO (mantém as categorias — padrão Office/Autodesk).
   const [ribbonCollapsed, setRibbonCollapsed] = useState(() => {
     try {
       return localStorage.getItem(RIBBON_COLLAPSED_KEY) === 'true';
@@ -38,18 +36,10 @@ function ShellInner() {
   // O SidePanel vira COLUNA (rightpanel) só no desktop; senão é overlay (Sheet).
   const rpAsColumn = isDesktop && panelOpen;
 
-  // A faixa de comandos só aparece quando a tela declarou comandos E não está
-  // colapsada. Sem comandos → a faixa some (sem repetir o título, que já está na topbar).
-  const hasCommands = activeCount > 0;
-  const showRibbon = hasCommands && !ribbonCollapsed;
-
-  // Ref estável para o slot da ribbon (evita detach/attach por render).
-  const setSlotRef = useCallback((el: HTMLDivElement | null) => setSlot(el), [setSlot]);
-
   const appClass = [
     'vyd-app',
     'vyd-app--no-rail',
-    !showRibbon && 'vyd-app--ribbon-collapsed',
+    ribbonCollapsed && 'vyd-app--ribbon-collapsed',
     !rpAsColumn && 'app--no-rp',
   ]
     .filter(Boolean)
@@ -66,15 +56,12 @@ function ShellInner() {
 
       <Topbar />
 
-      {/* Abas de navegação (grid-area ribbontabs) + toggle de colapso da faixa. */}
+      {/* Navegação de dois níveis: categorias (grid-area ribbontabs) + itens da
+          categoria ativa (grid-area ribbon). Ambos renderizados pelo RibbonTabs. */}
       <RibbonTabs
         ribbonCollapsed={ribbonCollapsed}
         onToggleRibbon={() => setRibbonCollapsed((v) => !v)}
       />
-
-      {/* Faixa de comandos: as páginas portalam seus comandos aqui (ScreenRibbon).
-          Vazia/colapsada → a linha some (vyd-app--ribbon-collapsed). */}
-      <div className="vyd-ribbon" ref={setSlotRef} />
 
       <main id="vyd-canvas" className="vyd-canvas" role="main">
         <div className="vyd-canvas__content">
@@ -102,9 +89,7 @@ export function AppShell() {
   return (
     <NuqsAdapter>
       <SidePanelProvider>
-        <RibbonProvider>
-          <ShellInner />
-        </RibbonProvider>
+        <ShellInner />
       </SidePanelProvider>
     </NuqsAdapter>
   );

@@ -38,7 +38,6 @@ import {
   Terminal,
 } from 'lucide-react';
 import { apiClient, type ApiKeyListItem } from '../services/api/client';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 
 // Available scopes grouped by resource (req 17, 18).
 const SCOPE_GROUPS: { resource: string; scopes: { value: string; label: string }[] }[] = [
@@ -194,14 +193,6 @@ export function ApiKeys() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'API Keys',
-            items: [{ icon: Plus, label: 'Criar API Key', onClick: () => openCreateDialog() }],
-          },
-        ]}
-      />
       <Header title="API Keys" subtitle="Gerencie chaves de acesso para a API do VYD Engage" />
 
       <div className="p-4 md:p-8 space-y-6">
@@ -216,6 +207,10 @@ export function ApiKeys() {
                 Use chaves de API para autenticar requisicoes externas.
               </p>
             </div>
+            <Button onClick={openCreateDialog}>
+              <Plus size={16} className="mr-2" />
+              Criar API Key
+            </Button>
           </div>
 
           {apiKeys.length === 0 ? (

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Header } from '../components/Header';
+import { Button } from '../components/ui/button';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import { useCustomFields } from '../contexts/CustomFieldsContext';
 import { CustomField } from '../types';
 import { CustomFieldEditor } from '../components/CustomFieldEditor';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,24 +73,23 @@ export function CustomFields() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Campos',
-            items: [{ icon: Plus, label: 'Novo Campo', onClick: handleCreate }],
-          },
-        ]}
-      />
       <Header title="Campos Customizados" subtitle="Crie campos personalizados para seus leads" />
 
       <div className="p-8">
         <div className="bg-card rounded-lg shadow-sm border border-gray-300">
           <div className="p-6 border-b border-gray-300">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Campos Customizados</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Adicione campos personalizados para capturar informações específicas dos seus leads
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Campos Customizados</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Adicione campos personalizados para capturar informações específicas dos seus
+                  leads
+                </p>
+              </div>
+              <Button onClick={handleCreate} className="bg-primary hover:bg-primary-dark">
+                <Plus size={16} className="mr-2" />
+                Novo Campo
+              </Button>
             </div>
           </div>
 

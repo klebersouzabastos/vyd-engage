@@ -38,14 +38,12 @@ import { EmptyState } from '../components/EmptyState';
 import { useDeals } from '../hooks/useDeals';
 import { useDealsPipeline } from '../hooks/useDealsPipeline';
 import { useSidePanel } from '../contexts/SidePanelContext';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { Deal, DealStage } from '../types';
 import {
   Plus,
   Search,
   List,
   LayoutGrid,
-  Download,
   Pencil,
   Trash2,
   ChevronLeft,
@@ -59,6 +57,7 @@ import {
   Check,
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
+import { ExportButton } from '../components/ExportButton';
 import { apiClient } from '../services/api/client';
 import { useSavedViews } from '../hooks/useSavedViews';
 import { SavedViewsBar } from '../components/filters/SavedViewsBar';
@@ -439,51 +438,6 @@ export function Deals() {
 
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Negócios',
-            items: [
-              {
-                icon: Plus,
-                label: 'Novo Deal',
-                onClick: () => {
-                  setEditingDeal(null);
-                  setFormOpen(true);
-                },
-              },
-              {
-                icon: Download,
-                label: 'Exportar',
-                disabled: viewMode !== 'list',
-                title: viewMode !== 'list' ? 'Disponível na visualização em lista' : undefined,
-                onClick: () => {
-                  const filters: Record<string, string> = {};
-                  if (search.trim()) filters.search = search.trim();
-                  if (stageFilter !== 'ALL') filters.stage = stageFilter;
-                  void apiClient.exportDealsDownload('csv', filters);
-                },
-              },
-              {
-                icon: viewMode === 'list' ? LayoutGrid : List,
-                label: viewMode === 'list' ? 'Ver Pipeline' : 'Ver Lista',
-                active: viewMode === 'pipeline',
-                onClick: () => setViewMode(viewMode === 'list' ? 'pipeline' : 'list'),
-              },
-            ],
-          },
-          {
-            label: 'Pipeline',
-            items: [
-              {
-                icon: Plus,
-                label: 'Criar Pipeline',
-                onClick: () => setCreateFunnelOpen(true),
-              },
-            ],
-          },
-        ]}
-      />
       <Header title="Deals" subtitle="Gerenciamento de negócios" />
 
       <div className="p-8">
@@ -545,6 +499,30 @@ export function Deals() {
                 <LayoutGrid size={16} aria-hidden="true" />
               </button>
             </div>
+
+            {viewMode === 'list' && (
+              <ExportButton
+                onExport={async (format) => {
+                  const filters: Record<string, string> = {};
+                  if (search.trim()) filters.search = search.trim();
+                  if (stageFilter !== 'ALL') filters.stage = stageFilter;
+                  return apiClient.exportDealsDownload(format, filters);
+                }}
+                filename="deals-export"
+                label="Exportar"
+              />
+            )}
+
+            <Button
+              onClick={() => {
+                setEditingDeal(null);
+                setFormOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Plus size={16} />
+              Novo Deal
+            </Button>
           </div>
         </div>
 
@@ -657,6 +635,16 @@ export function Deals() {
                 {errorMessage && editingFunnelId && (
                   <p className="text-xs text-red-600">{errorMessage}</p>
                 )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="border-2 border-primary text-primary hover:bg-primary hover:text-white gap-2"
+                  onClick={() => setCreateFunnelOpen(true)}
+                >
+                  <Plus size={16} />
+                  Novo Pipeline
+                </Button>
               </div>
             </div>
           </div>

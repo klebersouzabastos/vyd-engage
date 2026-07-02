@@ -38,7 +38,6 @@ import {
   Building2,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { apiClient, ConfigItem, DealContact } from '../services/api/client';
 import { DealForm } from '../components/deals/DealForm';
 import { DealProducts } from '../components/deals/DealProducts';
@@ -478,45 +477,8 @@ export function DealDetail() {
     );
   }
 
-  const dealStatus = (deal as unknown as Record<string, unknown>).status as string | undefined;
-  const dealClosed = dealStatus === 'WON' || dealStatus === 'LOST';
-  const dealPaused = dealStatus === 'PAUSED';
-
   return (
     <div className="min-h-screen">
-      <ScreenRibbon
-        groups={[
-          {
-            label: 'Negócio',
-            items: [
-              {
-                icon: DollarSign,
-                label: 'Marcar venda',
-                onClick: handleMarkWon,
-                disabled: dealStatus === 'WON',
-              },
-              {
-                icon: Trash2,
-                label: 'Marcar perda',
-                onClick: () => setShowLostModal(true),
-                disabled: dealStatus === 'LOST',
-              },
-              {
-                icon: Clock,
-                label: dealPaused ? 'Retomar' : 'Pausar',
-                onClick: handleTogglePause,
-                disabled: dealClosed,
-                active: dealPaused,
-              },
-              {
-                icon: Pencil,
-                label: 'Editar',
-                onClick: () => setEditFormOpen(true),
-              },
-            ],
-          },
-        ]}
-      />
       <Header title={deal.name} subtitle="Detalhes do negócio" />
 
       <div className="p-8">
@@ -889,6 +851,33 @@ export function DealDetail() {
                 )}
               </div>
 
+              {/* Ações de status — Ganho / Perda / Pausar-Retomar (reqs 19-23) */}
+              {(() => {
+                const status = (deal as unknown as Record<string, unknown>).status as
+                  | string
+                  | undefined;
+                const closed = status === 'WON' || status === 'LOST';
+                const paused = status === 'PAUSED';
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={handleMarkWon} disabled={status === 'WON'}>
+                      Marcar venda
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowLostModal(true)}
+                      disabled={status === 'LOST'}
+                    >
+                      Marcar perda
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleTogglePause} disabled={closed}>
+                      {paused ? 'Retomar' : 'Pausar'}
+                    </Button>
+                  </div>
+                );
+              })()}
+
               {/* Qualificação (req 15) — estrelas read-only no detalhe */}
               {(() => {
                 const q = (deal as unknown as Record<string, unknown>).qualification as
@@ -1090,6 +1079,15 @@ export function DealDetail() {
                   </div>
                 )}
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setEditFormOpen(true)}
+              >
+                <Pencil size={14} />
+                Editar
+              </Button>
             </div>
           </div>
         </div>
