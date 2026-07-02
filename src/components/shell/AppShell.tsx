@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { OnboardingTour } from '../OnboardingTour';
 import { CommandPalette } from '../CommandPalette';
 import { SidePanel, SidePanelBody } from '../SidePanel';
@@ -10,28 +10,10 @@ import { RibbonProvider, useRibbon } from '@/contexts/RibbonContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { screenTitleFor } from '@/lib/screenTitles';
 import { Topbar } from './Topbar';
-import { LeftRail } from './LeftRail';
+import { RibbonTabs } from './RibbonTabs';
 import { StatusBar } from './StatusBar';
 
-const RAIL_COLLAPSED_KEY = 'vyd-sidebar-collapsed';
-
 function ShellInner() {
-  const [railCollapsed, setRailCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(RAIL_COLLAPSED_KEY, String(railCollapsed));
-    } catch {
-      /* ignore */
-    }
-  }, [railCollapsed]);
-
-  const [navOpen, setNavOpen] = useState(false);
   const location = useLocation();
 
   const { setSlot, activeCount } = useRibbon();
@@ -45,12 +27,9 @@ function ShellInner() {
   // Ref estável para o slot da ribbon (evita detach/attach por render).
   const setSlotRef = useCallback((el: HTMLDivElement | null) => setSlot(el), [setSlot]);
 
-  // Fecha o drawer mobile ao navegar.
-  useEffect(() => {
-    setNavOpen(false);
-  }, [location.pathname]);
-
-  const appClass = ['vyd-app', railCollapsed && 'vyd-app--rail-collapsed', !rpAsColumn && 'app--no-rp']
+  // Navegação vive nas ABAS da ribbon → não há leftrail (vyd-app--no-rail colapsa
+  // a coluna do leftrail a 0 em todos os breakpoints).
+  const appClass = ['vyd-app', 'vyd-app--no-rail', !rpAsColumn && 'app--no-rp']
     .filter(Boolean)
     .join(' ');
 
@@ -63,7 +42,10 @@ function ShellInner() {
         Pular para o conteúdo principal
       </a>
 
-      <Topbar onOpenNav={() => setNavOpen(true)} />
+      <Topbar />
+
+      {/* Abas de navegação (grid-area ribbontabs) */}
+      <RibbonTabs />
 
       {/* Ribbon: as páginas portalam seus comandos aqui (ScreenRibbon).
           Sem comandos → mostra só o título da tela (req 10). */}
@@ -78,8 +60,6 @@ function ShellInner() {
           </div>
         )}
       </div>
-
-      <LeftRail collapsed={railCollapsed} onToggleCollapse={() => setRailCollapsed((v) => !v)} />
 
       <main id="vyd-canvas" className="vyd-canvas" role="main">
         <div className="vyd-canvas__content">
@@ -98,26 +78,6 @@ function ShellInner() {
       {!isDesktop && <SidePanel />}
       <OnboardingTour />
       <SuggestionFab />
-
-      {/* Drawer de navegação (≤sm, quando o leftrail some) */}
-      {navOpen && (
-        <>
-          <div
-            className="vyd-nav-scrim"
-            role="button"
-            tabIndex={0}
-            aria-label="Fechar menu"
-            onClick={() => setNavOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setNavOpen(false);
-              }
-            }}
-          />
-          <LeftRail asDrawer onNavigate={() => setNavOpen(false)} />
-        </>
-      )}
     </div>
   );
 }

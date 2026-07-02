@@ -12,8 +12,6 @@ import {
   Filter,
   Inbox,
   CreditCard,
-  PanelLeftClose,
-  PanelLeftOpen,
   Handshake,
   TrendingUp,
   Webhook,
@@ -39,18 +37,14 @@ interface NavItem {
   platformAdminOnly?: boolean;
 }
 
-// Mesma lista, ordem e ícones da antiga Sidebar (spec req 6 — só muda de lugar).
+// Navegação principal — mesma lista/ordem/ícones/flags da antiga Sidebar/LeftRail
+// (spec ribbon-shell-global req 6). Agora vive nas ABAS da ribbon (amendment: nav
+// nas abas, sem leftrail).
 const menuItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app', tourId: 'sidebar-dashboard' },
   { icon: Users, label: 'Leads', path: '/app/leads', tourId: 'sidebar-leads' },
   { icon: Building2, label: 'Empresas', path: '/app/companies', tourId: 'sidebar-companies' },
-  {
-    icon: UsersRound,
-    label: 'Equipe',
-    path: '/app/team',
-    tourId: 'sidebar-team',
-    adminOnly: true,
-  },
+  { icon: UsersRound, label: 'Equipe', path: '/app/team', tourId: 'sidebar-team', adminOnly: true },
   { icon: Handshake, label: 'Deals', path: '/app/deals', tourId: 'sidebar-deals' },
   { icon: TrendingUp, label: 'Previsão', path: '/app/forecast', tourId: 'sidebar-forecast' },
   { icon: Filter, label: 'Funil Conv.', path: '/app/funnel', tourId: 'sidebar-funnel' },
@@ -131,15 +125,13 @@ const menuItems: NavItem[] = [
   },
 ];
 
-interface LeftRailProps {
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
-  onNavigate?: () => void;
-  /** true = renderiza no drawer mobile (sem grid-area, sem toggle) */
-  asDrawer?: boolean;
+/** Um path do menu é candidato a ativo se casa exatamente ou é prefixo de segmento. */
+function matches(path: string, pathname: string): boolean {
+  if (path === '/app') return pathname === '/app' || pathname === '/app/';
+  return pathname === path || pathname.startsWith(path + '/');
 }
 
-export function LeftRail({ collapsed, onToggleCollapse, onNavigate, asDrawer }: LeftRailProps) {
+export function RibbonTabs() {
   const location = useLocation();
   const { user } = useAuth();
   const { tasks } = useTasks();
@@ -171,54 +163,40 @@ export function LeftRail({ collapsed, onToggleCollapse, onNavigate, asDrawer }: 
       (!item.platformAdminOnly || user?.isPlatformAdmin)
   );
 
-  return (
-    <nav className={asDrawer ? 'vyd-nav-drawer' : 'vyd-leftrail'} aria-label="Menu principal">
-      <div className="flex-1 overflow-y-auto py-2">
-        {items.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onNavigate}
-              data-tour={item.tourId}
-              aria-current={isActive ? 'true' : undefined}
-              title={collapsed && !asDrawer ? item.label : undefined}
-              className="vyd-rail-item"
-            >
-              <Icon size={18} className="flex-shrink-0" />
-              <span>{item.label}</span>
-              {item.path === '/app/tasks' && pendingTasksCount > 0 && (
-                <span
-                  className="ml-auto inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-semibold"
-                  style={{
-                    background: 'var(--vyd-danger)',
-                    color: 'var(--vyd-text-on-accent)',
-                  }}
-                >
-                  {pendingTasksCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
+  // Aba ativa = item cujo path é o prefixo mais LONGO que casa (evita duas ativas
+  // em rotas aninhadas, ex.: /app/settings vs /app/settings/deal-config).
+  const activePath = items
+    .filter((i) => matches(i.path, location.pathname))
+    .sort((a, b) => b.path.length - a.path.length)[0]?.path;
 
-      {/* Colapsar/expandir — só no rail desktop (não no drawer). */}
-      {!asDrawer && (
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className="vyd-rail-item"
-          style={{ borderTop: 'var(--vyd-border-hairline) solid var(--vyd-border-default)' }}
-          aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
-          title={collapsed ? 'Expandir menu' : 'Recolher menu'}
-        >
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          <span>Recolher</span>
-        </button>
-      )}
+  return (
+    <nav className="vyd-ribbon-tabs" aria-label="Navegação principal">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const active = item.path === activePath;
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            data-tour={item.tourId}
+            aria-selected={active}
+            aria-current={active ? 'page' : undefined}
+            className="vyd-ribbon-tab"
+            style={{ gap: 'var(--vyd-space-2)' }}
+          >
+            <Icon size={14} className="flex-shrink-0" />
+            <span>{item.label}</span>
+            {item.path === '/app/tasks' && pendingTasksCount > 0 && (
+              <span
+                className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-semibold"
+                style={{ background: 'var(--vyd-danger)', color: 'var(--vyd-text-on-accent)' }}
+              >
+                {pendingTasksCount}
+              </span>
+            )}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

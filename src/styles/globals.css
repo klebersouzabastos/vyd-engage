@@ -29,40 +29,18 @@
   .vyd-app.app--no-rp {
     grid-template-columns: var(--vyd-layout-leftrail-w) 1fr 0;
   }
-  .vyd-app--rail-collapsed.app--no-rp {
-    grid-template-columns: var(--vyd-layout-leftrail-w-min) 1fr 0;
-  }
 }
 /* Conteúdo de página dentro do .vyd-canvas ocupa a altura toda. */
 .vyd-canvas__content {
   min-height: 100%;
 }
-/* Navegação mobile: ≤640 o leftrail some (shell); acesso por drawer via topbar. */
-.vyd-nav-drawer {
-  position: fixed;
-  inset: 0 auto 0 0;
-  width: var(--vyd-layout-leftrail-w);
-  z-index: var(--vyd-z-modal);
-  background: var(--vyd-bg-panel);
-  border-inline-end: var(--vyd-border-hairline) solid var(--vyd-border-default);
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-}
-.vyd-nav-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: var(--vyd-z-overlay);
-  background: color-mix(in oklab, var(--vyd-neutral-0) 55%, transparent);
-}
-/* Botão de navegação da topbar: visível só quando o leftrail some (≤640). */
-.vyd-topbar__navbtn {
-  display: none;
-}
-@media (max-width: 640px) {
-  .vyd-topbar__navbtn {
-    display: inline-flex;
-  }
+/* Navegação vive nas ABAS da ribbon (.vyd-ribbon-tabs) → não há leftrail.
+   Colapsa a coluna do leftrail a 0 em TODOS os breakpoints (o grid do shell.css,
+   base e responsivo, lê essas vars). A var não é reusada com outro valor: é
+   zerada porque a área deixou de existir. */
+.vyd-app--no-rail {
+  --vyd-layout-leftrail-w: 0px;
+  --vyd-layout-leftrail-w-min: 0px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
