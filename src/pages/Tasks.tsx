@@ -32,7 +32,6 @@ import {
 import { ScreenRibbon } from '@/contexts/RibbonContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { EmptyState } from '../components/EmptyState';
-import { ExportButton } from '../components/ExportButton';
 import { apiClient } from '../services/api/client';
 import { useIsMobile } from '../components/ui/use-mobile';
 import { Checkbox } from '../components/ui/checkbox';
@@ -699,20 +698,6 @@ export function Tasks() {
             >
               {myTasksOnly ? 'Minhas tarefas' : 'Todas'}
             </button>
-
-            <ExportButton
-              onExport={(format) => handleExport(format)}
-              filename="tasks-export"
-              label="Exportar"
-            />
-
-            <Button
-              onClick={() => navigate('/app/tasks/new')}
-              className="bg-primary hover:bg-primary-dark whitespace-nowrap"
-            >
-              <Plus size={16} className="mr-2" />
-              Nova Tarefa
-            </Button>
           </div>
         </div>
 

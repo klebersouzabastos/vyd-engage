@@ -315,22 +315,13 @@ export function TeamManagement() {
 
       <div className="p-8">
         <div className="bg-card rounded-lg shadow-sm border border-gray-300">
-          {/* Top bar with invite button */}
+          {/* Top bar */}
           <div className="p-6 border-b border-gray-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Gerenciamento de Equipe</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Gerencie os membros da sua equipe e envie convites para novos colaboradores
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowInviteModal(true)}
-                className="bg-primary hover:bg-primary-dark"
-              >
-                <UserPlus size={16} className="mr-2" />
-                Convidar Membro
-              </Button>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Gerenciamento de Equipe</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Gerencie os membros da sua equipe e envie convites para novos colaboradores
+              </p>
             </div>
           </div>
 

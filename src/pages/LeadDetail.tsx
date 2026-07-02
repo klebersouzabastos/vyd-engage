@@ -456,15 +456,6 @@ export function LeadDetail() {
             <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Atividades</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => setShowNoteForm(!showNoteForm)}
-                >
-                  <Plus size={14} />
-                  Adicionar nota
-                </Button>
               </div>
 
               {/* Inline note form */}
@@ -703,12 +694,6 @@ export function LeadDetail() {
                     <Handshake size={12} />
                     Deals
                   </span>
-                  <button
-                    onClick={() => setDealFormOpen(true)}
-                    className="text-xs text-primary hover:underline font-medium"
-                  >
-                    + Criar Deal
-                  </button>
                 </div>
                 {leadDeals.length === 0 ? (
                   <p className="text-xs text-gray-400">Nenhum deal associado</p>
@@ -738,59 +723,18 @@ export function LeadDetail() {
                 )}
               </div>
 
-              {/* Contact conversion */}
-              {lead.isContact ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                    <UserCheck size={16} className="text-green-600" />
-                    <span className="text-sm font-medium text-green-700">Contato</span>
-                    {lead.convertedAt && (
-                      <span className="text-xs text-green-600 ml-auto">
-                        {formatDate(lead.convertedAt)}
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={handleRevertToLead}
-                    disabled={converting}
-                  >
-                    <ArrowRightLeft size={14} />
-                    {converting ? 'Revertendo...' : 'Reverter para Lead'}
-                  </Button>
+              {/* Contact status indicator */}
+              {lead.isContact && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                  <UserCheck size={16} className="text-green-600" />
+                  <span className="text-sm font-medium text-green-700">Contato</span>
+                  {lead.convertedAt && (
+                    <span className="text-xs text-green-600 ml-auto">
+                      {formatDate(lead.convertedAt)}
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-green-300 text-green-700 hover:bg-green-50"
-                  onClick={handleConvertToContact}
-                  disabled={converting}
-                >
-                  <UserCheck size={14} />
-                  {converting ? 'Convertendo...' : 'Converter para Contato'}
-                </Button>
               )}
-
-              {/* Generate Email button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
-                onClick={() => setAiDraftOpen(true)}
-              >
-                <Sparkles size={14} />
-                Gerar Email
-              </Button>
-
-              {/* Edit button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => navigate(`/app/leads/${id}/edit`)}
-              >
-                <Pencil size={14} />
-                Editar
-              </Button>
             </div>
 
             {/* AI Chat Panel */}

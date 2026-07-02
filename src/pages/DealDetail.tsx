@@ -889,33 +889,6 @@ export function DealDetail() {
                 )}
               </div>
 
-              {/* Ações de status — Ganho / Perda / Pausar-Retomar (reqs 19-23) */}
-              {(() => {
-                const status = (deal as unknown as Record<string, unknown>).status as
-                  | string
-                  | undefined;
-                const closed = status === 'WON' || status === 'LOST';
-                const paused = status === 'PAUSED';
-                return (
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={handleMarkWon} disabled={status === 'WON'}>
-                      Marcar venda
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowLostModal(true)}
-                      disabled={status === 'LOST'}
-                    >
-                      Marcar perda
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={handleTogglePause} disabled={closed}>
-                      {paused ? 'Retomar' : 'Pausar'}
-                    </Button>
-                  </div>
-                );
-              })()}
-
               {/* Qualificação (req 15) — estrelas read-only no detalhe */}
               {(() => {
                 const q = (deal as unknown as Record<string, unknown>).qualification as
@@ -1117,15 +1090,6 @@ export function DealDetail() {
                   </div>
                 )}
               </div>
-
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => setEditFormOpen(true)}
-              >
-                <Pencil size={14} />
-                Editar
-              </Button>
             </div>
           </div>
         </div>

@@ -251,11 +251,6 @@ export function Suggestions() {
               <option value="BUG">Correção</option>
             </select>
           </div>
-
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus size={16} />
-            Nova sugestão
-          </Button>
         </div>
 
         {/* Status counts (admin + scope=all) */}

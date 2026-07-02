@@ -211,9 +211,6 @@ export function FunnelConversion() {
               <Filter size={14} />
               Filtros
             </Button>
-            <Button variant="outline" size="sm" onClick={refetch} className="gap-2">
-              <RefreshCw size={14} />
-            </Button>
           </div>
         </div>
 

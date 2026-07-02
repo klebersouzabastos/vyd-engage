@@ -216,10 +216,6 @@ export function ApiKeys() {
                 Use chaves de API para autenticar requisicoes externas.
               </p>
             </div>
-            <Button onClick={openCreateDialog}>
-              <Plus size={16} className="mr-2" />
-              Criar API Key
-            </Button>
           </div>
 
           {apiKeys.length === 0 ? (
