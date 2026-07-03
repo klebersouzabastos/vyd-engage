@@ -12,12 +12,14 @@ import { apiClient } from '../../services/api/client';
  * 100% tokens semânticos — arquivo em STRICT_SCOPE do check:colors.
  */
 
+// Dias civis até uma data date-only (meia-noite UTC): alvo pelo dia UTC (mesma
+// convenção da data exibida) e "hoje" pelo dia civil local do usuário.
 function civilDaysUntil(dateStr: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
   const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86400000);
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
+  return Math.round((end - today) / 86400000);
 }
 
 export function ExpiringContractsWidget() {

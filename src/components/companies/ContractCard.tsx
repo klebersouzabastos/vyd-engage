@@ -33,13 +33,15 @@ const HOLDER_OPTIONS: { value: ContractHolder; label: string }[] = [
   { value: 'CONCORRENTE', label: 'Concorrente' },
 ];
 
-// Dias civis entre hoje e uma data (zera horas — não oscila com horário).
+// Dias civis até uma data date-only (gravada como meia-noite UTC): o alvo usa o
+// dia UTC (mesma convenção de formatDate) e "hoje" o dia civil local do usuário —
+// evita off-by-one entre o badge e a data exibida.
 function civilDaysUntil(dateStr: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
   const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86400000);
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
+  return Math.round((end - today) / 86400000);
 }
 
 function formatDate(dateStr?: string | null): string {

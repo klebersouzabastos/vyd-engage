@@ -432,7 +432,7 @@ export const dealService = {
   // ── Gestão de Negócios (RD parity) — ações de status dedicadas (reqs 19-23) ──
 
   async markWon(tenantId: string, id: string) {
-    await this.findById(tenantId, id);
+    const existing = await this.findById(tenantId, id);
     const deal = await prisma.deal.update({
       where: { id },
       data: {
@@ -449,8 +449,10 @@ export const dealService = {
         .update({ where: { id: deal.leadId }, data: { status: 'WON' } })
         .catch(() => {});
     }
-    // Deal GANHO promove a empresa vinculada a CLIENTE_ATIVO (no-op se já for) — req 6.
-    if (deal.companyId) {
+    // Deal GANHO promove a empresa vinculada a CLIENTE_ATIVO (req 6) — só na
+    // TRANSIÇÃO real para WON: re-marcar um deal já ganho não re-promove uma
+    // empresa rebaixada manualmente (mesma guarda de update()).
+    if (deal.companyId && existing.stage !== DealStage.WON) {
       await companyService.promoteToActiveClient(tenantId, deal.companyId);
     }
     webhookDispatcher.emitDealEvent(tenantId, 'deal.won', deal);

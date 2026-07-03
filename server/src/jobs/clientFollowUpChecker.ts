@@ -26,13 +26,12 @@ import {
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Dias civis entre duas datas (zera as horas de ambas).
+// Dias civis entre duas datas, pelo dia UTC de cada uma — independente do fuso
+// do host (datas de contrato são date-only gravadas como meia-noite UTC).
 function civilDaysBetween(from: Date, to: Date): number {
-  const a = new Date(from);
-  a.setHours(0, 0, 0, 0);
-  const b = new Date(to);
-  b.setHours(0, 0, 0, 0);
-  return Math.round((b.getTime() - a.getTime()) / DAY_MS);
+  const a = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
+  const b = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
+  return Math.round((b - a) / DAY_MS);
 }
 
 // Dedup do vencido usa um "limiar" sentinela próprio.
@@ -218,7 +217,10 @@ async function checkContractExpirations(tenant: { id: string; contractAlertDays:
     if (!company.contractEndDate) continue;
     const daysLeft = civilDaysBetween(today, company.contractEndDate);
     const endDateKey = company.contractEndDate.toISOString().slice(0, 10);
-    const endDateLabel = company.contractEndDate.toLocaleDateString('pt-BR');
+    // Date-only: exibir o dia UTC evita recuo de um dia em host fora de UTC.
+    const endDateLabel = company.contractEndDate.toLocaleDateString('pt-BR', {
+      timeZone: 'UTC',
+    });
     const holderLabel = contractHolderLabel(company);
 
     let threshold: number | typeof EXPIRED_THRESHOLD;

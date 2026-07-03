@@ -40,11 +40,12 @@ export interface UpdateCompanyData extends Partial<CreateCompanyData> {
   id: string;
 }
 
-// Início do dia civil (00:00 local do servidor) — cálculos por data, não por hora.
+// Início do dia civil em UTC — datas de contrato são date-only persistidas como
+// meia-noite UTC, então a aritmética de dias usa o dia UTC para não oscilar com
+// o fuso do host (restrição "cálculo por data, não hora").
 export function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
 const companyInclude = {
@@ -202,8 +203,7 @@ export const companyService = {
       switch (filters.contract) {
         case 'expiring': {
           const days = filters.contractExpiringDays ?? 90;
-          const until = new Date(today);
-          until.setDate(until.getDate() + days);
+          const until = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
           where.contractHolder = { not: ContractHolder.NENHUM };
           where.contractEndDate = { gte: today, lte: until };
           break;
@@ -257,8 +257,7 @@ export const companyService = {
     const windowDays = thresholds.length > 0 ? Math.max(...thresholds) : 90;
 
     const today = startOfToday();
-    const until = new Date(today);
-    until.setDate(until.getDate() + windowDays);
+    const until = new Date(today.getTime() + windowDays * 24 * 60 * 60 * 1000);
 
     const companies = await prisma.company.findMany({
       where: {
