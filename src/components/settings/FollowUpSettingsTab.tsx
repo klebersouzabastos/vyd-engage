@@ -75,11 +75,12 @@ export function FollowUpSettingsTab() {
     if (!parsed) return;
     try {
       setSaving(true);
-      const tenant = await apiClient.updateTenant({
+      const { tenant } = await apiClient.updateTenant({
         clientFollowUpDays: parsed.followUpDays,
         contractAlertDays: parsed.alertDays,
       });
-      if (Array.isArray(tenant.contractAlertDays)) {
+      // Reflete a ordem decrescente persistida pelo backend (req 16).
+      if (Array.isArray(tenant?.contractAlertDays)) {
         setAlertDaysText(tenant.contractAlertDays.join(', '));
       }
       toast.success('Configurações salvas!');

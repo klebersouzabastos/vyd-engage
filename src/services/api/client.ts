@@ -346,14 +346,17 @@ class ApiClient {
     clientFollowUpDays?: number;
     contractAlertDays?: number[];
   }) {
+    // O backend responde { tenant: {...} } (mesma forma do GET).
     return this.request<{
-      id: string;
-      name: string;
-      slug: string;
-      logo?: string | null;
-      settings?: Record<string, unknown>;
-      clientFollowUpDays?: number;
-      contractAlertDays?: number[];
+      tenant: {
+        id: string;
+        name: string;
+        slug: string;
+        logo?: string | null;
+        settings?: Record<string, unknown>;
+        clientFollowUpDays?: number;
+        contractAlertDays?: number[];
+      };
     }>('/api/v1/auth/tenant', {
       method: 'PUT',
       body: JSON.stringify(data),
