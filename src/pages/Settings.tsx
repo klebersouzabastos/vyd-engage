@@ -3,6 +3,7 @@ import { Header } from '../components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   Bell,
+  BellRing,
   Building2,
   Plug,
   CreditCard,
@@ -28,6 +29,7 @@ import { ApiKeysTab } from '../components/settings/ApiKeysTab';
 import { CalendarTab } from '../components/settings/CalendarTab';
 import { AISettingsTab } from '../components/settings/AISettingsTab';
 import { GoalsTab } from '../components/settings/GoalsTab';
+import { FollowUpSettingsTab } from '../components/settings/FollowUpSettingsTab';
 import { useAuth } from '../contexts/AuthContext';
 import { isManagerRole } from '../utils/roles';
 
@@ -37,6 +39,8 @@ export function Settings() {
   const { user } = useAuth();
   // "Metas" é painel de nível-time (req 11): só GESTOR/ADMIN veem a aba.
   const canSeeGoals = isManagerRole(user);
+  // Follow-up & Contratos (spec followup-clientes-contratos, req 16): só ADMIN/GESTOR.
+  const canSeeFollowUp = isManagerRole(user);
 
   return (
     <div className="min-h-screen">
@@ -139,6 +143,15 @@ export function Settings() {
                     Metas
                   </TabsTrigger>
                 )}
+                {canSeeFollowUp && (
+                  <TabsTrigger
+                    value="followup"
+                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
+                  >
+                    <BellRing size={16} className="mr-2" />
+                    Follow-up & Contratos
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="security"
                   className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-4 px-0"
@@ -196,6 +209,12 @@ export function Settings() {
             {canSeeGoals && (
               <TabsContent value="goals" className="p-6">
                 <GoalsTab />
+              </TabsContent>
+            )}
+
+            {canSeeFollowUp && (
+              <TabsContent value="followup" className="p-6">
+                <FollowUpSettingsTab />
               </TabsContent>
             )}
 

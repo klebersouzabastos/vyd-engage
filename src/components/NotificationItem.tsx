@@ -22,6 +22,10 @@ const getNotificationIcon = (type: Notification['type']) => {
       return '💳';
     case 'subscription_expiring':
       return '⏰';
+    case 'contract_expiring':
+      return '📄';
+    case 'client_followup':
+      return '🤝';
     case 'system':
     default:
       return '🔔';

@@ -1,6 +1,20 @@
 import prisma from '../config/database.js';
-import { CompanySize } from '@prisma/client';
+import { ClientStatus, CompanySize, ContractHolder, Prisma, TaskStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
+import { logger } from '../utils/logger.js';
+
+// Prefixo que identifica a tarefa de follow-up criada pelo job — usado tanto no
+// dedup do job quanto no filtro "follow-up pendente" da lista de Empresas.
+export const FOLLOWUP_TASK_TITLE_PREFIX = 'Follow-up';
+
+// Fragmento de where p/ "tarefa de follow-up em aberto" de uma empresa.
+export const openFollowUpTaskWhere: Prisma.TaskWhereInput = {
+  title: { startsWith: FOLLOWUP_TASK_TITLE_PREFIX },
+  status: { in: [TaskStatus.PENDING, TaskStatus.IN_PROGRESS] },
+  deletedAt: null,
+};
+
+export type ContractFilter = 'expiring' | 'expired' | 'competitor' | 'ours' | 'none';
 
 export interface CreateCompanyData {
   name: string;
@@ -11,11 +25,33 @@ export interface CreateCompanyData {
   address?: string | null;
   website?: string | null;
   notes?: string | null;
+  clientStatus?: ClientStatus;
+  assignedTo?: string | null;
+  followUpIntervalDays?: number | null;
+  contractHolder?: ContractHolder;
+  contractCompetitor?: string | null;
+  contractStartDate?: Date | null;
+  contractEndDate?: Date | null;
+  contractValue?: number | null;
+  contractScope?: string | null;
 }
 
 export interface UpdateCompanyData extends Partial<CreateCompanyData> {
   id: string;
 }
+
+// Início do dia civil em UTC — datas de contrato são date-only persistidas como
+// meia-noite UTC, então a aritmética de dias usa o dia UTC para não oscilar com
+// o fuso do host (restrição "cálculo por data, não hora").
+export function startOfToday(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+const companyInclude = {
+  assignedUser: { select: { id: true, name: true } },
+  _count: { select: { leads: true, deals: true } },
+};
 
 export const companyService = {
   async create(tenantId: string, data: CreateCompanyData) {
@@ -30,10 +66,17 @@ export const companyService = {
         address: data.address || null,
         website: data.website || null,
         notes: data.notes || null,
+        clientStatus: data.clientStatus ?? undefined,
+        assignedTo: data.assignedTo || null,
+        followUpIntervalDays: data.followUpIntervalDays ?? null,
+        contractHolder: data.contractHolder ?? undefined,
+        contractCompetitor: data.contractCompetitor || null,
+        contractStartDate: data.contractStartDate ?? null,
+        contractEndDate: data.contractEndDate ?? null,
+        contractValue: data.contractValue ?? null,
+        contractScope: data.contractScope || null,
       },
-      include: {
-        _count: { select: { leads: true, deals: true } },
-      },
+      include: companyInclude,
     });
 
     return company;
@@ -44,6 +87,7 @@ export const companyService = {
     const company = await prisma.company.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: {
+        assignedUser: { select: { id: true, name: true } },
         leads: {
           where: ownerId ? { assignedTo: ownerId } : {},
           select: {
@@ -109,6 +153,10 @@ export const companyService = {
       search?: string;
       industry?: string;
       size?: CompanySize;
+      clientStatus?: ClientStatus;
+      followUpPending?: boolean;
+      contract?: ContractFilter;
+      contractExpiringDays?: number;
       page?: number;
       limit?: number;
       sort?: string;
@@ -121,7 +169,7 @@ export const companyService = {
     const sortField = filters?.sort || 'createdAt';
     const sortOrder = filters?.order || 'desc';
 
-    const where: any = { tenantId, deletedAt: null };
+    const where: Prisma.CompanyWhereInput = { tenantId, deletedAt: null };
 
     if (filters?.search) {
       where.OR = [
@@ -139,12 +187,47 @@ export const companyService = {
       where.size = filters.size;
     }
 
+    if (filters?.clientStatus) {
+      where.clientStatus = filters.clientStatus;
+    }
+
+    // "Clientes para follow-up": clientes ativos com tarefa de follow-up em aberto.
+    if (filters?.followUpPending) {
+      where.clientStatus = ClientStatus.CLIENTE_ATIVO;
+      where.tasks = { some: openFollowUpTaskWhere };
+    }
+
+    // Situação de contrato (req 15): vence em até N dias / vencido / detentor.
+    if (filters?.contract) {
+      const today = startOfToday();
+      switch (filters.contract) {
+        case 'expiring': {
+          const days = filters.contractExpiringDays ?? 90;
+          const until = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
+          where.contractHolder = { not: ContractHolder.NENHUM };
+          where.contractEndDate = { gte: today, lte: until };
+          break;
+        }
+        case 'expired':
+          where.contractHolder = { not: ContractHolder.NENHUM };
+          where.contractEndDate = { lt: today };
+          break;
+        case 'competitor':
+          where.contractHolder = ContractHolder.CONCORRENTE;
+          break;
+        case 'ours':
+          where.contractHolder = ContractHolder.NOS;
+          break;
+        case 'none':
+          where.contractHolder = ContractHolder.NENHUM;
+          break;
+      }
+    }
+
     const [companies, total] = await Promise.all([
       prisma.company.findMany({
         where,
-        include: {
-          _count: { select: { leads: true, deals: true } },
-        },
+        include: companyInclude,
         orderBy: { [sortField]: sortOrder },
         skip,
         take: limit,
@@ -161,6 +244,40 @@ export const companyService = {
         totalPages: Math.ceil(total / limit),
       },
     };
+  },
+
+  // Widget "Contratos a vencer": próximas empresas com contrato vencendo,
+  // ordenadas por vencimento asc; janela = maior limiar configurado no tenant.
+  async findExpiringContracts(tenantId: string) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { contractAlertDays: true },
+    });
+    const thresholds = parseContractAlertDays(tenant?.contractAlertDays);
+    const windowDays = thresholds.length > 0 ? Math.max(...thresholds) : 90;
+
+    const today = startOfToday();
+    const until = new Date(today.getTime() + windowDays * 24 * 60 * 60 * 1000);
+
+    const companies = await prisma.company.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        contractHolder: { not: ContractHolder.NENHUM },
+        contractEndDate: { gte: today, lte: until },
+      },
+      select: {
+        id: true,
+        name: true,
+        contractHolder: true,
+        contractCompetitor: true,
+        contractEndDate: true,
+        assignedUser: { select: { id: true, name: true } },
+      },
+      orderBy: { contractEndDate: 'asc' },
+    });
+
+    return { companies, windowDays };
   },
 
   async update(tenantId: string, data: UpdateCompanyData) {
@@ -181,6 +298,15 @@ export const companyService = {
       address: data.address,
       website: data.website,
       notes: data.notes,
+      clientStatus: data.clientStatus,
+      assignedTo: data.assignedTo,
+      followUpIntervalDays: data.followUpIntervalDays,
+      contractHolder: data.contractHolder,
+      contractCompetitor: data.contractCompetitor,
+      contractStartDate: data.contractStartDate,
+      contractEndDate: data.contractEndDate,
+      contractValue: data.contractValue,
+      contractScope: data.contractScope,
     };
 
     // Remove undefined values
@@ -193,12 +319,31 @@ export const companyService = {
     const company = await prisma.company.update({
       where: { id: data.id },
       data: updateData,
-      include: {
-        _count: { select: { leads: true, deals: true } },
-      },
+      include: companyInclude,
     });
 
     return company;
+  },
+
+  // Deal GANHO promove a empresa a CLIENTE_ATIVO (no-op se já for) — req 6.
+  // A edição manual do status continua sempre possível.
+  async promoteToActiveClient(tenantId: string, companyId: string) {
+    try {
+      await prisma.company.updateMany({
+        where: {
+          id: companyId,
+          tenantId,
+          deletedAt: null,
+          clientStatus: { not: ClientStatus.CLIENTE_ATIVO },
+        },
+        data: { clientStatus: ClientStatus.CLIENTE_ATIVO },
+      });
+    } catch (err) {
+      logger.error('Failed to promote company to CLIENTE_ATIVO after deal won', err, {
+        tenantId,
+        companyId,
+      });
+    }
   },
 
   async delete(tenantId: string, id: string) {
@@ -230,3 +375,13 @@ export const companyService = {
     return prisma.company.count({ where: { tenantId, deletedAt: null } });
   },
 };
+
+// Normaliza Tenant.contractAlertDays (Json): lista de inteiros > 0, sem duplicatas,
+// ordem decrescente. Valores inválidos são descartados; vazio => [] (caller decide default).
+export function parseContractAlertDays(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [90, 60, 30];
+  const days = raw
+    .map((v) => (typeof v === 'number' ? Math.trunc(v) : NaN))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  return [...new Set(days)].sort((a, b) => b - a);
+}

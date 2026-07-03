@@ -38,6 +38,7 @@ import {
   Users,
   Handshake,
   Globe,
+  BellRing,
 } from 'lucide-react';
 import { CompanyForm } from '../components/CompanyForm';
 
@@ -56,6 +57,25 @@ const SIZE_OPTIONS: { value: string; label: string }[] = [
   { value: 'MEDIUM', label: 'Média' },
   { value: 'LARGE', label: 'Grande' },
   { value: 'ENTERPRISE', label: 'Enterprise' },
+];
+
+const CLIENT_STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: 'ALL', label: 'Todos os Status' },
+  { value: 'PROSPECT', label: 'Prospect' },
+  { value: 'CLIENTE_ATIVO', label: 'Cliente ativo' },
+  { value: 'INATIVO', label: 'Inativo' },
+];
+
+// Situação de contrato (req 15) — visão "Contratos a vencer" filtrável.
+const CONTRACT_FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: 'ALL', label: 'Contrato: todos' },
+  { value: 'EXPIRING_30', label: 'Vence em até 30 dias' },
+  { value: 'EXPIRING_60', label: 'Vence em até 60 dias' },
+  { value: 'EXPIRING_90', label: 'Vence em até 90 dias' },
+  { value: 'EXPIRED', label: 'Vencido' },
+  { value: 'COMPETITOR', label: 'Com concorrente' },
+  { value: 'OURS', label: 'Conosco' },
+  { value: 'NONE', label: 'Sem contrato' },
 ];
 
 function formatDate(date: string | null | undefined): string {
@@ -77,37 +97,84 @@ export function Companies() {
 
   const [search, setSearch] = useState('');
   const [sizeFilter, setSizeFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [contractFilter, setContractFilter] = useState('ALL');
+  const [followUpPending, setFollowUpPending] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
 
+  // Monta os filtros server-side a partir do estado da toolbar (reqs 10 e 15).
+  const buildFilters = useCallback(
+    (overrides?: {
+      page?: number;
+      size?: string;
+      status?: string;
+      contract?: string;
+      followUp?: boolean;
+    }) => {
+      const size = overrides?.size ?? sizeFilter;
+      const status = overrides?.status ?? statusFilter;
+      const contract = overrides?.contract ?? contractFilter;
+      const followUp = overrides?.followUp ?? followUpPending;
+      const filters: Record<string, string | number | undefined> = {
+        page: overrides?.page ?? 1,
+      };
+      if (search.trim()) filters.search = search.trim();
+      if (size !== 'ALL') filters.size = size;
+      if (status !== 'ALL') filters.clientStatus = status;
+      if (followUp) filters.followUpPending = 'true';
+      if (contract.startsWith('EXPIRING_')) {
+        filters.contract = 'expiring';
+        filters.contractExpiringDays = Number(contract.split('_')[1]);
+      } else if (contract !== 'ALL') {
+        filters.contract = contract.toLowerCase();
+      }
+      return filters;
+    },
+    [search, sizeFilter, statusFilter, contractFilter, followUpPending]
+  );
+
   const handleSearch = useCallback(() => {
-    const filters: Record<string, string | number | undefined> = { page: 1 };
-    if (search.trim()) filters.search = search.trim();
-    if (sizeFilter !== 'ALL') filters.size = sizeFilter;
-    fetchCompanies(filters);
-  }, [search, sizeFilter, fetchCompanies]);
+    fetchCompanies(buildFilters());
+  }, [buildFilters, fetchCompanies]);
 
   const handleSizeChange = useCallback(
     (value: string) => {
       setSizeFilter(value);
-      const filters: Record<string, string | number | undefined> = { page: 1 };
-      if (search.trim()) filters.search = search.trim();
-      if (value !== 'ALL') filters.size = value;
-      fetchCompanies(filters);
+      fetchCompanies(buildFilters({ size: value }));
     },
-    [search, fetchCompanies]
+    [buildFilters, fetchCompanies]
   );
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      setStatusFilter(value);
+      fetchCompanies(buildFilters({ status: value }));
+    },
+    [buildFilters, fetchCompanies]
+  );
+
+  const handleContractChange = useCallback(
+    (value: string) => {
+      setContractFilter(value);
+      fetchCompanies(buildFilters({ contract: value }));
+    },
+    [buildFilters, fetchCompanies]
+  );
+
+  const handleFollowUpToggle = useCallback(() => {
+    const next = !followUpPending;
+    setFollowUpPending(next);
+    fetchCompanies(buildFilters({ followUp: next }));
+  }, [followUpPending, buildFilters, fetchCompanies]);
 
   const handlePageChange = useCallback(
     (page: number) => {
-      const filters: Record<string, string | number | undefined> = { page };
-      if (search.trim()) filters.search = search.trim();
-      if (sizeFilter !== 'ALL') filters.size = sizeFilter;
-      fetchCompanies(filters);
+      fetchCompanies(buildFilters({ page }));
     },
-    [search, sizeFilter, fetchCompanies]
+    [buildFilters, fetchCompanies]
   );
 
   // Filtrar ao digitar: refaz a busca (server-side) com debounce ao alterar o texto.
@@ -197,6 +264,40 @@ export function Companies() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-[180px]" aria-label="Filtrar por status de cliente">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLIENT_STATUS_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={contractFilter} onValueChange={handleContractChange}>
+              <SelectTrigger className="w-[190px]" aria-label="Filtrar por situação de contrato">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTRACT_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant={followUpPending ? 'default' : 'outline'}
+              size="sm"
+              onClick={handleFollowUpToggle}
+              aria-pressed={followUpPending}
+              className="gap-2 whitespace-nowrap"
+            >
+              <BellRing size={14} />
+              Follow-up pendente
+            </Button>
           </div>
 
           <Button
@@ -222,12 +323,20 @@ export function Companies() {
                 <EmptyState
                   icon={Building2}
                   title={
-                    search.trim() || sizeFilter !== 'ALL'
+                    search.trim() ||
+                    sizeFilter !== 'ALL' ||
+                    statusFilter !== 'ALL' ||
+                    contractFilter !== 'ALL' ||
+                    followUpPending
                       ? 'Nenhuma empresa encontrada'
                       : 'Nenhuma empresa criada'
                   }
                   description={
-                    search.trim() || sizeFilter !== 'ALL'
+                    search.trim() ||
+                    sizeFilter !== 'ALL' ||
+                    statusFilter !== 'ALL' ||
+                    contractFilter !== 'ALL' ||
+                    followUpPending
                       ? 'Tente ajustar os filtros ou termos de busca'
                       : 'Comece adicionando sua primeira empresa para organizar seus leads e deals'
                   }

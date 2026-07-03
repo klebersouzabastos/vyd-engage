@@ -23,6 +23,7 @@ import { ForecastWidget } from '../components/forecast/ForecastWidget';
 import { FunnelWidget } from '../components/forecast/FunnelWidget';
 import { ActionSummaryRow } from '../components/NextActionCard';
 import { GoalProgress } from '../components/GoalProgress';
+import { ExpiringContractsWidget } from '../components/companies/ExpiringContractsWidget';
 import { PipelineHealthGauge } from '../components/PipelineHealthGauge';
 import { useDashboard, DateRange } from '../hooks/useDashboard';
 import { CHART_COLORS } from '../utils/designTokens';
@@ -388,6 +389,11 @@ export function Dashboard() {
               <GoalProgress month={goalMonth} year={goalYear} />
             </div>
           </div>
+        </div>
+
+        {/* Contratos a vencer (spec followup-clientes-contratos, req 14) */}
+        <div className="mb-8">
+          <ExpiringContractsWidget />
         </div>
 
         {/* Suggested Actions */}
