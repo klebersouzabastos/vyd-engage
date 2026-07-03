@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { Building2, Globe, Users, Handshake, Pencil, Trash2 } from 'lucide-react';
 import { Company, CompanySize } from '../../types';
+import { ClientStatusBadge } from './CompanyBadges';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
   MICRO: 'Micro',
@@ -30,6 +31,11 @@ export function getCompanyColumns(handlers: {
           <span className="font-medium text-gray-900">{row.original.name}</span>
         </div>
       ),
+    },
+    {
+      accessorKey: 'clientStatus',
+      header: 'Status',
+      cell: ({ row }) => <ClientStatusBadge status={row.original.clientStatus} />,
     },
     {
       accessorKey: 'domain',

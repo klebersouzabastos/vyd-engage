@@ -335,14 +335,42 @@ const updateTenantSchema = z.object({
       teamsWebhookUrl: z.string().url().optional().nullable(),
     })
     .optional(),
+  // Follow-up de clientes & contratos (req 16) — restrito a ADMIN/GESTOR.
+  clientFollowUpDays: z.coerce
+    .number({ invalid_type_error: 'Informe um número de dias' })
+    .int('O intervalo de follow-up deve ser um número inteiro de dias')
+    .positive('O intervalo de follow-up deve ser maior que zero')
+    .optional(),
+  contractAlertDays: z
+    .array(
+      z.coerce
+        .number({ invalid_type_error: 'Limiar inválido' })
+        .int('Os limiares devem ser números inteiros de dias')
+        .positive('Os limiares devem ser maiores que zero')
+    )
+    .min(1, 'Informe ao menos um limiar de alerta')
+    .refine((arr) => new Set(arr).size === arr.length, {
+      message: 'Os limiares não podem ter valores duplicados',
+    })
+    .optional(),
 });
+
+const tenantSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  logo: true,
+  settings: true,
+  clientFollowUpDays: true,
+  contractAlertDays: true,
+} as const;
 
 router.get('/tenant', authenticate, async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.user.tenantId },
-      select: { id: true, name: true, slug: true, logo: true, settings: true },
+      select: tenantSelect,
     });
     res.json({ tenant });
   } catch (error) {
@@ -358,8 +386,29 @@ router.put('/tenant', authenticate, async (req, res, next) => {
 
     const data = updateTenantSchema.parse(req.body);
 
+    // Configuração de follow-up/contratos é restrita a ADMIN/GESTOR (req 16/17).
+    const touchesFollowUpConfig =
+      data.clientFollowUpDays !== undefined || data.contractAlertDays !== undefined;
+    if (touchesFollowUpConfig && !['ADMIN', 'GESTOR'].includes(req.user.role)) {
+      return next(
+        createError(
+          'Apenas ADMIN/GESTOR podem alterar as configurações de follow-up e contratos',
+          403,
+          'INSUFFICIENT_PERMISSIONS'
+        )
+      );
+    }
+
     // Merge settings JSON so existing keys are preserved
-    let updateData: Record<string, unknown> = { name: data.name, logo: data.logo };
+    let updateData: Record<string, unknown> = {
+      name: data.name,
+      logo: data.logo,
+      clientFollowUpDays: data.clientFollowUpDays,
+      // Limiares persistidos em ordem decrescente (req 16).
+      contractAlertDays: data.contractAlertDays
+        ? [...data.contractAlertDays].sort((a, b) => b - a)
+        : undefined,
+    };
     if (data.settings) {
       const current = await prisma.tenant.findUnique({
         where: { id: req.user.tenantId },
@@ -373,7 +422,7 @@ router.put('/tenant', authenticate, async (req, res, next) => {
     const tenant = await prisma.tenant.update({
       where: { id: req.user.tenantId },
       data: updateData,
-      select: { id: true, name: true, slug: true, logo: true, settings: true },
+      select: tenantSelect,
     });
 
     res.json({ tenant });

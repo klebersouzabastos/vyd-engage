@@ -7,6 +7,8 @@ import { PageSkeleton } from '../components/PageSkeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { CompanyForm } from '../components/CompanyForm';
 import { EmpreendimentosManager } from '../components/comercial/EmpreendimentosManager';
+import { ClientStatusBadge } from '../components/companies/CompanyBadges';
+import { ContractCard } from '../components/companies/ContractCard';
 import { Company, CompanySize } from '../types';
 import { apiClient } from '../services/api/client';
 import {
@@ -204,7 +206,10 @@ export function CompanyDetail() {
                 <Building2 size={28} className="text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{company.name}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-bold text-gray-900">{company.name}</h2>
+                  <ClientStatusBadge status={company.clientStatus} />
+                </div>
                 <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                   {company.industry && <span>{company.industry}</span>}
                   {company.size && (
@@ -248,8 +253,17 @@ export function CompanyDetail() {
               <Clock size={14} className="text-gray-400" />
               Criada em {formatDate(company.createdAt)}
             </div>
+            {company.assignedUser && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Users size={14} className="text-gray-400" />
+                Dono da conta: <span className="font-medium">{company.assignedUser.name}</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Contrato guarda-chuva (reqs 11 e 13) */}
+        <ContractCard company={company} onUpdated={setCompany} />
 
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-6">

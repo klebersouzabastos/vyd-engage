@@ -32,6 +32,8 @@ interface Props {
   deepResearchId?: string;
   /** Empresa pré-selecionada (opcional). */
   defaultCompanyId?: string;
+  /** Título sugerido (opcional — ex.: "Aquecimento — {empresa}"). */
+  defaultTitle?: string;
 }
 
 const NONE = '__none__';
@@ -44,9 +46,10 @@ export function RoadmapCreateDialog({
   onCreated,
   deepResearchId,
   defaultCompanyId,
+  defaultTitle,
 }: Props) {
   const { createRoadmap } = useRoadmapActions();
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(defaultTitle ?? '');
   const [companyId, setCompanyId] = useState(defaultCompanyId ?? '');
   const [empreendimentoId, setEmpreendimentoId] = useState<string>(NONE);
   const [playbookTemplateId, setPlaybookTemplateId] = useState<string>(NONE);
@@ -104,8 +107,17 @@ export function RoadmapCreateDialog({
     });
   }, [usedFunctions, teamUsers]);
 
+  // Pré-preenchimento ao abrir (aquecimento 1-clique): empresa e título sugeridos,
+  // sem sobrescrever o que o usuário já digitou.
+  useEffect(() => {
+    if (open) {
+      setTitle((t) => t || defaultTitle || '');
+      setCompanyId((c) => c || defaultCompanyId || '');
+    }
+  }, [open, defaultTitle, defaultCompanyId]);
+
   const reset = () => {
-    setTitle('');
+    setTitle(defaultTitle ?? '');
     setCompanyId(defaultCompanyId ?? '');
     setEmpreendimentoId(NONE);
     setPlaybookTemplateId(NONE);

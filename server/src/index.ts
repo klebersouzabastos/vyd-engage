@@ -131,6 +131,15 @@ import('./jobs/staleDeals.js')
     logger.error('Failed to initialize stale deals checker', error);
   });
 
+// Follow-up de clientes ativos + alertas de contrato (always active — no Redis needed)
+import('./jobs/clientFollowUpChecker.js')
+  .then(({ initializeClientFollowUpChecker }) => {
+    initializeClientFollowUpChecker();
+  })
+  .catch((error) => {
+    logger.error('Failed to initialize client follow-up checker', error);
+  });
+
 // Initialize backup job (opt-in — requires ENABLE_BACKUP_JOB=true)
 if (process.env.ENABLE_BACKUP_JOB === 'true') {
   import('./jobs/backup.js').then(({ initializeBackupJob }) => {

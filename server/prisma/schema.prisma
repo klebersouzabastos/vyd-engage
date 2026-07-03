@@ -87,6 +87,7 @@ model User {
   meetingAvailabilities MeetingAvailability[]
   auditLogs             AuditLog[]
   goals                 Goal[]
+  assignedCompanies     Company[]             @relation("CompanyAssignment")
 
   @@index([email])
   @@index([tenantId])
@@ -169,6 +170,10 @@ model Tenant {
   meetingAvailabilities MeetingAvailability[]
   auditLogs             AuditLog[]
   staleDays             Int                    @default(5)
+  // Follow-up de clientes & contratos — limiar de inatividade padrão (dias) e
+  // limiares de antecedência do alerta de vencimento (lista decrescente, em dias).
+  clientFollowUpDays    Int                    @default(30)
+  contractAlertDays     Json                   @default("[90,60,30]")
   products              Product[]
   goals                 Goal[]
   stageTaskTemplates    StageTaskTemplate[]
@@ -422,6 +427,20 @@ enum CompanySize {
   ENTERPRISE
 }
 
+// Follow-up de clientes — status manual (deal GANHO promove a CLIENTE_ATIVO).
+enum ClientStatus {
+  PROSPECT
+  CLIENTE_ATIVO
+  INATIVO
+}
+
+// Contrato guarda-chuva — quem detém o contrato-quadro da empresa.
+enum ContractHolder {
+  NOS
+  CONCORRENTE
+  NENHUM
+}
+
 model Company {
   id       String @id @default(uuid())
   tenantId String
@@ -448,6 +467,21 @@ model Company {
   // Import Pro — batch this record was created by (for history + rollback).
   importBatchId String?
 
+  // Follow-up de clientes ativos — status, dono da conta e cadência própria
+  // (null = usa o padrão do tenant, Tenant.clientFollowUpDays).
+  clientStatus         ClientStatus @default(PROSPECT)
+  assignedTo           String?
+  assignedUser         User?        @relation("CompanyAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
+  followUpIntervalDays Int?
+
+  // Contrato guarda-chuva — um contrato corrente por empresa (renovação = atualizar datas).
+  contractHolder     ContractHolder @default(NENHUM)
+  contractCompetitor String?
+  contractStartDate  DateTime?
+  contractEndDate    DateTime?
+  contractValue      Decimal?       @db.Decimal(14, 2)
+  contractScope      String?
+
   // Soft delete
   deletedAt DateTime?
 
@@ -470,6 +504,8 @@ model Company {
   @@index([tenantId, deletedAt])
   @@index([tenantId, externalId])
   @@index([tenantId, importBatchId])
+  @@index([tenantId, assignedTo])
+  @@index([tenantId, contractEndDate])
 }
 
 // ============================================
@@ -1141,6 +1177,8 @@ enum NotificationType {
   PAYMENT_FAILED
   SUBSCRIPTION_EXPIRING
   DEAL_AT_RISK
+  CONTRACT_EXPIRING
+  CLIENT_FOLLOWUP
   SYSTEM
 }
 

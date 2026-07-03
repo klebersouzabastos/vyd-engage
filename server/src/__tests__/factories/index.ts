@@ -24,6 +24,8 @@ export const tenantFactory = Factory.define<Tenant>(({ sequence }) => ({
   logo: null,
   settings: {},
   staleDays: 5,
+  clientFollowUpDays: 30,
+  contractAlertDays: [90, 60, 30],
   createdAt: new Date(),
   updatedAt: new Date(),
 }));

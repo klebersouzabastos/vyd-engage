@@ -343,6 +343,8 @@ class ApiClient {
     name?: string;
     logo?: string | null;
     settings?: { slackWebhookUrl?: string | null; teamsWebhookUrl?: string | null };
+    clientFollowUpDays?: number;
+    contractAlertDays?: number[];
   }) {
     return this.request<{
       id: string;
@@ -350,6 +352,8 @@ class ApiClient {
       slug: string;
       logo?: string | null;
       settings?: Record<string, unknown>;
+      clientFollowUpDays?: number;
+      contractAlertDays?: number[];
     }>('/api/v1/auth/tenant', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -364,6 +368,8 @@ class ApiClient {
         slug: string;
         logo?: string | null;
         settings: Record<string, unknown>;
+        clientFollowUpDays?: number;
+        contractAlertDays?: number[];
       };
     }>('/api/v1/auth/tenant');
   }
@@ -1741,6 +1747,23 @@ class ApiClient {
 
   async getCompanyCount() {
     return this.request<{ data: { count: number } }>('/api/v1/companies/stats/count');
+  }
+
+  // Widget "Contratos a vencer" — janela = maior limiar configurado no tenant.
+  async getExpiringContracts() {
+    return this.request<{
+      data: {
+        companies: Array<{
+          id: string;
+          name: string;
+          contractHolder: 'NOS' | 'CONCORRENTE';
+          contractCompetitor?: string | null;
+          contractEndDate: string;
+          assignedUser?: { id: string; name: string } | null;
+        }>;
+        windowDays: number;
+      };
+    }>('/api/v1/companies/contracts/expiring');
   }
 
   // ========================

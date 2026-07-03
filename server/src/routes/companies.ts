@@ -5,14 +5,16 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { ownerScope } from '../utils/roleScope.js';
-import { CompanySize } from '@prisma/client';
+import { ClientStatus, CompanySize, ContractHolder } from '@prisma/client';
 
 const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
 
-const createCompanySchema = z.object({
+// Campos de contrato/segmentação: concorrente obrigatório quando o detentor é
+// CONCORRENTE; datas coercidas; vencimento >= início quando ambas presentes (req 4).
+const companyFieldsSchema = z.object({
   name: z.string().min(1),
   domain: z.string().optional().nullable(),
   industry: z.string().optional().nullable(),
@@ -21,19 +23,64 @@ const createCompanySchema = z.object({
   address: z.string().optional().nullable(),
   website: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  clientStatus: z.nativeEnum(ClientStatus).optional(),
+  assignedTo: z.string().uuid().optional().nullable(),
+  followUpIntervalDays: z.coerce.number().int().positive().optional().nullable(),
+  contractHolder: z.nativeEnum(ContractHolder).optional(),
+  contractCompetitor: z.string().optional().nullable(),
+  contractStartDate: z.coerce.date().optional().nullable(),
+  contractEndDate: z.coerce.date().optional().nullable(),
+  contractValue: z.coerce.number().nonnegative().optional().nullable(),
+  contractScope: z.string().optional().nullable(),
 });
 
-const updateCompanySchema = createCompanySchema.partial().extend({
-  id: z.string().uuid(),
-});
+function refineContract<T extends z.ZodTypeAny>(schema: T) {
+  return schema
+    .refine(
+      (data: z.infer<typeof companyFieldsSchema>) =>
+        data.contractHolder !== ContractHolder.CONCORRENTE ||
+        (data.contractCompetitor && data.contractCompetitor.trim().length > 0),
+      {
+        message: 'Informe o nome do concorrente detentor do contrato',
+        path: ['contractCompetitor'],
+      }
+    )
+    .refine(
+      (data: z.infer<typeof companyFieldsSchema>) =>
+        !data.contractStartDate ||
+        !data.contractEndDate ||
+        data.contractEndDate >= data.contractStartDate,
+      {
+        message: 'O vencimento do contrato deve ser igual ou posterior ao início',
+        path: ['contractEndDate'],
+      }
+    );
+}
+
+const createCompanySchema = refineContract(companyFieldsSchema);
+
+const updateCompanySchema = refineContract(
+  companyFieldsSchema.partial().extend({
+    id: z.string().uuid(),
+  })
+);
 
 const querySchema = z.object({
   search: z.string().optional(),
   industry: z.string().optional(),
   size: z.nativeEnum(CompanySize).optional(),
+  clientStatus: z.nativeEnum(ClientStatus).optional(),
+  followUpPending: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => v === 'true'),
+  contract: z.enum(['expiring', 'expired', 'competitor', 'ours', 'none']).optional(),
+  contractExpiringDays: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
-  sort: z.enum(['createdAt', 'updatedAt', 'name', 'domain', 'industry']).optional(),
+  sort: z
+    .enum(['createdAt', 'updatedAt', 'name', 'domain', 'industry', 'contractEndDate'])
+    .optional(),
   order: z.enum(['asc', 'desc']).optional(),
 });
 
@@ -46,6 +93,20 @@ router.get('/stats/count', async (req, res, next) => {
 
     const count = await companyService.count(req.user.tenantId);
     res.json({ status: 200, data: { count } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/companies/contracts/expiring - Widget "Contratos a vencer" (before /:id)
+router.get('/contracts/expiring', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const result = await companyService.findExpiringContracts(req.user.tenantId);
+    res.json({ status: 200, data: result });
   } catch (error) {
     next(error);
   }

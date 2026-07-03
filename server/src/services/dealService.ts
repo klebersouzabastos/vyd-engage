@@ -5,6 +5,7 @@ import { logger } from '../utils/logger.js';
 import { webhookDispatcher } from './webhookDispatcher.js';
 import { notifyDealWon, notifyDealLost } from './slackService.js';
 import { emitToTenant } from './socketService.js';
+import { companyService } from './companyService.js';
 
 const STAGE_PROBABILITY: Record<DealStage, number> = {
   QUALIFICATION: 20,
@@ -377,6 +378,11 @@ export const dealService = {
         });
     }
 
+    // Deal GANHO promove a empresa vinculada a CLIENTE_ATIVO (no-op se já for) — req 6.
+    if (data.stage === DealStage.WON && existing.stage !== DealStage.WON && deal.companyId) {
+      await companyService.promoteToActiveClient(tenantId, deal.companyId);
+    }
+
     // Desdobramento comercial — refletir a etapa do Deal no status dos roadmaps
     // vinculados (req 17). Só "espelha" os marcos relevantes; não rebaixa.
     if (data.stage && data.stage !== existing.stage) {
@@ -442,6 +448,10 @@ export const dealService = {
       await prisma.lead
         .update({ where: { id: deal.leadId }, data: { status: 'WON' } })
         .catch(() => {});
+    }
+    // Deal GANHO promove a empresa vinculada a CLIENTE_ATIVO (no-op se já for) — req 6.
+    if (deal.companyId) {
+      await companyService.promoteToActiveClient(tenantId, deal.companyId);
     }
     webhookDispatcher.emitDealEvent(tenantId, 'deal.won', deal);
     notifyDealWon(tenantId, deal).catch(() => {});

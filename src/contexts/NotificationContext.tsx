@@ -25,6 +25,8 @@ const BACKEND_TYPE_MAP: Record<string, NotificationType> = {
   AUTOMATION_ERROR: 'automation_error',
   PAYMENT_FAILED: 'payment_failed',
   SUBSCRIPTION_EXPIRING: 'subscription_expiring',
+  CONTRACT_EXPIRING: 'contract_expiring',
+  CLIENT_FOLLOWUP: 'client_followup',
   SYSTEM: 'system',
 };
 

@@ -93,6 +93,8 @@ export type NotificationType =
   | 'automation_error'
   | 'payment_failed'
   | 'subscription_expiring'
+  | 'contract_expiring'
+  | 'client_followup'
   | 'system';
 
 export interface Notification {
@@ -216,6 +218,12 @@ export interface Comment {
 
 export type CompanySize = 'MICRO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'ENTERPRISE';
 
+// Follow-up de clientes — status manual (deal GANHO promove a CLIENTE_ATIVO).
+export type ClientStatus = 'PROSPECT' | 'CLIENTE_ATIVO' | 'INATIVO';
+
+// Contrato guarda-chuva — quem detém o contrato-quadro da empresa.
+export type ContractHolder = 'NOS' | 'CONCORRENTE' | 'NENHUM';
+
 export interface Company {
   id: string;
   tenantId: string;
@@ -227,6 +235,16 @@ export interface Company {
   address?: string | null;
   website?: string | null;
   notes?: string | null;
+  clientStatus?: ClientStatus;
+  assignedTo?: string | null;
+  assignedUser?: { id: string; name: string } | null;
+  followUpIntervalDays?: number | null;
+  contractHolder?: ContractHolder;
+  contractCompetitor?: string | null;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
+  contractValue?: number | string | null;
+  contractScope?: string | null;
   createdAt: string;
   updatedAt: string;
   _count?: { leads: number; deals: number; interactions?: number };

@@ -65,6 +65,12 @@ const STRICT_SCOPE = new Set([
   'src/components/ui/button.tsx',
   'src/components/comercial/PlaybooksManager.tsx',
   'src/components/comercial/RoadmapCreateDialog.tsx',
+  // Follow-up de Clientes & Contratos (spec followup-clientes-contratos):
+  // arquivos novos nascem 100% tokenizados.
+  'src/components/companies/CompanyBadges.tsx',
+  'src/components/companies/ContractCard.tsx',
+  'src/components/companies/ExpiringContractsWidget.tsx',
+  'src/components/settings/FollowUpSettingsTab.tsx',
 ]);
 const STRICT_FAMILIES =
   /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-(?:gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/;
