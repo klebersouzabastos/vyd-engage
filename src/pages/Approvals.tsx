@@ -34,6 +34,7 @@ import {
 } from '../components/ui/dialog';
 import { apiClient, ApiError } from '../services/api/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isManagerRole } from '../utils/roles';
 import type { ApprovalRequest, ApprovalType, ApprovalStatus } from '../types/governance';
 
 const TYPE_LABEL: Record<ApprovalType, string> = {
@@ -94,6 +95,10 @@ function exportExt(payload: Record<string, unknown>): string {
 
 export function Approvals() {
   const { user } = useAuth();
+  // Só gestores (ADMIN/GESTOR/platform-admin) veem/decidem a fila pendente.
+  // O solicitante restrito (USER) usa apenas "Minhas solicitações" (getMyApprovals),
+  // sem tocar em GET /approvals (que daria 403).
+  const isManager = isManagerRole(user);
   const [items, setItems] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -106,6 +111,11 @@ export function Approvals() {
   const [downloadId, setDownloadId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    // Fila pendente é manager-only; não-gestor nunca chama GET /approvals.
+    if (!isManager) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiClient.getApprovals('PENDING');
@@ -117,15 +127,15 @@ export function Approvals() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isManager]);
 
   const loadMine = useCallback(async () => {
     if (!user?.id) return;
     setMineLoading(true);
     try {
-      // Sem filtro de status → backend devolve todas do tenant; filtramos as próprias.
-      const res = await apiClient.getApprovals();
-      const own = (res.data ?? []).filter((a) => a.requestedById === user.id);
+      // Endpoint próprio (contrato FX-A): já escopado ao solicitante no backend.
+      const res = await apiClient.getMyApprovals();
+      const own = res.data ?? [];
       // Mais recentes primeiro.
       own.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setMine(own);
@@ -218,13 +228,14 @@ export function Approvals() {
       />
 
       <div className="px-4 md:px-8 py-6">
-        <Tabs defaultValue="queue">
+        <Tabs defaultValue={isManager ? 'queue' : 'mine'}>
           <TabsList>
-            <TabsTrigger value="queue">Fila pendente</TabsTrigger>
+            {isManager && <TabsTrigger value="queue">Fila pendente</TabsTrigger>}
             <TabsTrigger value="mine">Minhas solicitações</TabsTrigger>
           </TabsList>
 
-          {/* ── Fila pendente (decisão do gestor) ── */}
+          {/* ── Fila pendente (decisão do gestor) — só gestores ── */}
+          {isManager && (
           <TabsContent value="queue">
             <div className="rounded-md border border-border bg-card">
               {loading ? (
@@ -307,6 +318,7 @@ export function Approvals() {
               )}
             </div>
           </TabsContent>
+          )}
 
           {/* ── Minhas solicitações (do próprio usuário) ── */}
           <TabsContent value="mine">

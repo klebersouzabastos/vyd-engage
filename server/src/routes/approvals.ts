@@ -44,6 +44,24 @@ router.get('/', requireRole(...MANAGER_ROLES), async (req, res, next) => {
   }
 });
 
+// GET /approvals/mine?status= — as solicitações do PRÓPRIO usuário (req 15).
+// SEM requireRole: o USER restrito precisa de uma rota própria para acompanhar e
+// baixar (via /:id/download) suas solicitações. Tenant-scoped + requestedById.
+router.get('/mine', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const statusRaw = req.query.status as string | undefined;
+    const status =
+      statusRaw && (Object.values(ApprovalStatus) as string[]).includes(statusRaw)
+        ? (statusRaw as ApprovalStatus)
+        : undefined;
+    const items = await approvalService.listMine(req.user.tenantId, req.user.userId, status);
+    res.json({ status: 200, data: items });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /approvals/:id/approve — executa a ação embutida (ADMIN/GESTOR).
 router.post('/:id/approve', requireRole(...MANAGER_ROLES), async (req, res, next) => {
   try {

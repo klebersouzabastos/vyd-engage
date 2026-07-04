@@ -58,7 +58,12 @@ function statusesOf(mockFn: unknown): (string | undefined)[] {
 function effective(over: Partial<{
   capabilities: Record<string, boolean>;
   requireApprovalFor: Record<string, boolean>;
+  entities: Record<string, Record<string, boolean>>;
 }> = {}) {
+  // Eixo por-entidade (req 13): default == HOJE (USER cria/edita/exclui as 4
+  // entidades). getEffective SEMPRE popula `entities`; espelhar o contrato aqui
+  // para o deleteGate poder ler effective.entities[kind].delete.
+  const allowAll = { create: true, edit: true, delete: true };
   return {
     baseRole: 'USER',
     capabilities: {
@@ -72,8 +77,16 @@ function effective(over: Partial<{
       viewReports: true,
       ...(over.capabilities ?? {}),
     },
+    entities: {
+      leads: { ...allowAll },
+      companies: { ...allowAll },
+      deals: { ...allowAll },
+      tasks: { ...allowAll },
+      ...(over.entities ?? {}),
+    },
     visibility: { deals: 'PROPRIA', companies: 'GERAL', contacts: 'GERAL' },
     requireApprovalFor: { export: false, bulk: false, delete: false, ...(over.requireApprovalFor ?? {}) },
+    hasCustomProfile: false,
   };
 }
 

@@ -26,7 +26,7 @@ import {
 } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
-import { getEffective, type PermissionUser } from './permissionService.js';
+import { getEffective, type PermissionUser, type EntityKind } from './permissionService.js';
 import { notificationService } from './notificationService.js';
 import { leadService } from './leadService.js';
 import { dealService } from './dealService.js';
@@ -38,6 +38,21 @@ import { createAuditLog } from '../utils/auditLogger.js';
 import { isTrashEntity, type TrashEntity } from './trashService.js';
 
 const APPROVAL_TTL_DAYS = 7;
+
+/**
+ * Mapeia a TrashEntity (6 tipos) para o eixo por-entidade do perfil (EntityKind,
+ * 4 tipos) — req 13. `empreendimentos` e `roadmaps` NÃO têm dimensão por-entidade
+ * configurável (não existem em EntityPermissions) → undefined → o check por-entidade
+ * é IGNORADO para elas (mantêm o gate por capability/aprovação genérico de sempre).
+ */
+const ENTITY_KIND_BY_TRASH: Record<TrashEntity, EntityKind | undefined> = {
+  leads: 'leads',
+  deals: 'deals',
+  tasks: 'tasks',
+  companies: 'companies',
+  empreendimentos: undefined,
+  roadmaps: undefined,
+};
 
 // ── Tipos de payload ─────────────────────────────────────────────────────────
 
@@ -127,6 +142,16 @@ export async function deleteGate(
   summaryLabel: string
 ): Promise<{ queued: true; approvalId: string } | { queued: false }> {
   const effective = await getEffective(user);
+
+  // Delete por-entidade (req 13): se o perfil efetivo NEGA exclusão desta entidade
+  // (entities[kind].delete === false), rejeita ANTES de qualquer efeito/aprovação.
+  // Builtins têm entities.*.delete=true → sem mudança (== HOJE). empreendimentos/
+  // roadmaps não têm eixo por-entidade → check ignorado (kind undefined).
+  const kind = ENTITY_KIND_BY_TRASH[entity];
+  if (kind && effective.entities[kind]?.delete === false) {
+    throw createError('Exclusão desta entidade não permitida pelo seu perfil', 403, 'ENTITY_DELETE_DENIED');
+  }
+
   const needsApproval = !effective.capabilities.deleteRecords || effective.requireApprovalFor.delete;
 
   // Auditoria do intento de exclusão (best-effort) — sempre, antes de qualquer efeito.
@@ -176,6 +201,23 @@ export async function listApprovals(
     ...r,
     requestedBy: userMap.get(r.requestedById) ?? null,
   }));
+}
+
+/**
+ * Lista as solicitações do PRÓPRIO usuário (requestedById), tenant-scoped e
+ * opcionalmente por status — req 15. Dá ao USER restrito uma rota própria para
+ * ver/baixar suas solicitações sem exigir papel de gestor.
+ */
+export async function listMine(
+  tenantId: string,
+  requestedById: string,
+  status?: ApprovalStatus
+): Promise<unknown[]> {
+  return prisma.approvalRequest.findMany({
+    where: { tenantId, requestedById, ...(status ? { status } : {}) },
+    orderBy: { createdAt: 'desc' },
+    take: 200,
+  });
 }
 
 /** Busca uma solicitação por id, tenant-scoped (ou null). */
@@ -437,6 +479,7 @@ export const approvalService = {
   createApproval,
   deleteGate,
   listApprovals,
+  listMine,
   getApproval,
   approve,
   reject,

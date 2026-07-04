@@ -355,9 +355,12 @@ export const router = createBrowserRouter([
         element: guard(ApiKeys, ADMIN_ROLES),
       },
       {
-        // Fila de aprovações (Upgrade RD P1, req 15) — gated MANAGER_ROLES.
+        // Aprovações (Upgrade RD P1, req 15) — apenas autenticada: o solicitante
+        // (USER restrito) precisa abrir "Minhas solicitações" p/ baixar sua
+        // exportação aprovada. A fila pendente (aprovar/rejeitar) segue protegida
+        // no backend (requireRole) e no componente (isManagerRole).
         path: 'approvals',
-        element: guard(Approvals, MANAGER_ROLES),
+        element: Approvals,
       },
       {
         // Lixeira / restauração (Upgrade RD P1, req 16) — gated MANAGER_ROLES.

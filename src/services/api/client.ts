@@ -2836,6 +2836,19 @@ class ApiClient {
     return this.request<{ status: number; data: ApprovalRequest[] }>(`/api/v1/approvals${qs}`);
   }
 
+  /**
+   * Lista as solicitações do PRÓPRIO usuário (qualquer papel, inclusive USER
+   * restrito). Contrato FX-A: GET /api/v1/approvals/mine, escopo por solicitante
+   * no backend. Com `status` filtra por estado. Usado pela aba "Minhas
+   * solicitações" — não requer papel de gestor (evita 403 do GET /approvals).
+   */
+  async getMyApprovals(status?: ApprovalStatus) {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.request<{ status: number; data: ApprovalRequest[] }>(
+      `/api/v1/approvals/mine${qs}`
+    );
+  }
+
   /** Aprova a solicitação → executa a ação embutida e notifica o solicitante. */
   async approveApproval(id: string) {
     return this.request<{ status: number; data: ApprovalRequest }>(
