@@ -16,6 +16,10 @@ describe('Automation Service', () => {
   });
 
   afterEach(async () => {
+    // GUARDA CRÍTICA: se o beforeEach falhou, testTenantId fica undefined e o
+    // Prisma REMOVE filtros undefined — o deleteMany apagaria TODAS as automações
+    // do banco (incidente de 03/07/2026).
+    if (!testTenantId) return;
     const automations = await prisma.automation.findMany({
       where: { tenantId: testTenantId },
     });
@@ -25,7 +29,8 @@ describe('Automation Service', () => {
       });
     }
     await prisma.automation.deleteMany({ where: { tenantId: testTenantId } });
-    await prisma.tenant.delete({ where: { id: testTenantId } });
+    await prisma.tenant.delete({ where: { id: testTenantId } }).catch(() => {});
+    testTenantId = '';
   });
 
   describe('create', () => {
