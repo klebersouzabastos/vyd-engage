@@ -11,6 +11,7 @@ import { Mail, MessageSquare, ArrowLeft } from 'lucide-react';
 import { TagSelector } from '../components/TagSelector';
 import { useCustomFields } from '../contexts/CustomFieldsContext';
 import { CustomFieldInput } from '../components/CustomFieldInput';
+import { PresetField } from '../components/settings/PresetField';
 import { InteractionTimeline } from '../components/InteractionTimeline';
 import { apiClient } from '../services/api/client';
 import { TasksList } from '../components/TasksList';
@@ -82,6 +83,7 @@ export function LeadForm() {
     name: '',
     email: '',
     phone: '',
+    position: '',
     source: 'manual' as const,
     status: pipelineColumns[0]?.id || 'novo',
     automations: [] as number[],
@@ -111,6 +113,7 @@ export function LeadForm() {
               name: foundLead.name || '',
               email: foundLead.email || '',
               phone: foundLead.phone || '',
+              position: foundLead.position || '',
               source: foundLead.source || 'manual',
               status: foundLead.status || 'novo',
               automations: foundLead.automations || [],
@@ -152,6 +155,7 @@ export function LeadForm() {
           name: '',
           email: '',
           phone: '',
+          position: '',
           source: 'manual',
           status: 'novo',
           automations: [],
@@ -251,6 +255,7 @@ export function LeadForm() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          position: formData.position || undefined,
           source: formData.source,
           status: formData.status,
           customFields: formData.customFields,
@@ -262,6 +267,7 @@ export function LeadForm() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          position: formData.position || undefined,
           source: formData.source,
           status: formData.status,
           customFields: formData.customFields,
@@ -444,6 +450,18 @@ export function LeadForm() {
                         id="lead-email-error"
                         error={fieldErrors.email as string}
                         touched={touchedFields.email}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="position">Cargo</Label>
+                      <PresetField
+                        entity="CONTACT"
+                        field="position"
+                        id="position"
+                        value={formData.position}
+                        onChange={(v) => setFormData({ ...formData, position: v })}
+                        placeholder="Ex.: Gerente de Suprimentos"
                       />
                     </div>
 
