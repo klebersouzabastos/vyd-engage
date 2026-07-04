@@ -7,6 +7,9 @@ export interface UseFunnelConversionOptions {
   to?: string;
   source?: string;
   assignedTo?: string;
+  /** Upgrade RD P0 (req 5): filtros por fonte/campanha da negociação. */
+  sourceId?: string;
+  originCampaignId?: string;
 }
 
 export function useFunnelConversion(options?: UseFunnelConversionOptions) {
@@ -24,6 +27,8 @@ export function useFunnelConversion(options?: UseFunnelConversionOptions) {
         to: options?.to,
         source: options?.source,
         assignedTo: options?.assignedTo,
+        sourceId: options?.sourceId,
+        originCampaignId: options?.originCampaignId,
       });
 
       setData(result.data);
@@ -34,7 +39,14 @@ export function useFunnelConversion(options?: UseFunnelConversionOptions) {
     } finally {
       setLoading(false);
     }
-  }, [options?.from, options?.to, options?.source, options?.assignedTo]);
+  }, [
+    options?.from,
+    options?.to,
+    options?.source,
+    options?.assignedTo,
+    options?.sourceId,
+    options?.originCampaignId,
+  ]);
 
   useEffect(() => {
     fetchData();

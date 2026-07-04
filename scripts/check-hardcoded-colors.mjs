@@ -71,6 +71,20 @@ const STRICT_SCOPE = new Set([
   'src/components/companies/ContractCard.tsx',
   'src/components/companies/ExpiringContractsWidget.tsx',
   'src/components/settings/FollowUpSettingsTab.tsx',
+  // Upgrade RD parity — P0 (spec upgrade-rd-parity): arquivos novos nascem
+  // 100% tokenizados.
+  'src/components/TodayTasksPanel.tsx',
+  'src/components/deals/QualificationStars.tsx',
+  'src/components/deals/QuestionnaireSection.tsx',
+  'src/components/deals/SendEmailDialog.tsx',
+  'src/components/deals/MultiSaleDialog.tsx',
+  'src/components/deals/CelebrationModal.tsx',
+  'src/components/deals/ScheduledDealsSection.tsx',
+  'src/components/settings/QualificationTab.tsx',
+  'src/components/settings/QuestionnairesTab.tsx',
+  'src/components/settings/FieldPresetsTab.tsx',
+  'src/components/settings/ManagerTriggersTab.tsx',
+  'src/components/settings/EmailTemplatesTab.tsx',
 ]);
 const STRICT_FAMILIES =
   /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-(?:gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/;

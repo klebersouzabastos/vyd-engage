@@ -2,6 +2,14 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Skeleton } from '../components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { apiClient } from '../services/api/client';
 import { AlertTriangle, TrendingUp, TrendingDown, Percent, DollarSign } from 'lucide-react';
 import {
   PieChart,
@@ -73,11 +81,23 @@ function getPeriodDates(period: Period): { from: string; to: string } {
   };
 }
 
-async function fetchWinLoss(period: Period): Promise<WinLossData> {
+async function fetchWinLoss(
+  period: Period,
+  sourceId: string,
+  campaignId: string
+): Promise<WinLossData> {
   const { from, to } = getPeriodDates(period);
   const token = localStorage.getItem('accessToken');
-  const params = period === 'all' ? '' : `?from=${from}&to=${to}`;
-  const res = await fetch(`${API_BASE}/api/v1/reports/win-loss${params}`, {
+  const params = new URLSearchParams();
+  if (period !== 'all') {
+    params.set('from', from);
+    params.set('to', to);
+  }
+  // Upgrade RD P0 (req 5): segmentação do relatório por fonte/campanha do deal.
+  if (sourceId !== 'ALL') params.set('sourceId', sourceId);
+  if (campaignId !== 'ALL') params.set('originCampaignId', campaignId);
+  const qs = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/reports/win-loss${qs ? `?${qs}` : ''}`, {
     headers: {
       Authorization: 'Bearer ' + token,
       'Content-Type': 'application/json',
@@ -154,10 +174,26 @@ function StatCard({
 
 export function WinLossReport() {
   const [period, setPeriod] = useState<Period>('90d');
+  // Filtros por fonte/campanha do deal (upgrade-rd-parity, req 5).
+  const [sourceId, setSourceId] = useState('ALL');
+  const [campaignId, setCampaignId] = useState('ALL');
+
+  const { data: sourcesData } = useQuery({
+    queryKey: ['deal-sources', 'active'],
+    queryFn: () => apiClient.getDealSources(true),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: campaignsData } = useQuery({
+    queryKey: ['origin-campaigns', 'active'],
+    queryFn: () => apiClient.getOriginCampaigns(true),
+    staleTime: 5 * 60 * 1000,
+  });
+  const sources = sourcesData?.data ?? [];
+  const campaigns = campaignsData?.data ?? [];
 
   const { data, isLoading, error } = useQuery<WinLossData>({
-    queryKey: ['win-loss-report', period],
-    queryFn: () => fetchWinLoss(period),
+    queryKey: ['win-loss-report', period, sourceId, campaignId],
+    queryFn: () => fetchWinLoss(period, sourceId, campaignId),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -192,19 +228,51 @@ export function WinLossReport() {
       <Header title="Relatório Win/Loss" subtitle="Análise de deals ganhos e perdidos" />
 
       <div className="p-4 md:p-8">
-        {/* Period selector */}
-        <div className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded-lg p-1 mb-6 w-fit">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                period === p.value ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        {/* Period selector + filtros fonte/campanha (req 5) */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded-lg p-1 w-fit">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  period === p.value ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {sources.length > 0 && (
+            <Select value={sourceId} onValueChange={setSourceId}>
+              <SelectTrigger className="w-[180px]" aria-label="Filtrar por fonte">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas as fontes</SelectItem>
+                {sources.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name ?? s.label ?? ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {campaigns.length > 0 && (
+            <Select value={campaignId} onValueChange={setCampaignId}>
+              <SelectTrigger className="w-[190px]" aria-label="Filtrar por campanha">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas as campanhas</SelectItem>
+                {campaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name ?? c.label ?? ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {error ? (

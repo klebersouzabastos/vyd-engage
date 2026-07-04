@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ClientStatus, Company, CompanySize, ContractHolder } from '../types';
+import type { CompanySegment } from '../types/sales';
 import { Loader2 } from 'lucide-react';
 import { FieldError } from './register/FieldError';
 import { companyFormSchema } from '../utils/validation/formSchemas';
@@ -34,6 +35,8 @@ const CONTRACT_HOLDER_OPTIONS: { value: ContractHolder; label: string }[] = [
 
 // Valor "sem dono" para o Select (Radix não aceita item com value vazio).
 const UNASSIGNED = 'UNASSIGNED';
+// Valor "sem segmento" para o Select de segmento (upgrade-rd-parity, req 6).
+const NO_SEGMENT = 'NO_SEGMENT';
 
 function toDateInputValue(value?: string | null): string {
   if (!value) return '';
@@ -51,6 +54,8 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
   const [domain, setDomain] = useState(company?.domain || '');
   const [industry, setIndustry] = useState(company?.industry || '');
   const [size, setSize] = useState<CompanySize | ''>(company?.size || '');
+  const [segmentId, setSegmentId] = useState<string>(company?.segmentId || NO_SEGMENT);
+  const [segments, setSegments] = useState<CompanySegment[]>([]);
   const [phone, setPhone] = useState(company?.phone || '');
   const [address, setAddress] = useState(company?.address || '');
   const [website, setWebsite] = useState(company?.website || '');
@@ -103,6 +108,17 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
       .catch(() => {});
   }, []);
 
+  // Segmentos do tenant (upgrade-rd-parity, req 6): ativos + o já selecionado
+  // (mesmo inativo, para não perder o valor ao editar).
+  useEffect(() => {
+    apiClient
+      .getCompanySegments()
+      .then((res) => setSegments(res.data || []))
+      .catch(() => {});
+  }, []);
+
+  const segmentOptions = segments.filter((s) => s.active || s.id === company?.segmentId);
+
   // Validações do contrato (espelham o backend, req 4): concorrente obrigatório
   // quando detentor = CONCORRENTE; vencimento >= início quando ambas presentes.
   const validateContract = (): boolean => {
@@ -148,6 +164,7 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         address: address.trim() || null,
         website: website.trim() || null,
         notes: notes.trim() || null,
+        segmentId: segmentId === NO_SEGMENT ? null : segmentId,
         clientStatus,
         assignedTo: assignedTo === UNASSIGNED ? null : assignedTo,
         followUpIntervalDays: followUpIntervalDays ? Number(followUpIntervalDays) : null,
@@ -245,6 +262,30 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
             </SelectContent>
           </Select>
         </div>
+        <div>
+          <Label htmlFor="company-segment">Segmento</Label>
+          <Select value={segmentId} onValueChange={setSegmentId}>
+            <SelectTrigger id="company-segment" className="mt-1">
+              <SelectValue placeholder="Sem segmento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_SEGMENT}>Sem segmento</SelectItem>
+              {segmentOptions.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {segments.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Cadastre segmentos em Configurações de vendas.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="company-phone">Telefone</Label>
           <Input

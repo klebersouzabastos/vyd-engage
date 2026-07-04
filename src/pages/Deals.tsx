@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQueryState } from 'nuqs';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { DataTable } from '../components/ui/data-table';
 import { getDealColumns } from '../components/deals/dealColumns';
@@ -66,6 +67,17 @@ import {
   type FilterCondition,
   type FieldDefinition,
 } from '../components/filters/AdvancedFilterPanel';
+import { useQualificationConfig } from '../components/deals/QualificationStars';
+
+// Filtro por qualificação (mínimo de estrelas) — lista e pipeline (Upgrade RD P0, req 1).
+const QUALIFICATION_OPTIONS: { value: string; label: string }[] = [
+  { value: 'ALL', label: 'Qualquer qualificação' },
+  { value: '1', label: '1+ estrelas' },
+  { value: '2', label: '2+ estrelas' },
+  { value: '3', label: '3+ estrelas' },
+  { value: '4', label: '4+ estrelas' },
+  { value: '5', label: '5 estrelas' },
+];
 
 const STAGE_OPTIONS: { value: string; label: string }[] = [
   { value: 'ALL', label: 'Todos os Stages' },
@@ -117,6 +129,24 @@ export function Deals() {
   // Filtros refletidos na URL (view filtrada compartilhável/bookmarkável)
   const [search, setSearch] = useQueryState('q', { defaultValue: '' });
   const [stageFilter, setStageFilter] = useQueryState('stage', { defaultValue: 'ALL' });
+  // Filtros P0 (reqs 1 e 5): qualificação mínima, fonte e campanha — aplicados
+  // client-side sobre a página carregada (o endpoint de lista ainda não filtra por eles).
+  const [qualFilter, setQualFilter] = useQueryState('qual', { defaultValue: 'ALL' });
+  const [sourceFilter, setSourceFilter] = useQueryState('fonte', { defaultValue: 'ALL' });
+  const [campaignFilter, setCampaignFilter] = useQueryState('campanha', { defaultValue: 'ALL' });
+
+  // Config de qualificação (nomes dos níveis) + fontes/campanhas do tenant.
+  const { data: qualConfig } = useQualificationConfig();
+  const { data: dealSources = [] } = useQuery({
+    queryKey: ['deal-sources', 'active'],
+    queryFn: () => apiClient.getDealSources(true).then((r) => r.data || []),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: originCampaigns = [] } = useQuery({
+    queryKey: ['origin-campaigns', 'active'],
+    queryFn: () => apiClient.getOriginCampaigns(true).then((r) => r.data || []),
+    staleTime: 5 * 60 * 1000,
+  });
   const [formOpen, setFormOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -135,6 +165,8 @@ export function Deals() {
   const [pipelineAssignee, setPipelineAssignee] = useState('ALL');
   const [pipelineStatus, setPipelineStatus] = useState('ALL');
   const [pipelineSort, setPipelineSort] = useState('default');
+  // Qualificação mínima no pipeline (Upgrade RD P0, req 1).
+  const [pipelineQualification, setPipelineQualification] = useState('ALL');
 
   const pipelineAssignees = useMemo(() => {
     const map = new Map<string, string>();
@@ -168,6 +200,10 @@ export function Deals() {
       if (pipelineStatus !== 'ALL') {
         ds = ds.filter((d) => (d.status || 'OPEN') === pipelineStatus);
       }
+      if (pipelineQualification !== 'ALL') {
+        const min = Number(pipelineQualification);
+        ds = ds.filter((d) => (d.qualification || 0) >= min);
+      }
       if (pipelineSort !== 'default') {
         ds = [...ds].sort((a, b) => {
           switch (pipelineSort) {
@@ -188,7 +224,26 @@ export function Deals() {
       }
       return { ...col, deals: ds };
     });
-  }, [dealColumns, pipelineSearch, pipelineAssignee, pipelineStatus, pipelineSort]);
+  }, [
+    dealColumns,
+    pipelineSearch,
+    pipelineAssignee,
+    pipelineStatus,
+    pipelineSort,
+    pipelineQualification,
+  ]);
+
+  // Lista: qualificação mínima + fonte + campanha, client-side sobre a página atual.
+  const displayedDeals = useMemo(() => {
+    const minQual = qualFilter !== 'ALL' ? Number(qualFilter) : 0;
+    return deals.filter((deal) => {
+      if (minQual > 0 && (deal.qualification || 0) < minQual) return false;
+      const raw = deal as unknown as Record<string, unknown>;
+      if (sourceFilter !== 'ALL' && raw.sourceId !== sourceFilter) return false;
+      if (campaignFilter !== 'ALL' && raw.originCampaignId !== campaignFilter) return false;
+      return true;
+    });
+  }, [deals, qualFilter, sourceFilter, campaignFilter]);
 
   const handleSearch = useCallback(() => {
     const filters: any = { page: 1 };
@@ -416,15 +471,18 @@ export function Deals() {
   // Column defs for the deals list table (handlers use stable setters)
   const dealTableColumns = useMemo(
     () =>
-      getDealColumns({
-        onEdit: handleEdit,
-        onDelete: (deal: Deal) => {
-          setDealToDelete(deal);
-          setDeleteDialogOpen(true);
+      getDealColumns(
+        {
+          onEdit: handleEdit,
+          onDelete: (deal: Deal) => {
+            setDealToDelete(deal);
+            setDeleteDialogOpen(true);
+          },
         },
-      }),
-
-    []
+        qualConfig?.levels
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers usam setters estáveis
+    [qualConfig?.levels]
   );
 
   if (loading && deals.length === 0) {
@@ -469,6 +527,44 @@ export function Deals() {
                     {STAGE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={qualFilter} onValueChange={setQualFilter}>
+                  <SelectTrigger className="w-[190px]" aria-label="Filtrar por qualificação">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUALIFICATION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="w-[170px]" aria-label="Filtrar por fonte">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todas as fontes</SelectItem>
+                    {dealSources.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={campaignFilter} onValueChange={setCampaignFilter}>
+                  <SelectTrigger className="w-[190px]" aria-label="Filtrar por campanha">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todas as campanhas</SelectItem>
+                    {originCampaigns.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -693,6 +789,18 @@ export function Deals() {
                 <SelectItem value="PAUSED">Pausado</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={pipelineQualification} onValueChange={setPipelineQualification}>
+              <SelectTrigger className="w-[190px]" aria-label="Filtrar por qualificação">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QUALIFICATION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={pipelineSort} onValueChange={setPipelineSort}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -730,18 +838,26 @@ export function Deals() {
               <div className="overflow-x-auto">
                 <DataTable
                   columns={dealTableColumns}
-                  data={deals}
+                  data={displayedDeals}
                   onRowClick={(deal) => openPanel('deal', deal.id)}
                   emptyState={
                     <EmptyState
                       icon={Handshake}
                       title={
-                        search.trim() || stageFilter !== 'ALL'
+                        search.trim() ||
+                        stageFilter !== 'ALL' ||
+                        qualFilter !== 'ALL' ||
+                        sourceFilter !== 'ALL' ||
+                        campaignFilter !== 'ALL'
                           ? 'Nenhum deal encontrado'
                           : 'Nenhum deal criado'
                       }
                       description={
-                        search.trim() || stageFilter !== 'ALL'
+                        search.trim() ||
+                        stageFilter !== 'ALL' ||
+                        qualFilter !== 'ALL' ||
+                        sourceFilter !== 'ALL' ||
+                        campaignFilter !== 'ALL'
                           ? 'Tente ajustar os filtros ou termos de busca'
                           : 'Comece adicionando seu primeiro deal para gerenciar seu pipeline de vendas'
                       }

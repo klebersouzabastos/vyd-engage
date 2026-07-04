@@ -1,7 +1,9 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { Calendar, User, Pencil, Trash2 } from 'lucide-react';
 import { Deal } from '../../types';
+import type { QualificationLevel } from '../../types/sales';
 import { DealStageBadge } from './DealStageBadge';
+import { QualificationStars } from './QualificationStars';
 import { formatCurrency } from '../../utils/format';
 
 function formatDate(date: string | null | undefined): string {
@@ -11,10 +13,14 @@ function formatDate(date: string | null | undefined): string {
 
 /** Column definitions for the deals list (DataTable). Handlers are injected so the
  *  action cell can edit/delete without the columns owning page state. */
-export function getDealColumns(handlers: {
-  onEdit: (deal: Deal) => void;
-  onDelete: (deal: Deal) => void;
-}): ColumnDef<Deal>[] {
+export function getDealColumns(
+  handlers: {
+    onEdit: (deal: Deal) => void;
+    onDelete: (deal: Deal) => void;
+  },
+  /** Níveis de qualificação do tenant — tooltip com o nome do nível (req 1). */
+  qualificationLevels?: QualificationLevel[]
+): ColumnDef<Deal>[] {
   return [
     {
       accessorKey: 'name',
@@ -40,6 +46,18 @@ export function getDealColumns(handlers: {
       accessorKey: 'probability',
       header: 'Probabilidade',
       cell: ({ row }) => <span className="text-sm text-gray-600">{row.original.probability}%</span>,
+    },
+    {
+      accessorKey: 'qualification',
+      header: 'Qualificação',
+      cell: ({ row }) => {
+        const q = row.original.qualification ?? 0;
+        return q > 0 ? (
+          <QualificationStars value={q} levels={qualificationLevels} size={12} />
+        ) : (
+          <span className="text-sm text-gray-400">—</span>
+        );
+      },
     },
     {
       accessorKey: 'expectedCloseDate',

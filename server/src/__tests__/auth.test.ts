@@ -1,6 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { authService } from '../services/authService.js';
 import prisma from '../config/database.js';
+
+// requestPasswordReset envia e-mail real (Resend/SMTP) e, com NODE_ENV=development,
+// RELANÇA a falha de transporte — sem RESEND_API_KEY local o teste nunca passa.
+// O teste cobre o FLUXO de reset (token persistido), não o transporte: mock só do
+// sendEmail, mantendo os templates reais.
+vi.mock('../services/emailService.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/emailService.js')>();
+  return { ...actual, sendEmail: vi.fn().mockResolvedValue(undefined) };
+});
 
 describe('Auth Service', () => {
   let testTenantId: string;
@@ -145,11 +154,12 @@ describe('Auth Service', () => {
       });
     });
 
-    it('should request password reset successfully', async () => {
+    // 15s: banco remoto (Railway proxy) — múltiplos roundtrips por chamada.
+    it('should request password reset successfully', { timeout: 15000 }, async () => {
       await expect(authService.requestPasswordReset(resetEmail)).resolves.not.toThrow();
     });
 
-    it('should not reveal if email exists', async () => {
+    it('should not reveal if email exists', { timeout: 15000 }, async () => {
       // Should not throw even if email doesn't exist
       await expect(
         authService.requestPasswordReset(uniqueEmail('nonexistent'))

@@ -187,6 +187,11 @@ model Tenant {
   lostReasons           LostReason[]
   dealSources           DealSource[]
   originCampaigns       OriginCampaign[]
+  questionnaires        Questionnaire[]
+  companySegments       CompanySegment[]
+  fieldPresets          FieldPreset[]
+  managerTriggers       ManagerTrigger[]
+  scheduledDeals        ScheduledDeal[]
 
   @@index([slug])
 }
@@ -474,6 +479,11 @@ model Company {
   assignedUser         User?        @relation("CompanyAssignment", fields: [assignedTo], references: [id], onDelete: SetNull)
   followUpIntervalDays Int?
 
+  // Upgrade RD P0 — segmento configurável por tenant (substitui o texto livre
+  // `industry` como dimensão de filtro/relatório; `industry` permanece).
+  segmentId String?
+  segment   CompanySegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+
   // Contrato guarda-chuva — um contrato corrente por empresa (renovação = atualizar datas).
   contractHolder     ContractHolder @default(NENHUM)
   contractCompetitor String?
@@ -506,6 +516,7 @@ model Company {
   @@index([tenantId, importBatchId])
   @@index([tenantId, assignedTo])
   @@index([tenantId, contractEndDate])
+  @@index([tenantId, segmentId])
 }
 
 // ============================================
@@ -585,6 +596,7 @@ model Deal {
   stageHistory       DealStageHistory[]
   dealProducts       DealProduct[]
   commercialRoadmaps CommercialRoadmap[]
+  questionnaireResponses QuestionnaireResponse[]
 
   @@index([tenantId])
   @@index([tenantId, stage])
@@ -1179,6 +1191,8 @@ enum NotificationType {
   DEAL_AT_RISK
   CONTRACT_EXPIRING
   CLIENT_FOLLOWUP
+  MANAGER_TRIGGER
+  MULTI_SALE_CREATED
   SYSTEM
 }
 
@@ -1995,4 +2009,165 @@ model StageRequiredField {
   @@unique([funnelColumnId, customFieldId])
   @@index([funnelColumnId])
   @@index([customFieldId])
+}
+
+// ============================================
+// UPGRADE RD PARITY — P0
+// (qualificação/questionários, segmentos, presets,
+//  gatilhos gerenciais e multi-vendas agendadas)
+// ============================================
+
+enum ScheduledDealType {
+  POS_VENDA
+  CROSS_SELL
+  UPSELL
+  RECOMPRA
+  RELACIONAMENTO
+  OUTRO
+}
+
+enum ScheduledDealStatus {
+  PENDING
+  CREATED
+  CANCELLED
+}
+
+enum PresetEntity {
+  COMPANY
+  CONTACT
+  DEAL
+}
+
+enum TriggerConditionType {
+  NO_INTERACTION
+  STUCK_IN_STAGE
+  DEAL_LOST
+  BIG_SALE
+}
+
+model Questionnaire {
+  id          String  @id @default(uuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  active      Boolean @default(true)
+  // [{ id, text, type: 'SINGLE'|'MULTI'|'TEXT', options?: [{ label, points }] }]
+  questions   Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses QuestionnaireResponse[]
+
+  @@index([tenantId])
+  @@map("questionnaires")
+}
+
+model QuestionnaireResponse {
+  id              String        @id @default(uuid())
+  tenantId        String
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  dealId          String
+  deal            Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId          String?
+  // [{ questionId, optionLabels?: string[], text?: string }]
+  answers         Json
+  score           Int           @default(0)
+  createdAt       DateTime      @default(now())
+
+  @@index([tenantId, dealId])
+  @@map("questionnaire_responses")
+}
+
+model CompanySegment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies Company[]
+
+  @@unique([tenantId, name])
+  @@map("company_segments")
+}
+
+model FieldPreset {
+  id          String       @id @default(uuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entity      PresetEntity
+  // Campo padrão da entidade (validado por lista fixa por entidade na rota):
+  //   COMPANY: ['industry'], CONTACT: ['position'], DEAL: []
+  field       String
+  // string[] — valores pré-definidos oferecidos como seleção nos formulários
+  options     Json
+  allowCustom Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([tenantId, entity, field])
+  @@map("field_presets")
+}
+
+model ManagerTrigger {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name          String
+  conditionType TriggerConditionType
+  // Por tipo:
+  //   NO_INTERACTION: { days?: number, funnelColumnId?: string, useCoolingDays?: boolean }
+  //   STUCK_IN_STAGE: { days: number, funnelColumnId?: string }
+  //   DEAL_LOST: {}   BIG_SALE: { minValue: number }
+  conditionConfig Json
+
+  notifyOwner    Boolean @default(true)
+  notifyManagers Boolean @default(false)
+  // string[] — ids de usuários específicos
+  notifyUserIds  Json    @default("[]")
+  emailEnabled   Boolean @default(false)
+  active         Boolean @default(true)
+  // Gatilho padrão "Negociações esfriando" (semântica do staleDeals) — não deletável
+  isDefault      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, active])
+  @@map("manager_triggers")
+}
+
+model ScheduledDeal {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Vínculos por id (sem FK — o deal de origem pode ser removido sem destruir o agendamento)
+  originDealId String
+  companyId    String?
+  leadId       String?
+
+  type           ScheduledDealType
+  scheduledFor   DateTime
+  funnelId       String?
+  funnelColumnId String?
+  estimatedValue Decimal?          @db.Decimal(12, 2)
+  assignedTo     String?
+  notes          String?
+
+  status        ScheduledDealStatus @default(PENDING)
+  createdDealId String?
+  createdById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status, scheduledFor])
+  @@map("scheduled_deals")
 }

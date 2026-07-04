@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { DataTable } from '../components/ui/data-table';
 import { getCompanyColumns } from '../components/companies/companyColumns';
 import { Header } from '../components/Header';
@@ -41,6 +42,7 @@ import {
   BellRing,
 } from 'lucide-react';
 import { CompanyForm } from '../components/CompanyForm';
+import { apiClient } from '../services/api/client';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
   MICRO: 'Micro',
@@ -98,6 +100,7 @@ export function Companies() {
   const [search, setSearch] = useState('');
   const [sizeFilter, setSizeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [segmentFilter, setSegmentFilter] = useState('ALL');
   const [contractFilter, setContractFilter] = useState('ALL');
   const [followUpPending, setFollowUpPending] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -105,17 +108,27 @@ export function Companies() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
 
+  // Segmentos ativos do tenant (upgrade-rd-parity, req 6) — filtro por segmento.
+  const { data: segmentsData } = useQuery({
+    queryKey: ['company-segments', 'active'],
+    queryFn: () => apiClient.getCompanySegments(true),
+    staleTime: 5 * 60 * 1000,
+  });
+  const segments = segmentsData?.data ?? [];
+
   // Monta os filtros server-side a partir do estado da toolbar (reqs 10 e 15).
   const buildFilters = useCallback(
     (overrides?: {
       page?: number;
       size?: string;
       status?: string;
+      segment?: string;
       contract?: string;
       followUp?: boolean;
     }) => {
       const size = overrides?.size ?? sizeFilter;
       const status = overrides?.status ?? statusFilter;
+      const segment = overrides?.segment ?? segmentFilter;
       const contract = overrides?.contract ?? contractFilter;
       const followUp = overrides?.followUp ?? followUpPending;
       const filters: Record<string, string | number | undefined> = {
@@ -124,6 +137,7 @@ export function Companies() {
       if (search.trim()) filters.search = search.trim();
       if (size !== 'ALL') filters.size = size;
       if (status !== 'ALL') filters.clientStatus = status;
+      if (segment !== 'ALL') filters.segmentId = segment;
       if (followUp) filters.followUpPending = 'true';
       if (contract.startsWith('EXPIRING_')) {
         filters.contract = 'expiring';
@@ -133,7 +147,7 @@ export function Companies() {
       }
       return filters;
     },
-    [search, sizeFilter, statusFilter, contractFilter, followUpPending]
+    [search, sizeFilter, statusFilter, segmentFilter, contractFilter, followUpPending]
   );
 
   const handleSearch = useCallback(() => {
@@ -152,6 +166,14 @@ export function Companies() {
     (value: string) => {
       setStatusFilter(value);
       fetchCompanies(buildFilters({ status: value }));
+    },
+    [buildFilters, fetchCompanies]
+  );
+
+  const handleSegmentChange = useCallback(
+    (value: string) => {
+      setSegmentFilter(value);
+      fetchCompanies(buildFilters({ segment: value }));
     },
     [buildFilters, fetchCompanies]
   );
@@ -276,6 +298,21 @@ export function Companies() {
                 ))}
               </SelectContent>
             </Select>
+            {segments.length > 0 && (
+              <Select value={segmentFilter} onValueChange={handleSegmentChange}>
+                <SelectTrigger className="w-[180px]" aria-label="Filtrar por segmento">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos os segmentos</SelectItem>
+                  {segments.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={contractFilter} onValueChange={handleContractChange}>
               <SelectTrigger className="w-[190px]" aria-label="Filtrar por situação de contrato">
                 <SelectValue />
@@ -326,6 +363,7 @@ export function Companies() {
                     search.trim() ||
                     sizeFilter !== 'ALL' ||
                     statusFilter !== 'ALL' ||
+                    segmentFilter !== 'ALL' ||
                     contractFilter !== 'ALL' ||
                     followUpPending
                       ? 'Nenhuma empresa encontrada'
@@ -335,6 +373,7 @@ export function Companies() {
                     search.trim() ||
                     sizeFilter !== 'ALL' ||
                     statusFilter !== 'ALL' ||
+                    segmentFilter !== 'ALL' ||
                     contractFilter !== 'ALL' ||
                     followUpPending
                       ? 'Tente ajustar os filtros ou termos de busca'

@@ -235,6 +235,9 @@ export interface Company {
   address?: string | null;
   website?: string | null;
   notes?: string | null;
+  /** Segmento configurável do tenant (upgrade-rd-parity, req 6). */
+  segmentId?: string | null;
+  segment?: { id: string; name: string } | null;
   clientStatus?: ClientStatus;
   assignedTo?: string | null;
   assignedUser?: { id: string; name: string } | null;

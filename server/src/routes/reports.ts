@@ -54,12 +54,15 @@ router.get('/funnel-conversion', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
 
-    const { from, to, source, assignedTo } = req.query;
+    const { from, to, source, assignedTo, sourceId, originCampaignId } = req.query;
     const data = await forecastService.getFunnelConversion(req.user.tenantId, {
       from: from as string | undefined,
       to: to as string | undefined,
       source: source as string | undefined,
       assignedTo: ownerScope(req.user, assignedTo as string | undefined),
+      // Upgrade RD P0 (req 5): segmentação por fonte/campanha da negociação.
+      sourceId: sourceId as string | undefined,
+      originCampaignId: originCampaignId as string | undefined,
     });
 
     res.json({ status: 200, data });
@@ -437,7 +440,7 @@ router.get('/win-loss', async (req, res, next) => {
       return next(createError('Forbidden', 403, 'INSUFFICIENT_PERMISSIONS'));
     }
     const tenantId = req.user.tenantId;
-    const { from, to } = req.query;
+    const { from, to, sourceId, originCampaignId } = req.query;
 
     const fromDate = from
       ? new Date(from as string)
@@ -450,6 +453,9 @@ router.get('/win-loss', async (req, res, next) => {
         deletedAt: null,
         stage: { in: ['WON', 'LOST'] },
         closedAt: { gte: fromDate, lte: toDate },
+        // Upgrade RD P0 (req 5): filtros por fonte/campanha da negociação.
+        ...(sourceId ? { sourceId: sourceId as string } : {}),
+        ...(originCampaignId ? { originCampaignId: originCampaignId as string } : {}),
       },
       select: { stage: true, value: true, closedAt: true, lostReason: true, lostCompetitor: true },
     });

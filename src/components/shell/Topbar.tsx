@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Search, LogOut, User as UserIcon } from 'lucide-react';
+import { Search, LogOut, User as UserIcon, CalendarCheck } from 'lucide-react';
 import { openCommandPalette } from '@/hooks/useCommandPalette';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { TodayTasksPanel } from '@/components/TodayTasksPanel';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { screenTitleFor } from '@/lib/screenTitles';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,6 +25,8 @@ export function Topbar() {
   const { companyName } = useCompany();
   const { user, logout } = useAuth();
   const screen = screenTitleFor(location.pathname);
+  // Painel "Tarefas de hoje" (upgrade-rd-parity, req 9) — Sheet no padrão do SidePanel.
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   const initials = (user?.name || 'U')
     .split(' ')
@@ -76,6 +81,17 @@ export function Topbar() {
         </kbd>
       </button>
 
+      {/* Tarefas de hoje + negociações sem tarefa (upgrade-rd-parity, req 9) */}
+      <button
+        type="button"
+        className="vyd-tool-switcher"
+        onClick={() => setTasksOpen(true)}
+        title="Tarefas de hoje e negociações sem tarefa"
+      >
+        <CalendarCheck size={14} />
+        <span className="hidden sm:inline">Tarefas de hoje</span>
+      </button>
+
       <ThemeToggle />
       <NotificationCenter />
 
@@ -103,6 +119,20 @@ export function Topbar() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Sheet do painel "Tarefas de hoje" (mesmo padrão do SidePanel) */}
+      <Sheet open={tasksOpen} onOpenChange={setTasksOpen}>
+        <SheetContent side="right" className="w-full sm:w-[480px] p-0 flex flex-col">
+          <SheetHeader className="px-6 py-4 border-b border-border shrink-0">
+            <SheetTitle className="text-sm font-medium text-muted-foreground">
+              Tarefas de hoje
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto">
+            <TodayTasksPanel onNavigate={() => setTasksOpen(false)} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }
