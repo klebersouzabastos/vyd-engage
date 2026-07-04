@@ -143,6 +143,16 @@ import('./jobs/clientFollowUpChecker.js')
     logger.error('Failed to initialize client follow-up checker', error);
   });
 
+// Governança (Upgrade RD P1): expira aprovações vencidas + expurgo da lixeira +
+// semeia builtins de perfil de permissão (always active — lightweight, no Redis).
+import('./jobs/governanceJobs.js')
+  .then(({ startGovernanceJobs }) => {
+    startGovernanceJobs();
+  })
+  .catch((error) => {
+    logger.error('Failed to initialize governance jobs', error);
+  });
+
 // Initialize backup job (opt-in — requires ENABLE_BACKUP_JOB=true)
 if (process.env.ENABLE_BACKUP_JOB === 'true') {
   import('./jobs/backup.js').then(({ initializeBackupJob }) => {
@@ -239,6 +249,10 @@ import { lostReasonRoutes, dealSourceRoutes, originCampaignRoutes } from './rout
 import salesConfigRoutes from './routes/salesConfig.js';
 import questionnaireRoutes from './routes/questionnaires.js';
 import scheduledDealRoutes from './routes/scheduledDeals.js';
+import teamRoutes from './routes/teams.js';
+import permissionProfileRoutes from './routes/permissionProfiles.js';
+import approvalRoutes from './routes/approvals.js';
+import trashRoutes from './routes/trash.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -324,6 +338,11 @@ v1Router.use('/origin-campaigns', csrfProtection);
 v1Router.use('/sales-config', csrfProtection);
 v1Router.use('/questionnaires', csrfProtection);
 v1Router.use('/scheduled-deals', csrfProtection);
+// Times & governança (Upgrade RD P1) — rotas autenticadas → CSRF por whitelist.
+v1Router.use('/teams', csrfProtection);
+v1Router.use('/permission-profiles', csrfProtection);
+v1Router.use('/approvals', csrfProtection);
+v1Router.use('/trash', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -382,6 +401,11 @@ v1Router.use('/origin-campaigns', originCampaignRoutes);
 v1Router.use('/sales-config', salesConfigRoutes);
 v1Router.use('/questionnaires', questionnaireRoutes);
 v1Router.use('/scheduled-deals', scheduledDealRoutes);
+// Times & governança (Upgrade RD P1)
+v1Router.use('/teams', teamRoutes);
+v1Router.use('/permission-profiles', permissionProfileRoutes);
+v1Router.use('/approvals', approvalRoutes);
+v1Router.use('/trash', trashRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

@@ -13,7 +13,8 @@ interface ExportFilters {
   source?: string;
   search?: string;
   tagId?: string;
-  assignedTo?: string;
+  // Escopo de responsável: um dono (string) ou o conjunto da equipe ({in}) — req 14.
+  assignedTo?: string | { in: string[] };
   // Deal-specific
   stage?: string;
   minValue?: number;

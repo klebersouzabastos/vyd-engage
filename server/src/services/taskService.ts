@@ -101,7 +101,8 @@ export const taskService = {
     filters?: {
       status?: TaskStatus;
       priority?: TaskPriority;
-      assignedTo?: string;
+      // Escopo de responsável: um dono (string) ou o conjunto da equipe ({in}) — req 14.
+      assignedTo?: string | { in: string[] };
       leadId?: string;
       overdue?: boolean;
       dueToday?: boolean;

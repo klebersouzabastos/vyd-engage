@@ -25,8 +25,8 @@ export interface CreateScheduledDealData {
 export interface ScheduledDealListFilters {
   status?: ScheduledDealStatus;
   originDealId?: string;
-  /** Escopo por papel (ownerScope): analista só vê os seus. */
-  assignedTo?: string;
+  /** Escopo de responsável (visibilidade viva, req 14): um dono (string) ou a equipe ({in}). */
+  assignedTo?: string | { in: string[] };
 }
 
 /** Rótulos pt-BR dos tipos de multi-venda (usados no nome do deal criado pelo job). */
@@ -158,15 +158,16 @@ export const scheduledDealService = {
   },
 
   /**
-   * Cancela um agendamento PENDING. `restrictToUserId` (analista) limita o
-   * cancelamento aos agendamentos em que ele é o responsável.
+   * Cancela um agendamento PENDING. `restrictTo` (escopo de visibilidade) limita o
+   * cancelamento aos agendamentos cujo responsável ∈ escopo — um dono (string),
+   * a equipe ({in}) ou irrestrito (undefined). Req 14.
    */
-  async cancel(tenantId: string, id: string, restrictToUserId?: string) {
+  async cancel(tenantId: string, id: string, restrictTo?: string | { in: string[] }) {
     const existing = await prisma.scheduledDeal.findFirst({
       where: {
         id,
         tenantId,
-        ...(restrictToUserId ? { assignedTo: restrictToUserId } : {}),
+        ...(restrictTo ? { assignedTo: restrictTo } : {}),
       },
     });
     if (!existing) {

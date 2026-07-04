@@ -83,11 +83,15 @@ router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const { role, status, commercialFunction } = z
+    const { role, status, commercialFunction, teamId, permissionProfileId } = z
       .object({
         role: z.nativeEnum(UserRole).optional(),
         status: z.nativeEnum(UserStatus).optional(),
         commercialFunction: z.nativeEnum(CommercialFunction).nullable().optional(),
+        // Times & governança (Upgrade RD P1): vínculo com equipe/perfil.
+        // Editáveis por ADMIN/GESTOR (guarda de rota já restringe a esses papéis).
+        teamId: z.string().uuid().nullable().optional(),
+        permissionProfileId: z.string().uuid().nullable().optional(),
       })
       .parse(req.body);
 
@@ -102,8 +106,25 @@ router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
       return next(createError('User not found', 404));
     }
 
+    // Valida vínculos no tenant antes de aplicar (multi-tenant estrito).
+    if (teamId) {
+      const team = await prisma.team.findFirst({
+        where: { id: teamId, tenantId: req.user.tenantId },
+        select: { id: true },
+      });
+      if (!team) return next(createError('Equipe não encontrada', 404, 'TEAM_NOT_FOUND'));
+    }
+    if (permissionProfileId) {
+      const profile = await prisma.permissionProfile.findFirst({
+        where: { id: permissionProfileId, tenantId: req.user.tenantId },
+        select: { id: true },
+      });
+      if (!profile) return next(createError('Perfil não encontrado', 404, 'PROFILE_NOT_FOUND'));
+    }
+
     // role/status seguem restritos a ADMIN; GESTOR só pode definir a função
-    // comercial (spec: commercialFunction restrito a ADMIN/GESTOR).
+    // comercial (spec: commercialFunction restrito a ADMIN/GESTOR) e o vínculo
+    // de equipe/perfil (Upgrade RD P1).
     const isAdmin = req.user.role === 'ADMIN';
 
     const updated = await prisma.user.update({
@@ -112,6 +133,8 @@ router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
         ...(isAdmin && role ? { role } : {}),
         ...(isAdmin && status ? { status } : {}),
         ...(commercialFunction !== undefined ? { commercialFunction } : {}),
+        ...(teamId !== undefined ? { teamId } : {}),
+        ...(permissionProfileId !== undefined ? { permissionProfileId } : {}),
       },
       select: {
         id: true,
@@ -120,6 +143,8 @@ router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
         role: true,
         status: true,
         commercialFunction: true,
+        teamId: true,
+        permissionProfileId: true,
       },
     });
 

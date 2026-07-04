@@ -4,8 +4,8 @@ import { interactionService } from '../services/interactionService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope } from '../utils/roleScope.js';
 import { InteractionType, InteractionDirection } from '@prisma/client';
+import { visibilityScope } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -39,10 +39,12 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
+    // Visibilidade viva (req 14): interações seguem 'deals'. BYTE-A-BYTE == HOJE:
+    // USER builtin PROPRIA→userId; GESTOR/ADMIN GERAL→undefined (sem filtro).
     const result = await interactionService.findAll(
       req.user.tenantId,
       filters,
-      ownerScope(req.user)
+      await visibilityScope(req.user, 'deals')
     );
     res.json(result);
   } catch (error) {
@@ -66,7 +68,7 @@ router.get('/inbox', async (req, res, next) => {
     const conversations = await interactionService.getInboxConversations(
       req.user.tenantId,
       { channel, search, page, limit },
-      ownerScope(req.user)
+      await visibilityScope(req.user, 'deals')
     );
 
     res.json({ status: 200, data: conversations });
@@ -84,7 +86,7 @@ router.get('/leads/:leadId', async (req, res, next) => {
     const interactions = await interactionService.findByLeadId(
       req.user.tenantId,
       req.params.leadId,
-      ownerScope(req.user)
+      await visibilityScope(req.user, 'deals')
     );
     res.json(interactions);
   } catch (error) {

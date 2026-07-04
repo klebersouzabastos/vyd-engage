@@ -96,6 +96,8 @@ const RoadmapView = lazyNamed(() => import('../pages/RoadmapView'), 'RoadmapView
 const RoadmapPanelView = lazyNamed(() => import('../pages/RoadmapPanelView'), 'RoadmapPanelView');
 const Suggestions = lazyNamed(() => import('../pages/Suggestions'), 'Suggestions');
 const DealSettings = lazyNamed(() => import('../pages/DealSettings'), 'DealSettings');
+const Approvals = lazyNamed(() => import('../pages/Approvals'), 'Approvals');
+const Trash = lazyNamed(() => import('../pages/Trash'), 'Trash');
 
 export const router = createBrowserRouter([
   {
@@ -351,6 +353,19 @@ export const router = createBrowserRouter([
         // Spec-required path for the API keys page with scopes (API-2.1, req 21).
         path: 'settings/api-keys',
         element: guard(ApiKeys, ADMIN_ROLES),
+      },
+      {
+        // Aprovações (Upgrade RD P1, req 15) — apenas autenticada: o solicitante
+        // (USER restrito) precisa abrir "Minhas solicitações" p/ baixar sua
+        // exportação aprovada. A fila pendente (aprovar/rejeitar) segue protegida
+        // no backend (requireRole) e no componente (isManagerRole).
+        path: 'approvals',
+        element: Approvals,
+      },
+      {
+        // Lixeira / restauração (Upgrade RD P1, req 16) — gated MANAGER_ROLES.
+        path: 'trash',
+        element: guard(Trash, MANAGER_ROLES),
       },
       {
         path: 'admin',

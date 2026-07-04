@@ -17,9 +17,10 @@ import {
 } from '../ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Target, User, Users } from 'lucide-react';
 import { apiClient } from '../../services/api/client';
 import { formatCurrency } from '../../utils/format';
+import type { Team } from '../../types/governance';
 
 interface GoalUser {
   id: string;
@@ -27,15 +28,20 @@ interface GoalUser {
   email: string;
 }
 
+type GoalType = 'individual' | 'team';
+
 interface Goal {
   id: string;
-  userId: string;
+  // Upgrade RD P1 (req 12): meta individual (userId) OU de equipe (teamId).
+  userId: string | null;
+  teamId: string | null;
   month: number;
   year: number;
   targetRevenue: number;
   targetDeals: number;
   targetLeads: number;
-  user: GoalUser;
+  user: GoalUser | null;
+  team: { id: string; name: string } | null;
 }
 
 const MONTH_NAMES = [
@@ -54,7 +60,9 @@ const MONTH_NAMES = [
 ];
 
 const emptyForm = {
+  goalType: 'individual' as GoalType,
   userId: '',
+  teamId: '',
   targetRevenue: 0,
   targetDeals: 0,
   targetLeads: 0,
@@ -67,6 +75,7 @@ export function GoalsTab() {
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [users, setUsers] = useState<GoalUser[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -80,8 +89,7 @@ export function GoalsTab() {
     setLoading(true);
     try {
       const res = await apiClient.getGoals({ month, year });
-      const data = (res as any)?.data ?? res ?? [];
-      setGoals(data as Goal[]);
+      setGoals((res.data ?? []) as unknown as Goal[]);
     } catch {
       toast.error('Erro ao carregar metas');
     } finally {
@@ -98,12 +106,25 @@ export function GoalsTab() {
     }
   }, []);
 
+  // Equipes para metas de equipe (Upgrade RD P1, req 12).
+  const loadTeams = useCallback(async () => {
+    try {
+      const res = await apiClient.getTeams();
+      setTeams(res.data ?? []);
+    } catch {
+      // silent — sem equipes, o form fica só com o modo Individual.
+    }
+  }, []);
+
   useEffect(() => {
     loadGoals();
   }, [loadGoals]);
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+  useEffect(() => {
+    loadTeams();
+  }, [loadTeams]);
 
   const openCreate = () => {
     setEditingGoal(null);
@@ -114,7 +135,9 @@ export function GoalsTab() {
   const openEdit = (goal: Goal) => {
     setEditingGoal(goal);
     setForm({
-      userId: goal.userId,
+      goalType: goal.teamId ? 'team' : 'individual',
+      userId: goal.userId ?? '',
+      teamId: goal.teamId ?? '',
       targetRevenue: goal.targetRevenue,
       targetDeals: goal.targetDeals,
       targetLeads: goal.targetLeads,
@@ -123,14 +146,20 @@ export function GoalsTab() {
   };
 
   const handleSave = async () => {
-    if (!form.userId) {
+    const isTeam = form.goalType === 'team';
+    if (isTeam && !form.teamId) {
+      toast.error('Selecione uma equipe');
+      return;
+    }
+    if (!isTeam && !form.userId) {
       toast.error('Selecione um vendedor');
       return;
     }
     setSaving(true);
     try {
+      // Upgrade RD P1 (req 12): envia userId OU teamId (exatamente um; validado no backend).
       await apiClient.upsertGoal({
-        userId: form.userId,
+        ...(isTeam ? { teamId: form.teamId } : { userId: form.userId }),
         month,
         year,
         targetRevenue: Number(form.targetRevenue) || 0,
@@ -174,7 +203,11 @@ export function GoalsTab() {
   };
 
   const usersWithoutGoal = users.filter((u) => !goals.some((g) => g.userId === u.id));
+  const teamsWithoutGoal = teams.filter((t) => !goals.some((g) => g.teamId === t.id));
   const availableUsers = editingGoal ? users : usersWithoutGoal;
+  const availableTeams = editingGoal ? teams : teamsWithoutGoal;
+  // "Nova Meta" fica disponível se ainda há vendedor OU equipe sem meta no período.
+  const canCreate = usersWithoutGoal.length > 0 || teamsWithoutGoal.length > 0;
 
   return (
     <div className="space-y-6">
@@ -207,7 +240,7 @@ export function GoalsTab() {
           </button>
         </div>
 
-        <Button onClick={openCreate} disabled={usersWithoutGoal.length === 0 && !loading}>
+        <Button onClick={openCreate} disabled={!canCreate && !loading}>
           <Plus size={16} className="mr-2" />
           Nova Meta
         </Button>
@@ -218,7 +251,7 @@ export function GoalsTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Vendedor</TableHead>
+              <TableHead>Vendedor / Equipe</TableHead>
               <TableHead className="text-right">Receita (R$)</TableHead>
               <TableHead className="text-right">Negócios</TableHead>
               <TableHead className="text-right">Leads</TableHead>
@@ -255,10 +288,19 @@ export function GoalsTab() {
               goals.map((goal) => (
                 <TableRow key={goal.id}>
                   <TableCell className="font-medium text-gray-900">
-                    <div>
-                      <span>{goal.user.name}</span>
-                      <span className="text-xs text-gray-400 ml-2">{goal.user.email}</span>
-                    </div>
+                    {goal.teamId ? (
+                      <div className="flex items-center gap-2">
+                        <Users size={15} className="text-gray-400 flex-shrink-0" />
+                        <span>{goal.team?.name ?? '—'}</span>
+                        <span className="text-xs text-gray-400">Equipe</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <User size={15} className="text-gray-400 flex-shrink-0" />
+                        <span>{goal.user?.name ?? '—'}</span>
+                        <span className="text-xs text-gray-400">{goal.user?.email}</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right text-gray-700">
                     {formatCurrency(goal.targetRevenue)}
@@ -306,23 +348,109 @@ export function GoalsTab() {
 
           <div className="space-y-4 py-2">
             {!editingGoal && (
-              <div className="space-y-2">
-                <Label>Vendedor</Label>
-                <Select
-                  value={form.userId}
-                  onValueChange={(v) => setForm((f) => ({ ...f, userId: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o vendedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <>
+                {/* Alternância Individual | Equipe (Upgrade RD P1, req 12) — só
+                    aparece com equipes cadastradas; sem equipes fica só Individual. */}
+                {teams.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Tipo de meta</Label>
+                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded-lg p-1 w-full">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({ ...f, goalType: 'individual', teamId: '' }))
+                        }
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                          form.goalType === 'individual'
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <User size={14} />
+                        Individual
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, goalType: 'team', userId: '' }))}
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                          form.goalType === 'team'
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Users size={14} />
+                        Equipe
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {form.goalType === 'team' ? (
+                  <div className="space-y-2">
+                    <Label>Equipe</Label>
+                    <Select
+                      value={form.teamId}
+                      onValueChange={(v) => setForm((f) => ({ ...f, teamId: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a equipe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTeams.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {availableTeams.length === 0 && (
+                      <p className="text-xs text-gray-400">
+                        Todas as equipes já têm meta neste período.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Vendedor</Label>
+                    <Select
+                      value={form.userId}
+                      onValueChange={(v) => setForm((f) => ({ ...f, userId: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o vendedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
+
+            {editingGoal && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                {editingGoal.teamId ? (
+                  <>
+                    <Users size={15} className="text-gray-400" />
+                    <span>
+                      Meta da equipe{' '}
+                      <span className="font-medium text-gray-900">{editingGoal.team?.name}</span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <User size={15} className="text-gray-400" />
+                    <span>
+                      Meta de{' '}
+                      <span className="font-medium text-gray-900">{editingGoal.user?.name}</span>
+                    </span>
+                  </>
+                )}
               </div>
             )}
 
@@ -387,8 +515,10 @@ export function GoalsTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover meta</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja remover a meta de <strong>{deleteTarget?.user.name}</strong> para{' '}
-              {MONTH_NAMES[month - 1]} {year}?
+              Deseja remover a meta{' '}
+              {deleteTarget?.teamId ? 'da equipe' : 'de'}{' '}
+              <strong>{deleteTarget?.teamId ? deleteTarget?.team?.name : deleteTarget?.user?.name}</strong>{' '}
+              para {MONTH_NAMES[month - 1]} {year}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -4,8 +4,8 @@ import { ScheduledDealStatus, ScheduledDealType } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope, isAnalyst } from '../utils/roleScope.js';
 import { scheduledDealService } from '../services/scheduledDealService.js';
+import { visibilityScope, getEffective } from '../services/permissionService.js';
 
 /**
  * Multi-vendas — negociações agendadas (Upgrade RD P0, spec req 4).
@@ -45,8 +45,16 @@ router.post('/', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const data = createSchema.parse(req.body);
-    // Analista (USER) só agenda para si mesmo (mesmo escopo de deals).
-    if (isAnalyst(req.user)) data.assignedTo = req.user.userId;
+    // transferOwner (req 13): agendar para OUTRA pessoa exige a capability (perfil).
+    // Sem ela, o responsável é forçado a si mesmo — o piso do analista de hoje.
+    // BYTE-A-BYTE == HOJE: USER builtin transferOwner=false → forçado; ADMIN/GESTOR livre.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (eff.capabilities.transferOwner !== true) data.assignedTo = req.user.userId;
     const scheduled = await scheduledDealService.create(req.user.tenantId, req.user.userId, data);
     res.status(201).json({ status: 201, data: scheduled });
   } catch (error) {
@@ -62,9 +70,13 @@ router.get('/', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const filters = listSchema.parse(req.query);
-    // Escopo por papel igual deals: analista só vê os seus (ownerScope).
-    filters.assignedTo = ownerScope(req.user, filters.assignedTo);
-    const items = await scheduledDealService.findAll(req.user.tenantId, filters);
+    // Visibilidade viva (req 14): agendamentos seguem 'deals'. BYTE-A-BYTE == HOJE:
+    // USER builtin PROPRIA→userId; GESTOR/ADMIN GERAL→requested. Custom EQUIPE→{in}.
+    const scopedFilters = {
+      ...filters,
+      assignedTo: await visibilityScope(req.user, 'deals', filters.assignedTo),
+    };
+    const items = await scheduledDealService.findAll(req.user.tenantId, scopedFilters);
     res.json({ status: 200, data: items });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -78,7 +90,9 @@ router.get('/', async (req, res, next) => {
 router.post('/:id/cancel', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    const restrictTo = isAnalyst(req.user) ? req.user.userId : undefined;
+    // Visibilidade viva (req 14): cancelar limita-se ao escopo de 'deals'. == HOJE:
+    // USER builtin PROPRIA→userId; GESTOR/ADMIN GERAL→undefined (irrestrito).
+    const restrictTo = await visibilityScope(req.user, 'deals');
     const cancelled = await scheduledDealService.cancel(
       req.user.tenantId,
       req.params.id,

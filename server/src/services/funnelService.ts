@@ -52,8 +52,12 @@ export const funnelService = {
    * Para o analista (USER), `ownerId` restringe as contagens por coluna aos
    * PRÓPRIOS registros — o seletor de funil não deve revelar volumes do time
    * (spec papeis-comerciais req 4/5).
+   *
+   * `ownerId` aceita um dono (string) | conjunto da equipe ({in}) | undefined
+   * (sem filtro) — req 14. DEFAULT == HOJE: USER builtin deals=PROPRIA → userId;
+   * GESTOR/ADMIN → undefined → contagens tenant-wide.
    */
-  async findAll(tenantId: string, type?: FunnelType, ownerId?: string) {
+  async findAll(tenantId: string, type?: FunnelType, ownerId?: string | { in: string[] }) {
     const where: { tenantId: string; type?: FunnelType } = { tenantId };
     if (type) {
       where.type = type;
@@ -84,9 +88,13 @@ export const funnelService = {
   },
 
   /**
-   * Get a single funnel with columns and leads/deals
+   * Get a single funnel with columns and leads/deals (o BOARD do kanban).
+   *
+   * `assignedTo` aceita um dono (string) | conjunto da equipe ({in}) | undefined
+   * (sem filtro) — req 14. DEFAULT == HOJE: USER builtin deals=PROPRIA → userId
+   * (== ownerScope de hoje no board); GESTOR/ADMIN → undefined → board completo.
    */
-  async findById(tenantId: string, funnelId: string, assignedTo?: string) {
+  async findById(tenantId: string, funnelId: string, assignedTo?: string | { in: string[] }) {
     // Escopo do analista (USER): board mostra só os leads/deals do próprio responsável.
     const ownerWhere = assignedTo ? { assignedTo } : {};
     const funnel = await prisma.funnel.findFirst({
@@ -391,9 +399,10 @@ export const funnelService = {
     leadId: string,
     targetColumnId: string,
     position: number,
-    ownerId?: string
+    ownerId?: string | { in: string[] }
   ) {
-    // Posse (reqs 6/8): analista (USER) só move os próprios; não-dono → 404.
+    // Posse (reqs 6/8/14): analista (USER) só move os próprios; equipe ({in}) move
+    // os do time; não-dono → 404. undefined → sem filtro (manager).
     const lead = await prisma.lead.findFirst({
       where: { id: leadId, tenantId, deletedAt: null, ...(ownerId ? { assignedTo: ownerId } : {}) },
     });
@@ -456,9 +465,10 @@ export const funnelService = {
     dealId: string,
     targetColumnId: string,
     position: number,
-    ownerId?: string
+    ownerId?: string | { in: string[] }
   ) {
-    // Posse (reqs 6/8): analista (USER) só move os próprios; não-dono → 404.
+    // Posse (reqs 6/8/14): analista (USER) só move os próprios; equipe ({in}) move
+    // os do time; não-dono → 404. undefined → sem filtro (manager).
     const deal = await prisma.deal.findFirst({
       where: { id: dealId, tenantId, deletedAt: null, ...(ownerId ? { assignedTo: ownerId } : {}) },
     });

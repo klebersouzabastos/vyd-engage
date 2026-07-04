@@ -6,7 +6,8 @@ import { tenantScope } from '../middleware/tenant.js';
 import { ReportType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { forecastService } from '../services/forecastService.js';
-import { ownerScope, isManager } from '../utils/roleScope.js';
+import { isManager } from '../utils/roleScope.js';
+import { visibilityScope } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -61,7 +62,11 @@ router.get('/funnel-conversion', async (req, res, next) => {
       from: from as string | undefined,
       to: to as string | undefined,
       source: source as string | undefined,
-      assignedTo: ownerScope(req.user, assignedTo as string | undefined),
+      // Visibilidade viva (req 14). Os relatórios seguem o escopo de 'deals' (a
+      // dimensão de responsável do pipeline), preservando BYTE-A-BYTE o ownerScope
+      // de hoje: USER builtin deals=PROPRIA → userId; GESTOR/ADMIN GERAL → undefined.
+      // Um perfil custom com deals=EQUIPE expande para { in: [equipe] }.
+      assignedTo: await visibilityScope(req.user, 'deals', assignedTo as string | undefined),
       // Upgrade RD P0 (req 5): segmentação por fonte/campanha da negociação.
       sourceId: sourceId as string | undefined,
       originCampaignId: originCampaignId as string | undefined,
@@ -83,8 +88,10 @@ router.get('/metrics', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const tenantId = req.user.tenantId;
-    // Escopo do analista (USER): métricas refletem só os próprios registros (req 4).
-    const owner = ownerScope(req.user);
+    // Visibilidade viva (req 14): métricas seguem o escopo de 'deals'. BYTE-A-BYTE
+    // == HOJE: USER builtin PROPRIA → userId; GESTOR/ADMIN GERAL → undefined (sem
+    // filtro). Perfil custom deals=EQUIPE → { in: [equipe] }.
+    const owner = await visibilityScope(req.user, 'deals');
 
     const { from, to } = req.query;
 
@@ -349,16 +356,27 @@ router.get('/team-performance', async (req, res, next) => {
       return next(createError('Forbidden', 403, 'INSUFFICIENT_PERMISSIONS'));
     }
     const tenantId = req.user.tenantId;
-    const { from, to, funnelId } = req.query;
+    const { from, to, funnelId, teamId } = req.query;
 
     const fromDate = from
       ? new Date(from as string)
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
-    // Fetch all users in this tenant
+    // Upgrade RD P1 (req 12): filtro opcional por equipe — restringe aos membros.
+    // UUID validado; sem teamId, o comportamento é IDÊNTICO ao de hoje (tenant todo).
+    const teamFilterId = z.string().uuid().optional().parse((teamId as string) || undefined);
+    if (teamFilterId) {
+      const team = await prisma.team.findFirst({
+        where: { id: teamFilterId, tenantId },
+        select: { id: true },
+      });
+      if (!team) return next(createError('Equipe não encontrada', 404, 'TEAM_NOT_FOUND'));
+    }
+
+    // Fetch users in this tenant (todos, ou só os membros da equipe filtrada)
     const users = await prisma.user.findMany({
-      where: { tenantId },
+      where: { tenantId, ...(teamFilterId ? { teamId: teamFilterId } : {}) },
       select: { id: true, name: true, email: true },
     });
 
@@ -435,6 +453,9 @@ router.get('/team-performance', async (req, res, next) => {
     results.sort((a, b) => b.revenueWon - a.revenueWon);
     res.json({ status: 200, data: results });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

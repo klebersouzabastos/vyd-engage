@@ -4,7 +4,7 @@ import { funnelService } from '../services/funnelService.js';
 import { authenticate, requireManagerForWrites } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope } from '../utils/roleScope.js';
+import { visibilityScope } from '../services/permissionService.js';
 import { LeadStatus, FunnelType } from '@prisma/client';
 
 const router = Router();
@@ -81,7 +81,11 @@ router.get('/', async (req, res, next) => {
       typeParam && Object.values(FunnelType).includes(typeParam as FunnelType)
         ? (typeParam as FunnelType)
         : undefined;
-    const funnels = await funnelService.findAll(req.user.tenantId, type, ownerScope(req.user));
+    const funnels = await funnelService.findAll(
+      req.user.tenantId,
+      type,
+      await visibilityScope(req.user, 'deals')
+    );
     res.json({ status: 200, data: funnels });
   } catch (error) {
     next(error);
@@ -111,7 +115,7 @@ router.get('/:id', async (req, res, next) => {
     const funnel = await funnelService.findById(
       req.user.tenantId,
       req.params.id,
-      ownerScope(req.user)
+      await visibilityScope(req.user, 'deals')
     );
     res.json({ status: 200, data: funnel });
   } catch (error) {
@@ -238,7 +242,7 @@ router.post('/move-lead', async (req, res, next) => {
       data.leadId,
       data.targetColumnId,
       data.position,
-      ownerScope(req.user)
+      await visibilityScope(req.user, 'deals')
     );
     res.json({ status: 200, data: lead });
   } catch (error) {
@@ -259,7 +263,7 @@ router.post('/move-deal', async (req, res, next) => {
       data.dealId,
       data.targetColumnId,
       data.position,
-      ownerScope(req.user)
+      await visibilityScope(req.user, 'deals')
     );
     res.json({ status: 200, data: deal });
   } catch (error) {

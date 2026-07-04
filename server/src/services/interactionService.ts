@@ -66,7 +66,8 @@ export const interactionService = {
       page?: number;
       limit?: number;
     },
-    ownerId?: string
+    // Escopo de responsável: um dono (string) ou o conjunto da equipe ({in}) — req 14.
+    ownerId?: string | { in: string[] }
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
@@ -128,7 +129,7 @@ export const interactionService = {
     };
   },
 
-  async findByLeadId(tenantId: string, leadId: string, ownerId?: string) {
+  async findByLeadId(tenantId: string, leadId: string, ownerId?: string | { in: string[] }) {
     return prisma.interaction.findMany({
       where: {
         tenantId,
@@ -170,7 +171,7 @@ export const interactionService = {
       page?: number;
       limit?: number;
     },
-    ownerId?: string
+    ownerId?: string | { in: string[] }
   ) {
     const page = filters.page || 1;
     const limit = filters.limit || 30;

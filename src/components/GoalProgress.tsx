@@ -1,7 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
-import { apiClient } from '../services/api/client';
-import { Progress } from './ui/progress';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '../utils/format';
 
@@ -14,6 +12,12 @@ interface GoalProgressData {
 
 interface GoalProgressProps {
   userId?: string;
+  /**
+   * Upgrade RD P1 (req 12): quando informado, exibe a META DE EQUIPE (soma dos
+   * realizados dos membros) via GET /goals/progress/team, em vez da individual.
+   * ADITIVO: sem `teamId`, o componente se comporta EXATAMENTE como hoje.
+   */
+  teamId?: string;
   month: number;
   year: number;
   compact?: boolean;
@@ -36,14 +40,52 @@ function badgeColor(percentage: number): string {
   return 'bg-red-100 text-red-700';
 }
 
-export function GoalProgress({ userId, month, year, compact = false }: GoalProgressProps) {
+export function GoalProgress({
+  userId,
+  teamId,
+  month,
+  year,
+  compact = false,
+}: GoalProgressProps) {
   const navigate = useNavigate();
-  const params = new URLSearchParams({ month: String(month), year: String(year) });
-  if (userId) params.set('userId', userId);
 
   const { data, isLoading } = useQuery<GoalProgressData>({
-    queryKey: ['goals-progress', month, year, userId],
+    queryKey: ['goals-progress', month, year, userId, teamId],
     queryFn: async () => {
+      const empty: GoalProgressData = {
+        hasGoal: false,
+        revenue: { current: 0, target: 0 },
+        deals: { current: 0, target: 0 },
+        leads: { current: 0, target: 0 },
+      };
+
+      // Upgrade RD P1 (req 12): meta de equipe → /goals/progress/team (soma dos
+      // membros). Caminho individual permanece IDÊNTICO ao de hoje.
+      if (teamId) {
+        const teamParams = new URLSearchParams({ month: String(month), year: String(year) });
+        const response = await fetch(`/api/v1/goals/progress/team?${teamParams.toString()}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Falha ao carregar metas');
+        const json = await response.json();
+        const list: Array<{
+          teamId: string;
+          goal: { targetRevenue: number; targetDeals: number; targetLeads: number };
+          actual: { revenue: number; deals: number; leads: number };
+        }> = json.data ?? [];
+
+        const entry = list.find((e) => e.teamId === teamId);
+        if (!entry) return empty;
+        return {
+          hasGoal: true,
+          revenue: { current: entry.actual.revenue, target: entry.goal.targetRevenue },
+          deals: { current: entry.actual.deals, target: entry.goal.targetDeals },
+          leads: { current: entry.actual.leads, target: entry.goal.targetLeads },
+        };
+      }
+
+      const params = new URLSearchParams({ month: String(month), year: String(year) });
+      if (userId) params.set('userId', userId);
       const response = await fetch(`/api/v1/goals/progress?${params.toString()}`, {
         credentials: 'include',
       });
@@ -57,23 +99,10 @@ export function GoalProgress({ userId, month, year, compact = false }: GoalProgr
         actual: { revenue: number; deals: number; leads: number };
       }> = json.data ?? [];
 
-      if (!list.length) {
-        return {
-          hasGoal: false,
-          revenue: { current: 0, target: 0 },
-          deals: { current: 0, target: 0 },
-          leads: { current: 0, target: 0 },
-        };
-      }
+      if (!list.length) return empty;
 
       const entry = userId ? (list.find((e) => e.userId === userId) ?? list[0]) : list[0];
-      if (!entry)
-        return {
-          hasGoal: false,
-          revenue: { current: 0, target: 0 },
-          deals: { current: 0, target: 0 },
-          leads: { current: 0, target: 0 },
-        };
+      if (!entry) return empty;
 
       return {
         hasGoal: true,

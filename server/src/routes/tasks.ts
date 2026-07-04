@@ -5,11 +5,12 @@ import { taskService } from '../services/taskService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope, isAnalyst } from '../utils/roleScope.js';
 import { TaskStatus, TaskPriority, TaskType, NotificationType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import { googleCalendarService } from '../services/googleCalendarService.js';
 import { emitToTenant } from '../services/socketService.js';
+import { approvalService } from '../services/approvalService.js';
+import { visibilityScope, getEffective } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -65,8 +66,13 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
-    filters.assignedTo = ownerScope(req.user, filters.assignedTo);
-    const result = await taskService.findAll(req.user.tenantId, filters);
+    // Visibilidade viva (req 14): tarefas acompanham o nível de 'deals' (mesma dona).
+    // Sem perfil custom, idêntico ao ownerScope de hoje (analista→userId).
+    const scopedFilters = {
+      ...filters,
+      assignedTo: await visibilityScope(req.user, 'tasks', filters.assignedTo),
+    };
+    const result = await taskService.findAll(req.user.tenantId, scopedFilters);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -76,18 +82,22 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Guard de posse (req 6): analista (USER) só acessa tarefas em que é o responsável;
-// caso contrário 404 (sem vazar existência). Cobre todas as rotas /tasks/:id*.
+// Guard de posse (req 6 + visibilidade viva req 14): tarefas acompanham o nível de
+// 'deals'. Acesso a /:id* liberado quando o dono da tarefa ∈ escopo efetivo —
+// próprio (PROPRIA), equipe (EQUIPE) ou qualquer do tenant (GERAL). Fora → 404.
+// FAIL-CLOSED / == HOJE: sem perfil custom, USER builtin tem deals=PROPRIA →
+// escopo = userId → 404 idêntico; GESTOR/ADMIN GERAL → passam direto.
 async function enforceTaskOwnership(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    if (!isAnalyst(req.user)) return next();
+    const scope = await visibilityScope(req.user, 'tasks');
+    if (scope === undefined) return next(); // GERAL: sem filtro por dono.
     const owned = await prisma.task.findFirst({
       where: {
         id: req.params.id,
         tenantId: req.user.tenantId,
         deletedAt: null,
-        assignedTo: req.user.userId,
+        assignedTo: scope,
       },
       select: { id: true },
     });
@@ -118,10 +128,22 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Capability por-entidade (req 13): criar tarefas exige entities.tasks.create.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (!eff.entities.tasks.create) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
     // Tasks don't have plan limits, but we could add if needed
     const data = createTaskSchema.parse(req.body);
-    // Analista (USER) só cria tarefas atribuídas a si mesmo (req 8) — paridade com deals.
-    if (isAnalyst(req.user)) data.assignedTo = req.user.userId;
+    // transferOwner (req 13): atribuir a outra pessoa exige a capability (perfil).
+    // Sem ela, o dono é forçado a si mesmo — piso do analista de hoje.
+    if (eff.capabilities.transferOwner !== true) data.assignedTo = req.user.userId;
     const task = await taskService.create(req.user.tenantId, data);
 
     // Notify assignee if task is assigned to someone other than the creator
@@ -159,12 +181,24 @@ router.put('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Capability por-entidade (req 13): editar tarefas exige entities.tasks.edit.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (!eff.entities.tasks.edit) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
     const data = updateTaskSchema.parse({
       ...req.body,
       id: req.params.id,
     });
-    // Analista (USER) não reatribui tarefa para outra pessoa (req 8).
-    if (isAnalyst(req.user)) delete data.assignedTo;
+    // transferOwner (req 13): reatribuir exige a capability (perfil). Sem ela, o
+    // campo assignedTo é ignorado — piso do analista de hoje.
+    if (eff.capabilities.transferOwner !== true) delete data.assignedTo;
     const task = await taskService.update(req.user.tenantId, data);
 
     // Notify new assignee if task was reassigned to someone else
@@ -200,6 +234,24 @@ router.delete('/:id', async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
+    }
+
+    // Gate de exclusão (req 16): sem permissão OU perfil exige aprovação → cria
+    // solicitação (não deleta) + 202. A guarda de posse (enforceTaskOwnership) já
+    // rodou no router.use('/:id'). Sem perfil custom → deleta direto (== hoje).
+    const gate = await approvalService.deleteGate(
+      {
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      },
+      'tasks',
+      req.params.id,
+      'tarefa'
+    );
+    if (gate.queued) {
+      return res.status(202).json({ status: 202, data: { approvalId: gate.approvalId, pending: true } });
     }
 
     // Fetch task before deleting to get googleEventId for calendar cleanup

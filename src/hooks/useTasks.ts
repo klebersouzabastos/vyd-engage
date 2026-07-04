@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { useSocket } from './useSocket';
+import { handlePendingApproval } from '../lib/approvalResponse';
 
 export interface Task {
   id: string;
@@ -159,7 +160,10 @@ export function useTasks() {
   const deleteTask = useCallback(
     async (id: string) => {
       try {
-        await apiClient.deleteTask(id);
+        const res = await apiClient.deleteTask(id);
+        // Perfil exige aprovação (req 16): backend responde 202 e NÃO exclui. Mostra
+        // o toast "enviado para aprovação" e NÃO invalida a lista como sucesso.
+        if (handlePendingApproval(res)) return;
         toast.success('Tarefa deletada com sucesso!');
         await invalidate();
       } catch (err: unknown) {
