@@ -204,7 +204,11 @@ export const leadService = {
       limit?: number;
       sort?: string;
       order?: 'asc' | 'desc';
-    }
+    },
+    // Escopo de visibilidade por dono (req 14). DEFAULT == HOJE: undefined → SEM
+    // filtro por dono (contacts GERAL para todos os builtins). Quando presente,
+    // SUBSTITUI o filtro `assignedTo` bruto (já resolvido pelo visibilityScope).
+    ownerScope?: string | { in: string[] }
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -225,7 +229,11 @@ export const leadService = {
       where.source = filters.source;
     }
 
-    if (filters?.assignedTo) {
+    // O escopo de visibilidade (ownerScope), quando definido, é a fonte de verdade
+    // do filtro por dono — já incorpora o `assignedTo` pedido no nível GERAL.
+    if (ownerScope !== undefined) {
+      where.assignedTo = ownerScope;
+    } else if (filters?.assignedTo) {
       where.assignedTo = filters.assignedTo;
     }
 

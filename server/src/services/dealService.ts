@@ -168,7 +168,8 @@ export const dealService = {
     tenantId: string,
     filters?: {
       stage?: DealStage;
-      assignedTo?: string;
+      // Escopo de responsável: um dono (string) ou o conjunto da equipe ({in}) — req 14.
+      assignedTo?: string | { in: string[] };
       leadId?: string;
       funnelId?: string;
       search?: string;
@@ -596,7 +597,7 @@ export const dealService = {
     emitToTenant(tenantId, 'deal:deleted', { dealId: id });
   },
 
-  async getStats(tenantId: string, assignedTo?: string) {
+  async getStats(tenantId: string, assignedTo?: string | { in: string[] }) {
     // Escopo por responsável (analista/USER vê só os próprios) — spec papeis-comerciais.
     const scope = assignedTo ? { assignedTo } : {};
     const activeStages: DealStage[] = [

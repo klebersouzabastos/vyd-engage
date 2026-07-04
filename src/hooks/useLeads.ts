@@ -10,6 +10,7 @@ import {
   mapSourceFromBackend,
 } from '../utils/leadEnums';
 import { useSocket } from './useSocket';
+import { handlePendingApproval } from '../lib/approvalResponse';
 
 export interface LeadsFilters {
   page?: number;
@@ -235,7 +236,10 @@ export function useLeads() {
   const deleteLead = useCallback(
     async (id: string) => {
       try {
-        await apiClient.deleteLead(id);
+        const res = await apiClient.deleteLead(id);
+        // Perfil exige aprovação (req 16): backend responde 202 e NÃO exclui. Mostra
+        // o toast "enviado para aprovação" e NÃO invalida a lista como sucesso.
+        if (handlePendingApproval(res)) return;
         toast.success('Lead deletado com sucesso!');
         await queryClient.invalidateQueries({ queryKey: ['leads'] });
       } catch (err: unknown) {

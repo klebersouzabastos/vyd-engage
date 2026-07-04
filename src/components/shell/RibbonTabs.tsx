@@ -23,6 +23,8 @@ import {
   Mail,
   ScanSearch,
   MessageSquarePlus,
+  CheckCircle,
+  Trash2,
   ChevronUp,
   ChevronDown,
   type LucideIcon,
@@ -123,6 +125,22 @@ const categories: NavCategory[] = [
         label: 'Produtos',
         path: '/app/settings/products',
         tourId: 'sidebar-products',
+        managerOnly: true,
+      },
+      // Governança (Upgrade RD P1, reqs 15/16): fila de aprovações e lixeira,
+      // gated MANAGER_ROLES (mesma proteção das rotas em routes.tsx).
+      {
+        icon: CheckCircle,
+        label: 'Aprovações',
+        path: '/app/approvals',
+        tourId: 'sidebar-approvals',
+        managerOnly: true,
+      },
+      {
+        icon: Trash2,
+        label: 'Lixeira',
+        path: '/app/trash',
+        tourId: 'sidebar-trash',
         managerOnly: true,
       },
       {

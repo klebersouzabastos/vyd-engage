@@ -56,7 +56,7 @@ export async function runExpireApprovals(now: Date = new Date()): Promise<number
             type: NotificationType.APPROVAL_DECIDED,
             title: 'Solicitação expirada',
             message: `Sua solicitação "${req.summary}" expirou sem decisão.`,
-            link: '/app/settings',
+            link: '/app/approvals',
             metadata: { approvalId: req.id, decision: 'EXPIRED' },
           },
         })

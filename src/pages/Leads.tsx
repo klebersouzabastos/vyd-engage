@@ -18,8 +18,12 @@ import { useTags } from '../contexts/TagsContext';
 import { useCustomFields } from '../contexts/CustomFieldsContext';
 import { useSidePanel } from '../contexts/SidePanelContext';
 import { Lead } from '../types';
-// excelExport is dynamically imported to avoid bundling ExcelJS eagerly
 import { apiClient } from '../services/api/client';
+import {
+  handlePendingApproval,
+  extractPendingApprovalFromBlob,
+  notifyPendingApproval,
+} from '../lib/approvalResponse';
 import { useLeads } from '../hooks/useLeads';
 import { mapStatusToBackend, mapSourceToBackend } from '../utils/leadEnums';
 import { useSavedViews } from '../hooks/useSavedViews';
@@ -57,26 +61,6 @@ const availableAutomations: Automation[] = [
 
 const getAutomationById = (id: number): Automation | undefined => {
   return availableAutomations.find((automation) => automation.id === id);
-};
-
-const getStatusLabel = (status: string) => {
-  const statusMap: Record<string, string> = {
-    novo: 'Novo',
-    contato: 'Em Contato',
-    fechado: 'Fechado',
-    perdido: 'Perdido',
-  };
-  return statusMap[status] || status;
-};
-
-const getSourceLabel = (source: string) => {
-  const sourceMap: Record<string, string> = {
-    meta: 'Meta Ads',
-    google: 'Google Ads',
-    organico: 'Orgânico',
-    manual: 'Manual',
-  };
-  return sourceMap[source] || source;
 };
 
 // --- Component ---
@@ -268,30 +252,11 @@ export function Leads() {
     }
   };
 
-  const handleExportLeads = async () => {
-    try {
-      const { exportLeadsToExcel } = await import('../utils/excelExport');
-      await exportLeadsToExcel(
-        filteredLeads,
-        {
-          status: filterStatus,
-          source: filterSource,
-          automation: filterAutomation,
-          tag: filterTag,
-          searchQuery,
-        },
-        getStatusLabel,
-        getSourceLabel,
-        getAutomationById,
-        getTagById
-      );
-    } catch (error) {
-      console.error('Erro ao exportar relatório:', error);
-      toast.error('Erro ao exportar relatório. Tente novamente.');
-    }
-  };
-
-  const handleExportAllFiltered = async () => {
+  // Export de leads via ENDPOINT DO SERVIDOR (Upgrade RD P1, req 15): passa pelo gate de
+  // permissão/aprovação (requireApprovalFor.export) em vez de gerar o CSV no cliente (que
+  // burlava o gate). Exporta os leads dos filtros ativos (o backend não escopa por IDs
+  // avulsos); se o perfil exige aprovação, responde 202 → "enviado para aprovação".
+  const handleServerExport = async (format: 'json' | 'csv' | 'xlsx' = 'csv') => {
     try {
       const filters: { status?: string; source?: string; search?: string; tagId?: string } = {};
       if (filterStatus.length === 1) filters.status = mapStatusToBackend(filterStatus[0]);
@@ -299,49 +264,36 @@ export function Leads() {
       if (searchQuery) filters.search = searchQuery;
       if (filterTag.length === 1) filters.tagId = filterTag[0];
 
-      toast.info('Exportando todos os leads filtrados...');
-      const response = await apiClient.exportLeads(filters);
-      const leads = response?.data || response || [];
-
-      if (!Array.isArray(leads) || leads.length === 0) {
-        toast.warning('Nenhum lead encontrado para exportar.');
+      toast.info('Exportando leads…');
+      const blob = await apiClient.exportLeadsDownload(format, filters);
+      const pending = await extractPendingApprovalFromBlob(blob);
+      if (pending) {
+        notifyPendingApproval();
         return;
       }
-
-      const mapped = leads.map((lead: any) => ({
-        id: lead.id,
-        name: lead.name || '',
-        phone: lead.phone || '',
-        email: lead.email || '',
-        status: lead.status || '',
-        source: lead.source || '',
-        date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '',
-        tags: lead.tags?.map((t: any) => t.tagId || t.tag?.id) || [],
-        customFields: lead.customFields || {},
-      }));
-
-      toast.info(`Exportando ${mapped.length} leads...`);
-      const { exportLeadsToExcel } = await import('../utils/excelExport');
-      await exportLeadsToExcel(
-        mapped,
-        {
-          status: filterStatus,
-          source: filterSource,
-          automation: filterAutomation,
-          tag: filterTag,
-          searchQuery,
-        },
-        getStatusLabel,
-        getSourceLabel,
-        getAutomationById,
-        getTagById
-      );
-      toast.success(`${mapped.length} leads exportados com sucesso!`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      toast.success('Leads exportados com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar leads filtrados:', error);
+      console.error('Erro ao exportar leads:', error);
       toast.error('Erro ao exportar leads. Tente novamente.');
     }
   };
+
+  // Upgrade RD P1, req 15: exportação de leads SEMPRE pelo servidor (passa pelo gate de
+  // permissão/aprovação). As duas superfícies antigas (página atual / todos filtrados)
+  // que geravam o arquivo no cliente foram redirecionadas para `handleServerExport`,
+  // eliminando a geração client-side de CSV/XLSX de leads que burlava o gate.
+  const handleExportLeads = () => handleServerExport('xlsx');
+  const handleExportAllFiltered = () => handleServerExport('xlsx');
 
   const handleDeleteLead = async (leadId: string) => {
     try {
@@ -361,7 +313,13 @@ export function Leads() {
     if (selectedLeads.length === 0) return;
     const leadToDeleteCount = selectedLeads.length;
     try {
-      await apiClient.bulkUpdateLeads(selectedLeads, 'delete');
+      const res = await apiClient.bulkUpdateLeads(selectedLeads, 'delete');
+      // Perfil exige aprovação (reqs 15/16): backend responde 202 e NÃO aplica.
+      // Mostra "enviado para aprovação", mantém a seleção e NÃO recarrega como sucesso.
+      if (handlePendingApproval(res)) {
+        setDeleteDialogOpen(false);
+        return;
+      }
       if (selectedLead && selectedLeads.includes(selectedLead.id)) {
         setModalOpen(false);
         setSelectedLead(null);
@@ -379,7 +337,9 @@ export function Leads() {
   const handleBulkChangeStatus = async (status: string) => {
     if (selectedLeads.length === 0) return;
     try {
-      await apiClient.bulkUpdateLeads(selectedLeads, 'change_status', { status });
+      const res = await apiClient.bulkUpdateLeads(selectedLeads, 'change_status', { status });
+      // 202 → enviado para aprovação: mantém a seleção e NÃO recarrega como sucesso.
+      if (handlePendingApproval(res)) return;
       setSelectedLeads([]);
       refetch();
       toast.success(`Status atualizado para ${selectedLeads.length} lead(s)!`);
@@ -392,7 +352,9 @@ export function Leads() {
   const handleBulkAddTag = async (tagId: string) => {
     if (selectedLeads.length === 0) return;
     try {
-      await apiClient.bulkUpdateLeads(selectedLeads, 'add_tag', { tagId });
+      const res = await apiClient.bulkUpdateLeads(selectedLeads, 'add_tag', { tagId });
+      // 202 → enviado para aprovação: mantém a seleção e NÃO recarrega como sucesso.
+      if (handlePendingApproval(res)) return;
       setSelectedLeads([]);
       refetch();
       toast.success(`Tag adicionada a ${selectedLeads.length} lead(s)!`);
@@ -402,31 +364,7 @@ export function Leads() {
     }
   };
 
-  const handleBulkExportCSV = async () => {
-    const selectedLeadData = filteredLeads.filter((l) => selectedLeads.includes(l.id));
-    if (selectedLeadData.length === 0) return;
-    try {
-      const { exportLeadsToExcel } = await import('../utils/excelExport');
-      await exportLeadsToExcel(
-        selectedLeadData,
-        {
-          status: filterStatus,
-          source: filterSource,
-          automation: filterAutomation,
-          tag: filterTag,
-          searchQuery,
-        },
-        getStatusLabel,
-        getSourceLabel,
-        getAutomationById,
-        getTagById
-      );
-      toast.success(`${selectedLeadData.length} lead(s) exportado(s)!`);
-    } catch (error) {
-      console.error('Erro ao exportar leads:', error);
-      toast.error('Erro ao exportar leads. Tente novamente.');
-    }
-  };
+  const handleBulkExportCSV = () => handleServerExport('csv');
 
   // --- Tab switching ---
   const handleTabChange = (tab: ViewTab) => {

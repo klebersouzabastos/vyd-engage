@@ -55,6 +55,7 @@ import type {
   TrashListResult,
   Goal as GovernanceGoal,
   UpsertGoalInput,
+  PendingApprovalResult,
 } from '../../types/governance';
 
 // Detect API URL automatically in production, use env var or localhost in development
@@ -507,8 +508,17 @@ class ApiClient {
     });
   }
 
+  /**
+   * Exclui um lead. Quando o perfil do usuário exige aprovação de exclusão
+   * (Upgrade RD P1, req 16), o backend NÃO deleta: responde 202 com o envelope
+   * `{ status: 202, data: { approvalId, pending: true } }`. O caller deve inspecionar
+   * o retorno (via `extractPendingApproval`) e, se pendente, mostrar o toast de
+   * aprovação em vez de remover o item da lista.
+   */
   async deleteLead(id: string) {
-    return this.request(`/api/v1/leads/${id}`, {
+    return this.request<
+      Record<string, never> | { status: 202; data: PendingApprovalResult }
+    >(`/api/v1/leads/${id}`, {
       method: 'DELETE',
     });
   }
@@ -565,14 +575,20 @@ class ApiClient {
     );
   }
 
+  /**
+   * Ação em massa sobre leads. Quando o perfil exige aprovação (bulk) ou não tem a
+   * capability, o backend responde 202 `{ status: 202, data: { approvalId, pending } }`
+   * em vez de aplicar (Upgrade RD P1, reqs 15/16). O caller deve tratar o caso pendente
+   * (via `extractPendingApproval`/`handlePendingApproval`) e NÃO seguir o fluxo de sucesso.
+   */
   async bulkUpdateLeads(ids: string[], action: string, payload?: Record<string, unknown>) {
-    return this.request<{ status: number; data: { affected: number; action: string } }>(
-      '/api/v1/leads/bulk',
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ ids, action, payload }),
-      }
-    );
+    return this.request<
+      | { status: number; data: { affected: number; action: string } }
+      | { status: 202; data: PendingApprovalResult }
+    >('/api/v1/leads/bulk', {
+      method: 'PATCH',
+      body: JSON.stringify({ ids, action, payload }),
+    });
   }
 
   // Suggestions (feedback in-app)
@@ -794,8 +810,15 @@ class ApiClient {
     });
   }
 
+  /**
+   * Exclui uma tarefa. Igual a `deleteLead`: pode responder 202 com envelope de
+   * aprovação pendente (Upgrade RD P1, req 16) — o caller deve tratar antes de
+   * remover o item da lista.
+   */
   async deleteTask(id: string) {
-    return this.request(`/api/v1/tasks/${id}`, {
+    return this.request<
+      Record<string, never> | { status: 202; data: PendingApprovalResult }
+    >(`/api/v1/tasks/${id}`, {
       method: 'DELETE',
     });
   }
@@ -1670,8 +1693,14 @@ class ApiClient {
     });
   }
 
+  /**
+   * Exclui uma negociação. Pode responder 202 com envelope de aprovação pendente
+   * (Upgrade RD P1, req 16) — o caller deve tratar antes de remover o item da lista.
+   */
   async deleteDeal(id: string) {
-    return this.request(`/api/v1/deals/${id}`, {
+    return this.request<
+      Record<string, never> | { status: 202; data: PendingApprovalResult }
+    >(`/api/v1/deals/${id}`, {
       method: 'DELETE',
     });
   }
@@ -1787,8 +1816,14 @@ class ApiClient {
     });
   }
 
+  /**
+   * Exclui uma empresa. Pode responder 202 com envelope de aprovação pendente
+   * (Upgrade RD P1, req 16) — o caller deve tratar antes de remover o item da lista.
+   */
   async deleteCompany(id: string) {
-    return this.request(`/api/v1/companies/${id}`, {
+    return this.request<
+      Record<string, never> | { status: 202; data: PendingApprovalResult }
+    >(`/api/v1/companies/${id}`, {
       method: 'DELETE',
     });
   }
@@ -2791,10 +2826,14 @@ class ApiClient {
   }
 
   // ── Aprovações (req 15) ──────────────────────────────
-  async getApprovals(status: ApprovalStatus = 'PENDING') {
-    return this.request<{ status: number; data: ApprovalRequest[] }>(
-      `/api/v1/approvals?status=${encodeURIComponent(status)}`
-    );
+  /**
+   * Lista solicitações de aprovação (ADMIN/GESTOR). Com `status` filtra por estado;
+   * sem `status` (undefined) o backend retorna todas — usado pela aba "Minhas
+   * solicitações", que filtra pelo solicitante no cliente.
+   */
+  async getApprovals(status?: ApprovalStatus) {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.request<{ status: number; data: ApprovalRequest[] }>(`/api/v1/approvals${qs}`);
   }
 
   /** Aprova a solicitação → executa a ação embutida e notifica o solicitante. */
@@ -2811,6 +2850,24 @@ class ApiClient {
       `/api/v1/approvals/${id}/reject`,
       { method: 'POST', body: JSON.stringify({ reason }) }
     );
+  }
+
+  /**
+   * Baixa a exportação de uma solicitação aprovada (EXECUTED + tipo EXPORT). Só o
+   * SOLICITANTE pode baixar a própria exportação (validado no backend). Reexecuta a
+   * exportação com o payload salvo e devolve o Blob do arquivo.
+   */
+  async downloadApproval(id: string): Promise<Blob> {
+    const response = await fetch(`${this.baseURL}/api/v1/approvals/${id}/download`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Falha ao baixar exportação' }));
+      throw new ApiError(errorData.error || 'Falha ao baixar exportação', response.status, errorData);
+    }
+    return response.blob();
   }
 
   // ── Lixeira (req 16) ─────────────────────────────────

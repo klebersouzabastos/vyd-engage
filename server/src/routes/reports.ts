@@ -6,7 +6,8 @@ import { tenantScope } from '../middleware/tenant.js';
 import { ReportType } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { forecastService } from '../services/forecastService.js';
-import { ownerScope, isManager } from '../utils/roleScope.js';
+import { isManager } from '../utils/roleScope.js';
+import { visibilityScope } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -61,7 +62,11 @@ router.get('/funnel-conversion', async (req, res, next) => {
       from: from as string | undefined,
       to: to as string | undefined,
       source: source as string | undefined,
-      assignedTo: ownerScope(req.user, assignedTo as string | undefined),
+      // Visibilidade viva (req 14). Os relatórios seguem o escopo de 'deals' (a
+      // dimensão de responsável do pipeline), preservando BYTE-A-BYTE o ownerScope
+      // de hoje: USER builtin deals=PROPRIA → userId; GESTOR/ADMIN GERAL → undefined.
+      // Um perfil custom com deals=EQUIPE expande para { in: [equipe] }.
+      assignedTo: await visibilityScope(req.user, 'deals', assignedTo as string | undefined),
       // Upgrade RD P0 (req 5): segmentação por fonte/campanha da negociação.
       sourceId: sourceId as string | undefined,
       originCampaignId: originCampaignId as string | undefined,
@@ -83,8 +88,10 @@ router.get('/metrics', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     const tenantId = req.user.tenantId;
-    // Escopo do analista (USER): métricas refletem só os próprios registros (req 4).
-    const owner = ownerScope(req.user);
+    // Visibilidade viva (req 14): métricas seguem o escopo de 'deals'. BYTE-A-BYTE
+    // == HOJE: USER builtin PROPRIA → userId; GESTOR/ADMIN GERAL → undefined (sem
+    // filtro). Perfil custom deals=EQUIPE → { in: [equipe] }.
+    const owner = await visibilityScope(req.user, 'deals');
 
     const { from, to } = req.query;
 

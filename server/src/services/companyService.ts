@@ -99,7 +99,7 @@ export const companyService = {
     return company;
   },
 
-  async findById(tenantId: string, id: string, ownerId?: string) {
+  async findById(tenantId: string, id: string, ownerId?: string | { in: string[] }) {
     // Analista (USER): a empresa só mostra os leads/deals/interações do próprio (req 4).
     const company = await prisma.company.findFirst({
       where: { id, tenantId, deletedAt: null },
@@ -180,7 +180,11 @@ export const companyService = {
       limit?: number;
       sort?: string;
       order?: 'asc' | 'desc';
-    }
+    },
+    // Escopo de visibilidade por dono (req 14). DEFAULT == HOJE: undefined → SEM
+    // filtro por dono (companies GERAL para todos os builtins). Só quando o admin
+    // configura PROPRIA/EQUIPE o filtro por `assignedTo` aparece (string | {in}).
+    ownerScope?: string | { in: string[] }
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -189,6 +193,10 @@ export const companyService = {
     const sortOrder = filters?.order || 'desc';
 
     const where: Prisma.CompanyWhereInput = { tenantId, deletedAt: null };
+
+    if (ownerScope !== undefined) {
+      where.assignedTo = ownerScope;
+    }
 
     if (filters?.search) {
       where.OR = [

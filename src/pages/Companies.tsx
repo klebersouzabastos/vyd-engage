@@ -43,6 +43,8 @@ import {
 } from 'lucide-react';
 import { CompanyForm } from '../components/CompanyForm';
 import { apiClient } from '../services/api/client';
+import { handlePendingApproval } from '../lib/approvalResponse';
+import { toast } from 'sonner';
 
 const SIZE_LABELS: Record<CompanySize, string> = {
   MICRO: 'Micro',
@@ -94,7 +96,7 @@ export function Companies() {
     fetchCompanies,
     createCompany,
     updateCompany,
-    deleteCompany,
+    refetch,
   } = useCompanies();
 
   const [search, setSearch] = useState('');
@@ -223,9 +225,23 @@ export function Companies() {
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
-    await deleteCompany(companyToDelete.id);
-    setDeleteDialogOpen(false);
-    setCompanyToDelete(null);
+    try {
+      const res = await apiClient.deleteCompany(companyToDelete.id);
+      // Perfil exige aprovação (req 16): backend responde 202 e NÃO exclui. Mostra o
+      // toast "enviado para aprovação" e NÃO recarrega a lista como sucesso.
+      if (handlePendingApproval(res)) {
+        setDeleteDialogOpen(false);
+        setCompanyToDelete(null);
+        return;
+      }
+      toast.success('Empresa removida com sucesso!');
+      refetch();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover empresa');
+    } finally {
+      setDeleteDialogOpen(false);
+      setCompanyToDelete(null);
+    }
   };
 
   // Column defs for the companies list table (handlers use stable setters)

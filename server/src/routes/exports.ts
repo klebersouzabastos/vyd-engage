@@ -3,8 +3,7 @@ import { authenticate, requirePermission } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { exportLeads, exportDeals, exportTasks, ExportFormat } from '../services/exportService.js';
-import { ownerScope } from '../utils/roleScope.js';
-import { getEffective } from '../services/permissionService.js';
+import { getEffective, visibilityScope } from '../services/permissionService.js';
 import { approvalService } from '../services/approvalService.js';
 import { ApprovalType } from '@prisma/client';
 
@@ -68,8 +67,10 @@ router.get('/leads', async (req, res, next) => {
       source: req.query.source as string | undefined,
       search: req.query.search as string | undefined,
       tagId: req.query.tagId as string | undefined,
-      // Analista (USER) só exporta os próprios registros (req 4) — escopo forçado.
-      assignedTo: ownerScope(req.user, req.query.assignedTo as string | undefined),
+      // Visibilidade viva (req 14): exports seguem o escopo de 'deals' (dimensão de
+      // responsável), preservando BYTE-A-BYTE o ownerScope de hoje — USER builtin
+      // PROPRIA→userId; GESTOR/ADMIN GERAL→requested. Perfil custom EQUIPE→{in}.
+      assignedTo: await visibilityScope(req.user, 'deals', req.query.assignedTo as string | undefined),
     };
     if (await maybeQueueExport(req, res, 'leads', format, filters)) return;
     await exportLeads(req.user.tenantId, filters, format, res);
@@ -86,8 +87,8 @@ router.get('/deals', async (req, res, next) => {
     const filters = {
       stage: req.query.stage as string | undefined,
       search: req.query.search as string | undefined,
-      // Analista (USER) só exporta os próprios registros (req 4) — escopo forçado.
-      assignedTo: ownerScope(req.user, req.query.assignedTo as string | undefined),
+      // Visibilidade viva (req 14): escopo de 'deals'. == HOJE p/ builtins.
+      assignedTo: await visibilityScope(req.user, 'deals', req.query.assignedTo as string | undefined),
       leadId: req.query.leadId as string | undefined,
       minValue: req.query.minValue ? Number(req.query.minValue) : undefined,
       maxValue: req.query.maxValue ? Number(req.query.maxValue) : undefined,
@@ -108,8 +109,8 @@ router.get('/tasks', async (req, res, next) => {
       status: req.query.status as string | undefined,
       priority: req.query.priority as string | undefined,
       search: req.query.search as string | undefined,
-      // Analista (USER) só exporta os próprios registros (req 4) — escopo forçado.
-      assignedTo: ownerScope(req.user, req.query.assignedTo as string | undefined),
+      // Visibilidade viva (req 14): tarefas acompanham 'deals'. == HOJE p/ builtins.
+      assignedTo: await visibilityScope(req.user, 'tasks', req.query.assignedTo as string | undefined),
       leadId: req.query.leadId as string | undefined,
       startDate: req.query.startDate as string | undefined,
       endDate: req.query.endDate as string | undefined,

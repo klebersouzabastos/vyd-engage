@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../utils/jwt.js';
 import { createError } from './errorHandler.js';
 import prisma from '../config/database.js';
-import { can, type Capability } from '../services/permissionService.js';
+import { can, getEffective, type Capability } from '../services/permissionService.js';
 
 // Extend Express Request to include user (+ flag de super-admin da plataforma)
 declare global {
@@ -83,12 +83,49 @@ export function requireRole(...roles: string[]) {
  * leitura (GET/HEAD/OPTIONS) é livre para qualquer autenticado (necessária para
  * preencher formulários), mas escrita exige GESTOR ou ADMIN (spec papeis-comerciais,
  * reqs 9 e 10).
+ *
+ * Upgrade RD P1 (req 13, capability `configure`): além do piso de papel ADMIN/GESTOR,
+ * a escrita passa a respeitar a capability `configure` do perfil de permissão efetivo.
+ * FAIL-CLOSED / DEFAULT == HOJE: os builtins ADMIN/GESTOR têm `configure=true`, logo
+ * seguem escrevendo exatamente como hoje — a checagem só NEGA (403) quando um admin
+ * atribuiu ao usuário um perfil custom com `configure=false`. Uma única mudança aqui
+ * cobre TODAS as rotas de settings que já usam `requireManagerForWrites`
+ * (funnels/customFields/scoring/dealSources/originCampaigns/stageTaskTemplates/
+ * products/lostReasons/salesConfig/questionnaires) sem tocar cada uma.
+ *
+ * É `async` (consulta o perfil efetivo), mas continua um middleware Express válido:
+ * resolve SEMPRE via `next()`/`next(err)` e nunca lança para o chamador síncrono.
  */
-export function requireManagerForWrites(req: Request, res: Response, next: NextFunction): void {
+export async function requireManagerForWrites(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
-  return requireRole('ADMIN', 'GESTOR')(req, res, next);
+  // Piso de papel (fail-closed): ADMIN/GESTOR. Encadeia a checagem de `configure`
+  // só quando o piso passa; qualquer negação de papel curto-circuita aqui.
+  return requireRole('ADMIN', 'GESTOR')(req, res, (err?: unknown) => {
+    if (err) return next(err);
+    void (async () => {
+      try {
+        const user = req.user!; // garantido por requireRole (401 caso ausente)
+        const effective = await getEffective({
+          userId: user.userId,
+          tenantId: user.tenantId,
+          role: user.role,
+          isPlatformAdmin: user.isPlatformAdmin,
+        });
+        if (effective.capabilities.configure !== true) {
+          return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+        }
+        next();
+      } catch (error) {
+        next(error);
+      }
+    })();
+  });
 }
 
 /**
@@ -113,6 +150,47 @@ export function requirePermission(cap: Capability) {
         cap
       );
       if (!allowed) {
+        return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+/**
+ * Exige uma capability, mas SOMENTE quando a restrição é EXPLÍCITA (perfil custom).
+ *
+ * Diferença para `requirePermission`: aqui os builtins SEMPRE passam, mesmo quando o
+ * default do baseRole é `false`. Só nega (403) quando o usuário tem um perfil CUSTOM
+ * (`hasCustomProfile`) que desligou a capability. Use isto onde a rota HOJE não tem
+ * guarda de papel (comportamento aberto) e não se pode regredir o builtin.
+ *
+ * Caso de uso (req 13, `manageAutomations`): as rotas de automações não têm guarda
+ * de papel hoje — qualquer autenticado (incl. USER/VIEWER) gerencia automações. O
+ * builtin USER tem `manageAutomations=false` no contrato, então `requirePermission`
+ * regrediria (403 onde hoje é 200). Este middleware preserva BYTE-A-BYTE o
+ * comportamento de hoje para builtins e permite que um admin restrinja via perfil
+ * custom (`manageAutomations=false`).
+ *
+ * FAIL-CLOSED: 401 sem usuário; em qualquer erro de carga, `getEffective` já recai
+ * nos defaults do role e `hasCustomProfile=false` → passa (== hoje).
+ */
+export function requireCustomProfilePermission(cap: Capability) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      return next(createError('Authentication required', 401, 'NOT_AUTHENTICATED'));
+    }
+    try {
+      const effective = await getEffective({
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      });
+      // Builtins passam sempre (== hoje). Só nega quando um perfil custom desligou a capability.
+      if (effective.hasCustomProfile && effective.capabilities[cap] !== true) {
         return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
       }
       next();

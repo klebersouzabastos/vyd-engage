@@ -96,7 +96,7 @@ export async function createApproval(
       type: NotificationType.APPROVAL_REQUEST,
       title: 'Nova solicitação de aprovação',
       message: `${args.summary} — aguardando sua aprovação.`,
-      link: '/app/settings',
+      link: '/app/approvals',
       metadata: { approvalId: approval.id, type: args.type },
     })
     .catch(() => {});
@@ -241,7 +241,7 @@ export async function approve(tenantId: string, id: string, decidedById: string)
         message: executed
           ? `Sua solicitação "${approval.summary}" foi aprovada e executada.`
           : `Sua solicitação "${approval.summary}" foi aprovada, mas a execução falhou. Tente novamente.`,
-        link: '/app/settings',
+        link: '/app/approvals',
         metadata: { approvalId: id, decision: executed ? 'EXECUTED' : 'APPROVED' },
       },
     })
@@ -278,7 +278,7 @@ export async function reject(tenantId: string, id: string, decidedById: string, 
         type: NotificationType.APPROVAL_DECIDED,
         title: 'Solicitação rejeitada',
         message: `Sua solicitação "${approval.summary}" foi rejeitada. Motivo: ${reason}`,
-        link: '/app/settings',
+        link: '/app/approvals',
         metadata: { approvalId: id, decision: 'REJECTED', reason },
       },
     })

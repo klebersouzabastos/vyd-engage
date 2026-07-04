@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { automationService } from '../services/automationService.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireCustomProfilePermission } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { AutomationStatus } from '@prisma/client';
@@ -13,6 +13,25 @@ const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+
+/**
+ * Gerenciar automações (Upgrade RD P1, req 13 — capability `manageAutomations`).
+ *
+ * Leitura (GET/HEAD/OPTIONS: listar, detalhe, stats, logs) permanece livre a qualquer
+ * autenticado. As rotas MUTADORAS (POST/PUT/PATCH/DELETE, incl. POST /:id/execute)
+ * passam a respeitar a capability `manageAutomations`.
+ *
+ * FAIL-CLOSED / DEFAULT == HOJE: hoje NÃO há guarda de papel nestas rotas — qualquer
+ * autenticado gerencia automações. Por isso usamos `requireCustomProfilePermission`
+ * (não `requirePermission`): os builtins passam sempre (o builtin USER tem
+ * `manageAutomations=false`, mas hoje pode gerenciar — não regredimos); só um admin,
+ * via perfil CUSTOM com `manageAutomations=false`, nega a escrita.
+ */
+const manageAutomationsGate = requireCustomProfilePermission('manageAutomations');
+router.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  return manageAutomationsGate(req, res, next);
+});
 
 const createAutomationSchema = z.object({
   name: z.string().min(1),

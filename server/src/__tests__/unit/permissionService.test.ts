@@ -19,6 +19,7 @@ import {
   defaultsForRole,
   getEffective,
   can,
+  canEntity,
   visibilityScope,
   teamMemberIds,
 } from '../../services/permissionService.js';
@@ -39,11 +40,12 @@ describe('defaultsForRole — mapeamento role → defaults (== HOJE)', () => {
     }
   });
 
-  it('USER: exporta/bulk/deleta e vê relatórios; NÃO configura/automações/transfere; deals PROPRIA', () => {
+  it('USER: exporta/importa/bulk/deleta e vê relatórios; NÃO configura/automações/transfere; deals PROPRIA', () => {
     const d = defaultsForRole(UserRole.USER);
     expect(d.capabilities).toEqual({
       exportData: true,
-      importData: false,
+      // == HOJE: import de leads não tem guarda de papel; USER importa.
+      importData: true,
       bulkActions: true,
       deleteRecords: true,
       configure: false,
@@ -52,9 +54,16 @@ describe('defaultsForRole — mapeamento role → defaults (== HOJE)', () => {
       viewReports: true,
     });
     expect(d.visibility).toEqual({ deals: 'PROPRIA', companies: 'GERAL', contacts: 'GERAL' });
+    // Eixo por-entidade (req 13): USER cria/edita/exclui as 4 entidades (== hoje).
+    expect(d.entities).toEqual({
+      leads: { create: true, edit: true, delete: true },
+      companies: { create: true, edit: true, delete: true },
+      deals: { create: true, edit: true, delete: true },
+      tasks: { create: true, edit: true, delete: true },
+    });
   });
 
-  it('VIEWER: só viewReports; visibilidade PROPRIA em tudo', () => {
+  it('VIEWER: só viewReports; visibilidade GERAL (tenant-wide só-leitura == HOJE)', () => {
     const d = defaultsForRole(UserRole.VIEWER);
     expect(d.capabilities).toEqual({
       exportData: false,
@@ -66,7 +75,10 @@ describe('defaultsForRole — mapeamento role → defaults (== HOJE)', () => {
       transferOwner: false,
       viewReports: true,
     });
-    expect(d.visibility).toEqual({ deals: 'PROPRIA', companies: 'PROPRIA', contacts: 'PROPRIA' });
+    // BYTE-A-BYTE == HOJE: ownerScope nunca restringia o VIEWER (só o USER analista);
+    // VIEWER permanece tenant-wide (GERAL). Entidades todas false (só-leitura).
+    expect(d.visibility).toEqual({ deals: 'GERAL', companies: 'GERAL', contacts: 'GERAL' });
+    expect(d.entities.deals).toEqual({ create: false, edit: false, delete: false });
   });
 });
 
@@ -135,7 +147,7 @@ describe('getEffective — perfil custom expande explicitamente', () => {
     });
 
     expect(eff.capabilities.configure).toBe(true); // expandido
-    expect(eff.capabilities.importData).toBe(false); // default de USER mantido
+    expect(eff.capabilities.manageAutomations).toBe(false); // default de USER mantido
     expect(eff.visibility.deals).toBe('GERAL'); // expandido
     expect(eff.visibility.companies).toBe('GERAL'); // default mantido
     expect(eff.requireApprovalFor.export).toBe(true);
@@ -149,6 +161,91 @@ describe('can — capability', () => {
     expect(await can(user, 'bulkActions')).toBe(true);
     expect(await can(user, 'configure')).toBe(false);
     expect(await can(user, 'transferOwner')).toBe(false);
+    // == HOJE: import de leads não tinha guarda → USER importa (importData=true).
+    expect(await can(user, 'importData')).toBe(true);
+  });
+});
+
+describe('entities — eixo por-entidade (req 13, == HOJE)', () => {
+  it('defaults: ADMIN/GESTOR/USER todas true; VIEWER todas false', () => {
+    for (const role of [UserRole.ADMIN, UserRole.GESTOR, UserRole.USER]) {
+      const d = defaultsForRole(role);
+      for (const kind of ['leads', 'companies', 'deals', 'tasks'] as const) {
+        expect(d.entities[kind]).toEqual({ create: true, edit: true, delete: true });
+      }
+    }
+    const v = defaultsForRole(UserRole.VIEWER);
+    for (const kind of ['leads', 'companies', 'deals', 'tasks'] as const) {
+      expect(v.entities[kind]).toEqual({ create: false, edit: false, delete: false });
+    }
+  });
+
+  it('canEntity — USER default cria/edita/exclui todas as entidades (== hoje)', async () => {
+    const user = { userId: 'u1', tenantId, role: 'USER', permissionProfileId: null };
+    expect(await canEntity(user, 'deals', 'create')).toBe(true);
+    expect(await canEntity(user, 'leads', 'edit')).toBe(true);
+    expect(await canEntity(user, 'companies', 'delete')).toBe(true);
+    expect(await canEntity(user, 'tasks', 'create')).toBe(true);
+  });
+
+  it('canEntity — perfil custom que desliga deals.create nega só isso', async () => {
+    prismaMock.permissionProfile.findFirst.mockResolvedValue({
+      baseRole: UserRole.USER,
+      isBuiltin: false,
+      capabilities: { entities: { deals: { create: false } } },
+      visibility: {},
+      requireApprovalFor: {},
+    } as never);
+    const user = { userId: 'u1', tenantId, role: 'USER', permissionProfileId: 'p-restr' };
+    expect(await canEntity(user, 'deals', 'create')).toBe(false); // restrito
+    expect(await canEntity(user, 'deals', 'edit')).toBe(true); // default mantido
+    expect(await canEntity(user, 'leads', 'create')).toBe(true); // outra entidade intacta
+  });
+});
+
+describe('hasCustomProfile — distingue restrição explícita de default do builtin', () => {
+  it('sem profileId → hasCustomProfile=false (builtin)', async () => {
+    const eff = await getEffective({
+      userId: 'u1',
+      tenantId,
+      role: 'USER',
+      permissionProfileId: null,
+    });
+    expect(eff.hasCustomProfile).toBe(false);
+  });
+
+  it('perfil builtin (isBuiltin=true) → hasCustomProfile=false', async () => {
+    prismaMock.permissionProfile.findFirst.mockResolvedValue({
+      baseRole: UserRole.USER,
+      isBuiltin: true,
+      capabilities: {},
+      visibility: {},
+      requireApprovalFor: {},
+    } as never);
+    const eff = await getEffective({
+      userId: 'u1',
+      tenantId,
+      role: 'USER',
+      permissionProfileId: 'builtin-user',
+    });
+    expect(eff.hasCustomProfile).toBe(false);
+  });
+
+  it('perfil custom (isBuiltin=false) → hasCustomProfile=true', async () => {
+    prismaMock.permissionProfile.findFirst.mockResolvedValue({
+      baseRole: UserRole.USER,
+      isBuiltin: false,
+      capabilities: {},
+      visibility: {},
+      requireApprovalFor: {},
+    } as never);
+    const eff = await getEffective({
+      userId: 'u1',
+      tenantId,
+      role: 'USER',
+      permissionProfileId: 'custom-1',
+    });
+    expect(eff.hasCustomProfile).toBe(true);
   });
 });
 

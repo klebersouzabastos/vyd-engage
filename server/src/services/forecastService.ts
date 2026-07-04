@@ -61,7 +61,7 @@ export const forecastService = {
    */
   async getForecast(
     tenantId: string,
-    filters?: { months?: number; assignedTo?: string; stage?: DealStage }
+    filters?: { months?: number; assignedTo?: string | { in: string[] }; stage?: DealStage }
   ): Promise<ForecastResponse> {
     const months = filters?.months || 6;
     const now = new Date();
@@ -240,7 +240,7 @@ export const forecastService = {
   async getTrend(
     tenantId: string,
     months: number = 6,
-    assignedTo?: string
+    assignedTo?: string | { in: string[] }
   ): Promise<TrendResponse> {
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
@@ -308,7 +308,7 @@ export const forecastService = {
       from?: string;
       to?: string;
       source?: string;
-      assignedTo?: string;
+      assignedTo?: string | { in: string[] };
       // Upgrade RD P0 (req 5): fonte/campanha vivem no Deal — filtra leads que
       // têm ao menos uma negociação com a fonte/campanha pedida.
       sourceId?: string;

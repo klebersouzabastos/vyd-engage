@@ -8,7 +8,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { aiLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope, isAnalyst } from '../utils/roleScope.js';
+import { visibilityScope, getEffective } from '../services/permissionService.js';
 import { DealStage } from '@prisma/client';
 import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
@@ -82,7 +82,7 @@ router.get('/forecast', async (req, res, next) => {
 
     const forecast = await forecastService.getForecast(req.user.tenantId, {
       months,
-      assignedTo: ownerScope(req.user, assignedTo),
+      assignedTo: await visibilityScope(req.user, 'deals', assignedTo),
       stage,
     });
     res.json({ status: 200, data: forecast });
@@ -99,7 +99,11 @@ router.get('/trend', async (req, res, next) => {
     }
 
     const months = req.query.months ? Number(req.query.months) : 6;
-    const trend = await forecastService.getTrend(req.user.tenantId, months, ownerScope(req.user));
+    const trend = await forecastService.getTrend(
+      req.user.tenantId,
+      months,
+      await visibilityScope(req.user, 'deals')
+    );
     res.json({ status: 200, data: trend });
   } catch (error) {
     next(error);
@@ -113,7 +117,10 @@ router.get('/stats', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const stats = await dealService.getStats(req.user.tenantId, ownerScope(req.user));
+    const stats = await dealService.getStats(
+      req.user.tenantId,
+      await visibilityScope(req.user, 'deals')
+    );
     res.json({ status: 200, data: stats });
   } catch (error) {
     next(error);
@@ -128,7 +135,11 @@ router.get('/action-summary', async (req, res, next) => {
     }
 
     const limit = req.query.limit ? Number(req.query.limit) : 5;
-    const actions = await getActionSummary(req.user.tenantId, limit, ownerScope(req.user));
+    const actions = await getActionSummary(
+      req.user.tenantId,
+      limit,
+      await visibilityScope(req.user, 'deals')
+    );
     res.json({ status: 200, data: actions });
   } catch (error) {
     next(error);
@@ -184,9 +195,10 @@ router.get('/without-tasks', async (req, res, next) => {
     }
 
     // Painel pessoal: padrão = o próprio usuário; gestor pode pedir outro
-    // responsável via ?assignedTo=; analista é sempre forçado a si (ownerScope).
+    // responsável via ?assignedTo=. A visibilidade efetiva (req 14) resolve o
+    // escopo — analista PROPRIA (userId), EQUIPE ({in}), GERAL (requested).
     const requested = (req.query.assignedTo as string | undefined) || req.user.userId;
-    const owner = ownerScope(req.user, requested);
+    const owner = await visibilityScope(req.user, 'deals', requested);
 
     const deals = await prisma.deal.findMany({
       where: {
@@ -229,8 +241,13 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
-    filters.assignedTo = ownerScope(req.user, filters.assignedTo);
-    const result = await dealService.findAll(req.user.tenantId, filters);
+    // Visibilidade viva (req 14): analista→PROPRIA (userId), EQUIPE→{in},
+    // GERAL→requested. Sem perfil custom, idêntico ao ownerScope de hoje.
+    const scopedFilters = {
+      ...filters,
+      assignedTo: await visibilityScope(req.user, 'deals', filters.assignedTo),
+    };
+    const result = await dealService.findAll(req.user.tenantId, scopedFilters);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -240,19 +257,29 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Guard de posse (reqs 6,7): o analista (USER) só acessa negócios em que é o
-// responsável; caso contrário recebe 404 (sem vazar existência). GESTOR/ADMIN/
-// platform-admin (e VIEWER, só-leitura) passam direto. Aplica a todas as rotas /:id*.
+// Guard de posse (reqs 6,7 + visibilidade viva req 14): o acesso a /:id* é
+// permitido quando o dono do negócio está DENTRO do escopo de visibilidade
+// efetivo do usuário — próprio (PROPRIA), membros da equipe (EQUIPE) ou qualquer
+// do tenant (GERAL). Fora do escopo → 404 (sem vazar existência).
+//
+// FAIL-CLOSED / == HOJE: sem perfil custom, USER builtin tem deals=PROPRIA →
+// escopo = próprio userId → 404 idêntico ao de hoje; GESTOR/ADMIN têm GERAL →
+// passam direto (também idêntico).
 async function enforceDealOwnership(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    if (!isAnalyst(req.user)) return next();
+    const scope = await visibilityScope(req.user, 'deals');
+    // GERAL → escopo devolve undefined (sem filtro por dono): acesso irrestrito
+    // ao tenant, como o manager de hoje.
+    if (scope === undefined) return next();
+
+    // PROPRIA (string) ou EQUIPE ({in}) → só passa se o dono ∈ escopo.
     const owned = await prisma.deal.findFirst({
       where: {
         id: req.params.id,
         tenantId: req.user.tenantId,
         deletedAt: null,
-        assignedTo: req.user.userId,
+        assignedTo: scope,
       },
       select: { id: true },
     });
@@ -380,9 +407,26 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Capability por-entidade (req 13): criar negociações exige entities.deals.create.
+    // Sem perfil custom, ADMIN/GESTOR/USER têm true (== hoje); só nega se restrito.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (!eff.entities.deals.create) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
     const data = createDealSchema.parse(req.body);
-    // Analista (USER) só cria negócios atribuídos a si mesmo (req 8).
-    if (isAnalyst(req.user)) data.assignedTo = req.user.userId;
+    // transferOwner (req 13): atribuir a OUTRA pessoa exige a capability, ancorada no
+    // PERFIL. Sem transferOwner o dono é forçado a si mesmo — o piso do analista de
+    // hoje. Sem perfil custom: USER transferOwner=false → forçado (== hoje);
+    // ADMIN/GESTOR transferOwner=true → livre (== hoje).
+    if (eff.capabilities.transferOwner !== true) {
+      data.assignedTo = req.user.userId;
+    }
     const deal = await dealService.create(req.user.tenantId, data);
 
     dispatchTrigger(
@@ -416,12 +460,25 @@ router.put('/:id', async (req, res, next) => {
         .json({ error: 'Informe o motivo da perda (lostReason) ao marcar um deal como perdido.' });
     }
 
+    // Capability por-entidade (req 13): editar negociações exige entities.deals.edit.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (!eff.entities.deals.edit) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
     const data = updateDealSchema.parse({
       ...body,
       id: req.params.id,
     });
-    // Analista (USER) não pode reatribuir o negócio para outra pessoa (req 8).
-    if (isAnalyst(req.user)) delete data.assignedTo;
+    // transferOwner (req 13): reatribuir exige a capability (ancorada no perfil).
+    // Sem ela, o campo assignedTo é ignorado no update — piso do analista de hoje.
+    // Sem perfil custom: USER transferOwner=false → strip (== hoje); ADMIN/GESTOR livre.
+    if (eff.capabilities.transferOwner !== true) delete data.assignedTo;
 
     // Fetch existing deal for audit diff
     const existing = await prisma.deal.findUnique({

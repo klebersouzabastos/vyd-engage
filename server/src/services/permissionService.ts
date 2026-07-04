@@ -37,6 +37,12 @@ export type VisibilityLevel = 'PROPRIA' | 'EQUIPE' | 'GERAL';
 /** Entidades cujo escopo de visibilidade é configurável. */
 export type VisibilityEntity = 'deals' | 'companies' | 'contacts' | 'tasks';
 
+/** Entidades do eixo por-entidade (criar/editar/excluir). */
+export type EntityKind = 'leads' | 'companies' | 'deals' | 'tasks';
+
+/** Ações granulares por entidade (req 13). */
+export type EntityAction = 'create' | 'edit' | 'delete';
+
 export interface Capabilities {
   exportData: boolean;
   importData: boolean;
@@ -47,6 +53,12 @@ export interface Capabilities {
   transferOwner: boolean;
   viewReports: boolean;
 }
+
+/** Permissões por-entidade (create/edit/delete) por tipo de registro (req 13). */
+export type EntityPermissions = Record<EntityKind, Record<EntityAction, boolean>>;
+
+/** Resultado de escopo de responsável: string (um dono) | {in} (equipe) | undefined (sem filtro). */
+export type OwnerScope = string | { in: string[] } | undefined;
 
 export interface VisibilityMap {
   deals: VisibilityLevel;
@@ -63,8 +75,16 @@ export interface RequireApprovalFor {
 export interface EffectivePermissions {
   baseRole: UserRole;
   capabilities: Capabilities;
+  /** Eixo por-entidade (create/edit/delete por leads|companies|deals|tasks) — req 13. */
+  entities: EntityPermissions;
   visibility: VisibilityMap;
   requireApprovalFor: RequireApprovalFor;
+  /**
+   * true quando as permissões vêm de um perfil CUSTOM (isBuiltin=false) atribuído
+   * ao usuário. Permite às rotas distinguir "restrição EXPLÍCITA do admin" de
+   * "default do builtin" — chave p/ não regredir builtins (BYTE-A-BYTE == HOJE).
+   */
+  hasCustomProfile: boolean;
 }
 
 /** Usuário mínimo aceito pelo serviço (compatível com req.user). */
@@ -102,7 +122,10 @@ const ALL_CAPS_TRUE: Capabilities = {
 
 const USER_CAPS: Capabilities = {
   exportData: true,
-  importData: false,
+  // == HOJE: a rota POST /leads/import não tem guarda de papel — qualquer
+  // autenticado (incl. USER) importa. Manter true evita regressão ao adicionar
+  // requirePermission('importData'); só um perfil custom pode desligar.
+  importData: true,
   bulkActions: true,
   deleteRecords: true,
   configure: false,
@@ -123,11 +146,6 @@ const VIEWER_CAPS: Capabilities = {
 };
 
 const GERAL_VISIBILITY: VisibilityMap = { deals: 'GERAL', companies: 'GERAL', contacts: 'GERAL' };
-const PROPRIA_VISIBILITY: VisibilityMap = {
-  deals: 'PROPRIA',
-  companies: 'PROPRIA',
-  contacts: 'PROPRIA',
-};
 // USER (analista): deals PROPRIA (ownerScope de hoje), empresas/contatos GERAL.
 const USER_VISIBILITY: VisibilityMap = {
   deals: 'PROPRIA',
@@ -136,6 +154,19 @@ const USER_VISIBILITY: VisibilityMap = {
 };
 
 const NO_APPROVALS: RequireApprovalFor = { export: false, bulk: false, delete: false };
+
+// Eixo por-entidade (req 13). DEFAULT == HOJE: qualquer autenticado ADMIN/GESTOR/USER
+// cria/edita/exclui as 4 entidades (não há guarda por-entidade hoje). VIEWER: tudo false.
+const ENTITY_KINDS: EntityKind[] = ['leads', 'companies', 'deals', 'tasks'];
+const ENTITY_ACTIONS: EntityAction[] = ['create', 'edit', 'delete'];
+
+function entitiesAll(value: boolean): EntityPermissions {
+  const out = {} as EntityPermissions;
+  for (const kind of ENTITY_KINDS) {
+    out[kind] = { create: value, edit: value, delete: value };
+  }
+  return out;
+}
 
 /**
  * Defaults de um baseRole — a fonte de verdade do comportamento de HOJE.
@@ -149,23 +180,33 @@ export function defaultsForRole(role: UserRole): EffectivePermissions {
       return {
         baseRole: role,
         capabilities: { ...ALL_CAPS_TRUE },
+        entities: entitiesAll(true),
         visibility: { ...GERAL_VISIBILITY },
         requireApprovalFor: { ...NO_APPROVALS },
+        hasCustomProfile: false,
       };
     case UserRole.USER:
       return {
         baseRole: role,
         capabilities: { ...USER_CAPS },
+        // == HOJE: USER cria/edita/exclui as 4 entidades sem guarda por-entidade.
+        entities: entitiesAll(true),
         visibility: { ...USER_VISIBILITY },
         requireApprovalFor: { ...NO_APPROVALS },
+        hasCustomProfile: false,
       };
     case UserRole.VIEWER:
     default:
       return {
         baseRole: UserRole.VIEWER,
         capabilities: { ...VIEWER_CAPS },
-        visibility: { ...PROPRIA_VISIBILITY },
+        entities: entitiesAll(false),
+        // == HOJE: o VIEWER é tenant-wide só-leitura (ownerScope NUNCA o restringia
+        // — só o analista USER). Visibilidade GERAL preserva BYTE-A-BYTE esse
+        // comportamento; um admin pode restringir via perfil custom.
+        visibility: { ...GERAL_VISIBILITY },
         requireApprovalFor: { ...NO_APPROVALS },
+        hasCustomProfile: false,
       };
   }
 }
@@ -208,6 +249,7 @@ function mergeProfile(
   defaults: EffectivePermissions,
   profile: {
     baseRole: UserRole;
+    isBuiltin: boolean;
     capabilities: unknown;
     visibility: unknown;
     requireApprovalFor: unknown;
@@ -218,6 +260,27 @@ function mergeProfile(
   for (const key of Object.keys(capabilities) as Capability[]) {
     if (typeof capOverrides[key] === 'boolean') {
       capabilities[key] = capOverrides[key] as boolean;
+    }
+  }
+
+  // Eixo por-entidade (req 13): overrides ficam aninhados em `capabilities.entities`
+  // do JSON do perfil (sem migração — a coluna capabilities já é Json). Só chaves
+  // booleanas explícitas sobrescrevem; ausência mantém o default do baseRole.
+  const entities: EntityPermissions = {
+    leads: { ...defaults.entities.leads },
+    companies: { ...defaults.entities.companies },
+    deals: { ...defaults.entities.deals },
+    tasks: { ...defaults.entities.tasks },
+  };
+  const entOverrides = (capOverrides.entities ?? {}) as Record<string, unknown>;
+  for (const kind of ENTITY_KINDS) {
+    const kindOverride = entOverrides[kind] as Record<string, unknown> | undefined;
+    if (kindOverride && typeof kindOverride === 'object') {
+      for (const action of ENTITY_ACTIONS) {
+        if (typeof kindOverride[action] === 'boolean') {
+          entities[kind][action] = kindOverride[action] as boolean;
+        }
+      }
     }
   }
 
@@ -244,7 +307,15 @@ function mergeProfile(
         : defaults.requireApprovalFor.delete,
   };
 
-  return { baseRole: profile.baseRole, capabilities, visibility, requireApprovalFor };
+  return {
+    baseRole: profile.baseRole,
+    capabilities,
+    entities,
+    visibility,
+    requireApprovalFor,
+    // Só perfis CUSTOM (não-builtin) contam como "restrição explícita do admin".
+    hasCustomProfile: profile.isBuiltin !== true,
+  };
 }
 
 // ── API pública ──────────────────────────────────────────────────────────────
@@ -272,7 +343,13 @@ export async function getEffective(user: PermissionUser): Promise<EffectivePermi
 
     const profile = await prisma.permissionProfile.findFirst({
       where: { id: profileId, tenantId: user.tenantId },
-      select: { baseRole: true, capabilities: true, visibility: true, requireApprovalFor: true },
+      select: {
+        baseRole: true,
+        isBuiltin: true,
+        capabilities: true,
+        visibility: true,
+        requireApprovalFor: true,
+      },
     });
     if (!profile) return defaults;
 
@@ -289,6 +366,20 @@ export async function getEffective(user: PermissionUser): Promise<EffectivePermi
 export async function can(user: PermissionUser, cap: Capability): Promise<boolean> {
   const effective = await getEffective(user);
   return effective.capabilities[cap] === true;
+}
+
+/**
+ * Verifica uma ação por-entidade (create/edit/delete) do usuário — req 13.
+ * FAIL-CLOSED via getEffective. Sem perfil custom, ADMIN/GESTOR/USER têm TODAS as
+ * ações por-entidade = true (== hoje, onde não há guarda por-entidade); VIEWER false.
+ */
+export async function canEntity(
+  user: PermissionUser,
+  entity: EntityKind,
+  action: EntityAction
+): Promise<boolean> {
+  const effective = await getEffective(user);
+  return effective.entities[entity]?.[action] === true;
 }
 
 /**
@@ -337,7 +428,7 @@ export async function visibilityScope(
   user: PermissionUser,
   entity: VisibilityEntity,
   requested?: string
-): Promise<string | { in: string[] } | undefined> {
+): Promise<OwnerScope> {
   const effective = await getEffective(user);
   const key: keyof VisibilityMap = entity === 'tasks' ? 'deals' : entity;
   const level = effective.visibility[key];
@@ -367,7 +458,12 @@ export async function ensureBuiltinProfiles(tenantId: string): Promise<void> {
           description: `Perfil padrão (${name}) — imutável.`,
           isBuiltin: true,
           baseRole: role,
-          capabilities: defaults.capabilities as unknown as Prisma.InputJsonValue,
+          // Materializa também o eixo por-entidade aninhado em `capabilities.entities`
+          // (a UI/CF-1b lê o efetivo daqui). getEffective reconstrói a partir disso.
+          capabilities: {
+            ...defaults.capabilities,
+            entities: defaults.entities,
+          } as unknown as Prisma.InputJsonValue,
           visibility: defaults.visibility as unknown as Prisma.InputJsonValue,
           requireApprovalFor: defaults.requireApprovalFor as unknown as Prisma.InputJsonValue,
         },
@@ -385,6 +481,7 @@ export const permissionService = {
   defaultsForRole,
   getEffective,
   can,
+  canEntity,
   teamMemberIds,
   visibilityScope,
   ensureBuiltinProfiles,

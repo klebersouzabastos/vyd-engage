@@ -11,7 +11,7 @@ import { LeadStatus, LeadSource, NotificationType, ApprovalType } from '@prisma/
 import { notificationService } from '../services/notificationService.js';
 import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
-import { getEffective } from '../services/permissionService.js';
+import { getEffective, visibilityScope } from '../services/permissionService.js';
 import { approvalService } from '../services/approvalService.js';
 
 const router = Router();
@@ -66,7 +66,12 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
-    const result = await leadService.findAll(req.user.tenantId, filters);
+    // Visibilidade viva (req 14): contatos/leads. DEFAULT == HOJE: builtins têm
+    // contacts=GERAL → escopo undefined → SEM filtro por dono (idêntico a hoje,
+    // pois a lista de leads não escopava por dono). Perfil custom PROPRIA/EQUIPE
+    // aplica o filtro por `assignedTo`.
+    const scope = await visibilityScope(req.user, 'contacts', filters.assignedTo);
+    const result = await leadService.findAll(req.user.tenantId, filters, scope);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -156,6 +161,14 @@ router.patch('/bulk', requirePermission('bulkActions'), async (req, res, next) =
       }
       case 'assign_user': {
         const userId = payload?.userId ? z.string().uuid().parse(payload.userId) : null;
+        // transferOwner (req 13): a reatribuição em massa só é BLOQUEADA quando um
+        // perfil CUSTOM desliga transferOwner explicitamente — nunca por omissão.
+        // FAIL-CLOSED / BYTE-A-BYTE == HOJE: sem perfil custom (profileHasCustom
+        // === false) os builtins reatribuem em massa exatamente como hoje
+        // (USER/GESTOR/ADMIN via bulkActions), sem regressão.
+        if (effective.hasCustomProfile && effective.capabilities.transferOwner !== true) {
+          return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+        }
         await prisma.lead.updateMany({
           where: { id: { in: ids }, tenantId },
           data: { assignedTo: userId },
@@ -164,9 +177,16 @@ router.patch('/bulk', requirePermission('bulkActions'), async (req, res, next) =
         break;
       }
       case 'delete': {
-        await prisma.lead.deleteMany({
+        // Soft-delete (req 16): vai para a Lixeira (deletedAt), NÃO hard-delete.
+        // Um AuditLog 'delete' por lead registra quem/quando (autor = solicitante).
+        const now = new Date();
+        await prisma.lead.updateMany({
           where: { id: { in: ids }, tenantId },
+          data: { deletedAt: now },
         });
+        for (const leadId of ids) {
+          await approvalService.writeDeleteAudit(tenantId, 'leads', leadId, req.user.userId);
+        }
         affected = ids.length;
         // Invalidate plan limits cache
         const { planLimitsService } = await import('../services/planLimitsService.js');
@@ -526,6 +546,17 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Capability por-entidade (req 13): criar leads exige entities.leads.create.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (!eff.entities.leads.create) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
     // Check plan limits
     const { planLimitsService } = await import('../services/planLimitsService.js');
     await planLimitsService.enforceLimit(req.user.tenantId, 'leads');
@@ -559,6 +590,18 @@ router.put('/:id', async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
+    }
+
+    // Capability por-entidade (req 13): editar leads exige entities.leads.edit.
+    // FAIL-CLOSED / == HOJE: builtins têm entities.leads.edit=true → sem mudança.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (!eff.entities.leads.edit) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
     }
 
     const data = updateLeadSchema.parse({
@@ -671,7 +714,10 @@ const importSchema = z.object({
   skipDuplicateEmails: z.boolean().optional().default(true),
 });
 
-router.post('/import', async (req, res, next) => {
+// Enforcement de capability (req 13): importar exige `importData`. FAIL-CLOSED /
+// == HOJE: sem perfil custom, ADMIN/GESTOR/USER têm importData=true (a rota não
+// tinha guarda de papel); só um perfil custom que desligue importData nega (403).
+router.post('/import', requirePermission('importData'), async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));

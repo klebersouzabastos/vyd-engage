@@ -16,7 +16,12 @@
  * custom, `visibilityScope('deals')` reduz ao MESMO valor de `ownerScope`.
  */
 
-import { visibilityScope as permissionVisibilityScope } from '../services/permissionService.js';
+import {
+  visibilityScope as permissionVisibilityScope,
+  type OwnerScope,
+} from '../services/permissionService.js';
+
+export type { OwnerScope };
 
 interface RequestUser {
   userId: string;

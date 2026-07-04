@@ -4,9 +4,9 @@ import { companyService } from '../services/companyService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
-import { ownerScope } from '../utils/roleScope.js';
 import { ClientStatus, CompanySize, ContractHolder } from '@prisma/client';
 import { approvalService } from '../services/approvalService.js';
+import { visibilityScope, getEffective } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -88,6 +88,24 @@ const querySchema = z.object({
   order: z.enum(['asc', 'desc']).optional(),
 });
 
+/**
+ * Verifica a capability por-entidade de empresas (req 13). FAIL-CLOSED via
+ * getEffective: sem perfil custom, ADMIN/GESTOR/USER têm todas true (== hoje).
+ */
+async function entityAllowed(
+  req: import('express').Request,
+  action: 'create' | 'edit' | 'delete'
+): Promise<boolean> {
+  const u = req.user!;
+  const eff = await getEffective({
+    userId: u.userId,
+    tenantId: u.tenantId,
+    role: u.role,
+    isPlatformAdmin: u.isPlatformAdmin,
+  });
+  return eff.entities.companies[action] === true;
+}
+
 // GET /api/companies/stats/count - Company count (MUST be before /:id)
 router.get('/stats/count', async (req, res, next) => {
   try {
@@ -124,7 +142,11 @@ router.get('/', async (req, res, next) => {
     }
 
     const filters = querySchema.parse(req.query);
-    const result = await companyService.findAll(req.user.tenantId, filters);
+    // Visibilidade viva (req 14): empresas. DEFAULT == HOJE: builtins têm
+    // companies=GERAL → escopo undefined → SEM filtro por dono (idêntico a hoje).
+    // Só com perfil custom PROPRIA/EQUIPE o filtro por `assignedTo` aparece.
+    const scope = await visibilityScope(req.user, 'companies');
+    const result = await companyService.findAll(req.user.tenantId, filters, scope);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -141,11 +163,11 @@ router.get('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const company = await companyService.findById(
-      req.user.tenantId,
-      req.params.id,
-      ownerScope(req.user)
-    );
+    // Os registros-filho (leads/deals/interações) exibidos no detalhe seguem a
+    // visibilidade de 'deals' (mesma dona) — para o USER builtin isso é o próprio
+    // userId, IDÊNTICO ao ownerScope de hoje. Só perfil custom expande.
+    const childScope = await visibilityScope(req.user, 'deals');
+    const company = await companyService.findById(req.user.tenantId, req.params.id, childScope);
     res.json(company);
   } catch (error) {
     next(error);
@@ -159,6 +181,10 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Capability por-entidade (req 13): criar empresas exige entities.companies.create.
+    if (!(await entityAllowed(req, 'create'))) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
     const data = createCompanySchema.parse(req.body);
     const company = await companyService.create(req.user.tenantId, data);
     res.status(201).json(company);
@@ -177,6 +203,10 @@ router.put('/:id', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Capability por-entidade (req 13): editar empresas exige entities.companies.edit.
+    if (!(await entityAllowed(req, 'edit'))) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
     const data = updateCompanySchema.parse({
       ...req.body,
       id: req.params.id,

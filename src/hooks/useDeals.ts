@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api/client';
 import { toast } from 'sonner';
 import { Deal, DealStats } from '../types';
+import { handlePendingApproval } from '../lib/approvalResponse';
 
 export function useDeals() {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -85,7 +86,13 @@ export function useDeals() {
       const backup = [...deals];
       setDeals((prev) => prev.filter((d) => d.id !== id));
       try {
-        await apiClient.deleteDeal(id);
+        const res = await apiClient.deleteDeal(id);
+        // Perfil exige aprovação (req 16): backend responde 202 e NÃO exclui.
+        // Restaura o item na lista e mostra o toast "enviado para aprovação".
+        if (handlePendingApproval(res)) {
+          setDeals(backup);
+          return;
+        }
         toast.success('Deal removido com sucesso!');
       } catch (err: unknown) {
         setDeals(backup);

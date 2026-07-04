@@ -101,8 +101,19 @@ export async function deleteProfile(tenantId: string, id: string): Promise<void>
       'BUILTIN_PROFILE_READONLY'
     );
   }
-  // FK SetNull em User.permissionProfileId: usuários com este perfil voltam aos
-  // defaults do seu role (fail-closed) — nunca ficam mais permissivos.
+
+  // Caso extremo (req 13): perfil EM USO não pode ser excluído — o admin deve
+  // primeiro migrar os usuários para outro perfil. Bloqueia com 400 explícito
+  // (em vez de deixar o FK SetNull rebaixar os usuários silenciosamente).
+  const inUse = await prisma.user.count({ where: { tenantId, permissionProfileId: id } });
+  if (inUse > 0) {
+    throw createError(
+      `Perfil em uso por ${inUse} usuário(s). Migre-os para outro perfil antes de excluir.`,
+      400,
+      'PROFILE_IN_USE'
+    );
+  }
+
   await prisma.permissionProfile.delete({ where: { id } });
 }
 

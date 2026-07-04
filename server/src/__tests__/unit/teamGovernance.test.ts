@@ -148,6 +148,41 @@ describe('permissionProfileService — builtins read-only', () => {
     expect(prismaMock.permissionProfile.delete).not.toHaveBeenCalled();
   });
 
+  it('deleteProfile em custom EM USO → 400 PROFILE_IN_USE (não exclui) — req 13 caso extremo', async () => {
+    prismaMock.permissionProfile.findFirst.mockResolvedValue({
+      id: 'c9',
+      tenantId,
+      isBuiltin: false,
+      baseRole: UserRole.USER,
+    } as never);
+    // 3 usuários ainda apontam para o perfil → bloqueia.
+    prismaMock.user.count.mockResolvedValue(3 as never);
+
+    await expect(permissionProfileService.deleteProfile(tenantId, 'c9')).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'PROFILE_IN_USE',
+    });
+    expect(prismaMock.permissionProfile.delete).not.toHaveBeenCalled();
+    // count filtrado por tenant + perfil.
+    expect(prismaMock.user.count).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tenantId, permissionProfileId: 'c9' } })
+    );
+  });
+
+  it('deleteProfile em custom SEM uso → exclui', async () => {
+    prismaMock.permissionProfile.findFirst.mockResolvedValue({
+      id: 'c10',
+      tenantId,
+      isBuiltin: false,
+      baseRole: UserRole.USER,
+    } as never);
+    prismaMock.user.count.mockResolvedValue(0 as never);
+    prismaMock.permissionProfile.delete.mockResolvedValue({ id: 'c10' } as never);
+
+    await permissionProfileService.deleteProfile(tenantId, 'c10');
+    expect(prismaMock.permissionProfile.delete).toHaveBeenCalledWith({ where: { id: 'c10' } });
+  });
+
   it('updateProfile em custom aplica os overrides', async () => {
     prismaMock.permissionProfile.findFirst.mockResolvedValue({
       id: 'c1',

@@ -445,7 +445,7 @@ export interface ActionSummaryItem {
 export async function getActionSummary(
   tenantId: string,
   limit = 5,
-  assignedTo?: string
+  assignedTo?: string | { in: string[] }
 ): Promise<ActionSummaryItem[]> {
   const results: ActionSummaryItem[] = [];
   // Escopo por responsável (analista/USER só vê os próprios) — spec papeis-comerciais.
