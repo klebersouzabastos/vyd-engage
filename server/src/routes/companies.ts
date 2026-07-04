@@ -24,6 +24,8 @@ const companyFieldsSchema = z.object({
   website: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   clientStatus: z.nativeEnum(ClientStatus).optional(),
+  // Upgrade RD P0 (req 6) — segmento configurável (CompanySegment do tenant).
+  segmentId: z.string().uuid().optional().nullable(),
   assignedTo: z.string().uuid().optional().nullable(),
   followUpIntervalDays: z.coerce.number().int().positive().optional().nullable(),
   contractHolder: z.nativeEnum(ContractHolder).optional(),
@@ -70,6 +72,7 @@ const querySchema = z.object({
   industry: z.string().optional(),
   size: z.nativeEnum(CompanySize).optional(),
   clientStatus: z.nativeEnum(ClientStatus).optional(),
+  segmentId: z.string().uuid().optional(),
   followUpPending: z
     .enum(['true', 'false'])
     .optional()

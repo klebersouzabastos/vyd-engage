@@ -174,6 +174,9 @@ export const dealService = {
       search?: string;
       minValue?: number;
       maxValue?: number;
+      qualification?: number;
+      sourceId?: string;
+      originCampaignId?: string;
       page?: number;
       limit?: number;
       sort?: string;
@@ -214,6 +217,21 @@ export const dealService = {
 
     if (filters?.maxValue !== undefined) {
       where.value = { ...where.value, lte: filters.maxValue };
+    }
+
+    // Filtros server-side de Gestão de Negócios (LACUNA #1/#6): sem eles o front
+    // só filtrava client-side a página atual → totais/paginação errados.
+    if (filters?.qualification) {
+      // Semântica "N+ estrelas": inclui qualificações iguais ou superiores.
+      where.qualification = { gte: filters.qualification };
+    }
+
+    if (filters?.sourceId) {
+      where.sourceId = filters.sourceId;
+    }
+
+    if (filters?.originCampaignId) {
+      where.originCampaignId = filters.originCampaignId;
     }
 
     const [deals, total] = await Promise.all([
@@ -285,6 +303,29 @@ export const dealService = {
     } else if (data.stage) {
       // Reopening a deal — clear closedAt
       updateData.closedAt = null;
+    }
+
+    // Alinhar status/wonAt/lostAt com a etapa ao fechar pelo formulário de edição
+    // (LACUNA #10/#12): sem isso, só markWon/markLost alinhavam esses campos e a
+    // comemoração + gatilhos BIG_SALE/DEAL_LOST não disparavam por este caminho.
+    // Só na TRANSIÇÃO real de etapa (compara existing.stage), sem duplicar efeitos.
+    if (data.stage && data.stage !== existing.stage) {
+      if (data.stage === DealStage.WON) {
+        updateData.status = DealStatus.WON;
+        if (!existing.wonAt) {
+          updateData.wonAt = new Date();
+        }
+      } else if (data.stage === DealStage.LOST) {
+        updateData.status = DealStatus.LOST;
+        if (!existing.lostAt) {
+          updateData.lostAt = new Date();
+        }
+      } else if (existing.stage === DealStage.WON || existing.stage === DealStage.LOST) {
+        // Reabrindo: etapa sai de WON/LOST para outra — volta a OPEN e limpa marcos.
+        updateData.status = DealStatus.OPEN;
+        updateData.wonAt = null;
+        updateData.lostAt = null;
+      }
     }
 
     // Remove undefined values

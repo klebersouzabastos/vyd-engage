@@ -26,6 +26,8 @@ export interface CreateCompanyData {
   website?: string | null;
   notes?: string | null;
   clientStatus?: ClientStatus;
+  // Upgrade RD P0 (req 6) — segmento configurável do tenant (CompanySegment).
+  segmentId?: string | null;
   assignedTo?: string | null;
   followUpIntervalDays?: number | null;
   contractHolder?: ContractHolder;
@@ -50,11 +52,25 @@ export function startOfToday(): Date {
 
 const companyInclude = {
   assignedUser: { select: { id: true, name: true } },
+  segment: { select: { id: true, name: true } },
   _count: { select: { leads: true, deals: true } },
 };
 
+// Segmento deve pertencer ao tenant (multi-tenant: nunca aceitar id de fora).
+async function assertSegmentInTenant(tenantId: string, segmentId?: string | null) {
+  if (!segmentId) return;
+  const segment = await prisma.companySegment.findFirst({
+    where: { id: segmentId, tenantId },
+    select: { id: true },
+  });
+  if (!segment) {
+    throw createError('Segmento inválido', 400, 'INVALID_SEGMENT');
+  }
+}
+
 export const companyService = {
   async create(tenantId: string, data: CreateCompanyData) {
+    await assertSegmentInTenant(tenantId, data.segmentId);
     const company = await prisma.company.create({
       data: {
         tenantId,
@@ -67,6 +83,7 @@ export const companyService = {
         website: data.website || null,
         notes: data.notes || null,
         clientStatus: data.clientStatus ?? undefined,
+        segmentId: data.segmentId || null,
         assignedTo: data.assignedTo || null,
         followUpIntervalDays: data.followUpIntervalDays ?? null,
         contractHolder: data.contractHolder ?? undefined,
@@ -88,6 +105,7 @@ export const companyService = {
       where: { id, tenantId, deletedAt: null },
       include: {
         assignedUser: { select: { id: true, name: true } },
+        segment: { select: { id: true, name: true } },
         leads: {
           where: ownerId ? { assignedTo: ownerId } : {},
           select: {
@@ -154,6 +172,7 @@ export const companyService = {
       industry?: string;
       size?: CompanySize;
       clientStatus?: ClientStatus;
+      segmentId?: string;
       followUpPending?: boolean;
       contract?: ContractFilter;
       contractExpiringDays?: number;
@@ -189,6 +208,10 @@ export const companyService = {
 
     if (filters?.clientStatus) {
       where.clientStatus = filters.clientStatus;
+    }
+
+    if (filters?.segmentId) {
+      where.segmentId = filters.segmentId;
     }
 
     // "Clientes para follow-up": clientes ativos com tarefa de follow-up em aberto.
@@ -289,6 +312,10 @@ export const companyService = {
       throw createError('Company not found', 404, 'COMPANY_NOT_FOUND');
     }
 
+    if (data.segmentId !== undefined) {
+      await assertSegmentInTenant(tenantId, data.segmentId);
+    }
+
     const updateData: any = {
       name: data.name,
       domain: data.domain,
@@ -299,6 +326,7 @@ export const companyService = {
       website: data.website,
       notes: data.notes,
       clientStatus: data.clientStatus,
+      segmentId: data.segmentId,
       assignedTo: data.assignedTo,
       followUpIntervalDays: data.followUpIntervalDays,
       contractHolder: data.contractHolder,

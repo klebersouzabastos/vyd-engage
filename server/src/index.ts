@@ -123,12 +123,15 @@ import('./jobs/taskNotificationChecker.js')
     logger.error('Failed to initialize task notification checker', error);
   });
 
-import('./jobs/staleDeals.js')
-  .then(({ initializeStaleDealsChecker }) => {
-    initializeStaleDealsChecker();
+// Sales ops (Upgrade RD P0): multi-vendas agendadas + gatilhos gerenciais.
+// Substitui o boot do staleDeals antigo — o gatilho padrão "Negociações esfriando"
+// preserva a semântica DEAL_AT_RISK (staleDeals.ts permanece só como referência).
+import('./jobs/salesOps.js')
+  .then(({ startSalesOpsJob }) => {
+    startSalesOpsJob();
   })
   .catch((error) => {
-    logger.error('Failed to initialize stale deals checker', error);
+    logger.error('Failed to initialize sales ops job', error);
   });
 
 // Follow-up de clientes ativos + alertas de contrato (always active — no Redis needed)
@@ -233,6 +236,9 @@ import playbookRoutes from './routes/playbooks.js';
 import roadmapRoutes from './routes/roadmaps.js';
 import suggestionRoutes from './routes/suggestions.js';
 import { lostReasonRoutes, dealSourceRoutes, originCampaignRoutes } from './routes/dealConfig.js';
+import salesConfigRoutes from './routes/salesConfig.js';
+import questionnaireRoutes from './routes/questionnaires.js';
+import scheduledDealRoutes from './routes/scheduledDeals.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -315,6 +321,9 @@ v1Router.use('/suggestions', csrfProtection);
 v1Router.use('/lost-reasons', csrfProtection);
 v1Router.use('/deal-sources', csrfProtection);
 v1Router.use('/origin-campaigns', csrfProtection);
+v1Router.use('/sales-config', csrfProtection);
+v1Router.use('/questionnaires', csrfProtection);
+v1Router.use('/scheduled-deals', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -370,6 +379,9 @@ v1Router.use('/suggestions', suggestionRoutes);
 v1Router.use('/lost-reasons', lostReasonRoutes);
 v1Router.use('/deal-sources', dealSourceRoutes);
 v1Router.use('/origin-campaigns', originCampaignRoutes);
+v1Router.use('/sales-config', salesConfigRoutes);
+v1Router.use('/questionnaires', questionnaireRoutes);
+v1Router.use('/scheduled-deals', scheduledDealRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

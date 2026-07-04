@@ -24,6 +24,7 @@ import { FunnelWidget } from '../components/forecast/FunnelWidget';
 import { ActionSummaryRow } from '../components/NextActionCard';
 import { GoalProgress } from '../components/GoalProgress';
 import { ExpiringContractsWidget } from '../components/companies/ExpiringContractsWidget';
+import { TodayTasksPanel } from '../components/TodayTasksPanel';
 import { PipelineHealthGauge } from '../components/PipelineHealthGauge';
 import { useDashboard, DateRange } from '../hooks/useDashboard';
 import { CHART_COLORS } from '../utils/designTokens';
@@ -389,6 +390,11 @@ export function Dashboard() {
               <GoalProgress month={goalMonth} year={goalYear} />
             </div>
           </div>
+        </div>
+
+        {/* Tarefas de hoje & negociações sem tarefa (upgrade-rd-parity, req 9) */}
+        <div className="mb-8">
+          <TodayTasksPanel compact />
         </div>
 
         {/* Contratos a vencer (spec followup-clientes-contratos, req 14) */}

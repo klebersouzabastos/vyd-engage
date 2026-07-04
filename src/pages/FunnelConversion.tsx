@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
+import { apiClient } from '../services/api/client';
 import {
   RefreshCw,
   AlertTriangle,
@@ -58,14 +60,40 @@ const PRESET_LABELS: Record<DatePreset, string> = {
 export function FunnelConversion() {
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
   const [source, setSource] = useState('');
+  // Filtros por fonte/campanha da negociação (req 5) e segmento da empresa (req 8).
+  const [dealSourceId, setDealSourceId] = useState('');
+  const [campaignId, setCampaignId] = useState('');
+  const [segmentId, setSegmentId] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const dateRange = useMemo(() => getDateRange(datePreset), [datePreset]);
+
+  const { data: sourcesData } = useQuery({
+    queryKey: ['deal-sources', 'active'],
+    queryFn: () => apiClient.getDealSources(true),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: campaignsData } = useQuery({
+    queryKey: ['origin-campaigns', 'active'],
+    queryFn: () => apiClient.getOriginCampaigns(true),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: segmentsData } = useQuery({
+    queryKey: ['company-segments', 'active'],
+    queryFn: () => apiClient.getCompanySegments(true),
+    staleTime: 5 * 60 * 1000,
+  });
+  const dealSources = sourcesData?.data ?? [];
+  const campaigns = campaignsData?.data ?? [];
+  const segments = segmentsData?.data ?? [];
 
   const { data, loading, error, refetch } = useFunnelConversion({
     from: dateRange.from,
     to: dateRange.to,
     source: source || undefined,
+    sourceId: dealSourceId || undefined,
+    originCampaignId: campaignId || undefined,
+    segmentId: segmentId || undefined,
   });
 
   // Compute overall conversion rate (NEW -> WON)
@@ -215,6 +243,71 @@ export function FunnelConversion() {
                 {SOURCE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Fonte/campanha da negociação (upgrade-rd-parity, req 5) */}
+            <div>
+              <label
+                htmlFor="funnel-deal-source-filter"
+                className="block text-xs font-medium text-muted-foreground mb-1"
+              >
+                Fonte da negociação
+              </label>
+              <select
+                id="funnel-deal-source-filter"
+                value={dealSourceId}
+                onChange={(e) => setDealSourceId(e.target.value)}
+                className="text-sm border border-border rounded-md px-3 py-1.5 bg-card text-foreground"
+              >
+                <option value="">Todas as fontes</option>
+                {dealSources.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name ?? s.label ?? ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="funnel-campaign-filter"
+                className="block text-xs font-medium text-muted-foreground mb-1"
+              >
+                Campanha
+              </label>
+              <select
+                id="funnel-campaign-filter"
+                value={campaignId}
+                onChange={(e) => setCampaignId(e.target.value)}
+                className="text-sm border border-border rounded-md px-3 py-1.5 bg-card text-foreground"
+              >
+                <option value="">Todas as campanhas</option>
+                {campaigns.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name ?? c.label ?? ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Segmento da empresa (upgrade-rd-parity, req 8) */}
+            <div>
+              <label
+                htmlFor="funnel-segment-filter"
+                className="block text-xs font-medium text-muted-foreground mb-1"
+              >
+                Segmento
+              </label>
+              <select
+                id="funnel-segment-filter"
+                value={segmentId}
+                onChange={(e) => setSegmentId(e.target.value)}
+                className="text-sm border border-border rounded-md px-3 py-1.5 bg-card text-foreground"
+              >
+                <option value="">Todos os segmentos</option>
+                {segments.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
                   </option>
                 ))}
               </select>

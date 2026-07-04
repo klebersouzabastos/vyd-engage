@@ -431,6 +431,36 @@ router.post('/:id/revert', async (req, res, next) => {
   }
 });
 
+// POST /api/leads/:id/send-email - E-mail 1:1 pelo lead/contato (Upgrade RD P0,
+// req 11): modelo do tenant OU assunto/corpo avulsos; variáveis {{nome}}
+// {{empresa}} (negociacao/valor vazios sem deal) {{responsavel}}; exige
+// EmailConfig verificada (400 claro se ausente); registra Interaction EMAIL
+// OUTBOUND com leadId e SEM dealId.
+const sendLeadEmailSchema = z
+  .object({
+    templateId: z.string().uuid().optional(),
+    subject: z.string().min(1).max(500).optional(),
+    html: z.string().min(1).optional(),
+  })
+  .refine((body) => body.templateId || (body.subject && body.html), {
+    message: 'Informe um modelo de e-mail (templateId) ou assunto e corpo (subject + html).',
+  });
+
+router.post('/:id/send-email', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const body = sendLeadEmailSchema.parse(req.body);
+    const { sendLeadEmail } = await import('../services/emailOneToOneService.js');
+    const result = await sendLeadEmail(req.user.tenantId, req.user.userId, req.params.id, body);
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
 // GET /api/leads/:id/audit - Get audit trail for a lead
 router.get('/:id/audit', async (req, res, next) => {
   try {

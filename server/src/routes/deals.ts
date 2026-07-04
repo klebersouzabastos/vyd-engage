@@ -52,6 +52,10 @@ const querySchema = z.object({
   search: z.string().optional(),
   minValue: z.coerce.number().optional(),
   maxValue: z.coerce.number().optional(),
+  // Filtros de Gestão de Negócios (RD parity) — server-side na lista/kanban.
+  qualification: z.coerce.number().int().min(1).max(5).optional(),
+  sourceId: z.string().uuid().optional(),
+  originCampaignId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
   sort: z
@@ -133,6 +137,88 @@ router.get('/action-summary', async (req, res, next) => {
 // GET /api/deals/:id/next-action - Get suggested next action for a deal
 // NOTE: This must be registered before /:id to avoid conflict, but Express
 // handles sub-paths like /:id/next-action correctly since they have more segments.
+
+// ── Upgrade RD parity — P0 ──
+// GET /api/deals/celebration-stats - Vendas GANHAS do usuário no mês corrente
+// (comemoração de venda, spec req 11). MUST be before o guard /:id.
+router.get('/celebration-stats', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const stats = await prisma.deal.aggregate({
+      where: {
+        tenantId: req.user.tenantId,
+        deletedAt: null,
+        status: 'WON',
+        assignedTo: req.user.userId,
+        wonAt: { gte: monthStart },
+      },
+      _count: { id: true },
+      _sum: { value: true },
+    });
+
+    res.json({
+      status: 200,
+      data: {
+        monthWonCount: stats._count.id,
+        monthWonValue: Math.round(Number(stats._sum.value ?? 0) * 100) / 100,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/without-tasks - Negociações abertas do usuário sem tarefa
+// pendente vinculada (spec req 9). MUST be before o guard /:id.
+router.get('/without-tasks', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    // Painel pessoal: padrão = o próprio usuário; gestor pode pedir outro
+    // responsável via ?assignedTo=; analista é sempre forçado a si (ownerScope).
+    const requested = (req.query.assignedTo as string | undefined) || req.user.userId;
+    const owner = ownerScope(req.user, requested);
+
+    const deals = await prisma.deal.findMany({
+      where: {
+        tenantId: req.user.tenantId,
+        deletedAt: null,
+        status: 'OPEN',
+        ...(owner ? { assignedTo: owner } : {}),
+        tasks: {
+          none: {
+            status: { in: ['PENDING', 'IN_PROGRESS'] },
+            deletedAt: null,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        value: true,
+        funnelColumnId: true,
+        funnelColumn: { select: { id: true, title: true } },
+        company: { select: { id: true, name: true } },
+        lead: { select: { id: true, name: true } },
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: 50,
+    });
+
+    res.json({ status: 200, data: deals });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // GET /api/deals - List deals with filters/pagination
 router.get('/', async (req, res, next) => {
@@ -404,6 +490,36 @@ router.post('/:id/lose', async (req, res, next) => {
           error.errors
         )
       );
+    }
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/send-email - E-mail 1:1 pelo deal (Upgrade RD P0, req 10):
+// modelo do tenant OU assunto/corpo avulsos; variáveis {{nome}} {{empresa}}
+// {{negociacao}} {{valor}} {{responsavel}}; exige EmailConfig verificada (400
+// claro se ausente); registra Interaction EMAIL OUTBOUND na timeline do deal.
+const sendDealEmailSchema = z
+  .object({
+    templateId: z.string().uuid().optional(),
+    subject: z.string().min(1).max(500).optional(),
+    html: z.string().min(1).optional(),
+    leadId: z.string().uuid().optional(),
+  })
+  .refine((body) => body.templateId || (body.subject && body.html), {
+    message: 'Informe um modelo de e-mail (templateId) ou assunto e corpo (subject + html).',
+  });
+
+router.post('/:id/send-email', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const body = sendDealEmailSchema.parse(req.body);
+    const { sendDealEmail } = await import('../services/emailOneToOneService.js');
+    const result = await sendDealEmail(req.user.tenantId, req.user.userId, req.params.id, body);
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
     }
     next(error);
   }

@@ -29,10 +29,8 @@ import {
   Pencil,
   Sparkles,
   Flame,
-  Star,
   Trash2,
   Paperclip,
-  ClipboardList,
   FileSignature,
   CheckSquare,
   Building2,
@@ -42,6 +40,16 @@ import { apiClient, ConfigItem, DealContact } from '../services/api/client';
 import { DealForm } from '../components/deals/DealForm';
 import { DealProducts } from '../components/deals/DealProducts';
 import { DealAIScore } from '../components/deals/DealAIScore';
+import {
+  QualificationStars,
+  qualificationLevelName,
+  useQualificationConfig,
+} from '../components/deals/QualificationStars';
+import { QuestionnaireSection } from '../components/deals/QuestionnaireSection';
+import { SendEmailDialog } from '../components/deals/SendEmailDialog';
+import { MultiSaleDialog } from '../components/deals/MultiSaleDialog';
+import { CelebrationModal } from '../components/deals/CelebrationModal';
+import { ScheduledDealsSection } from '../components/deals/ScheduledDealsSection';
 import { NextActionCard } from '../components/NextActionCard';
 import { AIDraftDialog } from '../components/ai/AIDraftDialog';
 import { AuditTimeline } from '../components/AuditTimeline';
@@ -165,6 +173,24 @@ export function DealDetail() {
   const [lostReasonsList, setLostReasonsList] = useState<ConfigItem[]>([]);
   const [lostCompetitor, setLostCompetitor] = useState('');
   const [stageHistoryOpen, setStageHistoryOpen] = useState(false);
+
+  // ── Upgrade RD P0: qualificação, e-mail 1:1, celebração e multi-vendas ──
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [multiSaleOpen, setMultiSaleOpen] = useState(false);
+
+  // Nomes dos níveis de qualificação da config do tenant (req 1).
+  const { data: qualConfig } = useQualificationConfig();
+
+  // Flags do tenant (celebração opt-out; multi-vendas opt-in) — reqs 4 e 11.
+  const { data: salesFlags } = useQuery({
+    queryKey: ['sales-flags'],
+    queryFn: () => apiClient.getSalesFlags().then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const celebrationEnabled = salesFlags?.celebrationEnabled ?? true;
+  const multiSalesEnabled = salesFlags?.multiSalesEnabled ?? false;
 
   // Carrega os motivos de perda configuráveis (req 22) quando o modal de perda abre.
   useEffect(() => {
@@ -377,6 +403,8 @@ export function DealDetail() {
       }
       setDeal({ ...(updated as unknown as Deal), value: Number(updated.value) });
       toast.success('Negociação marcada como perdida');
+      // Multi-vendas (req 4): também após PERDA, oferecer agendar a próxima negociação.
+      if (multiSalesEnabled) setMultiSaleOpen(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao marcar perda');
     } finally {
@@ -396,8 +424,30 @@ export function DealDetail() {
     try {
       applyDealAction(await apiClient.markDealWon(id));
       toast.success('Negociação marcada como ganha');
+      // Fluxo pós-GANHO (reqs 4 e 11): celebração (se habilitada) e, em seguida,
+      // oferta de multi-venda (se habilitada). Sem celebração, multi-venda direto.
+      if (celebrationEnabled) {
+        setCelebrationOpen(true);
+      } else if (multiSalesEnabled) {
+        setMultiSaleOpen(true);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao marcar ganho');
+    }
+  };
+
+  // Qualificação editável inline (req 1): clicar na estrela atualiza via PUT.
+  const handleQualificationChange = async (value: number | null) => {
+    if (!id) return;
+    try {
+      const result = await apiClient.updateDeal(id, { qualification: value });
+      setDeal({
+        ...(result as unknown as Deal),
+        value: Number((result as Record<string, unknown>).value),
+      });
+      toast.success(value ? 'Qualificação atualizada' : 'Qualificação removida');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar qualificação');
     }
   };
 
@@ -736,21 +786,28 @@ export function DealDetail() {
             )}
               </TabsContent>
 
-              {/* Aba E-mail (req 32, P1) */}
+              {/* Aba E-mail — enviar e-mail 1:1 por modelo (Upgrade RD P0, req 10) + rascunho IA */}
               <TabsContent value="email">
                 <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
                   <p className="text-sm text-gray-600">
-                    Gere um rascunho de e-mail com IA para esta negociação. A sincronização completa
-                    da thread de e-mails será adicionada em seguida.
+                    Envie um e-mail para o contato desta negociação usando um modelo (com as
+                    variáveis resolvidas) ou escrevendo livremente. O envio fica registrado na
+                    timeline.
                   </p>
-                  <Button
-                    variant="outline"
-                    className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
-                    onClick={() => setAiDraftOpen(true)}
-                  >
-                    <Sparkles size={14} />
-                    Gerar Email
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button className="gap-2" onClick={() => setSendEmailOpen(true)}>
+                      <Mail size={14} />
+                      Enviar e-mail
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                      onClick={() => setAiDraftOpen(true)}
+                    >
+                      <Sparkles size={14} />
+                      Gerar Email
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
 
@@ -818,12 +875,18 @@ export function DealDetail() {
                 </div>
               </TabsContent>
 
-              {/* Aba Questionários (req 33, P2) */}
+              {/* Aba Questionários (Upgrade RD P0, reqs 2-3) */}
               <TabsContent value="questionarios">
-                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 text-center">
-                  <ClipboardList size={36} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-sm text-gray-500">Questionários configuráveis em breve.</p>
-                </div>
+                {id && (
+                  <QuestionnaireSection
+                    dealId={id}
+                    onQualified={(q) =>
+                      setDeal((prev) =>
+                        prev ? ({ ...prev, qualification: q } as Deal) : prev
+                      )
+                    }
+                  />
+                )}
               </TabsContent>
             </Tabs>
           </div>
@@ -878,7 +941,8 @@ export function DealDetail() {
                 );
               })()}
 
-              {/* Qualificação (req 15) — estrelas read-only no detalhe */}
+              {/* Qualificação (Upgrade RD P0, req 1) — estrelas editáveis inline,
+                  tooltip com o nome do nível vindo da config do tenant */}
               {(() => {
                 const q = (deal as unknown as Record<string, unknown>).qualification as
                   | number
@@ -888,10 +952,19 @@ export function DealDetail() {
                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">
                       Qualificação
                     </span>
-                    <div className="flex items-center gap-1 text-amber-700">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} size={16} fill={q && n <= q ? 'currentColor' : 'none'} />
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <QualificationStars
+                        value={q ?? null}
+                        levels={qualConfig?.levels}
+                        size={16}
+                        editable
+                        onChange={handleQualificationChange}
+                      />
+                      {q ? (
+                        <span className="text-xs text-muted-foreground">
+                          {qualificationLevelName(qualConfig?.levels, q)}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -1089,6 +1162,13 @@ export function DealDetail() {
                 Editar
               </Button>
             </div>
+
+            {/* Próximas negociações agendadas (multi-vendas, req 4) — seção discreta */}
+            {id && (
+              <div className="mt-4">
+                <ScheduledDealsSection dealId={id} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1097,12 +1177,19 @@ export function DealDetail() {
         open={editFormOpen}
         onClose={() => setEditFormOpen(false)}
         onSave={async (data) => {
+          // Perda pelo formulário: delega ao modal de motivo (que encadeia multi-venda).
           if (data.stage === 'LOST' && deal?.stage !== 'LOST') {
             setEditFormOpen(false);
             setShowLostModal(true);
             return;
           }
+          // Ganho pelo formulário (reqs 3, 11, 12): salva e encadeia celebração/multi-venda.
+          const closingWon = data.stage === 'WON' && deal?.stage !== 'WON';
           await handleEditSave(data);
+          if (closingWon) {
+            if (celebrationEnabled) setCelebrationOpen(true);
+            else if (multiSalesEnabled) setMultiSaleOpen(true);
+          }
         }}
         deal={deal}
       />
@@ -1155,6 +1242,27 @@ export function DealDetail() {
         dealId={id}
         leadId={deal?.leadId || undefined}
       />
+
+      {/* E-mail 1:1 por modelo (req 10) — registra Interaction na timeline */}
+      <SendEmailDialog
+        open={sendEmailOpen}
+        onClose={() => setSendEmailOpen(false)}
+        deal={deal}
+        contacts={contacts}
+        onSent={fetchInteractions}
+      />
+
+      {/* Celebração de venda (req 11) — ao fechar, oferece multi-venda (req 4) */}
+      <CelebrationModal
+        open={celebrationOpen}
+        onClose={() => {
+          setCelebrationOpen(false);
+          if (multiSalesEnabled) setMultiSaleOpen(true);
+        }}
+      />
+
+      {/* Multi-vendas (req 4) — agendar próxima negociação após ganho/perda */}
+      <MultiSaleDialog open={multiSaleOpen} onClose={() => setMultiSaleOpen(false)} deal={deal} />
     </div>
   );
 }

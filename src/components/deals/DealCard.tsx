@@ -1,8 +1,9 @@
 import { Deal } from '../../types';
-import { User, Calendar, Building2, Star, CheckSquare } from 'lucide-react';
+import { User, Calendar, Building2, CheckSquare } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
 import { cn } from '../ui/utils';
 import { DealAIScore } from './DealAIScore';
+import { QualificationStars, useQualificationConfig } from './QualificationStars';
 
 function formatDate(date: string | null | undefined): string {
   if (!date) return '';
@@ -25,6 +26,8 @@ interface DealCardProps {
 }
 
 export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }: DealCardProps) {
+  // Nomes dos níveis de qualificação da config do tenant (tooltip das estrelas, req 1).
+  const { data: qualConfig } = useQualificationConfig();
   const statusBadge =
     deal.status && deal.status !== 'OPEN' ? STATUS_BADGE[deal.status] : undefined;
   const qual = deal.qualification ?? 0;
@@ -85,10 +88,8 @@ export function DealCard({ deal, onClick, onEdit: _onEdit, isStale, isOverlay }:
       <p className="text-sm font-bold text-gray-800 mb-2">{formatCurrency(deal.value)}</p>
 
       {qual > 0 && (
-        <div className="flex items-center gap-1 text-amber-700 mb-2">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Star key={n} size={10} fill={n <= qual ? 'currentColor' : 'none'} />
-          ))}
+        <div className="mb-2">
+          <QualificationStars value={qual} levels={qualConfig?.levels} size={10} />
         </div>
       )}
 

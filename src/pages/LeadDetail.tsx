@@ -39,6 +39,7 @@ import { DealStageBadge } from '../components/deals/DealStageBadge';
 import { DealForm } from '../components/deals/DealForm';
 import { NextActionCard } from '../components/NextActionCard';
 import { AIDraftDialog } from '../components/ai/AIDraftDialog';
+import { SendEmailDialog } from '../components/deals/SendEmailDialog';
 import { AISummaryCard } from '../components/leads/AISummaryCard';
 import { NextActionBadge } from '../components/leads/NextActionBadge';
 import { AIChatPanel } from '../components/leads/AIChatPanel';
@@ -219,6 +220,9 @@ export function LeadDetail() {
 
   // AI Draft dialog
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
+
+  // E-mail 1:1 pelo lead/contato (Upgrade RD P0, req 11).
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
 
   const fetchLead = useCallback(async () => {
     if (!id) return;
@@ -728,6 +732,18 @@ export function LeadDetail() {
                 </Button>
               )}
 
+              {/* Enviar e-mail 1:1 por modelo (req 11) — registra Interaction na timeline */}
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setSendEmailOpen(true)}
+                disabled={!lead.email}
+                title={lead.email ? undefined : 'Cadastre um e-mail para o contato'}
+              >
+                <Mail size={14} />
+                Enviar e-mail
+              </Button>
+
               {/* Generate Email button */}
               <Button
                 variant="outline"
@@ -782,6 +798,19 @@ export function LeadDetail() {
 
       {/* AI Draft Dialog */}
       <AIDraftDialog open={aiDraftOpen} onClose={() => setAiDraftOpen(false)} leadId={id} />
+
+      {/* E-mail 1:1 pelo lead/contato (req 11) — recarrega a timeline após o envio */}
+      <SendEmailDialog
+        open={sendEmailOpen}
+        onClose={() => setSendEmailOpen(false)}
+        lead={{
+          id: lead.id,
+          name: lead.name,
+          email: lead.email ?? null,
+          company: lead.company ?? null,
+        }}
+        onSent={fetchInteractions}
+      />
     </div>
   );
 }

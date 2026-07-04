@@ -20,6 +20,27 @@ import type {
   RoadmapStakeholder,
   RoadmapPanel,
 } from '../../types/comercial';
+import type {
+  QualificationConfig,
+  SalesFlags,
+  CompanySegment,
+  FieldPreset,
+  FieldPresetInput,
+  ManagerTrigger,
+  ManagerTriggerInput,
+  Questionnaire,
+  QuestionnaireInput,
+  QuestionnaireAnswerInput,
+  QuestionnaireResponse,
+  RespondQuestionnaireResult,
+  ScheduledDeal,
+  ScheduledDealStatus,
+  CreateScheduledDealInput,
+  SendDealEmailInput,
+  SendDealEmailResult,
+  CelebrationStats,
+  DealWithoutTasks,
+} from '../../types/sales';
 
 // Detect API URL automatically in production, use env var or localhost in development
 const getApiUrl = () => {
@@ -1665,6 +1686,11 @@ class ApiClient {
     to?: string;
     source?: string;
     assignedTo?: string;
+    /** Upgrade RD P0 — filtros por fonte/campanha da negociação (req 5). */
+    sourceId?: string;
+    originCampaignId?: string;
+    /** Upgrade RD P0 — filtro por segmento de empresa (req 8). */
+    segmentId?: string;
   }) {
     const params = new URLSearchParams();
     if (filters) {
@@ -2455,6 +2481,229 @@ class ApiClient {
     }
     const query = params.toString();
     return this.request<RoadmapPanel>(`/api/v1/roadmaps/panel${query ? `?${query}` : ''}`);
+  }
+
+  // ════════════════════════════════════════════════
+  // Upgrade RD parity — P0
+  // ════════════════════════════════════════════════
+
+  // ── Configurações de vendas — qualificação ──────────
+  async getQualificationConfig() {
+    return this.request<{ status: number; data: QualificationConfig }>(
+      '/api/v1/sales-config/qualification'
+    );
+  }
+
+  async updateQualificationConfig(data: QualificationConfig) {
+    return this.request<{ status: number; data: QualificationConfig }>(
+      '/api/v1/sales-config/qualification',
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  // ── Configurações de vendas — flags do tenant ───────
+  async getSalesFlags() {
+    return this.request<{ status: number; data: SalesFlags }>('/api/v1/sales-config/flags');
+  }
+
+  async updateSalesFlags(data: Partial<SalesFlags>) {
+    return this.request<{ status: number; data: SalesFlags }>('/api/v1/sales-config/flags', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ── Configurações de vendas — segmentos de empresas ─
+  async getCompanySegments(activeOnly = false) {
+    return this.request<{ status: number; data: CompanySegment[] }>(
+      `/api/v1/sales-config/segments${activeOnly ? '?active=true' : ''}`
+    );
+  }
+
+  async createCompanySegment(name: string) {
+    return this.request<{ status: number; data: CompanySegment }>('/api/v1/sales-config/segments', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async updateCompanySegment(id: string, data: { name?: string; active?: boolean }) {
+    return this.request<{ status: number; data: CompanySegment }>(
+      `/api/v1/sales-config/segments/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  async deleteCompanySegment(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/sales-config/segments/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Configurações de vendas — presets de campos ─────
+  async getFieldPresets(entity?: FieldPreset['entity']) {
+    return this.request<{ status: number; data: FieldPreset[] }>(
+      `/api/v1/sales-config/presets${entity ? `?entity=${entity}` : ''}`
+    );
+  }
+
+  async createFieldPreset(data: FieldPresetInput) {
+    return this.request<{ status: number; data: FieldPreset }>('/api/v1/sales-config/presets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFieldPreset(id: string, data: Partial<FieldPresetInput>) {
+    return this.request<{ status: number; data: FieldPreset }>(
+      `/api/v1/sales-config/presets/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  async deleteFieldPreset(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/sales-config/presets/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Configurações de vendas — gatilhos gerenciais ───
+  async getManagerTriggers() {
+    return this.request<{ status: number; data: ManagerTrigger[] }>(
+      '/api/v1/sales-config/triggers'
+    );
+  }
+
+  async createManagerTrigger(data: ManagerTriggerInput) {
+    return this.request<{ status: number; data: ManagerTrigger }>('/api/v1/sales-config/triggers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateManagerTrigger(id: string, data: Partial<ManagerTriggerInput>) {
+    return this.request<{ status: number; data: ManagerTrigger }>(
+      `/api/v1/sales-config/triggers/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  /** Gatilho padrão (isDefault) não pode ser excluído — backend responde 400. */
+  async deleteManagerTrigger(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/sales-config/triggers/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Questionários ───────────────────────────────────
+  async getQuestionnaires(includeInactive = false) {
+    return this.request<{ status: number; data: Questionnaire[] }>(
+      `/api/v1/questionnaires${includeInactive ? '?includeInactive=1' : ''}`
+    );
+  }
+
+  async createQuestionnaire(data: QuestionnaireInput) {
+    return this.request<{ status: number; data: Questionnaire }>('/api/v1/questionnaires', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateQuestionnaire(id: string, data: Partial<QuestionnaireInput>) {
+    return this.request<{ status: number; data: Questionnaire }>(`/api/v1/questionnaires/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteQuestionnaire(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/questionnaires/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /** Responde o questionário no deal — calcula score e auto-qualifica se configurado. */
+  async respondQuestionnaire(
+    id: string,
+    data: { dealId: string; answers: QuestionnaireAnswerInput[] }
+  ) {
+    return this.request<{ status: number; data: RespondQuestionnaireResult }>(
+      `/api/v1/questionnaires/${id}/responses`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  async getQuestionnaireResponses(dealId: string) {
+    return this.request<{ status: number; data: QuestionnaireResponse[] }>(
+      `/api/v1/questionnaires/responses?dealId=${encodeURIComponent(dealId)}`
+    );
+  }
+
+  // ── Multi-vendas (negociações agendadas) ────────────
+  async createScheduledDeal(data: CreateScheduledDealInput) {
+    return this.request<{ status: number; data: ScheduledDeal }>('/api/v1/scheduled-deals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getScheduledDeals(filters?: { status?: ScheduledDealStatus; originDealId?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.originDealId) params.set('originDealId', filters.originDealId);
+    const qs = params.toString();
+    return this.request<{ status: number; data: ScheduledDeal[] }>(
+      `/api/v1/scheduled-deals${qs ? `?${qs}` : ''}`
+    );
+  }
+
+  async cancelScheduledDeal(id: string) {
+    return this.request<{ status: number; data: ScheduledDeal }>(
+      `/api/v1/scheduled-deals/${id}/cancel`,
+      { method: 'POST' }
+    );
+  }
+
+  // ── E-mail 1:1 + comemoração + negociações sem tarefa ──
+  /** Envia e-mail pelo deal (modelo ou assunto/corpo avulsos) e registra Interaction EMAIL. */
+  async sendDealEmail(id: string, data: SendDealEmailInput) {
+    return this.request<{ status: number; data: SendDealEmailResult }>(
+      `/api/v1/deals/${id}/send-email`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Envia e-mail 1:1 pelo lead/contato (Upgrade RD P0, req 11): modelo do tenant
+   * OU assunto/corpo avulsos; registra Interaction EMAIL OUTBOUND com leadId e
+   * SEM dealId. Variáveis: nome/empresa preenchidas; negociacao/valor vazias.
+   */
+  async sendLeadEmail(
+    leadId: string,
+    data: { templateId?: string; subject?: string; html?: string }
+  ) {
+    return this.request<{ status: number; data: SendDealEmailResult }>(
+      `/api/v1/leads/${leadId}/send-email`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /** Contagem/valor de vendas GANHAS do usuário no mês corrente (comemoração). */
+  async getCelebrationStats() {
+    return this.request<{ status: number; data: CelebrationStats }>(
+      '/api/v1/deals/celebration-stats'
+    );
+  }
+
+  /** Deals OPEN do usuário (ownerScope) sem tarefa pendente vinculada. */
+  async getDealsWithoutTasks() {
+    return this.request<{ status: number; data: DealWithoutTasks[] }>(
+      '/api/v1/deals/without-tasks'
+    );
   }
 }
 

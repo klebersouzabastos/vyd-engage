@@ -304,7 +304,19 @@ export const forecastService = {
    */
   async getFunnelConversion(
     tenantId: string,
-    filters?: { from?: string; to?: string; source?: string; assignedTo?: string }
+    filters?: {
+      from?: string;
+      to?: string;
+      source?: string;
+      assignedTo?: string;
+      // Upgrade RD P0 (req 5): fonte/campanha vivem no Deal — filtra leads que
+      // têm ao menos uma negociação com a fonte/campanha pedida.
+      sourceId?: string;
+      originCampaignId?: string;
+      // Upgrade RD P0 (req 8): filtra leads com ≥1 negociação cuja empresa está
+      // no segmento pedido (segmentId vive em Company).
+      segmentId?: string;
+    }
   ): Promise<FunnelConversionResponse> {
     const where: any = { tenantId, deletedAt: null };
 
@@ -318,6 +330,16 @@ export const forecastService = {
     }
     if (filters?.assignedTo) {
       where.assignedTo = filters.assignedTo;
+    }
+    if (filters?.sourceId || filters?.originCampaignId || filters?.segmentId) {
+      where.deals = {
+        some: {
+          deletedAt: null,
+          ...(filters.sourceId ? { sourceId: filters.sourceId } : {}),
+          ...(filters.originCampaignId ? { originCampaignId: filters.originCampaignId } : {}),
+          ...(filters.segmentId ? { company: { segmentId: filters.segmentId } } : {}),
+        },
+      };
     }
 
     const stageOrder: LeadStatus[] = [
