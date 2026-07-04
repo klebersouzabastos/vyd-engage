@@ -151,8 +151,10 @@ describe('sendDealEmail', () => {
     expect(sentHtml).toContain('&lt;img');
     // sanitizeHtml removeu o <script> do corpo.
     expect(sentHtml).not.toMatch(/<script/i);
-    // Assunto também escapado.
-    expect(sentSubject).not.toContain('<img');
+    // Assunto é header de TEXTO PURO (não é contexto HTML): a variável entra crua,
+    // sem escape (senão "A & B" viraria "A &amp; B" no header do e-mail). A proteção
+    // XSS aplica-se ao CORPO (acima), que é o único conteúdo renderizado como HTML.
+    expect(sentSubject).toBe('Olá <img src=x onerror=alert(1)>');
 
     // O content gravado na Interaction é o MESMO html sanitizado.
     const interactionArgs = (interactionService.create as ReturnType<typeof vi.fn>).mock.calls[0];

@@ -48,23 +48,22 @@ function applyVariables(text: string, variables: Record<string, string>): string
 }
 
 /**
- * Interpola as variáveis (já escapadas) no assunto/corpo e devolve os finais já
- * sanitizados. Compartilhado por deal e lead para saneamento consistente.
+ * Interpola as variáveis no assunto/corpo. O ASSUNTO é um header de texto puro:
+ * interpola valores crus (sem escape/sanitização HTML, senão "A & B" viraria
+ * "A &amp; B" no header). O CORPO é HTML: escapa cada valor (dado do usuário não
+ * deve injetar markup) e sanitiza o resultado final. Compartilhado por deal e lead.
  */
 function renderContent(
   subjectRaw: string,
   htmlRaw: string,
   variables: Record<string, string>
 ): { subject: string; html: string } {
-  // Escapa cada valor antes de interpolar — o valor é dado do usuário e não deve
-  // introduzir markup no HTML final.
   const escaped: Record<string, string> = {};
   for (const [key, value] of Object.entries(variables)) {
     escaped[key] = escapeHtml(value);
   }
-  // Sanitiza os finais (remove <script>/on*/javascript: etc.) antes de sair.
   return {
-    subject: sanitizeHtml(applyVariables(subjectRaw, escaped)),
+    subject: applyVariables(subjectRaw, variables),
     html: sanitizeHtml(applyVariables(htmlRaw, escaped)),
   };
 }
