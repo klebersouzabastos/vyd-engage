@@ -1,8 +1,9 @@
-// Ação "Enviar e-mail" do deal (Upgrade RD P0, req 10): dialog com seleção de
+// Ação "Enviar e-mail" (Upgrade RD P0, reqs 10 e 11): dialog com seleção de
 // modelo (EmailTemplate) OU assunto/corpo livres, preview com as variáveis
 // {{nome}} {{empresa}} {{negociacao}} {{valor}} {{responsavel}} resolvidas
-// (mesma semântica do backend emailOneToOneService) e envio via
-// POST /deals/:id/send-email — que registra Interaction EMAIL na timeline.
+// (mesma semântica do backend emailOneToOneService, incl. escape de HTML dos
+// valores) e envio via POST /deals/:id/send-email OU /leads/:id/send-email —
+// que registra Interaction EMAIL na timeline. Parametrizado por deal OU lead.
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -23,11 +24,22 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { RichTextEditor } from '../ui/RichTextEditor';
 
+/** Contato mínimo (lead) para o modo lead do dialog. */
+export interface SendEmailLead {
+  id: string;
+  name: string;
+  email?: string | null;
+  company?: string | null;
+}
+
 interface SendEmailDialogProps {
   open: boolean;
   onClose: () => void;
-  deal: Deal;
-  /** Contatos vinculados (DealContact) — permite escolher o destinatário. */
+  /** Modo deal (req 10) — mutuamente exclusivo com `lead`. */
+  deal?: Deal;
+  /** Modo lead (req 11) — mutuamente exclusivo com `deal`. */
+  lead?: SendEmailLead;
+  /** Contatos vinculados (DealContact) — permite escolher o destinatário (modo deal). */
   contacts?: DealContact[];
   /** Chamado após envio com sucesso (ex.: recarregar a timeline). */
   onSent?: () => void;
@@ -39,16 +51,43 @@ interface RecipientOption {
   email: string;
 }
 
-/** Resolve as variáveis do contrato — espelho do backend (regex tolerante a espaços). */
-function resolveVariables(input: string, vars: Record<string, string>): string {
+/** Escapa HTML nos valores das variáveis — espelho do escapeHtml do backend (req 13). */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Resolve as variáveis do contrato — espelho do backend (regex tolerante a
+ * espaços). `escape` aplica o mesmo escape de HTML do backend antes de
+ * interpolar (usado no corpo HTML); o assunto (texto puro) não escapa.
+ */
+function resolveVariables(
+  input: string,
+  vars: Record<string, string>,
+  escape = false
+): string {
   let result = input;
   for (const [key, value] of Object.entries(vars)) {
-    result = result.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), value);
+    const replacement = escape ? escapeHtml(value) : value;
+    result = result.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), replacement);
   }
   return result;
 }
 
-export function SendEmailDialog({ open, onClose, deal, contacts, onSent }: SendEmailDialogProps) {
+export function SendEmailDialog({
+  open,
+  onClose,
+  deal,
+  lead,
+  contacts,
+  onSent,
+}: SendEmailDialogProps) {
+  const isLeadMode = !deal && !!lead;
   const [mode, setMode] = useState<'template' | 'custom'>('template');
   const [templateId, setTemplateId] = useState('');
   const [subject, setSubject] = useState('');
@@ -56,10 +95,21 @@ export function SendEmailDialog({ open, onClose, deal, contacts, onSent }: SendE
   const [recipientLeadId, setRecipientLeadId] = useState('');
   const [sending, setSending] = useState(false);
 
+  // Modo deal: destinatários são o lead principal + contatos vinculados.
+  // Modo lead: o próprio lead é o destinatário fixo (o backend resolve o e-mail).
   const recipients = useMemo<RecipientOption[]>(() => {
+    if (isLeadMode) {
+      return lead && lead.email
+        ? [{ leadId: lead.id, name: lead.name, email: lead.email }]
+        : [];
+    }
     const map = new Map<string, RecipientOption>();
-    if (deal.lead?.id && deal.lead.email) {
-      map.set(deal.lead.id, { leadId: deal.lead.id, name: deal.lead.name, email: deal.lead.email });
+    if (deal?.lead?.id && deal.lead.email) {
+      map.set(deal.lead.id, {
+        leadId: deal.lead.id,
+        name: deal.lead.name,
+        email: deal.lead.email,
+      });
     }
     (contacts || []).forEach((c) => {
       if (c.lead && c.lead.email && !map.has(c.leadId)) {
@@ -67,9 +117,9 @@ export function SendEmailDialog({ open, onClose, deal, contacts, onSent }: SendE
       }
     });
     return Array.from(map.values());
-  }, [deal.lead, contacts]);
+  }, [isLeadMode, lead, deal?.lead, contacts]);
 
-  // Reset ao abrir + destinatário padrão (contato principal do deal).
+  // Reset ao abrir + destinatário padrão (contato principal).
   useEffect(() => {
     if (open) {
       setMode('template');
@@ -97,28 +147,39 @@ export function SendEmailDialog({ open, onClose, deal, contacts, onSent }: SendE
 
   const recipient = recipients.find((r) => r.leadId === recipientLeadId) || null;
 
-  const variables = useMemo<Record<string, string>>(
-    () => ({
-      nome: recipient?.name || deal.lead?.name || '',
-      empresa: deal.company?.name || deal.lead?.company || '',
-      negociacao: deal.name,
-      valor: Number(deal.value || 0).toLocaleString('pt-BR', {
+  // Variáveis do preview: modo lead deixa negociacao/valor vazios (espelha o backend).
+  const variables = useMemo<Record<string, string>>(() => {
+    if (isLeadMode) {
+      return {
+        nome: recipient?.name || lead?.name || '',
+        empresa: lead?.company || '',
+        negociacao: '',
+        valor: '',
+        responsavel: '',
+      };
+    }
+    return {
+      nome: recipient?.name || deal?.lead?.name || '',
+      empresa: deal?.company?.name || deal?.lead?.company || '',
+      negociacao: deal?.name || '',
+      valor: Number(deal?.value || 0).toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL',
       }),
-      responsavel: deal.assignedUser?.name || '',
-    }),
-    [recipient, deal]
-  );
+      responsavel: deal?.assignedUser?.name || '',
+    };
+  }, [isLeadMode, recipient, lead, deal]);
 
   const previewSubject = useMemo(() => {
+    // Assunto é texto puro (não HTML) — não aplica escape.
     const raw = mode === 'template' ? templateDetail?.subject || '' : subject;
     return resolveVariables(raw, variables);
   }, [mode, templateDetail, subject, variables]);
 
   const previewHtml = useMemo(() => {
+    // Corpo HTML: escapa os valores das variáveis (req 13) antes de sanitizar.
     const raw = mode === 'template' ? templateDetail?.html || '' : html;
-    return sanitizeRichHtml(resolveVariables(raw, variables));
+    return sanitizeRichHtml(resolveVariables(raw, variables, true));
   }, [mode, templateDetail, html, variables]);
 
   const canSend =
@@ -131,14 +192,18 @@ export function SendEmailDialog({ open, onClose, deal, contacts, onSent }: SendE
     if (!canSend) return;
     setSending(true);
     try {
-      await apiClient.sendDealEmail(deal.id, {
-        ...(mode === 'template'
-          ? { templateId }
-          : { subject: subject.trim(), html }),
-        ...(recipientLeadId && recipientLeadId !== deal.lead?.id
-          ? { leadId: recipientLeadId }
-          : {}),
-      });
+      const payload =
+        mode === 'template' ? { templateId } : { subject: subject.trim(), html };
+      if (isLeadMode && lead) {
+        await apiClient.sendLeadEmail(lead.id, payload);
+      } else if (deal) {
+        await apiClient.sendDealEmail(deal.id, {
+          ...payload,
+          ...(recipientLeadId && recipientLeadId !== deal.lead?.id
+            ? { leadId: recipientLeadId }
+            : {}),
+        });
+      }
       toast.success('E-mail enviado');
       onSent?.();
       onClose();
@@ -163,8 +228,9 @@ export function SendEmailDialog({ open, onClose, deal, contacts, onSent }: SendE
           {/* Destinatário */}
           {recipients.length === 0 ? (
             <p className="text-sm rounded-md border border-border bg-muted px-3 py-2 text-muted-foreground">
-              Esta negociação não tem contato com e-mail cadastrado. Vincule um contato com
-              e-mail para enviar.
+              {isLeadMode
+                ? 'Este contato não tem e-mail cadastrado. Adicione um e-mail para enviar.'
+                : 'Esta negociação não tem contato com e-mail cadastrado. Vincule um contato com e-mail para enviar.'}
             </p>
           ) : (
             <div className="space-y-1.5">

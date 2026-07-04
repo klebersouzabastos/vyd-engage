@@ -12,6 +12,7 @@ import { companyFormSchema } from '../utils/validation/formSchemas';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { useAutoFocus } from '../hooks/useFocusManagement';
 import { apiClient } from '../services/api/client';
+import { PresetField } from './settings/PresetField';
 
 const SIZE_OPTIONS: { value: CompanySize; label: string }[] = [
   { value: 'MICRO', label: 'Micro' },
@@ -232,16 +233,18 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
         </div>
         <div>
           <Label htmlFor="company-industry">Industria</Label>
-          <Input
+          {/* Preset de setor (reqs 7, 16): vira seleção quando o admin cadastra
+              valores pré-definidos p/ COMPANY.industry; senão, Input livre. */}
+          <PresetField
             id="company-industry"
+            entity="COMPANY"
+            field="industry"
             value={industry}
-            onChange={(e) => {
-              setIndustry(e.target.value);
-              handleChange('industry', e.target.value);
+            onChange={(v) => {
+              setIndustry(v);
+              handleChange('industry', v);
             }}
-            onBlur={() => handleBlur('industry', industry)}
             placeholder="Tecnologia, Saude..."
-            className="mt-1"
           />
         </div>
       </div>

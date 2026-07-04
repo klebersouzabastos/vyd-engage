@@ -189,6 +189,119 @@ describe('respond — auto-qualificação DESLIGADA ou incompleta', () => {
     expect(result.dealQualification).toBeNull();
     expect(prismaMock.deal.update).not.toHaveBeenCalled();
   });
+
+  it('questionário sem perguntas pontuáveis (só TEXT) + toggle ligado + 5 maxScore: NÃO qualifica (caso extremo #2)', async () => {
+    // Questionário só-TEXT: score sempre 0. Sem esta guarda, score 0 cairia na
+    // faixa do nível 1 por engano — a spec exige "não altera qualificação".
+    const textOnlyQuestions: QuestionnaireQuestion[] = [
+      { id: 'q1', text: 'Observações', type: 'TEXT' },
+    ];
+    prismaMock.questionnaire.findFirst.mockResolvedValue({
+      id: questionnaireId,
+      tenantId,
+      name: 'Só texto',
+      active: true,
+      questions: textOnlyQuestions,
+    } as never);
+    prismaMock.deal.findFirst.mockResolvedValue({ id: dealId } as never);
+    prismaMock.questionnaireResponse.create.mockImplementation(
+      (async (args: { data: Record<string, unknown> }) => ({
+        id: 'resp-1',
+        createdAt: new Date(),
+        ...args.data,
+      })) as never
+    );
+    prismaMock.tenant.findUnique.mockResolvedValue({
+      settings: qualificationSettings([10, 20, 30, 40, 50], true),
+    } as never);
+    prismaMock.user.findMany.mockResolvedValue([{ id: 'user-1', name: 'Ana' }] as never);
+
+    const result = await questionnaireService.respond(
+      tenantId,
+      questionnaireId,
+      { dealId, answers: [{ questionId: 'q1', text: 'só observação' }] },
+      'user-1'
+    );
+
+    // Resposta salva com score 0, mas sem qualificação (deal.update não chamado).
+    expect(result.response.score).toBe(0);
+    expect(result.dealQualification).toBeNull();
+    expect(prismaMock.deal.update).not.toHaveBeenCalled();
+    expect(emitToTenant).not.toHaveBeenCalled();
+    expect(prismaMock.questionnaireResponse.create).toHaveBeenCalled();
+  });
+
+  it('opções todas com 0 ponto + toggle ligado: NÃO qualifica (não há pergunta pontuável)', async () => {
+    // SINGLE/MULTI existem, mas nenhuma opção pontua → scorable=false.
+    const zeroPointQuestions: QuestionnaireQuestion[] = [
+      {
+        id: 'q1',
+        text: 'Canal',
+        type: 'SINGLE',
+        options: [
+          { label: 'A', points: 0 },
+          { label: 'B', points: 0 },
+        ],
+      },
+    ];
+    prismaMock.questionnaire.findFirst.mockResolvedValue({
+      id: questionnaireId,
+      tenantId,
+      name: 'Sem pontos',
+      active: true,
+      questions: zeroPointQuestions,
+    } as never);
+    prismaMock.deal.findFirst.mockResolvedValue({ id: dealId } as never);
+    prismaMock.questionnaireResponse.create.mockImplementation(
+      (async (args: { data: Record<string, unknown> }) => ({
+        id: 'resp-1',
+        createdAt: new Date(),
+        ...args.data,
+      })) as never
+    );
+    prismaMock.tenant.findUnique.mockResolvedValue({
+      settings: qualificationSettings([10, 20, 30, 40, 50], true),
+    } as never);
+    prismaMock.user.findMany.mockResolvedValue([{ id: 'user-1', name: 'Ana' }] as never);
+
+    const result = await questionnaireService.respond(tenantId, questionnaireId, {
+      dealId,
+      answers: [{ questionId: 'q1', optionLabels: ['A'] }],
+    });
+
+    expect(result.response.score).toBe(0);
+    expect(result.dealQualification).toBeNull();
+    expect(prismaMock.deal.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('attachAuthors — isolamento por tenant (#14)', () => {
+  it('respond: busca autores filtrando por tenantId', async () => {
+    mockRespondScenario(qualificationSettings([10, 20, 30, 40, 50], false));
+
+    await questionnaireService.respond(tenantId, questionnaireId, { dealId, answers }, 'user-1');
+
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['user-1'] }, tenantId },
+      })
+    );
+  });
+
+  it('listResponses: busca autores filtrando por tenantId', async () => {
+    prismaMock.questionnaireResponse.findMany.mockResolvedValue([
+      { id: 'r1', userId: 'user-9', questionnaire: { id: questionnaireId, name: 'Q' } },
+    ] as never);
+    prismaMock.user.findMany.mockResolvedValue([{ id: 'user-9', name: 'Bob' }] as never);
+
+    await questionnaireService.listResponses(tenantId, dealId);
+
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['user-9'] }, tenantId },
+      })
+    );
+  });
 });
 
 describe('respond — guardas de tenant e estado', () => {

@@ -1177,12 +1177,19 @@ export function DealDetail() {
         open={editFormOpen}
         onClose={() => setEditFormOpen(false)}
         onSave={async (data) => {
+          // Perda pelo formulário: delega ao modal de motivo (que encadeia multi-venda).
           if (data.stage === 'LOST' && deal?.stage !== 'LOST') {
             setEditFormOpen(false);
             setShowLostModal(true);
             return;
           }
+          // Ganho pelo formulário (reqs 3, 11, 12): salva e encadeia celebração/multi-venda.
+          const closingWon = data.stage === 'WON' && deal?.stage !== 'WON';
           await handleEditSave(data);
+          if (closingWon) {
+            if (celebrationEnabled) setCelebrationOpen(true);
+            else if (multiSalesEnabled) setMultiSaleOpen(true);
+          }
         }}
         deal={deal}
       />

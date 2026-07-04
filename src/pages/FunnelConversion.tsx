@@ -60,9 +60,10 @@ const PRESET_LABELS: Record<DatePreset, string> = {
 export function FunnelConversion() {
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
   const [source, setSource] = useState('');
-  // Filtros por fonte/campanha da negociação (upgrade-rd-parity, req 5).
+  // Filtros por fonte/campanha da negociação (req 5) e segmento da empresa (req 8).
   const [dealSourceId, setDealSourceId] = useState('');
   const [campaignId, setCampaignId] = useState('');
+  const [segmentId, setSegmentId] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const dateRange = useMemo(() => getDateRange(datePreset), [datePreset]);
@@ -77,8 +78,14 @@ export function FunnelConversion() {
     queryFn: () => apiClient.getOriginCampaigns(true),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: segmentsData } = useQuery({
+    queryKey: ['company-segments', 'active'],
+    queryFn: () => apiClient.getCompanySegments(true),
+    staleTime: 5 * 60 * 1000,
+  });
   const dealSources = sourcesData?.data ?? [];
   const campaigns = campaignsData?.data ?? [];
+  const segments = segmentsData?.data ?? [];
 
   const { data, loading, error, refetch } = useFunnelConversion({
     from: dateRange.from,
@@ -86,6 +93,7 @@ export function FunnelConversion() {
     source: source || undefined,
     sourceId: dealSourceId || undefined,
     originCampaignId: campaignId || undefined,
+    segmentId: segmentId || undefined,
   });
 
   // Compute overall conversion rate (NEW -> WON)
@@ -278,6 +286,28 @@ export function FunnelConversion() {
                 {campaigns.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name ?? c.label ?? ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Segmento da empresa (upgrade-rd-parity, req 8) */}
+            <div>
+              <label
+                htmlFor="funnel-segment-filter"
+                className="block text-xs font-medium text-muted-foreground mb-1"
+              >
+                Segmento
+              </label>
+              <select
+                id="funnel-segment-filter"
+                value={segmentId}
+                onChange={(e) => setSegmentId(e.target.value)}
+                className="text-sm border border-border rounded-md px-3 py-1.5 bg-card text-foreground"
+              >
+                <option value="">Todos os segmentos</option>
+                {segments.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
                   </option>
                 ))}
               </select>

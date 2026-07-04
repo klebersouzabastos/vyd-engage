@@ -10,6 +10,8 @@ export interface UseFunnelConversionOptions {
   /** Upgrade RD P0 (req 5): filtros por fonte/campanha da negociação. */
   sourceId?: string;
   originCampaignId?: string;
+  /** Upgrade RD P0 (req 8): filtro por segmento da empresa. */
+  segmentId?: string;
 }
 
 export function useFunnelConversion(options?: UseFunnelConversionOptions) {
@@ -29,6 +31,7 @@ export function useFunnelConversion(options?: UseFunnelConversionOptions) {
         assignedTo: options?.assignedTo,
         sourceId: options?.sourceId,
         originCampaignId: options?.originCampaignId,
+        segmentId: options?.segmentId,
       });
 
       setData(result.data);
@@ -46,6 +49,7 @@ export function useFunnelConversion(options?: UseFunnelConversionOptions) {
     options?.assignedTo,
     options?.sourceId,
     options?.originCampaignId,
+    options?.segmentId,
   ]);
 
   useEffect(() => {

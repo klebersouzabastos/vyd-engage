@@ -313,6 +313,9 @@ export const forecastService = {
       // têm ao menos uma negociação com a fonte/campanha pedida.
       sourceId?: string;
       originCampaignId?: string;
+      // Upgrade RD P0 (req 8): filtra leads com ≥1 negociação cuja empresa está
+      // no segmento pedido (segmentId vive em Company).
+      segmentId?: string;
     }
   ): Promise<FunnelConversionResponse> {
     const where: any = { tenantId, deletedAt: null };
@@ -328,12 +331,13 @@ export const forecastService = {
     if (filters?.assignedTo) {
       where.assignedTo = filters.assignedTo;
     }
-    if (filters?.sourceId || filters?.originCampaignId) {
+    if (filters?.sourceId || filters?.originCampaignId || filters?.segmentId) {
       where.deals = {
         some: {
           deletedAt: null,
           ...(filters.sourceId ? { sourceId: filters.sourceId } : {}),
           ...(filters.originCampaignId ? { originCampaignId: filters.originCampaignId } : {}),
+          ...(filters.segmentId ? { company: { segmentId: filters.segmentId } } : {}),
         },
       };
     }

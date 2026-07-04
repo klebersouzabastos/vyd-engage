@@ -55,6 +55,8 @@ router.get('/funnel-conversion', async (req, res, next) => {
     if (!req.user) return next(createError('Authentication required', 401));
 
     const { from, to, source, assignedTo, sourceId, originCampaignId } = req.query;
+    // Upgrade RD P0 (req 8): segmento da empresa. UUID validado.
+    const segmentId = z.string().uuid().optional().parse(req.query.segmentId || undefined);
     const data = await forecastService.getFunnelConversion(req.user.tenantId, {
       from: from as string | undefined,
       to: to as string | undefined,
@@ -63,10 +65,15 @@ router.get('/funnel-conversion', async (req, res, next) => {
       // Upgrade RD P0 (req 5): segmentação por fonte/campanha da negociação.
       sourceId: sourceId as string | undefined,
       originCampaignId: originCampaignId as string | undefined,
+      // Upgrade RD P0 (req 8): leads com ≥1 negociação da empresa no segmento.
+      segmentId,
     });
 
     res.json({ status: 200, data });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });
@@ -441,6 +448,8 @@ router.get('/win-loss', async (req, res, next) => {
     }
     const tenantId = req.user.tenantId;
     const { from, to, sourceId, originCampaignId } = req.query;
+    // Upgrade RD P0 (req 8): segmentação por segmento da empresa. UUID validado.
+    const segmentId = z.string().uuid().optional().parse(req.query.segmentId || undefined);
 
     const fromDate = from
       ? new Date(from as string)
@@ -456,6 +465,8 @@ router.get('/win-loss', async (req, res, next) => {
         // Upgrade RD P0 (req 5): filtros por fonte/campanha da negociação.
         ...(sourceId ? { sourceId: sourceId as string } : {}),
         ...(originCampaignId ? { originCampaignId: originCampaignId as string } : {}),
+        // Upgrade RD P0 (req 8): filtro por segmento da empresa da negociação.
+        ...(segmentId ? { company: { segmentId } } : {}),
       },
       select: { stage: true, value: true, closedAt: true, lostReason: true, lostCompetitor: true },
     });
@@ -518,6 +529,9 @@ router.get('/win-loss', async (req, res, next) => {
 
     res.json({ status: 200, data: { reasonBreakdown, monthlyTrend, competitors } });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

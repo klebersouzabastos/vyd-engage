@@ -52,6 +52,10 @@ const querySchema = z.object({
   search: z.string().optional(),
   minValue: z.coerce.number().optional(),
   maxValue: z.coerce.number().optional(),
+  // Filtros de Gestão de Negócios (RD parity) — server-side na lista/kanban.
+  qualification: z.coerce.number().int().min(1).max(5).optional(),
+  sourceId: z.string().uuid().optional(),
+  originCampaignId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
   sort: z

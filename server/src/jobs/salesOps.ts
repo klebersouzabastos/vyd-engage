@@ -12,6 +12,7 @@ import { emitToTenant } from '../services/socketService.js';
 import { logger } from '../utils/logger.js';
 import { dealService } from '../services/dealService.js';
 import { SCHEDULED_DEAL_TYPE_LABELS } from '../services/scheduledDealService.js';
+import { escapeHtml } from '../services/campaignService.js';
 
 /**
  * Sales ops job (Upgrade RD P0) — multi-vendas agendadas + gatilhos gerenciais.
@@ -50,6 +51,41 @@ function formatBRL(value: unknown): string {
 // 1. Multi-vendas — agendamentos vencidos
 // ============================================================
 
+/** Nome da fonte estruturada atribuída aos deals criados por multi-venda (req 4). */
+const MULTI_SALE_SOURCE_NAME = 'Multi-venda';
+
+/**
+ * Garante a DealSource "Multi-venda" do tenant e devolve seu id (req 4).
+ * findFirst por {tenantId, name}; cria se ausente. Resolvido uma vez por tenant
+ * na varredura. Falha de criação (ex.: corrida no unique [tenantId,name]) faz
+ * fallback para re-leitura; se ainda assim falhar, devolve null (o deal é criado
+ * sem sourceId — origem fica só nas notes, sem quebrar o job).
+ */
+async function ensureMultiSaleSource(tenantId: string): Promise<string | null> {
+  const existing = await prisma.dealSource.findFirst({
+    where: { tenantId, name: MULTI_SALE_SOURCE_NAME },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+
+  try {
+    const created = await prisma.dealSource.create({
+      data: { tenantId, name: MULTI_SALE_SOURCE_NAME },
+      select: { id: true },
+    });
+    return created.id;
+  } catch (err) {
+    // Corrida no unique [tenantId, name] → re-lê.
+    const retry = await prisma.dealSource.findFirst({
+      where: { tenantId, name: MULTI_SALE_SOURCE_NAME },
+      select: { id: true },
+    });
+    if (retry) return retry.id;
+    logger.error(`Failed to ensure Multi-venda DealSource for tenant ${tenantId}`, err);
+    return null;
+  }
+}
+
 /**
  * Cria os deals dos agendamentos PENDING com scheduledFor <= now.
  * Só cria se Tenant.settings.multiSalesEnabled === true (senão mantém PENDING,
@@ -79,6 +115,11 @@ export async function runScheduledDeals(now: Date = new Date()): Promise<number>
     });
     const settings = (tenant?.settings ?? {}) as Record<string, unknown>;
     if (settings.multiSalesEnabled !== true) continue; // mantém PENDING
+
+    // Origem estruturada (req 4): deals de multi-venda recebem a fonte
+    // "Multi-venda". Resolvido uma vez por tenant (findFirst → create se
+    // ausente) e reusado para todos os agendamentos deste tenant.
+    const multiSaleSourceId = await ensureMultiSaleSource(tenantId);
 
     for (const sd of items) {
       try {
@@ -124,6 +165,8 @@ export async function runScheduledDeals(now: Date = new Date()): Promise<number>
           assignedTo: sd.assignedTo,
           funnelId: sd.funnelId,
           funnelColumnId: sd.funnelColumnId,
+          // Origem estruturada "Multi-venda" (req 4). notes mantém o contexto.
+          sourceId: multiSaleSourceId,
           notes: noteParts.join('\n'),
         });
 
@@ -245,8 +288,10 @@ async function sendTriggerEmails(
         .sendEmail(ctx.tenantId, {
           configId: emailConfig.id,
           to: user.email,
+          // payload.message contém nome do deal/motivo (dado do usuário) —
+          // escapa antes de montar o HTML (req 15, anti-XSS).
           subject: payload.title,
-          html: `<p>${payload.message}</p>`,
+          html: `<p>${escapeHtml(payload.message)}</p>`,
         })
         .catch(() => {});
     }

@@ -121,11 +121,11 @@ export function scoreAnswers(
 }
 
 /** Anexa { id, name } dos autores às respostas (QuestionnaireResponse.userId não tem relation). */
-async function attachAuthors<T extends { userId: string | null }>(responses: T[]) {
+async function attachAuthors<T extends { userId: string | null }>(tenantId: string, responses: T[]) {
   const userIds = [...new Set(responses.map((r) => r.userId).filter((id): id is string => !!id))];
   const users = userIds.length
     ? await prisma.user.findMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: userIds }, tenantId },
         select: { id: true, name: true },
       })
     : [];
@@ -229,26 +229,35 @@ export const questionnaireService = {
 
     // Qualificação automática (req 3): só age com toggle ligado E 5 maxScore
     // definidos; caso contrário dealQualification=null e o deal não muda.
-    let dealQualification: number | null = null;
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { settings: true },
-    });
-    const qualification = normalizeQualificationConfig(
-      ((tenant?.settings as Record<string, unknown> | null) ?? {}).qualification
+    // Caso extremo da spec: questionário sem perguntas pontuáveis (só TEXT ou
+    // opções com 0 ponto) não altera a qualificação nem com o toggle ligado —
+    // score 0 cairia na faixa do nível 1 por engano. Só auto-qualifica quando
+    // há ao menos uma pergunta pontuável.
+    const scorable = questions.some(
+      (q) => q.type !== 'TEXT' && (q.options ?? []).some((o) => (o.points ?? 0) > 0)
     );
-    const level = resolveQualificationLevel(qualification, score);
-    if (level !== null) {
-      const updatedDeal = await prisma.deal.update({
-        where: { id: input.dealId },
-        data: { qualification: level },
-        include: dealSocketInclude,
+    let dealQualification: number | null = null;
+    if (scorable) {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { settings: true },
       });
-      dealQualification = level;
-      emitToTenant(tenantId, 'deal:updated', { deal: updatedDeal });
+      const qualification = normalizeQualificationConfig(
+        ((tenant?.settings as Record<string, unknown> | null) ?? {}).qualification
+      );
+      const level = resolveQualificationLevel(qualification, score);
+      if (level !== null) {
+        const updatedDeal = await prisma.deal.update({
+          where: { id: input.dealId },
+          data: { qualification: level },
+          include: dealSocketInclude,
+        });
+        dealQualification = level;
+        emitToTenant(tenantId, 'deal:updated', { deal: updatedDeal });
+      }
     }
 
-    const [response] = await attachAuthors([created]);
+    const [response] = await attachAuthors(tenantId, [created]);
     return {
       response: {
         ...response,
@@ -265,6 +274,6 @@ export const questionnaireService = {
       include: { questionnaire: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    return attachAuthors(responses);
+    return attachAuthors(tenantId, responses);
   },
 };

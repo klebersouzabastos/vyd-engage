@@ -84,7 +84,8 @@ function getPeriodDates(period: Period): { from: string; to: string } {
 async function fetchWinLoss(
   period: Period,
   sourceId: string,
-  campaignId: string
+  campaignId: string,
+  segmentId: string
 ): Promise<WinLossData> {
   const { from, to } = getPeriodDates(period);
   const token = localStorage.getItem('accessToken');
@@ -96,6 +97,8 @@ async function fetchWinLoss(
   // Upgrade RD P0 (req 5): segmentação do relatório por fonte/campanha do deal.
   if (sourceId !== 'ALL') params.set('sourceId', sourceId);
   if (campaignId !== 'ALL') params.set('originCampaignId', campaignId);
+  // Upgrade RD P0 (req 8): filtro por segmento da empresa.
+  if (segmentId !== 'ALL') params.set('segmentId', segmentId);
   const qs = params.toString();
   const res = await fetch(`${API_BASE}/api/v1/reports/win-loss${qs ? `?${qs}` : ''}`, {
     headers: {
@@ -174,9 +177,10 @@ function StatCard({
 
 export function WinLossReport() {
   const [period, setPeriod] = useState<Period>('90d');
-  // Filtros por fonte/campanha do deal (upgrade-rd-parity, req 5).
+  // Filtros por fonte/campanha do deal (req 5) e segmento da empresa (req 8).
   const [sourceId, setSourceId] = useState('ALL');
   const [campaignId, setCampaignId] = useState('ALL');
+  const [segmentId, setSegmentId] = useState('ALL');
 
   const { data: sourcesData } = useQuery({
     queryKey: ['deal-sources', 'active'],
@@ -188,12 +192,18 @@ export function WinLossReport() {
     queryFn: () => apiClient.getOriginCampaigns(true),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: segmentsData } = useQuery({
+    queryKey: ['company-segments', 'active'],
+    queryFn: () => apiClient.getCompanySegments(true),
+    staleTime: 5 * 60 * 1000,
+  });
   const sources = sourcesData?.data ?? [];
   const campaigns = campaignsData?.data ?? [];
+  const segments = segmentsData?.data ?? [];
 
   const { data, isLoading, error } = useQuery<WinLossData>({
-    queryKey: ['win-loss-report', period, sourceId, campaignId],
-    queryFn: () => fetchWinLoss(period, sourceId, campaignId),
+    queryKey: ['win-loss-report', period, sourceId, campaignId, segmentId],
+    queryFn: () => fetchWinLoss(period, sourceId, campaignId, segmentId),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -268,6 +278,21 @@ export function WinLossReport() {
                 {campaigns.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name ?? c.label ?? ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {segments.length > 0 && (
+            <Select value={segmentId} onValueChange={setSegmentId}>
+              <SelectTrigger className="w-[180px]" aria-label="Filtrar por segmento">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos os segmentos</SelectItem>
+                {segments.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>

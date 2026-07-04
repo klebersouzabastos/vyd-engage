@@ -1689,6 +1689,8 @@ class ApiClient {
     /** Upgrade RD P0 — filtros por fonte/campanha da negociação (req 5). */
     sourceId?: string;
     originCampaignId?: string;
+    /** Upgrade RD P0 — filtro por segmento de empresa (req 8). */
+    segmentId?: string;
   }) {
     const params = new URLSearchParams();
     if (filters) {
@@ -2671,6 +2673,21 @@ class ApiClient {
   async sendDealEmail(id: string, data: SendDealEmailInput) {
     return this.request<{ status: number; data: SendDealEmailResult }>(
       `/api/v1/deals/${id}/send-email`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Envia e-mail 1:1 pelo lead/contato (Upgrade RD P0, req 11): modelo do tenant
+   * OU assunto/corpo avulsos; registra Interaction EMAIL OUTBOUND com leadId e
+   * SEM dealId. Variáveis: nome/empresa preenchidas; negociacao/valor vazias.
+   */
+  async sendLeadEmail(
+    leadId: string,
+    data: { templateId?: string; subject?: string; html?: string }
+  ) {
+    return this.request<{ status: number; data: SendDealEmailResult }>(
+      `/api/v1/leads/${leadId}/send-email`,
       { method: 'POST', body: JSON.stringify(data) }
     );
   }

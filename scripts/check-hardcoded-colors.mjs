@@ -85,6 +85,8 @@ const STRICT_SCOPE = new Set([
   'src/components/settings/FieldPresetsTab.tsx',
   'src/components/settings/ManagerTriggersTab.tsx',
   'src/components/settings/EmailTemplatesTab.tsx',
+  'src/components/settings/PresetField.tsx',
+  'src/components/settings/SalesFlagsTab.tsx',
 ]);
 const STRICT_FAMILIES =
   /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-(?:gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/;

@@ -33,6 +33,8 @@ import {
 } from '../components/ui/dialog';
 import { DealStageBadge } from '../components/deals/DealStageBadge';
 import { DealForm } from '../components/deals/DealForm';
+import { MultiSaleDialog } from '../components/deals/MultiSaleDialog';
+import { CelebrationModal } from '../components/deals/CelebrationModal';
 import { DealPipelineBoard } from '../components/deals/DealPipelineBoard';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { EmptyState } from '../components/EmptyState';
@@ -129,8 +131,8 @@ export function Deals() {
   // Filtros refletidos na URL (view filtrada compartilhável/bookmarkável)
   const [search, setSearch] = useQueryState('q', { defaultValue: '' });
   const [stageFilter, setStageFilter] = useQueryState('stage', { defaultValue: 'ALL' });
-  // Filtros P0 (reqs 1 e 5): qualificação mínima, fonte e campanha — aplicados
-  // client-side sobre a página carregada (o endpoint de lista ainda não filtra por eles).
+  // Filtros P0 (reqs 1 e 6): qualificação mínima (N+ estrelas), fonte e campanha
+  // — enviados ao servidor; total/paginação refletem o filtro.
   const [qualFilter, setQualFilter] = useQueryState('qual', { defaultValue: 'ALL' });
   const [sourceFilter, setSourceFilter] = useQueryState('fonte', { defaultValue: 'ALL' });
   const [campaignFilter, setCampaignFilter] = useQueryState('campanha', { defaultValue: 'ALL' });
@@ -147,6 +149,23 @@ export function Deals() {
     queryFn: () => apiClient.getOriginCampaigns(true).then((r) => r.data || []),
     staleTime: 5 * 60 * 1000,
   });
+
+  // Flags do tenant p/ multi-vendas (req 4) e comemoração (req 11) — mesmas do DealDetail.
+  const { data: salesFlags } = useQuery({
+    queryKey: ['sales-flags'],
+    queryFn: () => apiClient.getSalesFlags().then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const celebrationEnabled = salesFlags?.celebrationEnabled ?? true;
+  const multiSalesEnabled = salesFlags?.multiSalesEnabled ?? false;
+
+  // Fluxo de fechamento pelo formulário de edição (reqs 3, 12): guarda o deal
+  // recém-fechado para encadear celebração (GANHO) → multi-venda.
+  const [closedDeal, setClosedDeal] = useState<Deal | null>(null);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [multiSaleOpen, setMultiSaleOpen] = useState(false);
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -167,6 +186,10 @@ export function Deals() {
   const [pipelineSort, setPipelineSort] = useState('default');
   // Qualificação mínima no pipeline (Upgrade RD P0, req 1).
   const [pipelineQualification, setPipelineQualification] = useState('ALL');
+  // Fonte/campanha no pipeline (Upgrade RD P0, req 5) — client-side sobre as
+  // colunas do funil (o pipeline carrega todos os deals do funil).
+  const [pipelineSource, setPipelineSource] = useState('ALL');
+  const [pipelineCampaign, setPipelineCampaign] = useState('ALL');
 
   const pipelineAssignees = useMemo(() => {
     const map = new Map<string, string>();
@@ -204,6 +227,16 @@ export function Deals() {
         const min = Number(pipelineQualification);
         ds = ds.filter((d) => (d.qualification || 0) >= min);
       }
+      if (pipelineSource !== 'ALL') {
+        ds = ds.filter(
+          (d) => (d as unknown as Record<string, unknown>).sourceId === pipelineSource
+        );
+      }
+      if (pipelineCampaign !== 'ALL') {
+        ds = ds.filter(
+          (d) => (d as unknown as Record<string, unknown>).originCampaignId === pipelineCampaign
+        );
+      }
       if (pipelineSort !== 'default') {
         ds = [...ds].sort((a, b) => {
           switch (pipelineSort) {
@@ -231,59 +264,76 @@ export function Deals() {
     pipelineStatus,
     pipelineSort,
     pipelineQualification,
+    pipelineSource,
+    pipelineCampaign,
   ]);
 
-  // Lista: qualificação mínima + fonte + campanha, client-side sobre a página atual.
-  const displayedDeals = useMemo(() => {
-    const minQual = qualFilter !== 'ALL' ? Number(qualFilter) : 0;
-    return deals.filter((deal) => {
-      if (minQual > 0 && (deal.qualification || 0) < minQual) return false;
-      const raw = deal as unknown as Record<string, unknown>;
-      if (sourceFilter !== 'ALL' && raw.sourceId !== sourceFilter) return false;
-      if (campaignFilter !== 'ALL' && raw.originCampaignId !== campaignFilter) return false;
-      return true;
-    });
-  }, [deals, qualFilter, sourceFilter, campaignFilter]);
+  // Monta os filtros server-side da lista (reqs 1, 6): busca + stage + qualificação
+  // (N+ estrelas, semântica gte no backend) + fonte + campanha. `page` sempre explícito.
+  const buildListFilters = useCallback(
+    (page: number): Record<string, string | number> => {
+      const filters: Record<string, string | number> = { page };
+      if (search.trim()) filters.search = search.trim();
+      if (stageFilter !== 'ALL') filters.stage = stageFilter;
+      if (qualFilter !== 'ALL') filters.qualification = Number(qualFilter);
+      if (sourceFilter !== 'ALL') filters.sourceId = sourceFilter;
+      if (campaignFilter !== 'ALL') filters.originCampaignId = campaignFilter;
+      return filters;
+    },
+    [search, stageFilter, qualFilter, sourceFilter, campaignFilter]
+  );
 
   const handleSearch = useCallback(() => {
-    const filters: any = { page: 1 };
-    if (search.trim()) filters.search = search.trim();
-    if (stageFilter !== 'ALL') filters.stage = stageFilter;
-    fetchDeals(filters);
-  }, [search, stageFilter, fetchDeals]);
+    fetchDeals(buildListFilters(1));
+  }, [fetchDeals, buildListFilters]);
 
   const handleStageChange = useCallback(
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps manuais [search, fetchDeals] são intencionais; setStageFilter (setter estável) é omitido de propósito para não refazer o callback
     (value: string) => {
       setStageFilter(value);
-      const filters: any = { page: 1 };
-      if (search.trim()) filters.search = search.trim();
+      const filters = buildListFilters(1);
+      // buildListFilters usa o stageFilter anterior; sobrescreve com o novo valor.
       if (value !== 'ALL') filters.stage = value;
+      else delete filters.stage;
       fetchDeals(filters);
     },
-    [search, fetchDeals]
+    [fetchDeals, buildListFilters, setStageFilter]
   );
 
   const handlePageChange = useCallback(
     (page: number) => {
-      const filters: any = { page };
-      if (search.trim()) filters.search = search.trim();
-      if (stageFilter !== 'ALL') filters.stage = stageFilter;
-      fetchDeals(filters);
+      fetchDeals(buildListFilters(page));
     },
-    [search, stageFilter, fetchDeals]
+    [fetchDeals, buildListFilters]
   );
 
-  // Filtrar ao digitar: refaz a busca (server-side) com debounce ao alterar o texto.
+  // Filtrar ao digitar (busca) OU ao trocar qualquer filtro server-side da lista:
+  // refaz a busca (server-side) com debounce, resetando para a página 1.
   useEffect(() => {
-    const t = setTimeout(() => handleSearch(), 350);
+    const t = setTimeout(() => fetchDeals(buildListFilters(1)), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, qualFilter, sourceFilter, campaignFilter]);
 
   const handleSave = async (data: any) => {
     if (editingDeal) {
-      await updateDeal(editingDeal.id, data);
+      // Detecta transição de etapa para GANHO/PERDA (reqs 3, 12).
+      const prevStage = editingDeal.stage;
+      const newStage = data.stage as DealStage | undefined;
+      const closingWon = newStage === 'WON' && prevStage !== 'WON';
+      const closingLost = newStage === 'LOST' && prevStage !== 'LOST';
+      const updated = await updateDeal(editingDeal.id, data);
+      // Após salvar com sucesso, encadeia celebração/multi-venda (reusa os
+      // componentes do DealDetail). GANHO: celebração (se habilitada) → multi-venda;
+      // PERDA: multi-venda direto (se habilitada).
+      const closedFor = (updated as Deal) ?? { ...editingDeal, ...data };
+      if (closingWon) {
+        setClosedDeal(closedFor);
+        if (celebrationEnabled) setCelebrationOpen(true);
+        else if (multiSalesEnabled) setMultiSaleOpen(true);
+      } else if (closingLost && multiSalesEnabled) {
+        setClosedDeal(closedFor);
+        setMultiSaleOpen(true);
+      }
     } else {
       // When in pipeline view, auto-assign to current funnel
       const saveData = { ...data };
@@ -801,6 +851,32 @@ export function Deals() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={pipelineSource} onValueChange={setPipelineSource}>
+              <SelectTrigger className="w-[170px]" aria-label="Filtrar por fonte">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas as fontes</SelectItem>
+                {dealSources.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={pipelineCampaign} onValueChange={setPipelineCampaign}>
+              <SelectTrigger className="w-[190px]" aria-label="Filtrar por campanha">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas as campanhas</SelectItem>
+                {originCampaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={pipelineSort} onValueChange={setPipelineSort}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -838,7 +914,7 @@ export function Deals() {
               <div className="overflow-x-auto">
                 <DataTable
                   columns={dealTableColumns}
-                  data={displayedDeals}
+                  data={deals}
                   onRowClick={(deal) => openPanel('deal', deal.id)}
                   emptyState={
                     <EmptyState
@@ -1039,6 +1115,22 @@ export function Deals() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Fechamento pelo formulário (reqs 3, 11, 12) — celebração encadeia multi-venda */}
+      <CelebrationModal
+        open={celebrationOpen}
+        onClose={() => {
+          setCelebrationOpen(false);
+          if (multiSalesEnabled) setMultiSaleOpen(true);
+        }}
+      />
+      {closedDeal && (
+        <MultiSaleDialog
+          open={multiSaleOpen}
+          onClose={() => setMultiSaleOpen(false)}
+          deal={closedDeal}
+        />
+      )}
     </div>
   );
 }
