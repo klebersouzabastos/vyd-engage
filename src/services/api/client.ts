@@ -41,6 +41,21 @@ import type {
   CelebrationStats,
   DealWithoutTasks,
 } from '../../types/sales';
+import type {
+  Team,
+  CreateTeamInput,
+  UpdateTeamInput,
+  PermissionProfile,
+  CreatePermissionProfileInput,
+  UpdatePermissionProfileInput,
+  EffectivePermissions,
+  ApprovalRequest,
+  ApprovalStatus,
+  TrashEntity,
+  TrashListResult,
+  Goal as GovernanceGoal,
+  UpsertGoalInput,
+} from '../../types/governance';
 
 // Detect API URL automatically in production, use env var or localhost in development
 const getApiUrl = () => {
@@ -1427,7 +1442,7 @@ class ApiClient {
   // Goals
   // ========================
 
-  async getGoals(params?: { userId?: string; month?: number; year?: number }) {
+  async getGoals(params?: { userId?: string; teamId?: string; month?: number; year?: number }) {
     const qs = params
       ? new URLSearchParams(
           Object.fromEntries(
@@ -1437,20 +1452,17 @@ class ApiClient {
           )
         ).toString()
       : '';
-    return this.request<{ status: number; data: Array<Record<string, unknown>> }>(
+    return this.request<{ status: number; data: GovernanceGoal[] }>(
       `/api/v1/goals${qs ? `?${qs}` : ''}`
     );
   }
 
-  async upsertGoal(data: {
-    userId: string;
-    month: number;
-    year: number;
-    targetRevenue?: number;
-    targetDeals?: number;
-    targetLeads?: number;
-  }) {
-    return this.request<{ status: number; data: Record<string, unknown> }>('/api/v1/goals', {
+  /**
+   * Upsert de meta — individual (userId) OU de equipe (teamId), exatamente um
+   * (validado no backend). Upgrade RD P1: aceita `teamId` além de `userId`.
+   */
+  async upsertGoal(data: UpsertGoalInput) {
+    return this.request<{ status: number; data: GovernanceGoal }>('/api/v1/goals', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1529,7 +1541,14 @@ class ApiClient {
 
   async updateUser(
     id: string,
-    data: { role?: string; status?: string; commercialFunction?: string | null }
+    data: {
+      role?: string;
+      status?: string;
+      commercialFunction?: string | null;
+      // Times & governança (Upgrade RD P1): vínculo com equipe/perfil (ADMIN/GESTOR).
+      teamId?: string | null;
+      permissionProfileId?: string | null;
+    }
   ) {
     return this.request<{ id: string; name: string; email: string; role: string }>(
       `/api/v1/users/${id}`,
@@ -2703,6 +2722,131 @@ class ApiClient {
   async getDealsWithoutTasks() {
     return this.request<{ status: number; data: DealWithoutTasks[] }>(
       '/api/v1/deals/without-tasks'
+    );
+  }
+
+  // ══════════════════════════════════════════════════════
+  // Times & Governança (Upgrade RD P1, reqs 12–16)
+  // ══════════════════════════════════════════════════════
+
+  // ── Equipes (req 12) ─────────────────────────────────
+  async getTeams() {
+    return this.request<{ status: number; data: Team[] }>('/api/v1/teams');
+  }
+
+  async createTeam(data: CreateTeamInput) {
+    return this.request<{ status: number; data: Team }>('/api/v1/teams', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTeam(id: string, data: UpdateTeamInput) {
+    return this.request<{ status: number; data: Team }>(`/api/v1/teams/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTeam(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(`/api/v1/teams/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ── Perfis de permissão (req 13/14) ──────────────────
+  async getPermissionProfiles() {
+    return this.request<{ status: number; data: PermissionProfile[] }>(
+      '/api/v1/permission-profiles'
+    );
+  }
+
+  /** Perfil efetivo do usuário logado — a UI esconde ações conforme capabilities. */
+  async getMyPermissions() {
+    return this.request<{ status: number; data: EffectivePermissions }>(
+      '/api/v1/permission-profiles/me'
+    );
+  }
+
+  async createPermissionProfile(data: CreatePermissionProfileInput) {
+    return this.request<{ status: number; data: PermissionProfile }>(
+      '/api/v1/permission-profiles',
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /** Builtins são imutáveis — o backend responde 400 ao tentar editá-los. */
+  async updatePermissionProfile(id: string, data: UpdatePermissionProfileInput) {
+    return this.request<{ status: number; data: PermissionProfile }>(
+      `/api/v1/permission-profiles/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  async deletePermissionProfile(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/permission-profiles/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Aprovações (req 15) ──────────────────────────────
+  async getApprovals(status: ApprovalStatus = 'PENDING') {
+    return this.request<{ status: number; data: ApprovalRequest[] }>(
+      `/api/v1/approvals?status=${encodeURIComponent(status)}`
+    );
+  }
+
+  /** Aprova a solicitação → executa a ação embutida e notifica o solicitante. */
+  async approveApproval(id: string) {
+    return this.request<{ status: number; data: ApprovalRequest }>(
+      `/api/v1/approvals/${id}/approve`,
+      { method: 'POST' }
+    );
+  }
+
+  /** Rejeita a solicitação com motivo → notifica o solicitante. */
+  async rejectApproval(id: string, reason: string) {
+    return this.request<{ status: number; data: ApprovalRequest }>(
+      `/api/v1/approvals/${id}/reject`,
+      { method: 'POST', body: JSON.stringify({ reason }) }
+    );
+  }
+
+  // ── Lixeira (req 16) ─────────────────────────────────
+  async getTrash(entity: TrashEntity, page = 1) {
+    const params = new URLSearchParams({ entity, page: String(page) });
+    return this.request<{ status: number; data: TrashListResult }>(
+      `/api/v1/trash?${params.toString()}`
+    );
+  }
+
+  /** Restaura (deletedAt=null). Pai excluído → 400 com mensagem clara (req 16). */
+  async restoreTrash(entity: TrashEntity, id: string) {
+    return this.request<{ status: number; data: { restored: boolean } }>(
+      `/api/v1/trash/${entity}/${id}/restore`,
+      { method: 'POST' }
+    );
+  }
+
+  /** Expurgo definitivo (hard-delete) — só itens já na lixeira (ADMIN). */
+  async purgeTrash(entity: TrashEntity, id: string) {
+    return this.request<{ status: number; data: { purged: boolean } }>(
+      `/api/v1/trash/${entity}/${id}/purge`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Performance por equipe (req 12) ──────────────────
+  /** Relatório de performance filtrável por equipe (?teamId=). */
+  async getTeamPerformance(params?: { from?: string; to?: string; teamId?: string }) {
+    const query = new URLSearchParams();
+    if (params?.from) query.set('from', params.from);
+    if (params?.to) query.set('to', params.to);
+    if (params?.teamId) query.set('teamId', params.teamId);
+    const qs = query.toString();
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      `/api/v1/reports/team-performance${qs ? `?${qs}` : ''}`
     );
   }
 }

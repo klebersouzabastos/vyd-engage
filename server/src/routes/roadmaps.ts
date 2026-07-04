@@ -10,6 +10,7 @@ import { roadmapService } from '../services/roadmapService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
+import { approvalService } from '../services/approvalService.js';
 
 const router = Router();
 
@@ -124,6 +125,23 @@ router.put('/:id', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
+
+    // Gate de exclusão (req 16): sem permissão OU perfil exige aprovação → 202.
+    const gate = await approvalService.deleteGate(
+      {
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      },
+      'roadmaps',
+      req.params.id,
+      'desdobramento'
+    );
+    if (gate.queued) {
+      return res.status(202).json({ status: 202, data: { approvalId: gate.approvalId, pending: true } });
+    }
+
     await roadmapService.delete(req.user.tenantId, req.params.id);
     res.status(204).send();
   } catch (error) {

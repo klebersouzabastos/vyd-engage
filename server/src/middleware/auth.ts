@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../utils/jwt.js';
 import { createError } from './errorHandler.js';
 import prisma from '../config/database.js';
+import { can, type Capability } from '../services/permissionService.js';
 
 // Extend Express Request to include user (+ flag de super-admin da plataforma)
 declare global {
@@ -88,6 +89,37 @@ export function requireManagerForWrites(req: Request, res: Response, next: NextF
     return next();
   }
   return requireRole('ADMIN', 'GESTOR')(req, res, next);
+}
+
+/**
+ * Exige uma capability do perfil de permissão efetivo do usuário (Upgrade RD P1).
+ * FAIL-CLOSED: 401 sem usuário; 403 quando `can(cap)` é falso. Sem perfil custom,
+ * `can` recai nos defaults do baseRole (== comportamento de hoje) — logo esta
+ * guarda só NEGA quando um admin configurou explicitamente a restrição.
+ */
+export function requirePermission(cap: Capability) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      return next(createError('Authentication required', 401, 'NOT_AUTHENTICATED'));
+    }
+    try {
+      const allowed = await can(
+        {
+          userId: req.user.userId,
+          tenantId: req.user.tenantId,
+          role: req.user.role,
+          isPlatformAdmin: req.user.isPlatformAdmin,
+        },
+        cap
+      );
+      if (!allowed) {
+        return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 /**

@@ -41,7 +41,17 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Skeleton } from '../components/ui/skeleton';
-import { UserPlus, Edit2, XCircle, UsersRound, Mail, ShieldAlert, RefreshCw } from 'lucide-react';
+import {
+  UserPlus,
+  Edit2,
+  XCircle,
+  UsersRound,
+  Mail,
+  ShieldAlert,
+  RefreshCw,
+  Users2,
+  ShieldCheck,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api/client';
 import {
@@ -49,6 +59,13 @@ import {
   COMMERCIAL_FUNCTION_LABELS,
   type CommercialFunction,
 } from '@/types/comercial';
+import { TeamsTab } from '../components/settings/teams/TeamsTab';
+import { PermissionsTab } from '../components/settings/permissions/PermissionsTab';
+import type { Team, PermissionProfile } from '../types/governance';
+
+// Radix Select proíbe SelectItem com value="". Sentinels para "sem equipe/perfil".
+const NO_TEAM = '__none__';
+const NO_PROFILE = '__none__';
 
 // Radix Select proíbe SelectItem com value="". Usamos um sentinel para "Sem função"
 // e mapeamos de/para string vazia no estado.
@@ -63,6 +80,10 @@ interface TeamUser {
   commercialFunction: CommercialFunction | null;
   createdAt: string;
   lastLoginAt: string | null;
+  // Times & governança (Upgrade RD P1): vínculos opcionais. Podem não vir do
+  // GET /users legado — nesse caso a edição parte de "sem vínculo".
+  teamId?: string | null;
+  permissionProfileId?: string | null;
 }
 
 interface Invitation {
@@ -132,7 +153,13 @@ export function TeamManagement() {
   const [editRole, setEditRole] = useState('');
   const [editStatus, setEditStatus] = useState(false);
   const [editCommercialFunction, setEditCommercialFunction] = useState('');
+  const [editTeamId, setEditTeamId] = useState('');
+  const [editPermissionProfileId, setEditPermissionProfileId] = useState('');
   const [savingUser, setSavingUser] = useState(false);
+
+  // Times & perfis — para os selects do modal e para a aba Equipes.
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [profiles, setProfiles] = useState<PermissionProfile[]>([]);
 
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -175,17 +202,37 @@ export function TeamManagement() {
     }
   }, []);
 
+  // Equipes/perfis alimentam os selects do modal de editar usuário e a lista da
+  // aba Equipes. Falha silenciosa: o modal continua funcional só com função/papel.
+  const fetchTeamsAndProfiles = useCallback(async () => {
+    try {
+      const [teamsRes, profilesRes] = await Promise.all([
+        apiClient.getTeams(),
+        apiClient.getPermissionProfiles(),
+      ]);
+      setTeams(teamsRes.data);
+      setProfiles(profilesRes.data);
+    } catch {
+      // Ignora: selects de equipe/perfil ficam vazios; o resto do modal segue.
+    }
+  }, []);
+
   useEffect(() => {
     // GESTOR carrega os membros (para definir função comercial); convites seguem ADMIN.
-    if (isManager) fetchUsers();
+    if (isManager) {
+      fetchUsers();
+      fetchTeamsAndProfiles();
+    }
     if (isAdmin) fetchInvitations();
-  }, [isManager, isAdmin, fetchUsers, fetchInvitations]);
+  }, [isManager, isAdmin, fetchUsers, fetchInvitations, fetchTeamsAndProfiles]);
 
   const handleOpenEditModal = (teamUser: TeamUser) => {
     setEditingUser(teamUser);
     setEditRole(teamUser.role);
     setEditStatus(teamUser.status === 'ACTIVE');
     setEditCommercialFunction(teamUser.commercialFunction || '');
+    setEditTeamId(teamUser.teamId || '');
+    setEditPermissionProfileId(teamUser.permissionProfileId || '');
   };
 
   const handleSaveUser = async () => {
@@ -197,6 +244,8 @@ export function TeamManagement() {
         role: editRole,
         status: newStatus,
         commercialFunction: editCommercialFunction || null,
+        teamId: editTeamId || null,
+        permissionProfileId: editPermissionProfileId || null,
       });
       toast.success('Membro atualizado com sucesso');
       setEditingUser(null);
@@ -346,6 +395,14 @@ export function TeamManagement() {
                   <Mail size={16} className="mr-1.5" />
                   Convites
                 </TabsTrigger>
+                <TabsTrigger value="teams">
+                  <Users2 size={16} className="mr-1.5" />
+                  Equipes
+                </TabsTrigger>
+                <TabsTrigger value="permissions">
+                  <ShieldCheck size={16} className="mr-1.5" />
+                  Perfis
+                </TabsTrigger>
               </TabsList>
 
               {/* Members Tab */}
@@ -470,6 +527,16 @@ export function TeamManagement() {
                   </TableBody>
                 </Table>
               </TabsContent>
+
+              {/* Teams Tab (Upgrade RD P1, req 12) */}
+              <TabsContent value="teams" className="mt-4">
+                <TeamsTab users={users} loadingUsers={loadingUsers} />
+              </TabsContent>
+
+              {/* Permissions Profiles Tab (Upgrade RD P1, reqs 13/14) */}
+              <TabsContent value="permissions" className="mt-4">
+                <PermissionsTab />
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -515,6 +582,49 @@ export function TeamManagement() {
                   {COMMERCIAL_FUNCTIONS.map((fn) => (
                     <SelectItem key={fn} value={fn}>
                       {COMMERCIAL_FUNCTION_LABELS[fn]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Times & governança (Upgrade RD P1): vínculo com equipe e perfil. */}
+            <div className="space-y-2">
+              <Label>Equipe</Label>
+              <Select
+                value={editTeamId || NO_TEAM}
+                onValueChange={(value) => setEditTeamId(value === NO_TEAM ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a equipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_TEAM}>Sem equipe</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Perfil de permissão</Label>
+              <Select
+                value={editPermissionProfileId || NO_PROFILE}
+                onValueChange={(value) =>
+                  setEditPermissionProfileId(value === NO_PROFILE ? '' : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PROFILE}>Padrão do papel</SelectItem>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

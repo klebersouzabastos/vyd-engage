@@ -51,6 +51,13 @@ model User {
   // não altera acesso (role permanece a fonte de verdade de permissões).
   commercialFunction CommercialFunction?
 
+  // Times & governança (Upgrade RD P1). Ambos ADITIVOS e opcionais: sem valor,
+  // o comportamento é IDÊNTICO ao de hoje (fail-closed: cai nos defaults do role).
+  teamId              String?
+  team                Team?              @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
+  permissionProfileId String?
+  permissionProfile   PermissionProfile? @relation(fields: [permissionProfileId], references: [id], onDelete: SetNull)
+
   // Tenant relationship
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -88,10 +95,12 @@ model User {
   auditLogs             AuditLog[]
   goals                 Goal[]
   assignedCompanies     Company[]             @relation("CompanyAssignment")
+  ledTeams              Team[]                @relation("TeamLeader")
 
   @@index([email])
   @@index([tenantId])
   @@index([tenantId, email])
+  @@index([tenantId, teamId])
 }
 
 model RefreshToken {
@@ -192,6 +201,9 @@ model Tenant {
   fieldPresets          FieldPreset[]
   managerTriggers       ManagerTrigger[]
   scheduledDeals        ScheduledDeal[]
+  teams                 Team[]
+  permissionProfiles    PermissionProfile[]
+  approvalRequests      ApprovalRequest[]
 
   @@index([slug])
 }
@@ -1193,6 +1205,8 @@ enum NotificationType {
   CLIENT_FOLLOWUP
   MANAGER_TRIGGER
   MULTI_SALE_CREATED
+  APPROVAL_REQUEST
+  APPROVAL_DECIDED
   SYSTEM
 }
 
@@ -1387,7 +1401,11 @@ model DealProduct {
 model Goal {
   id            String   @id @default(uuid())
   tenantId      String
-  userId        String
+  // Meta individual (userId) OU meta de equipe (teamId) — exatamente um.
+  // Exclusividade validada no service; ambos nullable no schema para permitir
+  // metas de equipe (Upgrade RD P1). Sem teamId, comportamento == hoje.
+  userId        String?
+  teamId        String?
   month         Int
   year          Int
   targetRevenue Float    @default(0)
@@ -1397,11 +1415,14 @@ model Goal {
   updatedAt     DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team   Team?  @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId, month, year])
+  @@unique([tenantId, teamId, month, year])
   @@index([tenantId])
   @@index([tenantId, userId])
+  @@index([tenantId, teamId])
   @@map("goals")
 }
 
@@ -2170,4 +2191,99 @@ model ScheduledDeal {
 
   @@index([tenantId, status, scheduledFor])
   @@map("scheduled_deals")
+}
+
+// ============================================
+// TIMES & GOVERNANÇA (Upgrade RD P1)
+// ============================================
+// Camada ADITIVA e fail-closed: sem Team/PermissionProfile atribuído a um user,
+// TODA rota se comporta EXATAMENTE como hoje (defaults do baseRole).
+
+model Team {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name     String
+  // Líder da equipe (opcional; FK SetNull para não destruir a equipe se o user sai).
+  leaderId String?
+  leader   User?   @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members User[] @relation("TeamMembers")
+  goals   Goal[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("teams")
+}
+
+model PermissionProfile {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  // 4 builtins por tenant (1 por baseRole) — imutáveis (não deletáveis/renomeáveis).
+  isBuiltin   Boolean  @default(false)
+  // Papel do qual o perfil herda os defaults (fail-closed em erro/ausência).
+  baseRole    UserRole
+  // Overrides booleanos por capability; ausente = herda o default do baseRole.
+  capabilities Json @default("{}")
+  // { deals, companies, contacts: PROPRIA | EQUIPE | GERAL }
+  visibility   Json @default("{}")
+  // { export, bulk, delete: bool }
+  requireApprovalFor Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("permission_profiles")
+}
+
+enum ApprovalType {
+  EXPORT
+  BULK
+  DELETE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  EXECUTED
+}
+
+model ApprovalRequest {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type   ApprovalType
+  status ApprovalStatus @default(PENDING)
+
+  requestedById String
+  // Dados para reexecutar a ação ao aprovar (entity, filtros/ids, formato…).
+  payload Json
+  // Texto legível ("Exportar 340 leads (CSV)").
+  summary String
+
+  reason      String?
+  decidedById String?
+  decidedAt   DateTime?
+  expiresAt   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@map("approval_requests")
 }

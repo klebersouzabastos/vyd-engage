@@ -10,6 +10,7 @@ import { TaskStatus, TaskPriority, TaskType, NotificationType } from '@prisma/cl
 import { notificationService } from '../services/notificationService.js';
 import { googleCalendarService } from '../services/googleCalendarService.js';
 import { emitToTenant } from '../services/socketService.js';
+import { approvalService } from '../services/approvalService.js';
 
 const router = Router();
 
@@ -200,6 +201,24 @@ router.delete('/:id', async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
+    }
+
+    // Gate de exclusão (req 16): sem permissão OU perfil exige aprovação → cria
+    // solicitação (não deleta) + 202. A guarda de posse (enforceTaskOwnership) já
+    // rodou no router.use('/:id'). Sem perfil custom → deleta direto (== hoje).
+    const gate = await approvalService.deleteGate(
+      {
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      },
+      'tasks',
+      req.params.id,
+      'tarefa'
+    );
+    if (gate.queued) {
+      return res.status(202).json({ status: 202, data: { approvalId: gate.approvalId, pending: true } });
     }
 
     // Fetch task before deleting to get googleEventId for calendar cleanup

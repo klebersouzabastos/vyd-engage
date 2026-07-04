@@ -8,6 +8,7 @@ import {
 } from './ui/dropdown-menu';
 import { Download, ChevronDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { extractPendingApprovalFromBlob, notifyPendingApproval } from '../lib/approvalResponse';
 
 type ExportFormat = 'json' | 'csv' | 'xlsx';
 
@@ -61,6 +62,14 @@ export function ExportButton({
     setLoading(true);
     try {
       const blob = await onExport(format);
+      // Se o perfil do usuário exige aprovação, o backend responde 202 e o "blob"
+      // carrega o envelope de aprovação em vez do arquivo. Nesse caso, informa que
+      // foi enviado para aprovação e NÃO baixa nada.
+      const pending = await extractPendingApprovalFromBlob(blob);
+      if (pending) {
+        notifyPendingApproval();
+        return;
+      }
       const opt = FORMAT_OPTIONS.find((o) => o.value === format)!;
       const dateStr = new Date().toISOString().slice(0, 10);
       triggerDownload(blob, `${filename}-${dateStr}.${opt.ext}`);

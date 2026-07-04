@@ -349,16 +349,27 @@ router.get('/team-performance', async (req, res, next) => {
       return next(createError('Forbidden', 403, 'INSUFFICIENT_PERMISSIONS'));
     }
     const tenantId = req.user.tenantId;
-    const { from, to, funnelId } = req.query;
+    const { from, to, funnelId, teamId } = req.query;
 
     const fromDate = from
       ? new Date(from as string)
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to as string) : new Date();
 
-    // Fetch all users in this tenant
+    // Upgrade RD P1 (req 12): filtro opcional por equipe — restringe aos membros.
+    // UUID validado; sem teamId, o comportamento é IDÊNTICO ao de hoje (tenant todo).
+    const teamFilterId = z.string().uuid().optional().parse((teamId as string) || undefined);
+    if (teamFilterId) {
+      const team = await prisma.team.findFirst({
+        where: { id: teamFilterId, tenantId },
+        select: { id: true },
+      });
+      if (!team) return next(createError('Equipe não encontrada', 404, 'TEAM_NOT_FOUND'));
+    }
+
+    // Fetch users in this tenant (todos, ou só os membros da equipe filtrada)
     const users = await prisma.user.findMany({
-      where: { tenantId },
+      where: { tenantId, ...(teamFilterId ? { teamId: teamFilterId } : {}) },
       select: { id: true, name: true, email: true },
     });
 
@@ -435,6 +446,9 @@ router.get('/team-performance', async (req, res, next) => {
     results.sort((a, b) => b.revenueWon - a.revenueWon);
     res.json({ status: 200, data: results });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

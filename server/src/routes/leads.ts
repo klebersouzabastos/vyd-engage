@@ -3,14 +3,16 @@ import { z } from 'zod';
 import { leadService } from '../services/leadService.js';
 import { getLeadNextActionWithReasoning } from '../services/nextActionService.js';
 import { aiAssistantService } from '../services/aiAssistantService.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requirePermission } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { aiLimiter } from '../middleware/rateLimit.js';
 import { createError } from '../middleware/errorHandler.js';
-import { LeadStatus, LeadSource, NotificationType } from '@prisma/client';
+import { LeadStatus, LeadSource, NotificationType, ApprovalType } from '@prisma/client';
 import { notificationService } from '../services/notificationService.js';
 import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
+import { getEffective } from '../services/permissionService.js';
+import { approvalService } from '../services/approvalService.js';
 
 const router = Router();
 
@@ -75,7 +77,9 @@ router.get('/', async (req, res, next) => {
 });
 
 // PATCH /api/leads/bulk — Bulk operations on leads
-router.patch('/bulk', async (req, res, next) => {
+// Enforcement de capability (req 13): ações em massa exigem `bulkActions`.
+// FAIL-CLOSED — sem perfil custom, USER/GESTOR/ADMIN têm bulkActions=true (== hoje).
+router.patch('/bulk', requirePermission('bulkActions'), async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
@@ -96,6 +100,26 @@ router.patch('/bulk', async (req, res, next) => {
     });
     if (count !== ids.length) {
       return next(createError('Some leads not found', 404));
+    }
+
+    // Gate de aprovação (req 15): se o perfil exige aprovação p/ ações em massa,
+    // cria a solicitação (não aplica) e responde 202. Sem perfil custom,
+    // requireApprovalFor.bulk=false → aplica normalmente (== hoje).
+    const effective = await getEffective({
+      userId: req.user.userId,
+      tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (effective.requireApprovalFor.bulk) {
+      const { approvalId, pending } = await approvalService.createApproval({
+        tenantId,
+        requestedById: req.user.userId,
+        type: ApprovalType.BULK,
+        payload: { entity: 'leads', ids, action, params: payload ?? undefined },
+        summary: `Ação em massa "${action}" em ${ids.length} lead(s)`,
+      });
+      return res.status(202).json({ status: 202, data: { approvalId, pending } });
     }
 
     let affected = 0;
@@ -576,6 +600,24 @@ router.delete('/:id', async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
+    }
+
+    // Gate de exclusão (req 16): sem permissão de exclusão OU perfil exige
+    // aprovação → cria solicitação (não deleta) + 202. Sem perfil custom, USER
+    // deleta direto (== hoje). Snapshot de auditoria é gravado dentro do gate.
+    const gate = await approvalService.deleteGate(
+      {
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      },
+      'leads',
+      req.params.id,
+      'lead'
+    );
+    if (gate.queued) {
+      return res.status(202).json({ status: 202, data: { approvalId: gate.approvalId, pending: true } });
     }
 
     // Cancel any pending automation steps waiting for this lead

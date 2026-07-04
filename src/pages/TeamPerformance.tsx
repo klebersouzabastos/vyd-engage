@@ -5,6 +5,8 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { AlertTriangle, ShieldAlert, Users, DollarSign, Target, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../services/api/client';
+import type { Team } from '../types/governance';
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
@@ -61,10 +63,17 @@ function getPeriodDates(period: Period): { from: string; to: string } {
   };
 }
 
-async function fetchTeamPerformance(period: Period): Promise<TeamPerformanceResponse> {
+async function fetchTeamPerformance(
+  period: Period,
+  teamId?: string
+): Promise<TeamPerformanceResponse> {
   const { from, to } = getPeriodDates(period);
   const token = localStorage.getItem('accessToken');
-  const res = await fetch(`${API_BASE}/api/v1/reports/team-performance?from=${from}&to=${to}`, {
+  // Upgrade RD P1 (req 12): filtro opcional por equipe (?teamId=). Sem teamId, a
+  // URL é IDÊNTICA à de hoje → comportamento inalterado (tenant todo).
+  const qs = new URLSearchParams({ from, to });
+  if (teamId) qs.set('teamId', teamId);
+  const res = await fetch(`${API_BASE}/api/v1/reports/team-performance?${qs.toString()}`, {
     headers: {
       Authorization: 'Bearer ' + token,
       'Content-Type': 'application/json',
@@ -72,8 +81,12 @@ async function fetchTeamPerformance(period: Period): Promise<TeamPerformanceResp
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Erro ao carregar performance do time');
-  const data = await res.json();
-  return data.data ?? data;
+  const json = await res.json();
+  // O backend responde { status, data: MemberPerformance[] } (array puro). Aceita
+  // também a forma { members } por robustez, normalizando para { members }.
+  const payload = json.data ?? json;
+  const members: MemberPerformance[] = Array.isArray(payload) ? payload : (payload.members ?? []);
+  return { members, from, to };
 }
 
 function StatCard({
@@ -122,20 +135,33 @@ function SortIcon({
 export function TeamPerformance() {
   const { user } = useAuth();
   const [period, setPeriod] = useState<Period>('30d');
+  const [teamId, setTeamId] = useState<string>(''); // '' = todas as equipes (== hoje)
   const [sortField, setSortField] = useState<SortField>('revenueWon');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  const { data, isLoading, error } = useQuery<TeamPerformanceResponse>({
-    queryKey: ['team-performance', period],
-    queryFn: () => fetchTeamPerformance(period),
-    staleTime: 5 * 60 * 1000,
-  });
 
   const isAllowed =
     user?.role === 'ADMIN' ||
     user?.role === 'GESTOR' ||
     user?.role === 'admin' ||
     user?.role === 'gestor';
+
+  // Equipes para o filtro (Upgrade RD P1, req 12). Só managers acessam a página.
+  const { data: teamsData } = useQuery<Team[]>({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      const res = await apiClient.getTeams();
+      return res.data;
+    },
+    enabled: isAllowed,
+    staleTime: 5 * 60 * 1000,
+  });
+  const teams = teamsData ?? [];
+
+  const { data, isLoading, error } = useQuery<TeamPerformanceResponse>({
+    queryKey: ['team-performance', period, teamId],
+    queryFn: () => fetchTeamPerformance(period, teamId || undefined),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const sortedMembers = useMemo(() => {
     if (!data?.members) return [];
@@ -196,20 +222,54 @@ export function TeamPerformance() {
       <Header title="Performance do Time" subtitle="Análise de desempenho por vendedor" />
 
       <div className="p-4 md:p-8">
-        {/* Period selector */}
-        <div className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded-lg p-1 mb-6 w-fit">
-          {(['7d', '30d', '90d'] as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                period === p ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {p === '7d' ? '7 dias' : p === '30d' ? '30 dias' : '90 dias'}
-            </button>
-          ))}
+        {/* Period + team filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          {/* Period selector */}
+          <div className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded-lg p-1 w-fit">
+            {(['7d', '30d', '90d'] as Period[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  period === p ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {p === '7d' ? '7 dias' : p === '30d' ? '30 dias' : '90 dias'}
+              </button>
+            ))}
+          </div>
+
+          {/* Team filter (Upgrade RD P1, req 12) — só aparece com equipes cadastradas */}
+          {teams.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-gray-500" />
+              <select
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                aria-label="Filtrar por equipe"
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-card text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <option value="">Todas as equipes</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {/* Rótulo da equipe filtrada (req 12) */}
+        {teamId && (
+          <p className="text-sm text-gray-500 mb-4">
+            Exibindo a equipe{' '}
+            <span className="font-medium text-gray-900">
+              {teams.find((t) => t.id === teamId)?.name ?? '—'}
+            </span>
+            .
+          </p>
+        )}
 
         {/* Summary cards */}
         {isLoading ? (

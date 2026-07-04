@@ -1,20 +1,61 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requirePermission } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { exportLeads, exportDeals, exportTasks, ExportFormat } from '../services/exportService.js';
 import { ownerScope } from '../utils/roleScope.js';
+import { getEffective } from '../services/permissionService.js';
+import { approvalService } from '../services/approvalService.js';
+import { ApprovalType } from '@prisma/client';
 
 const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
 
+// Enforcement de capability (req 13): exportar exige `exportData`. FAIL-CLOSED —
+// sem perfil custom, USER/GESTOR/ADMIN têm exportData=true (== hoje); só nega quando
+// um admin restringiu explicitamente.
+router.use(requirePermission('exportData'));
+
 const VALID_FORMATS: ExportFormat[] = ['json', 'csv', 'xlsx'];
 
 function parseFormat(raw: unknown): ExportFormat {
   const fmt = String(raw || 'json').toLowerCase() as ExportFormat;
   return VALID_FORMATS.includes(fmt) ? fmt : 'json';
+}
+
+/**
+ * Decide entre exportar agora ou criar uma solicitação de aprovação (req 15).
+ * Retorna true quando a solicitação foi criada (chamador NÃO deve exportar).
+ * Sem perfil custom, requireApprovalFor.export=false → sempre exporta (== hoje).
+ */
+async function maybeQueueExport(
+  req: import('express').Request,
+  res: import('express').Response,
+  entity: 'leads' | 'deals' | 'tasks',
+  format: ExportFormat,
+  filters: Record<string, unknown>
+): Promise<boolean> {
+  const user = req.user!;
+  const effective = await getEffective({
+    userId: user.userId,
+    tenantId: user.tenantId,
+    role: user.role,
+    isPlatformAdmin: user.isPlatformAdmin,
+  });
+  if (!effective.requireApprovalFor.export) return false;
+
+  const label = { leads: 'leads', deals: 'negociações', tasks: 'tarefas' }[entity];
+  const { approvalId, pending } = await approvalService.createApproval({
+    tenantId: user.tenantId,
+    requestedById: user.userId,
+    type: ApprovalType.EXPORT,
+    payload: { entity, format, filters },
+    summary: `Exportar ${label} (${format.toUpperCase()})`,
+  });
+  res.status(202).json({ status: 202, data: { approvalId, pending } });
+  return true;
 }
 
 // GET /api/exports/leads?format=csv|xlsx|json&status=...&search=...
@@ -30,6 +71,7 @@ router.get('/leads', async (req, res, next) => {
       // Analista (USER) só exporta os próprios registros (req 4) — escopo forçado.
       assignedTo: ownerScope(req.user, req.query.assignedTo as string | undefined),
     };
+    if (await maybeQueueExport(req, res, 'leads', format, filters)) return;
     await exportLeads(req.user.tenantId, filters, format, res);
   } catch (error) {
     next(error);
@@ -50,6 +92,7 @@ router.get('/deals', async (req, res, next) => {
       minValue: req.query.minValue ? Number(req.query.minValue) : undefined,
       maxValue: req.query.maxValue ? Number(req.query.maxValue) : undefined,
     };
+    if (await maybeQueueExport(req, res, 'deals', format, filters)) return;
     await exportDeals(req.user.tenantId, filters, format, res);
   } catch (error) {
     next(error);
@@ -71,6 +114,7 @@ router.get('/tasks', async (req, res, next) => {
       startDate: req.query.startDate as string | undefined,
       endDate: req.query.endDate as string | undefined,
     };
+    if (await maybeQueueExport(req, res, 'tasks', format, filters)) return;
     await exportTasks(req.user.tenantId, filters, format, res);
   } catch (error) {
     next(error);
