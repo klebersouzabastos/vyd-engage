@@ -28,9 +28,14 @@ describe('Task Service', () => {
   });
 
   afterEach(async () => {
+    // GUARDA CRÍTICA: se o beforeEach falhou, testTenantId fica undefined e o
+    // Prisma REMOVE filtros undefined — deleteMany({ where: { tenantId: undefined } })
+    // viraria deleteMany({}) e apagaria a TABELA INTEIRA (incidente de 03/07/2026).
+    if (!testTenantId) return;
     await prisma.task.deleteMany({ where: { tenantId: testTenantId } });
     await prisma.user.deleteMany({ where: { tenantId: testTenantId } });
-    await prisma.tenant.delete({ where: { id: testTenantId } });
+    await prisma.tenant.delete({ where: { id: testTenantId } }).catch(() => {});
+    testTenantId = '';
   });
 
   describe('create', () => {

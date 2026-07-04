@@ -16,6 +16,10 @@ describe('Funnel Service', () => {
   });
 
   afterEach(async () => {
+    // GUARDA CRÍTICA: se o beforeEach falhou, testTenantId fica undefined e o
+    // Prisma REMOVE filtros undefined — os deleteMany abaixo apagariam as tabelas
+    // INTEIRAS (funis/usuários — incidente de 03/07/2026).
+    if (!testTenantId) return;
     // Clean up in correct order: leads → columns → funnels → users → tenant
     const funnels = await prisma.funnel.findMany({
       where: { tenantId: testTenantId },
@@ -29,7 +33,8 @@ describe('Funnel Service', () => {
     }
     await prisma.funnel.deleteMany({ where: { tenantId: testTenantId } });
     await prisma.user.deleteMany({ where: { tenantId: testTenantId } });
-    await prisma.tenant.delete({ where: { id: testTenantId } });
+    await prisma.tenant.delete({ where: { id: testTenantId } }).catch(() => {});
+    testTenantId = '';
   });
 
   describe('ensureDefaultFunnel', () => {
