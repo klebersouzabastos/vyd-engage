@@ -122,6 +122,11 @@ export function WhatsAppSendPanel({
       return;
     }
 
+    if (messageType === 'template' && !selectedTemplate) {
+      toast.error('Selecione um modelo de mensagem.');
+      return;
+    }
+
     setSending(true);
     try {
       await apiClient.sendWhatsAppMessage({

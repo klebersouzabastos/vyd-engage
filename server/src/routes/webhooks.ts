@@ -163,9 +163,12 @@ router.get('/whatsapp', (req: Request, res: Response) => {
  * FILTRADO para o `whatsappMessagingService.processWebhook` seguir seu fluxo normal
  * sem duplicar as mensagens já tratadas pelo copiloto (o copiloto grava sua própria
  * Interaction). O filtro contém: os `changes` inteiros de conexões NÃO-copiloto e,
- * para conexões copiloto, um change apenas com `value.statuses` (sem `messages`)
- * quando houver statuses — preserva o tracking de status (sent/delivered/read/failed)
- * das mensagens enviadas pela conexão-copiloto (LACUNA #10).
+ * para conexões copiloto, um change com `value.statuses` (preserva o tracking de
+ * status sent/delivered/read/failed das mensagens enviadas — LACUNA #10) e com as
+ * `messages` INBOUND de tipo != 'text' (imagem/áudio/documento/vídeo), que o copiloto
+ * NÃO trata — assim o fluxo genérico registra a Interaction INBOUND delas e incrementa
+ * `messagesReceived` (LACUNA #2). As mensagens de TEXTO, já tratadas pelo copiloto, são
+ * removidas do change reencaminhado (evita Interaction duplicada).
  *
  * Gating: sem `isAIEnabled()`, o roteamento é ignorado (o payload passa inteiro ao
  * fluxo genérico) — nada quebra quando a IA não está configurada.
@@ -222,10 +225,20 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
         continue;
       }
 
-      // Conexão copiloto: roteia mensagens de TEXTO ao copiloto.
+      // Conexão copiloto: roteia mensagens de TEXTO ao copiloto e separa as
+      // mensagens INBOUND de tipo != 'text' (que o copiloto NÃO trata) para
+      // reencaminhar ao fluxo genérico (LACUNA #2).
       const messages = change?.value?.messages || [];
+      const nonTextMessages: any[] = [];
       for (const message of messages) {
-        if (message?.type !== 'text') continue;
+        // LACUNA #2: mensagens INBOUND não-texto (imagem/áudio/documento/vídeo) o
+        // copiloto não trata. Reencaminha ao fluxo genérico para que o
+        // processWebhook registre a Interaction INBOUND ('[Imagem recebida]' etc.)
+        // e incremente `messagesReceived`.
+        if (message?.type !== 'text') {
+          nonTextMessages.push(message);
+          continue;
+        }
         // LACUNA #6: pula redelivery do Meta (mesmo message.id já roteado) para não
         // reprocessar a mensagem no copiloto. Só aplica ao roteamento do copiloto;
         // o fluxo genérico de inbound é preservado (statuses seguem intactos).
@@ -246,16 +259,22 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
         }
       }
 
-      // LACUNA #10: as mensagens de texto já foram tratadas pelo copiloto e NÃO são
-      // reencaminhadas (evita Interaction duplicada). Mas os `statuses`
-      // (sent/delivered/read/failed) das mensagens ENVIADAS pela conexão-copiloto
-      // ainda precisam do fluxo genérico para manter o tracking de status. Então,
-      // quando houver statuses, reencaminhamos um change contendo APENAS
-      // `value.statuses` (sem `messages`).
+      // Reencaminha ao fluxo genérico um change com:
+      //  - as `messages` INBOUND de tipo != 'text' (LACUNA #2) — que o copiloto não
+      //    trata, para que o processWebhook registre a Interaction INBOUND delas;
+      //  - os `statuses` (sent/delivered/read/failed) das mensagens ENVIADAS pela
+      //    conexão-copiloto (LACUNA #10) — para manter o tracking de status.
+      // As mensagens de TEXTO, já tratadas pelo copiloto, são OMITIDAS (evita
+      // Interaction duplicada). Só reencaminha quando há algo a processar.
       const statuses = change?.value?.statuses || [];
-      if (Array.isArray(statuses) && statuses.length > 0) {
+      const hasStatuses = Array.isArray(statuses) && statuses.length > 0;
+      if (nonTextMessages.length > 0 || hasStatuses) {
         const { messages: _omitMessages, ...valueWithoutMessages } = change.value;
-        outChanges.push({ ...change, value: valueWithoutMessages });
+        const filteredValue: any = { ...valueWithoutMessages };
+        if (nonTextMessages.length > 0) {
+          filteredValue.messages = nonTextMessages;
+        }
+        outChanges.push({ ...change, value: filteredValue });
       }
     }
     if (outChanges.length > 0) {

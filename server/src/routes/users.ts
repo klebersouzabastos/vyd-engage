@@ -124,6 +124,21 @@ router.put('/me/whatsapp', async (req, res, next) => {
 
     const normalized = whatsappNumber && whatsappNumber.trim() !== '' ? whatsappNumber.trim() : null;
 
+    // Ao gravar um número NÃO-nulo, exige uma quantidade mínima de dígitos. O
+    // regex aceita máscaras como "---" ou "() -" que não têm NENHUM dígito e
+    // seriam persistidas como lixo — nunca resolvem para um comando do copiloto
+    // (a resolução é por DÍGITOS). Exigimos ao menos 8 dígitos (número local com
+    // DDD). Limpar (nulo/"") continua permitido e não passa por esta checagem.
+    if (normalized && digitsOnly(normalized).length < 8) {
+      return next(
+        createError(
+          'Informe um número de WhatsApp válido com DDD.',
+          400,
+          'VALIDATION_ERROR'
+        )
+      );
+    }
+
     // Ao gravar um número NÃO-nulo, impede que dois usuários ATIVOS do mesmo
     // tenant cadastrem o mesmo número. A resolução do copiloto é por DÍGITOS
     // (tolerando o DDI 55); usamos o mesmo critério para não deixar passar

@@ -258,7 +258,7 @@ export const whatsappMessagingService = {
     let companyId: string | null = null;
     if (data.companyId) {
       const company = await prisma.company.findFirst({
-        where: { id: data.companyId, tenantId },
+        where: { id: data.companyId, tenantId, deletedAt: null },
         select: { id: true },
       });
       companyId = company?.id ?? null;
@@ -390,28 +390,33 @@ export const whatsappMessagingService = {
       data: { messagesReceived: { increment: 1 } },
     });
 
-    // Find lead by phone number
-    const lead = await prisma.lead.findFirst({
-      where: { tenantId, phone: { contains: from.slice(-8) } }, // Match last 8 digits
+    // Resolve o lead da mensagem RECEBIDA por telefone.
+    //
+    // Lacuna #1/#9: o lead NÃO pode ser resolvido só por SUFIXO de 8 dígitos
+    // (`phone: { contains: from.slice(-8) }`): (a) casa o lead ERRADO quando dois
+    // leads do tenant terminam nos mesmos 8 dígitos (DDDs diferentes), e (b) não
+    // filtrava `deletedAt: null`, podendo casar lead na Lixeira. Correção: buscar
+    // CANDIDATOS por sufixo curto COM `deletedAt: null` e filtrar por
+    // `phonesMatch(lead.phone, from)` (dígitos COMPLETOS, tolerando só o DDI 55).
+    // `phonesMatch` já normaliza máscaras via `digitsOnly`, então isto MELHORA o
+    // matching (não regride). Só gravamos o leadId quando houver match completo;
+    // sem candidato que dê match, a Interaction é gravada SEM lead.
+    const candidateLeads = await prisma.lead.findMany({
+      where: { tenantId, deletedAt: null, phone: { contains: from.slice(-8) } },
     });
+    const lead = candidateLeads.find((c) => phonesMatch(c.phone || '', from)) ?? null;
 
     // Upgrade RD P3 (req 23): mensagens RECEBIDAS também precisam aparecer na
     // timeline do deal (a timeline do deal é buscada por dealId). Heurística
     // conservadora: se o lead resolvido tem EXATAMENTE UM deal ABERTO (status
     // != WON/LOST, deletedAt null) no tenant, vinculamos a Interaction INBOUND a
     // esse deal (e à empresa do lead, quando houver). Com 0 ou >1 deals abertos
-    // mantemos só o leadId — não adivinhamos qual deal é o "certo".
-    //
-    // Lacuna #2: o lead é resolvido por SUFIXO de 8 dígitos (`from.slice(-8)`),
-    // que pode casar o lead ERRADO quando dois leads do tenant terminam nos
-    // mesmos 8 dígitos (DDDs diferentes). Para NÃO poluir a timeline do deal
-    // errado, só INFERIMOS o deal/empresa quando o telefone do lead resolvido
-    // casa por DÍGITOS COMPLETOS com `from` (tolerando só o DDI 55). Sem match
-    // completo, gravamos apenas o leadId (comportamento anterior ao P3) — o log
-    // básico por lead não regride, mas não arriscamos o vínculo de deal.
+    // mantemos só o leadId — não adivinhamos qual deal é o "certo". Como `lead` já
+    // é um match por dígitos COMPLETOS, a inferência de deal/empresa não corre o
+    // risco de poluir a timeline do deal errado.
     let dealId: string | null = null;
     let companyId: string | null = null;
-    if (lead && phonesMatch(lead.phone || '', from)) {
+    if (lead) {
       const openDeals = await prisma.deal.findMany({
         where: {
           tenantId,

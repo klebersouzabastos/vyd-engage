@@ -278,12 +278,11 @@ describe('whatsappMessagingService.processIncomingMessage — vínculo ao deal (
   };
 
   it('inbound de lead com match COMPLETO + 1 deal aberto → Interaction INBOUND com dealId (e companyId do lead)', async () => {
-    prismaMock.lead.findFirst.mockResolvedValue({
-      id: 'lead-1',
-      companyId: 'comp-1',
-      // Telefone do lead casa por dígitos completos com `from` (5511988887777).
-      phone: '5511988887777',
-    } as never);
+    // Candidatos por sufixo (o mock ignora o where; devolvemos o que o DB
+    // devolveria). Telefone casa por dígitos completos com `from` (5511988887777).
+    prismaMock.lead.findMany.mockResolvedValue([
+      { id: 'lead-1', companyId: 'comp-1', phone: '5511988887777' },
+    ] as never);
     // Exatamente 1 deal aberto vinculado ao lead.
     prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-1' }] as never);
 
@@ -298,6 +297,9 @@ describe('whatsappMessagingService.processIncomingMessage — vínculo ao deal (
       type: 'WHATSAPP',
       direction: 'INBOUND',
     });
+    // Candidatos de lead são buscados filtrando por tenant + não deletado.
+    const leadArgs = arg0(prismaMock.lead.findMany);
+    expect(leadArgs.where).toMatchObject({ tenantId, deletedAt: null });
     // Busca de deals abertos filtra por tenant + lead + não WON/LOST + não deletado.
     const dealArgs = arg0(prismaMock.deal.findMany);
     expect(dealArgs.where).toMatchObject({
@@ -309,11 +311,9 @@ describe('whatsappMessagingService.processIncomingMessage — vínculo ao deal (
   });
 
   it('inbound de lead (match completo) com 2 deals abertos → sem dealId (só leadId, evita adivinhar)', async () => {
-    prismaMock.lead.findFirst.mockResolvedValue({
-      id: 'lead-1',
-      companyId: 'comp-1',
-      phone: '5511988887777',
-    } as never);
+    prismaMock.lead.findMany.mockResolvedValue([
+      { id: 'lead-1', companyId: 'comp-1', phone: '5511988887777' },
+    ] as never);
     // Dois deals abertos → ambíguo → não vincula.
     prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-1' }, { id: 'deal-2' }] as never);
 
@@ -330,7 +330,8 @@ describe('whatsappMessagingService.processIncomingMessage — vínculo ao deal (
   });
 
   it('inbound sem lead resolvido → sem dealId/companyId e não consulta deals', async () => {
-    prismaMock.lead.findFirst.mockResolvedValue(null as never);
+    // Nenhum candidato por sufixo.
+    prismaMock.lead.findMany.mockResolvedValue([] as never);
 
     await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
 
@@ -339,43 +340,86 @@ describe('whatsappMessagingService.processIncomingMessage — vínculo ao deal (
     expect(prismaMock.deal.findMany).not.toHaveBeenCalled();
   });
 
-  // Lacuna #2: lead resolvido só por SUFIXO de 8 dígitos (dígitos completos
-  // DIFERENTES → DDDs diferentes) NÃO deve inferir deal, mesmo com 1 deal aberto.
-  it('inbound de lead casado só por sufixo (dígitos completos diferentes) + 1 deal aberto → NÃO infere deal (só leadId)', async () => {
-    // `from` = 5511988887777; lead com DDD diferente (5521...) mas mesmos 8 dígitos
-    // finais (88887777). O findFirst por sufixo casa o lead, mas os dígitos
-    // completos NÃO batem → não inferimos o deal.
-    prismaMock.lead.findFirst.mockResolvedValue({
-      id: 'lead-errado',
-      companyId: 'comp-errada',
-      phone: '5521988887777',
-    } as never);
+  // Lacuna #1/#9 (b): lead na LIXEIRA (soft-deletado) não deve ser vinculado. A
+  // busca de candidatos filtra `deletedAt: null`, então o lead deletado nem entra
+  // na lista → Interaction gravada SEM lead.
+  it('inbound de lead soft-deletado → não vincula (leadId null) e não consulta deals', async () => {
+    // O where filtra deletedAt:null; o mock devolve o que o DB devolveria: vazio.
+    prismaMock.lead.findMany.mockResolvedValue([] as never);
+
+    await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
+
+    // Candidatos buscados com deletedAt:null (lead da Lixeira excluído na origem).
+    const leadArgs = arg0(prismaMock.lead.findMany);
+    expect(leadArgs.where).toMatchObject({ tenantId, deletedAt: null });
+
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({ leadId: null, dealId: null, companyId: null });
+    expect(prismaMock.deal.findMany).not.toHaveBeenCalled();
+  });
+
+  // Lacuna #1/#9 (a): candidato casado só por SUFIXO de 8 dígitos (dígitos
+  // completos DIFERENTES → DDDs diferentes) NÃO é o lead da mensagem. Sem match
+  // por dígitos completos, a Interaction é gravada SEM lead (não vincula o lead
+  // errado nem infere deal).
+  it('inbound com candidato só por sufixo (dígitos completos diferentes) + 1 deal aberto → NÃO vincula lead nem deal', async () => {
+    // `from` = 5511988887777; candidato com DDD diferente (5521...) mas mesmos 8
+    // dígitos finais (88887777). Entra na busca por sufixo, mas `phonesMatch` por
+    // dígitos completos NÃO bate → descartado.
+    prismaMock.lead.findMany.mockResolvedValue([
+      { id: 'lead-errado', companyId: 'comp-errada', phone: '5521988887777' },
+    ] as never);
     prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-errado' }] as never);
 
     await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
 
     const data = arg0(prismaMock.interaction.create).data;
-    // leadId preservado (log básico não regride), mas SEM dealId/companyId.
+    // Lead errado NÃO é vinculado; sem dealId/companyId.
     expect(data).toMatchObject({
       tenantId,
-      leadId: 'lead-errado',
+      leadId: null,
       dealId: null,
       companyId: null,
       direction: 'INBOUND',
     });
-    // Nem consultou deals — o gate por match completo barrou antes.
+    // Nem consultou deals — sem lead resolvido, não há inferência.
     expect(prismaMock.deal.findMany).not.toHaveBeenCalled();
+  });
+
+  // Lacuna #1/#9 (a): dois candidatos com o MESMO sufixo mas dígitos completos
+  // DIFERENTES — só o do match completo recebe a Interaction (o outro é descartado).
+  it('inbound com dois leads de mesmo sufixo (dígitos completos diferentes) → só o do match completo é vinculado', async () => {
+    // `from` = 5511988887777. Candidato A (DDD 21) NÃO casa por dígitos completos;
+    // candidato B (DDD 11) casa. `find` retorna o primeiro que casa → B.
+    prismaMock.lead.findMany.mockResolvedValue([
+      { id: 'lead-errado', companyId: 'comp-errada', phone: '5521988887777' },
+      { id: 'lead-certo', companyId: 'comp-certa', phone: '5511988887777' },
+    ] as never);
+    prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-1' }] as never);
+
+    await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
+
+    const data = arg0(prismaMock.interaction.create).data;
+    // Só o lead do match completo (B) é vinculado; o do sufixo (A) é ignorado.
+    expect(data).toMatchObject({
+      tenantId,
+      leadId: 'lead-certo',
+      dealId: 'deal-1',
+      companyId: 'comp-certa',
+      direction: 'INBOUND',
+    });
+    // A inferência de deal usou o lead certo.
+    const dealArgs = arg0(prismaMock.deal.findMany);
+    expect(dealArgs.where).toMatchObject({ leadId: 'lead-certo' });
   });
 
   // Contraparte: match por DÍGITOS COMPLETOS (tolerando só o DDI 55) + 1 deal
   // aberto → infere o deal. `from` sem DDI casa com o telefone do lead com DDI.
   it('inbound de lead com match completo (tolerando DDI 55) + 1 deal aberto → infere deal', async () => {
     const MESSAGE_SEM_DDI = { ...INBOUND_MESSAGE, from: '11988887777' };
-    prismaMock.lead.findFirst.mockResolvedValue({
-      id: 'lead-1',
-      companyId: 'comp-1',
-      phone: '5511988887777', // com DDI; casa com `from` sem DDI via variante
-    } as never);
+    prismaMock.lead.findMany.mockResolvedValue([
+      { id: 'lead-1', companyId: 'comp-1', phone: '5511988887777' }, // com DDI; casa com `from` sem DDI via variante
+    ] as never);
     prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-1' }] as never);
 
     await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', MESSAGE_SEM_DDI);

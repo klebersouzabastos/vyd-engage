@@ -25,26 +25,40 @@ export const whatsappService = {
 
     const isCopilot = data.isCopilot ?? false;
 
-    const connection = await prisma.whatsAppConnection.create({
-      data: {
-        tenantId,
-        name: data.name,
-        provider: data.provider,
-        status: WhatsAppConnectionStatus.DISCONNECTED,
-        config: safeEncryptConfig(data.config) as any,
-        isCopilot,
-      },
-    });
+    // Invariante: no máximo UMA conexão copiloto por tenant. Quando esta conexão
+    // é criada como copiloto, a criação e o zeramento do flag das demais correm
+    // na MESMA transação (interativa, pois o id só existe após o create),
+    // fechando a janela de corrida entre os dois writes.
+    const connection = isCopilot
+      ? await prisma.$transaction(async (tx) => {
+          const created = await tx.whatsAppConnection.create({
+            data: {
+              tenantId,
+              name: data.name,
+              provider: data.provider,
+              status: WhatsAppConnectionStatus.DISCONNECTED,
+              config: safeEncryptConfig(data.config) as any,
+              isCopilot,
+            },
+          });
 
-    // Invariante: no máximo UMA conexão copiloto por tenant. Se esta foi criada
-    // como copiloto, zera o flag das demais numa transação (o id só existe após
-    // o create, por isso o zeramento vem depois).
-    if (isCopilot) {
-      await prisma.whatsAppConnection.updateMany({
-        where: { tenantId, id: { not: connection.id }, isCopilot: true },
-        data: { isCopilot: false },
-      });
-    }
+          await tx.whatsAppConnection.updateMany({
+            where: { tenantId, id: { not: created.id }, isCopilot: true },
+            data: { isCopilot: false },
+          });
+
+          return created;
+        })
+      : await prisma.whatsAppConnection.create({
+          data: {
+            tenantId,
+            name: data.name,
+            provider: data.provider,
+            status: WhatsAppConnectionStatus.DISCONNECTED,
+            config: safeEncryptConfig(data.config) as any,
+            isCopilot,
+          },
+        });
 
     planLimitsService.invalidateUsage(tenantId).catch(() => {});
 

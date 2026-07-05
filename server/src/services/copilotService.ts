@@ -227,6 +227,13 @@ async function resolveCommandingUser(tenantId: string, from: string) {
 /**
  * Busca a última ação de escrita pendente do usuário nesta conexão de copiloto
  * (dentro de uma janela de 30 min, para não ressuscitar propostas antigas).
+ *
+ * Filtra DIRETAMENTE a proposta pendente não-resolvida via path de JSON do Postgres
+ * (`metadata.copilotPending.resolved = false`), em vez de escanear as N interações
+ * mais recentes. Assim, mesmo que o usuário mande dezenas de mensagens inbound na
+ * janela de 30 min, a proposta pendente nunca "sai" de uma janela de varredura — o
+ * "sim" sempre a reencontra. O `connectionId` (path de JSON também) garante que a
+ * proposta é DESTA conexão de copiloto.
  */
 async function findPendingAction(
   tenantId: string,
@@ -241,34 +248,36 @@ async function findPendingAction(
   pending: Record<string, unknown>;
 } | null> {
   const since = new Date(Date.now() - 30 * 60 * 1000);
-  const rows = await prisma.interaction.findMany({
+  const row = await prisma.interaction.findFirst({
     where: {
       tenantId,
       userId,
       type: InteractionType.WHATSAPP,
       direction: InteractionDirection.INBOUND,
       createdAt: { gte: since },
+      metadata: { path: ['copilotPending', 'resolved'], equals: false },
     },
     orderBy: { createdAt: 'desc' },
-    take: 20,
     select: { id: true, metadata: true },
   });
+  if (!row) return null;
 
-  for (const row of rows) {
-    const meta = (row.metadata || {}) as Record<string, unknown>;
-    const pending = meta.copilotPending as
-      | (PendingAction & { connectionId?: string; resolved?: boolean })
-      | undefined;
-    if (pending && pending.connectionId === connectionId && pending.resolved !== true) {
-      return {
-        interactionId: row.id,
-        action: pending,
-        metadata: meta,
-        pending: pending as unknown as Record<string, unknown>,
-      };
-    }
+  const meta = (row.metadata || {}) as Record<string, unknown>;
+  const pending = meta.copilotPending as
+    | (PendingAction & { connectionId?: string; resolved?: boolean })
+    | undefined;
+  // Guarda de coerência: a proposta precisa existir e ser DESTA conexão de copiloto.
+  // (O filtro de `resolved=false` já veio do banco; `connectionId` não é indexável
+  // no mesmo where de forma tão barata, então confirmamos aqui.)
+  if (!pending || pending.connectionId !== connectionId || pending.resolved === true) {
+    return null;
   }
-  return null;
+  return {
+    interactionId: row.id,
+    action: pending,
+    metadata: meta,
+    pending: pending as unknown as Record<string, unknown>,
+  };
 }
 
 /**

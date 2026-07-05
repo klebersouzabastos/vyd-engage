@@ -216,15 +216,27 @@ function MeetingSuggestions({
                   <span className="block text-sm font-medium text-foreground">
                     {FIELD_LABELS[field.key]}
                   </span>
-                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground line-through">
-                      {displayFieldValue(field.key, field.current)}
+                  {field.key === 'notes' ? (
+                    // As notas são ACRESCENTADAS (o backend anexa ao valor atual),
+                    // não substituídas — então não riscamos a nota atual; rotulamos
+                    // a sugestão como acréscimo.
+                    <span className="mt-1 flex flex-col gap-1 text-xs">
+                      <span className="text-muted-foreground">Anexar às notas:</span>
+                      <span className="rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary whitespace-pre-wrap">
+                        {displayFieldValue(field.key, field.suggested)}
+                      </span>
                     </span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary">
-                      {displayFieldValue(field.key, field.suggested)}
+                  ) : (
+                    <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-muted-foreground line-through">
+                        {displayFieldValue(field.key, field.current)}
+                      </span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary">
+                        {displayFieldValue(field.key, field.suggested)}
+                      </span>
                     </span>
-                  </span>
+                  )}
                   {field.reason && (
                     <span className="block text-xs text-muted-foreground mt-1">
                       {field.reason}

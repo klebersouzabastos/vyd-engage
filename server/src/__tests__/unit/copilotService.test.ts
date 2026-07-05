@@ -75,7 +75,9 @@ beforeEach(() => {
   generateTextImpl = async () => ({ text: 'ok', usage: {} });
   // Por padrão: nenhum usuário conhecido e nenhuma pendência.
   prismaMock.user.findMany.mockResolvedValue([] as never);
-  prismaMock.interaction.findMany.mockResolvedValue([] as never);
+  // findPendingAction agora busca a proposta pendente DIRETAMENTE via findFirst
+  // (filtro por path de JSON: metadata.copilotPending.resolved = false).
+  prismaMock.interaction.findFirst.mockResolvedValue(null as never);
   prismaMock.interaction.create.mockResolvedValue({ id: 'int-1' } as never);
   // Claim atômico: por padrão ESTE chamador vence a corrida (count === 1).
   prismaMock.interaction.updateMany.mockResolvedValue({ count: 1 } as never);
@@ -199,8 +201,7 @@ describe('escrita com aceite', () => {
   it('após "confirmar", executa a tarefa pendente (só então cria)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
     // Há uma pendência recente desta conexão/usuário.
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -211,8 +212,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
 
     const res = await copilotService.handleCopilotMessage(
       tenantId,
@@ -240,8 +240,7 @@ describe('escrita com aceite', () => {
 
   it('segundo "sim" concorrente (claim perdido) → NÃO executa de novo (idempotente)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -252,8 +251,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     // A outra volta já resolveu a linha: o claim condicional não afeta nada.
     prismaMock.interaction.updateMany.mockResolvedValue({ count: 0 } as never);
 
@@ -273,8 +271,7 @@ describe('escrita com aceite', () => {
 
   it('"confirmo" (afirmação pura) confirma a pendência (não exige "sim" literal) (#13)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -285,8 +282,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
 
     const res = await copilotService.handleCopilotMessage(
       tenantId,
@@ -307,8 +303,7 @@ describe('escrita com aceite', () => {
     // ENDURECIMENTO: uma consulta curta acionável que por acaso contém "confirma"
     // NÃO é aceite explícito. Deve virar nova consulta (proposta expira), NÃO executar.
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -319,8 +314,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     // O "modelo" trata como nova consulta (não escreve nada).
     let modelCalled = false;
     generateTextImpl = async () => {
@@ -347,8 +341,7 @@ describe('escrita com aceite', () => {
   it('"sim quero relatório" (nova consulta acionável) NÃO executa a pendência (#2)', async () => {
     // "sim" no início de uma consulta acionável não é aceite explícito da proposta.
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -359,8 +352,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     let modelCalled = false;
     generateTextImpl = async () => {
       modelCalled = true;
@@ -383,8 +375,7 @@ describe('escrita com aceite', () => {
 
   it('falha transitória na execução → REVERTE o claim p/ reconfirmação (#1)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -395,8 +386,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     // A criação da tarefa falha (erro transitório de DB).
     taskCreateMock.mockRejectedValueOnce(new Error('db timeout'));
 
@@ -422,8 +412,7 @@ describe('escrita com aceite', () => {
 
   it('após "não", cancela a pendência sem executar', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -434,8 +423,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
 
     const res = await copilotService.handleCopilotMessage(
       tenantId,
@@ -451,8 +439,7 @@ describe('escrita com aceite', () => {
 
   it('"isso não" cancela (o "não" forte decide; "isso" é filler) (#1/#6)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -463,8 +450,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
 
     const res = await copilotService.handleCopilotMessage(
       tenantId,
@@ -482,8 +468,7 @@ describe('escrita com aceite', () => {
 
   it('consulta natural com filler ("ok, e o deal Y?") NÃO executa a pendência (#1/#6)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -494,8 +479,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     // O "modelo" trata como nova consulta (chama leitura, não escreve nada).
     let modelCalled = false;
     generateTextImpl = async () => {
@@ -524,8 +508,7 @@ describe('escrita com aceite', () => {
     prismaMock.user.findMany.mockResolvedValue([
       { ...knownUser, role: 'VIEWER' },
     ] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -536,8 +519,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
 
     const res = await copilotService.handleCopilotMessage(
       tenantId,
@@ -554,8 +536,7 @@ describe('escrita com aceite', () => {
 
   it('atualizar_deal com stage=WON → recusado (fluxo próprio) (#7/#10/#14)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -566,8 +547,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     // USER tem deals.edit=true; a recusa vem da guarda de stage, não da capacidade.
 
     const res = await copilotService.handleCopilotMessage(
@@ -585,8 +565,7 @@ describe('escrita com aceite', () => {
 
   it('confirmar atualizar_deal com notas ANEXA (não sobrescreve) as notas atuais (#2)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -597,8 +576,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     // executePending faz DOIS findFirst no deal: [1] revalida visibilidade (select id),
     // [2] carrega as notas atuais p/ anexar (select notes).
     (prismaMock.deal.findFirst as any)
@@ -624,8 +602,7 @@ describe('escrita com aceite', () => {
 
   it('confirmar atualizar_deal com notas quando o deal não tinha notas → usa só o novo texto (#2)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
-    prismaMock.interaction.findMany.mockResolvedValue([
-      {
+    prismaMock.interaction.findFirst.mockResolvedValue({
         id: 'int-pending',
         metadata: {
           copilotPending: {
@@ -636,8 +613,7 @@ describe('escrita com aceite', () => {
             resolved: false,
           },
         },
-      },
-    ] as never);
+      } as never);
     (prismaMock.deal.findFirst as any)
       .mockResolvedValueOnce({ id: 'deal-1' }) // visível
       .mockResolvedValueOnce({ notes: null }); // deal sem notas
