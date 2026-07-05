@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { SlackTeamsSection } from './SlackTeamsSection';
 import { MeetingScheduleSection } from './MeetingScheduleSection';
 import { Button } from '../ui/button';
-import { Plus, HelpCircle, X, FileText, Copy, Key, Loader2 } from 'lucide-react';
+import { Switch } from '../ui/switch';
+import { Plus, HelpCircle, X, FileText, Copy, Key, Loader2, Bot, Sparkles } from 'lucide-react';
 import { apiClient } from '../../services/api/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useWhatsApp } from '../../contexts/WhatsAppContext';
+import { useAIStatus } from '../../hooks/useAIStatus';
 import { useEmail } from '../../contexts/EmailContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { ConnectionCard } from '../whatsapp/ConnectionCard';
 import { ConnectionForm } from '../whatsapp/ConnectionForm';
 import { EmailConfigCard } from '../email/EmailConfigCard';
@@ -465,6 +468,178 @@ function WebhookCaptureSection() {
   );
 }
 
+/**
+ * Copiloto IA via WhatsApp — configuração (Upgrade RD P3, req 25).
+ *
+ * Designa UMA conexão WhatsApp do tenant como o "número do Copiloto IA": mensagens
+ * enviadas a esse número são respondidas pela IA (leitura de tarefas/deals; escrita
+ * só após confirmação). Regras desta UI:
+ *   - GATING GRACIOSO: só faz sentido com IA configurada (useAIStatus). Sem IA →
+ *     seção explica que é preciso configurar o provedor de IA e desabilita os toggles.
+ *   - Só 1 conexão por tenant pode ser o copiloto — ligar uma desliga a anterior.
+ *   - Sem conexões WhatsApp → orienta a criar uma conexão primeiro.
+ *
+ * Lê o estado real (`isCopilot`) direto de `apiClient.getWhatsAppConnections()` (o raw
+ * da API traz o campo; o contexto tipado ainda não o expõe) e alterna via
+ * `apiClient.updateWhatsAppConnection(id, { name, provider, config, isCopilot })` —
+ * o PUT /whatsapp/:id exige o payload completo da conexão (schema não-parcial).
+ */
+interface RawWhatsAppConnection {
+  id: string;
+  name: string;
+  provider: string;
+  config?: unknown;
+  status?: string;
+  isCopilot?: boolean;
+}
+
+function WhatsAppCopilotSection() {
+  const { enabled: aiEnabled, loading: aiLoading } = useAIStatus();
+  const { user } = useAuth();
+  // Só ADMIN pode designar a conexão do copiloto — o backend (PUT /whatsapp/:id)
+  // rejeita isCopilot de não-ADMIN com 403. Espelhamos essa regra aqui: não-admin
+  // vê a seção (para entender o recurso) mas com o Switch desabilitado.
+  const isAdmin = user?.role === 'ADMIN';
+  const [connections, setConnections] = useState<RawWhatsAppConnection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = (await apiClient.getWhatsAppConnections()) as unknown as RawWhatsAppConnection[];
+      setConnections(Array.isArray(result) ? result : []);
+    } catch {
+      /* silencioso: falha ao carregar não bloqueia o restante das integrações */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleToggle = async (conn: RawWhatsAppConnection, next: boolean) => {
+    // Guarda extra: o backend só permite ADMIN alterar isCopilot (403). Evita a
+    // chamada que resultaria em erro para não-admin, mesmo que o Switch seja acionado.
+    if (!isAdmin) return;
+    setSavingId(conn.id);
+    try {
+      // Só 1 por tenant: ao ligar uma, desliga qualquer outra atualmente ativa.
+      if (next) {
+        const previous = connections.find((c) => c.isCopilot && c.id !== conn.id);
+        if (previous) {
+          await apiClient.updateWhatsAppConnection(previous.id, {
+            name: previous.name,
+            provider: previous.provider,
+            config: previous.config ?? {},
+            isCopilot: false,
+          });
+        }
+      }
+      await apiClient.updateWhatsAppConnection(conn.id, {
+        name: conn.name,
+        provider: conn.provider,
+        config: conn.config ?? {},
+        isCopilot: next,
+      });
+      toast.success(
+        next
+          ? `"${conn.name}" agora é o número do Copiloto IA`
+          : `Copiloto desativado em "${conn.name}"`
+      );
+      await load();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao atualizar o Copiloto IA');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  return (
+    <div className="p-4 rounded-lg border border-border">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <Bot size={16} className="text-primary" />
+            <h4 className="font-medium text-foreground">Copiloto IA no WhatsApp</h4>
+            {aiEnabled && (
+              <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                IA ativa
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Escolha uma conexão WhatsApp como número do Copiloto IA. Mensagens enviadas a esse
+            número são interpretadas pela IA — ela consulta suas tarefas e negócios e propõe ações
+            (a escrita só acontece após você confirmar). Apenas um número por conta.
+          </p>
+        </div>
+      </div>
+
+      {aiLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : !aiEnabled ? (
+        <div className="flex items-start gap-2 bg-muted border border-border rounded-lg p-3">
+          <Sparkles size={16} className="text-primary mt-0.5 shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            Configure um provedor de IA (OpenAI ou Anthropic) para habilitar o Copiloto. Enquanto a
+            IA não estiver configurada, o número do copiloto fica indisponível.
+          </p>
+        </div>
+      ) : loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : connections.length === 0 ? (
+        <div className="p-4 bg-muted rounded-lg text-center">
+          <p className="text-sm text-muted-foreground">
+            Nenhuma conexão WhatsApp configurada. Crie uma conexão acima para poder designar o
+            número do Copiloto IA.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {connections.map((conn) => (
+            <div
+              key={conn.id}
+              className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border bg-card"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{conn.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {conn.isCopilot ? 'Respondendo como Copiloto IA' : 'Conexão normal de mensagens'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {savingId === conn.id && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+                <Switch
+                  checked={!!conn.isCopilot}
+                  disabled={!isAdmin || savingId !== null}
+                  onCheckedChange={(v) => handleToggle(conn, v)}
+                  aria-label={`Usar "${conn.name}" como número do Copiloto IA`}
+                />
+              </div>
+            </div>
+          ))}
+          {isAdmin ? (
+            <p className="text-xs text-muted-foreground">
+              Dica: use um número dedicado ao Copiloto. Só usuários com o próprio número cadastrado
+              no perfil conseguem comandar a IA por ele.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Apenas administradores podem designar o número do Copiloto IA. Fale com um
+              administrador da conta para ativar ou trocar esse número.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function IntegrationsTab() {
   const navigate = useNavigate();
   const {
@@ -646,6 +821,9 @@ export function IntegrationsTab() {
           )}
         </div>
       </div>
+
+      {/* Copiloto IA no WhatsApp (req 25) — gated por useAIStatus */}
+      <WhatsAppCopilotSection />
 
       {/* Email Service */}
       <div className="p-4 rounded-lg border border-gray-300">

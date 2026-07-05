@@ -51,6 +51,9 @@ import { CelebrationModal } from '../components/deals/CelebrationModal';
 import { ScheduledDealsSection } from '../components/deals/ScheduledDealsSection';
 import { ProposalsSection } from '../components/deals/ProposalsSection';
 import { AttachmentsTab } from '../components/attachments/AttachmentsTab';
+import { MeetingsSection } from '../components/deals/MeetingsSection';
+import { WhatsAppSendPanel } from '../components/lead/WhatsAppSendPanel';
+import { useAIStatus } from '../hooks/useAIStatus';
 import { NextActionCard } from '../components/NextActionCard';
 import { AIDraftDialog } from '../components/ai/AIDraftDialog';
 import { AuditTimeline } from '../components/AuditTimeline';
@@ -182,6 +185,9 @@ export function DealDetail() {
 
   // Nomes dos níveis de qualificação da config do tenant (req 1).
   const { data: qualConfig } = useQualificationConfig();
+
+  // Gating gracioso da IA (req 26): a aba "Reuniões" só aparece com IA configurada.
+  const { enabled: aiEnabled } = useAIStatus();
 
   // Flags do tenant (celebração opt-out; multi-vendas opt-in) — reqs 4 e 11.
   const { data: salesFlags } = useQuery({
@@ -610,6 +616,9 @@ export function DealDetail() {
               <TabsList className="flex-wrap h-auto justify-start gap-1 mb-4">
                 <TabsTrigger value="historico">Histórico</TabsTrigger>
                 <TabsTrigger value="email">E-mail</TabsTrigger>
+                <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+                {/* Reuniões só quando a IA está configurada (gating gracioso, req 26) */}
+                {aiEnabled && <TabsTrigger value="reunioes">Reuniões</TabsTrigger>}
                 <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
                 <TabsTrigger value="produtos">Produtos</TabsTrigger>
                 <TabsTrigger value="arquivos">Arquivos</TabsTrigger>
@@ -811,6 +820,27 @@ export function DealDetail() {
                   </div>
                 </div>
               </TabsContent>
+
+              {/* Aba WhatsApp (req 23) — envia mensagem vinculada à timeline do deal.
+                  O painel do F1 resolve conexão/fallback wa.me; passamos o telefone do lead. */}
+              <TabsContent value="whatsapp">
+                <div className="bg-card rounded-lg shadow-sm border border-default">
+                  <WhatsAppSendPanel
+                    dealId={deal.id}
+                    leadId={deal.leadId || undefined}
+                    phone={deal.lead?.phone || deal.company?.phone || undefined}
+                    name={deal.lead?.name || deal.company?.name || deal.name}
+                    onSent={fetchInteractions}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Aba Reuniões (req 26) — só montada com IA configurada (aiEnabled) */}
+              {aiEnabled && (
+                <TabsContent value="reunioes">
+                  <MeetingsSection dealId={deal.id} />
+                </TabsContent>
+              )}
 
               {/* Aba Tarefas (req 29, P1) */}
               <TabsContent value="tarefas">

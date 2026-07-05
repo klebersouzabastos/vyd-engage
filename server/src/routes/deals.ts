@@ -1,9 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
 import { dealService } from '../services/dealService.js';
 import { forecastService } from '../services/forecastService.js';
 import { getDealNextAction, getActionSummary } from '../services/nextActionService.js';
 import { dealScoringService } from '../services/dealScoringService.js';
+import { meetingService } from '../services/meetingService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { aiLimiter } from '../middleware/rateLimit.js';
@@ -15,6 +17,27 @@ import { createAuditLog } from '../utils/auditLogger.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { approvalService } from '../services/approvalService.js';
 import { proposalService } from '../services/proposalService.js';
+
+// IA de reuniões (Upgrade RD P3, req 26): upload de áudio em memória (multipart,
+// campo "audio"). Limite de 25 MB coerente com os anexos (P2). O áudio, quando
+// presente, é transcrito (Whisper) e persistido como Attachment(source=MEETING).
+const MEETING_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
+const meetingUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MEETING_AUDIO_MAX_BYTES },
+});
+function handleMeetingAudioUpload(req: Request, res: Response, next: NextFunction) {
+  const mw = meetingUpload.single('audio');
+  mw(req, res, (err: unknown) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return next(createError('Áudio excede o tamanho máximo de 25 MB.', 413, 'FILE_TOO_LARGE'));
+      }
+      return next(createError('Falha no upload do áudio.', 400, 'UPLOAD_FAILED'));
+    }
+    next();
+  });
+}
 
 const router = Router();
 
@@ -290,6 +313,56 @@ async function enforceDealOwnership(req: Request, res: Response, next: NextFunct
     next(err);
   }
 }
+
+// ── IA de reuniões — detalhe por id da interação (req 26) ──
+// GET /api/deals/meetings/:iid — DEVE ficar ANTES de `router.use('/:id', …)`, senão
+// o prefixo `/:id` capturaria `/meetings/...` (id="meetings") e rodaria o guard de
+// posse com um id inválido. Escopado por tenant no service (não expõe outros tenants).
+//
+// ATENÇÃO (visibilidade P1): por estar ANTES de `router.use('/:id', enforceDealOwnership)`,
+// esta rota NÃO herda o guard de posse. Sem o escopo abaixo, um analista USER
+// (deals=PROPRIA) que adivinhe o UUID de uma Interaction MEETING leria transcrição,
+// valor e notas de deal de OUTRO dono no mesmo tenant. Por isso aplicamos aqui, à mão,
+// o MESMO escopo de visibilidade de `enforceDealOwnership`, ancorado no dealId da reunião.
+router.get('/meetings/:iid', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+    const meeting = await meetingService.getMeeting(req.user.tenantId, req.params.iid);
+
+    // Visibilidade viva (req 14): resolve o escopo de "responsável" de deals e confirma
+    // que o dono da negociação da reunião está DENTRO do escopo do usuário.
+    //   - GERAL   → scope=undefined → sem filtro por dono (manager/admin de hoje).
+    //   - PROPRIA → scope=string (o próprio userId).
+    //   - EQUIPE  → scope={ in: [...] }.
+    // O padrão `assignedTo: scope` cobre string e { in }; undefined omite o filtro.
+    const scope = await visibilityScope(
+      {
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      },
+      'deals'
+    );
+    const owned = await prisma.deal.findFirst({
+      where: {
+        id: meeting.dealId,
+        tenantId: req.user.tenantId,
+        deletedAt: null,
+        ...(scope === undefined ? {} : { assignedTo: scope }),
+      },
+      select: { id: true },
+    });
+    // Fora do escopo → 404 (não vaza a existência da reunião nem do deal).
+    if (!owned) return next(createError('Reunião não encontrada', 404, 'MEETING_NOT_FOUND'));
+
+    res.json({ status: 200, data: meeting });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.use('/:id', enforceDealOwnership);
 
 // GET /api/deals/:id/audit - Get audit trail for a deal
@@ -435,6 +508,124 @@ router.get('/:id/ai-score', aiLimiter, async (req, res, next) => {
 
     res.json({ status: 200, data: result });
   } catch (error) {
+    next(error);
+  }
+});
+
+// ── IA de reuniões no deal (Upgrade RD P3, req 26) ──
+// Estas rotas herdam `enforceDealOwnership` (posse/visibilidade P1) por estarem sob
+// `/:id`. Gating: sem IA → 503 AI_NOT_CONFIGURED (nunca 500). Aceita ÁUDIO (multipart,
+// campo "audio", exige Whisper/OpenAI) OU transcrição colada ({ transcript }).
+
+// POST /api/deals/:id/meetings — cria reunião (áudio OU transcrição colada) → resumo
+// + tarefas/campos sugeridos.
+// Teto de caracteres da transcrição colada: evita prompt arbitrariamente grande ao LLM
+// (coerente com o limite de 25 MB do áudio).
+const MEETING_TRANSCRIPT_MAX_CHARS = 100000;
+const createMeetingSchema = z.object({
+  transcript: z.string().max(MEETING_TRANSCRIPT_MAX_CHARS).optional(),
+});
+router.post('/:id/meetings', aiLimiter, handleMeetingAudioUpload, async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+
+    // Confirma que o deal existe/pertence ao tenant (o guard de posse já passou).
+    const deal = await prisma.deal.findFirst({
+      where: { id: req.params.id, tenantId: req.user.tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!deal) return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
+
+    const parsed = createMeetingSchema.parse({ transcript: req.body?.transcript });
+
+    const file = (req as unknown as { file?: { originalname: string; mimetype: string; buffer: Buffer } })
+      .file;
+    const transcript = parsed.transcript;
+
+    if (!file && !transcript?.trim()) {
+      return next(
+        createError(
+          'Envie um áudio da reunião (campo "audio") ou cole a transcrição.',
+          400,
+          'MEETING_INPUT_REQUIRED'
+        )
+      );
+    }
+
+    const meeting = await meetingService.createMeeting(req.user.tenantId, req.params.id, {
+      audio: file
+        ? { buffer: file.buffer, mimeType: file.mimetype, filename: file.originalname }
+        : null,
+      transcript: transcript ?? null,
+      userId: req.user.userId,
+    });
+    res.status(201).json({ status: 201, data: meeting });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/meetings — lista as reuniões (Interaction MEETING) do deal.
+router.get('/:id/meetings', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+    const meetings = await meetingService.listMeetings(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: meetings });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/meetings/:iid/apply — aplica só as sugestões ACEITAS.
+const applyMeetingSchema = z.object({
+  taskIds: z.array(z.string()).default([]),
+  fieldUpdates: z
+    .object({
+      value: z.string().optional(),
+      stage: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .default({}),
+});
+router.post('/:id/meetings/:iid/apply', aiLimiter, async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+    const body = applyMeetingSchema.parse(req.body ?? {});
+
+    // Capability por-entidade (req 13): o apply muta o deal e/ou cria tarefas — precisa
+    // dos MESMOS gates de PUT /deals/:id (deals.edit) e POST /tasks (tasks.create).
+    // Um perfil custom com deals.edit=false / tasks.create=false não pode contornar via apply.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (body.taskIds.length > 0 && !eff.entities.tasks.create) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+    if (Object.keys(body.fieldUpdates).length > 0 && !eff.entities.deals.edit) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
+    const result = await meetingService.applyMeeting(
+      req.user.tenantId,
+      req.params.id,
+      req.params.iid,
+      body,
+      req.user.userId
+    );
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

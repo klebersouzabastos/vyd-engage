@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "VYD Engage — Copiloto no WhatsApp",
+  "version": "1.0.0",
+  "description": "Reconhece o número da conversa aberta no WhatsApp Web e mostra o lead, a empresa, os negócios e as últimas interações do VYD Engage, com ações rápidas.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "VYD Engage — Copiloto",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://web.whatsapp.com/*", "https://api.vydengage.com/*"],
+  "optional_host_permissions": ["https://*.vydengage.com/*", "https://*.vydhub.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

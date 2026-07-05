@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { InteractionType, InteractionDirection, ScoreEvent } from '@prisma/client';
+import { InteractionType, InteractionDirection, ScoreEvent, DealStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { scoringService } from './scoringService.js';
@@ -18,6 +18,15 @@ export interface SendMessageData {
   templateParams?: string[];
   mediaUrl?: string;
   leadId?: string;
+  // Upgrade RD P3 (req 23): vincula a mensagem à timeline do deal/empresa (além do
+  // lead). A Interaction WHATSAPP OUTBOUND aponta para leadId/dealId/companyId
+  // conforme informados, aparecendo no histórico da entidade correspondente.
+  dealId?: string;
+  companyId?: string;
+  // Upgrade RD P3 (lacuna #4): remetente da mensagem. Gravado na Interaction
+  // OUTBOUND (userId) para que a mensagem enviada apareça na timeline do
+  // deal/empresa para analistas com visibilidade PROPRIA (que filtra por userId).
+  userId?: string;
 }
 
 export interface MessageStatus {
@@ -38,6 +47,38 @@ export interface WhatsAppTemplate {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   metaTemplateId?: string;
   createdAt: string;
+}
+
+// ========================
+// Phone matching (réplica da semântica do copilotService)
+// ========================
+
+/** Mantém apenas dígitos de um telefone. */
+function digitsOnly(raw: string): string {
+  return (raw || '').replace(/\D+/g, '');
+}
+
+/**
+ * Normaliza um telefone para comparação: retorna o número em dígitos e a variante
+ * sem o prefixo de DDI 55 (quando presente). Dois números casam se os dígitos
+ * COMPLETOS batem, ou se batem depois de remover o '55' inicial de UM dos lados —
+ * assim toleramos apenas a presença/ausência do DDI brasileiro, sem colidir por
+ * sufixo (o bug: 8 dígitos finais iguais em DDDs diferentes casaria o lead errado).
+ */
+function phoneVariants(raw: string): string[] {
+  const d = digitsOnly(raw);
+  if (!d) return [];
+  const variants = new Set<string>([d]);
+  if (d.startsWith('55') && d.length > 2) variants.add(d.slice(2));
+  return [...variants];
+}
+
+/** Dois telefones casam se compartilham alguma variante normalizada (com/sem DDI 55). */
+function phonesMatch(a: string, b: string): boolean {
+  const va = phoneVariants(a);
+  const vb = phoneVariants(b);
+  if (va.length === 0 || vb.length === 0) return false;
+  return va.some((x) => vb.includes(x));
 }
 
 // ========================
@@ -121,10 +162,17 @@ export const whatsappMessagingService = {
       );
     }
 
+    // Meta Graph espera o destino apenas em dígitos (E.164 sem símbolos). O
+    // frontend (fallback wa.me) já sanitiza, mas o caminho CONNECTED recebia
+    // `data.to` como veio (podia estar mascarado, ex.: "(11) 99999-0000"). Aqui
+    // normalizamos para dígitos antes de montar o payload. Se ficar vazio,
+    // mantemos o comportamento de erro atual (a própria Meta API rejeita).
+    const to = (data.to || '').replace(/\D+/g, '');
+
     // Build message payload
     const messagePayload: any = {
       messaging_product: 'whatsapp',
-      to: data.to,
+      to,
     };
 
     switch (data.type) {
@@ -187,20 +235,62 @@ export const whatsappMessagingService = {
       data: { messagesSent: { increment: 1 } },
     });
 
-    // Create interaction record
+    // Create interaction record. Vincula a leadId/dealId/companyId conforme
+    // informados (req 23) — a mensagem passa a aparecer na timeline do deal/empresa,
+    // não só do lead. Só cria a Interaction se houver ao menos um vínculo. Cada
+    // vínculo é validado contra o tenant (não referencia lead/deal/empresa de outro tenant).
+    let leadId: string | null = null;
     if (data.leadId) {
+      const lead = await prisma.lead.findFirst({
+        where: { id: data.leadId, tenantId },
+        select: { id: true },
+      });
+      leadId = lead?.id ?? null;
+    }
+    let dealId: string | null = null;
+    if (data.dealId) {
+      const deal = await prisma.deal.findFirst({
+        where: { id: data.dealId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      dealId = deal?.id ?? null;
+    }
+    let companyId: string | null = null;
+    if (data.companyId) {
+      const company = await prisma.company.findFirst({
+        where: { id: data.companyId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      companyId = company?.id ?? null;
+    }
+
+    if (leadId || dealId || companyId) {
+      // Para envios por TEMPLATE, o corpo real (parâmetros) não vem em `data.content`
+      // (que fica vazio). Compomos um `content` legível a partir do nome do template +
+      // parâmetros para que a mensagem enviada apareça de fato na timeline do
+      // deal/empresa — não só o subject "Template: <nome>".
+      const content =
+        data.type === 'template'
+          ? data.templateParams?.length
+            ? `Template ${data.templateName}: ${data.templateParams.join(', ')}`
+            : `Template ${data.templateName}`
+          : data.content;
+
       await prisma.interaction.create({
         data: {
           tenantId,
-          leadId: data.leadId,
+          leadId,
+          dealId,
+          companyId,
+          userId: data.userId ?? null,
           type: InteractionType.WHATSAPP,
           direction: InteractionDirection.OUTBOUND,
           subject: data.type === 'template' ? `Template: ${data.templateName}` : undefined,
-          content: data.content,
+          content,
           metadata: {
             messageId,
             connectionId: data.connectionId,
-            to: data.to,
+            to,
             type: data.type,
           },
         },
@@ -210,7 +300,7 @@ export const whatsappMessagingService = {
     return {
       messageId,
       status: 'sent',
-      to: data.to,
+      to,
     };
   },
 
@@ -300,16 +390,56 @@ export const whatsappMessagingService = {
       data: { messagesReceived: { increment: 1 } },
     });
 
-    // Find lead by phone number
-    const lead = await prisma.lead.findFirst({
-      where: { tenantId, phone: { contains: from.slice(-8) } }, // Match last 8 digits
+    // Resolve o lead da mensagem RECEBIDA por telefone.
+    //
+    // Lacuna #1/#9: o lead NÃO pode ser resolvido só por SUFIXO de 8 dígitos
+    // (`phone: { contains: from.slice(-8) }`): (a) casa o lead ERRADO quando dois
+    // leads do tenant terminam nos mesmos 8 dígitos (DDDs diferentes), e (b) não
+    // filtrava `deletedAt: null`, podendo casar lead na Lixeira. Correção: buscar
+    // CANDIDATOS por sufixo curto COM `deletedAt: null` e filtrar por
+    // `phonesMatch(lead.phone, from)` (dígitos COMPLETOS, tolerando só o DDI 55).
+    // `phonesMatch` já normaliza máscaras via `digitsOnly`, então isto MELHORA o
+    // matching (não regride). Só gravamos o leadId quando houver match completo;
+    // sem candidato que dê match, a Interaction é gravada SEM lead.
+    const candidateLeads = await prisma.lead.findMany({
+      where: { tenantId, deletedAt: null, phone: { contains: from.slice(-8) } },
     });
+    const lead = candidateLeads.find((c) => phonesMatch(c.phone || '', from)) ?? null;
+
+    // Upgrade RD P3 (req 23): mensagens RECEBIDAS também precisam aparecer na
+    // timeline do deal (a timeline do deal é buscada por dealId). Heurística
+    // conservadora: se o lead resolvido tem EXATAMENTE UM deal ABERTO (status
+    // != WON/LOST, deletedAt null) no tenant, vinculamos a Interaction INBOUND a
+    // esse deal (e à empresa do lead, quando houver). Com 0 ou >1 deals abertos
+    // mantemos só o leadId — não adivinhamos qual deal é o "certo". Como `lead` já
+    // é um match por dígitos COMPLETOS, a inferência de deal/empresa não corre o
+    // risco de poluir a timeline do deal errado.
+    let dealId: string | null = null;
+    let companyId: string | null = null;
+    if (lead) {
+      const openDeals = await prisma.deal.findMany({
+        where: {
+          tenantId,
+          leadId: lead.id,
+          deletedAt: null,
+          status: { notIn: [DealStatus.WON, DealStatus.LOST] },
+        },
+        select: { id: true },
+        take: 2, // só precisamos distinguir "exatamente 1" de "vários"
+      });
+      if (openDeals.length === 1) {
+        dealId = openDeals[0].id;
+        companyId = lead.companyId ?? null;
+      }
+    }
 
     // Create interaction
     const interaction = await prisma.interaction.create({
       data: {
         tenantId,
         leadId: lead?.id || null,
+        dealId,
+        companyId,
         type: InteractionType.WHATSAPP,
         direction: InteractionDirection.INBOUND,
         content,
@@ -343,20 +473,18 @@ export const whatsappMessagingService = {
     const messageId = status.id;
     const statusValue = status.status; // sent, delivered, read, failed
 
-    // Find interaction with this messageId
-    const interactions = await prisma.interaction.findMany({
+    // Localiza a Interaction OUTBOUND diretamente pelo messageId via path de JSON do
+    // Postgres (`metadata.messageId`, o mesmo caminho gravado em sendMessage), em vez
+    // de varrer as 100 interações mais recentes em memória — sob volume alto o scan
+    // por janela poderia não achar a interação certa (lacuna #5). Esse é exatamente o
+    // messageId retornado pela Meta Graph e persistido no metadata da OUTBOUND.
+    const interaction = await prisma.interaction.findFirst({
       where: {
         tenantId,
         type: InteractionType.WHATSAPP,
         direction: InteractionDirection.OUTBOUND,
+        metadata: { path: ['messageId'], equals: messageId },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-
-    const interaction = interactions.find((i) => {
-      const meta = i.metadata as any;
-      return meta?.messageId === messageId;
     });
 
     if (interaction) {

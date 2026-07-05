@@ -5,6 +5,10 @@ import { whatsappMessagingService } from '../services/whatsappMessagingService.j
 import { emailMessagingService } from '../services/emailMessagingService.js';
 import { recordBounceByEmail } from '../services/campaignService.js';
 import { logger } from '../utils/logger.js';
+import prisma from '../config/database.js';
+import { safeDecryptConfig } from '../utils/encryption.js';
+import { copilotService } from '../services/copilotService.js';
+import { isAIEnabled } from '../services/aiProvider.js';
 
 /**
  * Extract bounced recipient emails from a provider webhook payload and record a
@@ -37,6 +41,37 @@ async function recordCampaignBounces(provider: string, payload: any): Promise<vo
 }
 
 const router = Router();
+
+/**
+ * LACUNA #6: dedup de redelivery do Meta por `message.id`. O Meta reentrega o mesmo
+ * webhook (mesmo `message.id`) numa janela curta quando não recebe 200 a tempo; sem
+ * guarda, o copiloto reprocessa a mensagem (proposta duplicada / reprocesso). Guarda
+ * in-memory leve — suficiente para a janela curta de redelivery (BAIXA). Cap de
+ * tamanho por FIFO: ao atingir o limite, descarta os `message.id`s mais antigos.
+ * Não afeta o fluxo genérico de inbound (só gate do roteamento ao copiloto).
+ */
+const COPILOT_SEEN_MESSAGE_CAP = 5000;
+const copilotSeenMessageIds = new Set<string>();
+
+// Apenas LÊ se o message.id já foi processado com sucesso — NÃO marca. A marcação
+// acontece só APÓS handleCopilotMessage retornar com sucesso (ver markCopilotMessageSeen).
+// Assim, se o roteamento ao copiloto lançar, o id NÃO fica marcado e uma reentrega
+// legítima do Meta é reprocessada (LACUNA #3).
+function copilotMessageAlreadySeen(messageId: string): boolean {
+  return copilotSeenMessageIds.has(messageId);
+}
+
+// Marca o message.id como processado com sucesso. Chamar SOMENTE depois do await
+// bem-sucedido de handleCopilotMessage. Cap FIFO: ao atingir o limite, descarta os
+// message.id mais antigos (Set preserva ordem de inserção).
+function markCopilotMessageSeen(messageId: string): void {
+  copilotSeenMessageIds.add(messageId);
+  while (copilotSeenMessageIds.size > COPILOT_SEEN_MESSAGE_CAP) {
+    const oldest = copilotSeenMessageIds.values().next().value;
+    if (oldest === undefined) break;
+    copilotSeenMessageIds.delete(oldest);
+  }
+}
 
 // Validate Mercado Pago webhook signature
 function validateMercadoPagoSignature(req: Request): boolean {
@@ -128,9 +163,175 @@ router.get('/whatsapp', (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Roteamento do Copiloto IA (Upgrade RD P3, req 25).
+ *
+ * Para conexões marcadas `isCopilot`, mensagens de TEXTO recebidas são roteadas ao
+ * `copilotService` em vez de apenas logadas pelo fluxo genérico. Retorna um payload
+ * FILTRADO para o `whatsappMessagingService.processWebhook` seguir seu fluxo normal
+ * sem duplicar as mensagens já tratadas pelo copiloto (o copiloto grava sua própria
+ * Interaction). O filtro contém: os `changes` inteiros de conexões NÃO-copiloto e,
+ * para conexões copiloto, um change com `value.statuses` (preserva o tracking de
+ * status sent/delivered/read/failed das mensagens enviadas — LACUNA #10), com as
+ * `messages` INBOUND de tipo != 'text' (imagem/áudio/documento/vídeo), que o copiloto
+ * NÃO trata — assim o fluxo genérico registra a Interaction INBOUND delas e incrementa
+ * `messagesReceived` (LACUNA #2), e com os TEXTOS de remetente NÃO autorizado (não
+ * cadastrado como `User.whatsappNumber`), que o copiloto só responde "não autorizado"
+ * e NÃO loga — reencaminhados para o log passivo (Interaction INBOUND + `messagesReceived`),
+ * equiparando o número copiloto a qualquer outro (LACUNA #4). O sinal de remetente não
+ * autorizado é o retorno `handled === false` COM `reply != null` de `handleCopilotMessage`.
+ * As mensagens de TEXTO de remetentes CONHECIDOS, já tratadas (e logadas) pelo copiloto,
+ * são removidas do change reencaminhado (evita Interaction duplicada).
+ *
+ * Gating: sem `isAIEnabled()`, o roteamento é ignorado (o payload passa inteiro ao
+ * fluxo genérico) — nada quebra quando a IA não está configurada.
+ *
+ * Segurança (LACUNA #3): o copiloto dispara AÇÕES DE ESCRITA no CRM. Só roteamos ao
+ * copiloto quando `signatureVerified === true` (WHATSAPP_APP_SECRET presente E HMAC
+ * válido nesta requisição). Sem assinatura verificada, o payload passa INTEIRO ao
+ * fluxo genérico (log passivo de Interaction, baixo risco) e o copiloto é ignorado —
+ * evita que um atacante forje um POST "from" o número de um usuário e dispare escritas.
+ */
+async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): Promise<any> {
+  if (!signatureVerified || !isAIEnabled() || !payload?.entry) return payload;
+
+  // Cache de conexões CONNECTED por phone_number_id (decripta config uma vez).
+  const connections = await prisma.whatsAppConnection.findMany({
+    where: { status: 'CONNECTED' },
+    select: { id: true, tenantId: true, isCopilot: true, config: true },
+  });
+  const byPhoneId = new Map<string, { id: string; tenantId: string; isCopilot: boolean }>();
+  for (const c of connections) {
+    // LACUNA #3: o decrypt/parse da config de UMA conexão pode lançar (config
+    // corrompida/adulterada). Isolar por conexão para que uma config quebrada não
+    // derrube o roteamento do lote inteiro (inclusive inbound de outros tenants no
+    // mesmo webhook). Se falhar: pular esta conexão (warn com id/tenant) e seguir.
+    try {
+      const cfg = safeDecryptConfig(c.config) as any;
+      if (cfg?.phoneNumberId) {
+        byPhoneId.set(cfg.phoneNumberId, {
+          id: c.id,
+          tenantId: c.tenantId,
+          isCopilot: c.isCopilot,
+        });
+      }
+    } catch (err) {
+      logger.warn('Copilot: falha ao decriptar config de conexão WhatsApp — conexão ignorada', {
+        connectionId: c.id,
+        tenantId: c.tenantId,
+        err: (err as any)?.message,
+      });
+      continue;
+    }
+  }
+
+  const outEntries: any[] = [];
+  for (const entry of payload.entry || []) {
+    const outChanges: any[] = [];
+    for (const change of entry.changes || []) {
+      const phoneNumberId = change?.value?.metadata?.phone_number_id;
+      const conn = phoneNumberId ? byPhoneId.get(phoneNumberId) : undefined;
+
+      // Conexão não-copiloto (ou desconhecida) → segue o fluxo genérico.
+      if (!conn || !conn.isCopilot) {
+        outChanges.push(change);
+        continue;
+      }
+
+      // Conexão copiloto: roteia mensagens de TEXTO ao copiloto e separa as
+      // mensagens INBOUND de tipo != 'text' (que o copiloto NÃO trata) para
+      // reencaminhar ao fluxo genérico (LACUNA #2).
+      const messages = change?.value?.messages || [];
+      const forwardMessages: any[] = [];
+      for (const message of messages) {
+        // LACUNA #2: mensagens INBOUND não-texto (imagem/áudio/documento/vídeo) o
+        // copiloto não trata. Reencaminha ao fluxo genérico para que o
+        // processWebhook registre a Interaction INBOUND ('[Imagem recebida]' etc.)
+        // e incremente `messagesReceived`.
+        if (message?.type !== 'text') {
+          forwardMessages.push(message);
+          continue;
+        }
+        // LACUNA #6: pula redelivery do Meta (mesmo message.id já PROCESSADO COM
+        // SUCESSO) para não reprocessar a mensagem no copiloto. Só aplica ao
+        // roteamento do copiloto; o fluxo genérico de inbound é preservado (statuses
+        // seguem intactos). LACUNA #3: aqui apenas LEMOS o Set — a marcação ocorre só
+        // após o await bem-sucedido de handleCopilotMessage. Se o roteamento lançar, o
+        // id NÃO é marcado, para que uma reentrega legítima do Meta seja reprocessada.
+        const messageId = message?.id;
+        const trackMessageId = typeof messageId === 'string' && messageId.length > 0;
+        if (trackMessageId && copilotMessageAlreadySeen(messageId)) {
+          logger.info('Copilot: message.id já processado (redelivery do Meta) — ignorado', {
+            messageId,
+            tenantId: conn.tenantId,
+          });
+          continue;
+        }
+        const from = message.from;
+        const text = message.text?.body || '';
+        try {
+          const result = await copilotService.handleCopilotMessage(conn.tenantId, conn, from, text);
+          // LACUNA #3: só marca o message.id como visto APÓS o handleCopilotMessage
+          // retornar com sucesso. Se lançar (catch abaixo), o id fica NÃO marcado e a
+          // reentrega do Meta é reprocessada em vez de silenciosamente descartada.
+          if (trackMessageId) {
+            markCopilotMessageSeen(messageId);
+          }
+          // LACUNA #4: preservar o LOG PASSIVO de inbound também no número do copiloto
+          // para textos de remetente NÃO autorizado. O copiloto só responde "não
+          // autorizado" a números desconhecidos (não cadastrados como
+          // User.whatsappNumber) e NÃO grava Interaction para eles — divergindo de
+          // qualquer número não-copiloto (onde toda mensagem recebida é logada). Como o
+          // webhook não resolve o usuário nesta camada, delegamos a decisão ao retorno
+          // de `handleCopilotMessage`: um remetente NÃO reconhecido é o ÚNICO caso que
+          // devolve `handled === false` COM `reply != null` (a resposta de "não
+          // autorizado"). Nesse caso, reencaminhamos o texto ao fluxo genérico SOMENTE
+          // para o registro passivo (Interaction INBOUND + `messagesReceived`). Textos
+          // de remetentes CONHECIDOS (handled === true, ou os casos handled === false
+          // com reply === null: IA não configurada / modelo indisponível) NÃO são
+          // reencaminhados — evita Interaction duplicada com a que o copiloto grava.
+          if (result && result.handled === false && result.reply != null) {
+            forwardMessages.push(message);
+          }
+        } catch (err) {
+          logger.error('Copilot: erro ao rotear mensagem', err as any);
+        }
+      }
+
+      // Reencaminha ao fluxo genérico um change com:
+      //  - as `messages` INBOUND de tipo != 'text' (LACUNA #2) — que o copiloto não
+      //    trata, para que o processWebhook registre a Interaction INBOUND delas;
+      //  - os textos de remetente NÃO autorizado (LACUNA #4) — para o log passivo;
+      //  - os `statuses` (sent/delivered/read/failed) das mensagens ENVIADAS pela
+      //    conexão-copiloto (LACUNA #10) — para manter o tracking de status.
+      // As mensagens de TEXTO de remetentes conhecidos, já tratadas pelo copiloto, são
+      // OMITIDAS (evita Interaction duplicada). Só reencaminha quando há algo a processar.
+      const statuses = change?.value?.statuses || [];
+      const hasStatuses = Array.isArray(statuses) && statuses.length > 0;
+      if (forwardMessages.length > 0 || hasStatuses) {
+        const { messages: _omitMessages, ...valueWithoutMessages } = change.value;
+        const filteredValue: any = { ...valueWithoutMessages };
+        if (forwardMessages.length > 0) {
+          filteredValue.messages = forwardMessages;
+        }
+        outChanges.push({ ...change, value: filteredValue });
+      }
+    }
+    if (outChanges.length > 0) {
+      outEntries.push({ ...entry, changes: outChanges });
+    }
+  }
+
+  return { ...payload, entry: outEntries };
+}
+
 // POST /api/webhooks/whatsapp - Incoming WhatsApp messages & status updates
 router.post('/whatsapp', async (req: Request, res: Response) => {
   try {
+    // Rastreia se a assinatura foi VERIFICADA nesta requisição (appSecret presente
+    // E HMAC válido). Gate do caminho de ESCRITA (copiloto) — ver LACUNA #3.
+    let signatureVerified = false;
+
     // Validate signature if secret is configured
     const appSecret = process.env.WHATSAPP_APP_SECRET;
     if (appSecret) {
@@ -141,23 +342,45 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
         return;
       }
 
+      // HMAC computado sobre o corpo CRU (req.rawBody, capturado no verify do
+      // express.json em index.ts) — os bytes EXATOS recebidos do Meta, senão o
+      // HMAC não bate e payloads legítimos são rejeitados. Espelha o ZapSign.
+      const raw =
+        (req as Request & { rawBody?: string }).rawBody ?? JSON.stringify(req.body ?? {});
       const expectedSignature =
-        'sha256=' +
-        crypto.createHmac('sha256', appSecret).update(JSON.stringify(req.body)).digest('hex');
+        'sha256=' + crypto.createHmac('sha256', appSecret).update(raw).digest('hex');
 
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+      // Guarda de comprimento antes de timingSafeEqual: um header forjado de
+      // tamanho diferente lançaria RangeError (cairia no catch → 200). Espelha o
+      // cuidado de validateMercadoPagoSignature.
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expectedSignature);
+      if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
         logger.warn('WhatsApp webhook: invalid signature');
         res.status(401).json({ error: 'Invalid signature' });
         return;
       }
+
+      // Assinatura verificada com sucesso → caminho de escrita (copiloto) liberado.
+      signatureVerified = true;
+    } else {
+      // LACUNA #3: sem WHATSAPP_APP_SECRET não há como autenticar o remetente. O log
+      // passivo de inbound (Interaction) segue como hoje (baixo risco), mas o copiloto
+      // (AÇÕES DE ESCRITA no CRM) NÃO é roteado — evita escritas forjadas por atacante.
+      logger.warn('WhatsApp webhook: copiloto exige WHATSAPP_APP_SECRET — roteamento ao copiloto ignorado');
     }
 
     logger.info('WhatsApp webhook received', { object: req.body?.object });
 
-    // Process webhook asynchronously - always return 200 quickly
-    whatsappMessagingService.processWebhook(req.body).catch((error) => {
-      logger.error('Error processing WhatsApp webhook async', error);
-    });
+    // Copiloto IA (req 25): roteia mensagens de conexões `isCopilot` e devolve um
+    // payload filtrado (sem os changes já tratados pelo copiloto) ao fluxo genérico.
+    // Assíncrono — sempre retorna 200 rápido. O roteamento ao copiloto só ocorre
+    // quando a assinatura foi verificada (LACUNA #3); senão o payload passa inteiro.
+    routeCopilotAndFilter(req.body, signatureVerified)
+      .then((filtered) => whatsappMessagingService.processWebhook(filtered))
+      .catch((error) => {
+        logger.error('Error processing WhatsApp webhook async', error);
+      });
 
     res.status(200).json({ received: true });
   } catch (error) {

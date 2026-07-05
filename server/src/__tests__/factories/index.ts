@@ -43,6 +43,7 @@ export const userFactory = Factory.define<User>(() => ({
   commercialFunction: null,
   teamId: null,
   permissionProfileId: null,
+  whatsappNumber: null,
   tenantId: faker.string.uuid(),
   emailVerified: true,
   emailVerifiedAt: new Date(),

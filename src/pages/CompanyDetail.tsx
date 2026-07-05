@@ -11,6 +11,7 @@ import { ClientStatusBadge } from '../components/companies/CompanyBadges';
 import { ContractCard } from '../components/companies/ContractCard';
 import { AttachmentsTab } from '../components/attachments/AttachmentsTab';
 import { CallButton } from '../components/phone/CallButton';
+import { WhatsAppSendPanel } from '../components/lead/WhatsAppSendPanel';
 import { Company, CompanySize } from '../types';
 import { apiClient } from '../services/api/client';
 import {
@@ -475,6 +476,17 @@ export function CompanyDetail() {
                     phone={company.phone}
                     companyId={company.id}
                     onLogged={fetchCompany}
+                  />
+                </div>
+              )}
+              {/* WhatsApp da empresa (Upgrade RD P3, req 23) — vincula à timeline da empresa. */}
+              {company.phone && (
+                <div className="col-span-full border border-default rounded-lg mt-2">
+                  <WhatsAppSendPanel
+                    companyId={company.id}
+                    phone={company.phone}
+                    name={company.name}
+                    onSent={fetchCompany}
                   />
                 </div>
               )}

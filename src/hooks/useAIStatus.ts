@@ -23,6 +23,13 @@ export function useAIStatus() {
   return {
     /** True only once the status resolved AND AI is enabled. */
     enabled: query.data?.enabled === true,
+    /**
+     * True quando há transcrição de áudio (Whisper/OpenAI) disponível. Default
+     * `false` — com provedor Anthropic-only o upload de áudio sempre falharia,
+     * então o modo "Áudio" fica oculto. Consumidores atuais (DealAIScore,
+     * AIChatPanel) usam só `enabled`; este campo é aditivo e não os afeta.
+     */
+    transcription: query.data?.transcription === true,
     /** True while the status call is still in flight. */
     loading: query.isLoading,
     /** True if the status endpoint itself failed. */

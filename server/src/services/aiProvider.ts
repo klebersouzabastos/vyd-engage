@@ -48,6 +48,22 @@ export function isAIEnabled(): boolean {
   return resolveProviderConfig() !== null;
 }
 
+/**
+ * Whether áudio transcription (Whisper) is available. Transcrição é exclusiva da
+ * OpenAI, então só retorna `true` quando há chave OpenAI: provedor configurado
+ * como `openai` (via resolveProviderConfig) OU `OPENAI_API_KEY` presente no
+ * ambiente. Com provedor Anthropic-only, o upload de áudio sempre falharia (503),
+ * então o frontend usa isto para ocultar/desabilitar o modo "Áudio" (gating
+ * gracioso do P3).
+ */
+export function isTranscriptionEnabled(): boolean {
+  const config = resolveProviderConfig();
+  if (config && config.provider === 'openai' && config.apiKey) {
+    return true;
+  }
+  return Boolean(process.env.OPENAI_API_KEY);
+}
+
 /** Resolve a Vercel AI SDK language model for the configured provider (Claude-first). */
 export function getModel(provider: string, apiKey: string, model?: string): LanguageModel | null {
   switch (provider) {

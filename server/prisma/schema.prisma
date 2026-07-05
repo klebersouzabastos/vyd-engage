@@ -74,6 +74,11 @@ model User {
   twoFactorEnabled Boolean @default(false)
   twoFactorSecret  String?
 
+  // Copiloto IA via WhatsApp (Upgrade RD P3) — número do usuário para o copiloto
+  // reconhecer quem comanda. Só números conhecidos (deste campo, no tenant) podem
+  // acionar o copiloto; desconhecidos são ignorados.
+  whatsappNumber String?
+
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -1029,6 +1034,11 @@ model WhatsAppConnection {
   provider WhatsAppProvider
   status   WhatsAppConnectionStatus @default(DISCONNECTED)
 
+  // Copiloto IA (Upgrade RD P3) — designa a conexão/número do copiloto: quando
+  // true, as mensagens recebidas por esta conexão são roteadas ao copiloto IA
+  // (gated: exige IA configurada) em vez de apenas logadas.
+  isCopilot Boolean @default(false)
+
   // Configuration (encrypted)
   config Json
 
@@ -1106,6 +1116,12 @@ model Interaction {
   deal         Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
   companyId    String?
   company      Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  // IA de reuniões (Upgrade RD P3) — áudio da reunião anexado a esta interação
+  // (type MEETING). FK opcional → Attachment (source=MEETING); SetNull para não
+  // apagar a interação/transcrição se o áudio for removido.
+  audioAttachmentId String?
+  audioAttachment   Attachment? @relation("InteractionAudio", fields: [audioAttachmentId], references: [id], onDelete: SetNull)
 
   // Import Pro — batch this record was created by (for history + rollback)
   importBatchId String?
@@ -2329,12 +2345,15 @@ model Attachment {
   storageKey      String // db: id do AttachmentBlob; s3: object key
   dealId          String? // vínculo opcional
   companyId       String?
-  source          String    @default("UPLOAD") // UPLOAD | PROPOSAL
+  source          String    @default("UPLOAD") // UPLOAD | PROPOSAL | MEETING (áudio de reunião, P3)
   uploadedById    String?
   deletedAt       DateTime? // soft-delete (integra Lixeira P1)
   createdAt       DateTime  @default(now())
 
   proposal Proposal? // 1:1 quando source=PROPOSAL
+
+  // IA de reuniões (P3) — interações cujo áudio é este anexo (source=MEETING).
+  audioInteractions Interaction[] @relation("InteractionAudio")
 
   @@index([tenantId, dealId])
   @@index([tenantId, companyId])

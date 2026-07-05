@@ -32,7 +32,7 @@ export interface PutAttachmentInput {
   buffer: Buffer;
   dealId?: string | null;
   companyId?: string | null;
-  source?: 'UPLOAD' | 'PROPOSAL';
+  source?: 'UPLOAD' | 'PROPOSAL' | 'MEETING';
   uploadedById?: string | null;
 }
 

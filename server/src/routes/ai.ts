@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { aiDraftService } from '../services/aiDraftService.js';
-import { isAIEnabled } from '../services/aiProvider.js';
+import { isAIEnabled, isTranscriptionEnabled } from '../services/aiProvider.js';
 
 const router = Router();
 
@@ -17,7 +17,10 @@ router.use(tenantScope);
 router.get('/status', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
-    res.json({ status: 200, data: { enabled: isAIEnabled() } });
+    res.json({
+      status: 200,
+      data: { enabled: isAIEnabled(), transcription: isTranscriptionEnabled() },
+    });
   } catch (error) {
     next(error);
   }
