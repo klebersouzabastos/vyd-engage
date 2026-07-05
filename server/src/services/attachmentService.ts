@@ -54,7 +54,15 @@ export function sanitizeFileName(raw: string | undefined | null): string {
   return cleaned || 'arquivo';
 }
 
-/** Campos do Attachment expostos ao cliente (metadados; nunca storageKey/bytes). */
+/**
+ * Campos do Attachment expostos ao cliente (metadados; nunca storageKey/bytes).
+ *
+ * O autor (`uploadedBy`) NÃO é um join Prisma aqui — o modelo Attachment guarda só
+ * `uploadedById` (FK sem relation declarada, para não exigir migração). A rota
+ * resolve o nome do autor num lookup batelado a `User` (tenant-scoped) e o DTO o
+ * expõe como `uploadedBy:{id,name}` — a coluna "autor" da UI lê `uploadedBy?.name`
+ * (req 22).
+ */
 export const attachmentSelect = {
   id: true,
   tenantId: true,
@@ -69,6 +77,12 @@ export const attachmentSelect = {
   createdAt: true,
 } as const;
 
+/** Autor do anexo (id + nome do User); null quando não houver autor. */
+export interface AttachmentAuthor {
+  id: string;
+  name: string | null;
+}
+
 export interface AttachmentDto {
   id: string;
   tenantId: string;
@@ -80,11 +94,22 @@ export interface AttachmentDto {
   companyId: string | null;
   source: string;
   uploadedById: string | null;
+  uploadedBy: AttachmentAuthor | null;
   createdAt: Date;
 }
 
+/**
+ * Shape mínimo aceito pelo mapper: os campos escalares do Attachment + o join
+ * opcional `uploadedBy`. Aceita registros vindos de `attachmentSelect` (com autor)
+ * e também os do storageService.put (sem o join — `uploadedBy` ausente → null).
+ */
+type AttachmentDtoInput = Pick<
+  Attachment,
+  'id' | 'tenantId' | 'name' | 'mimeType' | 'size' | 'storageProvider' | 'dealId' | 'companyId' | 'source' | 'uploadedById' | 'createdAt'
+> & { uploadedBy?: AttachmentAuthor | null };
+
 /** Metadados públicos do anexo (nunca expõe storageKey/bytes). */
-export function toAttachmentDto(a: Pick<Attachment, keyof AttachmentDto>): AttachmentDto {
+export function toAttachmentDto(a: AttachmentDtoInput): AttachmentDto {
   return {
     id: a.id,
     tenantId: a.tenantId,
@@ -96,6 +121,44 @@ export function toAttachmentDto(a: Pick<Attachment, keyof AttachmentDto>): Attac
     companyId: a.companyId,
     source: a.source,
     uploadedById: a.uploadedById,
+    uploadedBy: a.uploadedBy
+      ? { id: a.uploadedBy.id, name: a.uploadedBy.name ?? null }
+      : null,
     createdAt: a.createdAt,
   };
+}
+
+/** Cliente Prisma mínimo p/ o lookup batelado de autores (facilita o mock em teste). */
+interface UserLookup {
+  user: {
+    findMany: (args: {
+      where: { id: { in: string[] }; tenantId: string };
+      select: { id: true; name: true };
+    }) => Promise<Array<{ id: string; name: string | null }>>;
+  };
+}
+
+/**
+ * Enrique uma lista de anexos com o autor (`uploadedBy:{id,name}`), resolvendo os
+ * nomes num ÚNICO lookup batelado a `User` (tenant-scoped) — evita N+1 e não exige
+ * relation no schema. Registros sem `uploadedById` (ou autor inexistente) ficam com
+ * `uploadedBy: null`.
+ */
+export async function attachAuthors(
+  db: UserLookup,
+  tenantId: string,
+  rows: AttachmentDtoInput[]
+): Promise<AttachmentDto[]> {
+  const ids = [...new Set(rows.map((r) => r.uploadedById).filter((v): v is string => !!v))];
+  const byId = new Map<string, AttachmentAuthor>();
+  if (ids.length > 0) {
+    const users = await db.user.findMany({
+      where: { id: { in: ids }, tenantId },
+      select: { id: true, name: true },
+    });
+    for (const u of users) byId.set(u.id, { id: u.id, name: u.name ?? null });
+  }
+  return rows.map((r) =>
+    toAttachmentDto({ ...r, uploadedBy: r.uploadedById ? byId.get(r.uploadedById) ?? null : null })
+  );
 }

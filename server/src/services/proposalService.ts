@@ -167,15 +167,32 @@ export const proposalService = {
         : Number(deal.value);
 
     // Corpo: modelo interpolado → texto estruturado (sem HTML) para o PDF.
+    // O contexto cobre AS DUAS grafias: as chaves camelCase que o editor da UI
+    // documenta ({{dealName}}, {{dealValue}}, {{clientName}}...) E as chaves
+    // pt-BR históricas ({{nome}}, {{empresa}}, {{valor}}...) — retrocompat.
+    // {{dealProducts}} é apenas um MARCADOR: a tabela de itens já é anexada
+    // após o corpo pelo PDF, então aqui só limpamos o token (string vazia) para
+    // não sair literal nem duplicar a tabela no corpo.
+    const salesRepName = deal.assignedUser?.name ?? '';
+    const valorBRL = formatBRL(total);
     const rawBody = template
       ? interpolateProposalTags(template.bodyHtml, {
+          // pt-BR (histórico)
           nome: clientName,
           empresa: clientCompany,
           email: clientEmail,
           telefone: clientPhone,
           negocio: deal.name,
-          valor: formatBRL(total),
-          responsavel: deal.assignedUser?.name ?? '',
+          valor: valorBRL,
+          responsavel: salesRepName,
+          // camelCase da UI (chaves documentadas no editor)
+          dealname: deal.name,
+          dealvalue: valorBRL,
+          clientname: clientName,
+          clientcompany: clientCompany,
+          clientemail: clientEmail,
+          salesrepname: salesRepName,
+          dealproducts: '', // marcador: tabela anexada após o corpo pelo PDF
         })
       : '';
     const bodyText = htmlToPlainText(rawBody);

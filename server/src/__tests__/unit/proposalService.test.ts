@@ -185,6 +185,92 @@ describe('proposalService.generate — geração de proposta (req 18)', () => {
     expect(putMock).not.toHaveBeenCalled();
   });
 
+  it('resolve os tokens camelCase da UI + limpa {{dealProducts}} (req 17)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({
+      id: 'deal-1',
+      name: 'Projeto X',
+      value: 1000,
+      companyId: 'comp-1',
+      leadId: 'lead-1',
+      lead: { name: 'Fulano', email: 'f@ex.com', company: 'ACME', phone: '11999' },
+      company: { name: 'ACME LTDA', domain: 'acme.com' },
+      assignedUser: { name: 'Vendedor João' },
+      tenant: { name: 'Tenax' },
+    } as never);
+
+    // Modelo criado pela UI: usa EXCLUSIVAMENTE os tokens camelCase documentados.
+    prismaMock.proposalTemplate.findFirst.mockResolvedValue({
+      id: 'tpl-ui',
+      tenantId,
+      name: 'Modelo UI',
+      bodyHtml:
+        '<p>Negócio {{dealName}} de {{clientName}} ({{clientCompany}}, {{clientEmail}}) — valor {{dealValue}}, resp. {{salesRepName}}.</p><p>Itens: {{dealProducts}}</p>',
+      isDefault: true,
+      status: 'PUBLISHED',
+    } as never);
+
+    prismaMock.dealProduct.findMany.mockResolvedValue([
+      { quantity: 1, unitPrice: 200, discount: 0, product: { name: 'Serviço A' } },
+    ] as never);
+    prismaMock.proposal.findFirst.mockResolvedValue(null as never);
+    putMock.mockResolvedValue({ id: 'att-ui', source: 'PROPOSAL' });
+    prismaMock.proposal.create.mockResolvedValue({ id: 'prop-ui', version: 1 } as never);
+    prismaMock.interaction.create.mockResolvedValue({ id: 'int-ui' } as never);
+
+    await proposalService.generate(tenantId, 'deal-1', { userId: 'u1' });
+
+    const bodyText: string = renderProposalPdfMock.mock.calls[0][0].bodyText;
+    // Nenhum token literal remanescente.
+    expect(bodyText).not.toMatch(/\{\{.*?\}\}/);
+    // Chaves camelCase resolvidas.
+    expect(bodyText).toContain('Projeto X'); // dealName
+    expect(bodyText).toContain('Fulano'); // clientName
+    expect(bodyText).toContain('ACME'); // clientCompany
+    expect(bodyText).toContain('f@ex.com'); // clientEmail
+    expect(bodyText).toContain('Vendedor João'); // salesRepName
+    expect(bodyText).toMatch(/R\$\s?200,00/); // dealValue em BRL
+    // {{dealProducts}} → marcador removido (não sai literal nem duplica tabela).
+    expect(bodyText).not.toContain('dealProducts');
+    // A tabela de itens segue anexada separadamente pelo PDF.
+    expect(renderProposalPdfMock.mock.calls[0][0].items).toHaveLength(1);
+  });
+
+  it('resolve também os tokens pt-BR históricos (retrocompat, req 17)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({
+      id: 'deal-1',
+      name: 'Projeto Y',
+      value: 300,
+      companyId: null,
+      leadId: null,
+      lead: { name: 'Beltrano', email: 'b@ex.com', company: 'BETA', phone: '' },
+      company: null,
+      assignedUser: { name: 'Maria' },
+      tenant: { name: 'T' },
+    } as never);
+    prismaMock.proposalTemplate.findFirst.mockResolvedValue({
+      id: 'tpl-ptbr',
+      tenantId,
+      name: 'Modelo pt-BR',
+      bodyHtml: '<p>{{nome}} — {{empresa}} — {{valor}} — {{responsavel}} — {{negocio}}</p>',
+      isDefault: true,
+      status: 'PUBLISHED',
+    } as never);
+    prismaMock.dealProduct.findMany.mockResolvedValue([] as never);
+    prismaMock.proposal.findFirst.mockResolvedValue(null as never);
+    putMock.mockResolvedValue({ id: 'att-p', source: 'PROPOSAL' });
+    prismaMock.proposal.create.mockResolvedValue({ id: 'prop-p', version: 1 } as never);
+    prismaMock.interaction.create.mockResolvedValue({ id: 'int-p' } as never);
+
+    await proposalService.generate(tenantId, 'deal-1', {});
+
+    const bodyText: string = renderProposalPdfMock.mock.calls[0][0].bodyText;
+    expect(bodyText).not.toMatch(/\{\{.*?\}\}/);
+    expect(bodyText).toContain('Beltrano');
+    expect(bodyText).toContain('BETA');
+    expect(bodyText).toContain('Maria');
+    expect(bodyText).toContain('Projeto Y');
+  });
+
   it('lança 404 quando o templateId informado não existe no tenant', async () => {
     prismaMock.deal.findFirst.mockResolvedValue({
       id: 'deal-1',

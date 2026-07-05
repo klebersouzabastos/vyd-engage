@@ -19,6 +19,77 @@ import { logger } from '../utils/logger.js';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
+// Rate limit / backoff outbound (req 20). BrasilAPI e ReceitaWS são gratuitas e
+// impõem limites baixos (ReceitaWS ~3 req/min). Serializamos por PROVEDOR com um
+// espaçamento mínimo entre chamadas e aplicamos backoff em HTTP 429/Retry-After,
+// sem dependência nova.
+const MIN_INTERVAL_MS = 1000; // espaçamento mínimo entre chamadas do MESMO provedor
+const MAX_RETRIES_429 = 2; // tentativas extras ao receber 429
+const DEFAULT_BACKOFF_MS = 2000; // backoff quando não há Retry-After
+const MAX_BACKOFF_MS = 15000; // teto do backoff (evita prender a request)
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Erro tipado para 429 (rate limit do provedor). NÃO é mascarado como 502: quem
+ * chama pode decidir propagar um 429 claro ao cliente.
+ */
+export class RateLimitError extends Error {
+  statusCode = 429;
+  code = 'CNPJ_RATE_LIMITED';
+  retryAfterMs?: number;
+  constructor(message: string, retryAfterMs?: number) {
+    super(message);
+    this.name = 'RateLimitError';
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+/**
+ * Limiter simples por provedor: uma fila serial que garante um intervalo mínimo
+ * entre chamadas consecutivas ao mesmo host. Sem dependência externa (mutex/fila
+ * caseiros via encadeamento de Promises).
+ */
+class ProviderLimiter {
+  private chain: Promise<void> = Promise.resolve();
+  private lastAt = 0;
+  constructor(private readonly minIntervalMs: number) {}
+
+  /** Serializa `task`, respeitando o espaçamento mínimo desde a última execução. */
+  run<T>(task: () => Promise<T>): Promise<T> {
+    const result = this.chain.then(async () => {
+      const wait = this.lastAt + this.minIntervalMs - Date.now();
+      if (wait > 0) await sleep(wait);
+      try {
+        return await task();
+      } finally {
+        this.lastAt = Date.now();
+      }
+    });
+    // Mantém a corrente viva mesmo se `task` rejeitar (não trava o próximo da fila).
+    this.chain = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  }
+}
+
+const limiters: Record<string, ProviderLimiter> = {
+  brasilapi: new ProviderLimiter(MIN_INTERVAL_MS),
+  receitaws: new ProviderLimiter(MIN_INTERVAL_MS),
+};
+
+/** Lê o Retry-After (segundos ou data HTTP) → ms. Undefined quando ausente/ inválido. */
+function parseRetryAfterMs(header: string | null): number | undefined {
+  if (!header) return undefined;
+  const secs = Number(header);
+  if (Number.isFinite(secs) && secs >= 0) return Math.min(secs * 1000, MAX_BACKOFF_MS);
+  const when = Date.parse(header);
+  if (!Number.isNaN(when)) return Math.min(Math.max(when - Date.now(), 0), MAX_BACKOFF_MS);
+  return undefined;
+}
+
 export interface EnrichFieldDiff {
   key: string;
   label: string;
@@ -62,21 +133,55 @@ function mapPorte(porte: string | undefined | null): CompanySize | null {
   return null;
 }
 
-async function fetchJson(url: string): Promise<{ ok: boolean; status: number; body: any }> {
+/** Uma única requisição HTTP (timeout + anti-SSRF), sem limiter/backoff. */
+async function doFetch(
+  url: string
+): Promise<{ ok: boolean; status: number; body: any; retryAfterMs?: number }> {
   await assertPublicHttpUrl(url);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    });
+    const retryAfterMs = parseRetryAfterMs(res.headers.get('retry-after'));
     let body: unknown = null;
     try {
       body = await res.json();
     } catch {
       body = null;
     }
-    return { ok: res.ok, status: res.status, body };
+    return { ok: res.ok, status: res.status, body, retryAfterMs };
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+/**
+ * Requisição por provedor: serializada pelo limiter (espaçamento mínimo) e com
+ * backoff em HTTP 429 (respeitando Retry-After). Esgotadas as tentativas em 429,
+ * lança RateLimitError (NÃO mascara como 502 — o 429 é distinguível).
+ */
+async function fetchJson(
+  provider: 'brasilapi' | 'receitaws',
+  url: string
+): Promise<{ ok: boolean; status: number; body: any }> {
+  const limiter = limiters[provider];
+  for (let attempt = 0; ; attempt++) {
+    const r = await limiter.run(() => doFetch(url));
+    if (r.status !== 429) return { ok: r.ok, status: r.status, body: r.body };
+
+    // 429: backoff e retry, até o limite.
+    if (attempt >= MAX_RETRIES_429) {
+      throw new RateLimitError(
+        `Provedor ${provider} retornou 429 (rate limit) após ${attempt + 1} tentativas.`,
+        r.retryAfterMs
+      );
+    }
+    const backoff = Math.min(r.retryAfterMs ?? DEFAULT_BACKOFF_MS, MAX_BACKOFF_MS);
+    logger.warn('CNPJ provider 429 — backoff', { provider, attempt, backoffMs: backoff });
+    await sleep(backoff);
   }
 }
 
@@ -130,28 +235,44 @@ function mapReceitaWs(body: any): NormalizedCompany {
  * provedor responde ou o CNPJ não é encontrado.
  */
 async function lookup(cnpj: string): Promise<NormalizedCompany> {
+  // Um 429 esgotado em qualquer provedor é lembrado para virar erro claro no
+  // fim (em vez de mascarar como 502 "indisponível").
+  let rateLimited: RateLimitError | null = null;
+
   // 1) BrasilAPI
   try {
-    const r = await fetchJson(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    const r = await fetchJson('brasilapi', `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
     if (r.ok && r.body?.razao_social) return mapBrasilApi(r.body);
     if (r.status === 404) {
       // BrasilAPI 404 = CNPJ inexistente; ainda tentamos o fallback antes de desistir.
       logger.info('BrasilAPI 404 para CNPJ — tentando ReceitaWS', { cnpj });
     }
   } catch (err) {
+    if (err instanceof RateLimitError) rateLimited = err;
     logger.warn('BrasilAPI indisponível — tentando ReceitaWS', err);
   }
 
   // 2) ReceitaWS (fallback)
   try {
-    const r = await fetchJson(`https://receitaws.com.br/v1/cnpj/${cnpj}`);
+    const r = await fetchJson('receitaws', `https://receitaws.com.br/v1/cnpj/${cnpj}`);
     if (r.ok && r.body?.status !== 'ERROR' && r.body?.nome) return mapReceitaWs(r.body);
     if (r.body?.status === 'ERROR' || r.status === 404) {
       throw createError('CNPJ não encontrado nas bases públicas.', 404, 'CNPJ_NOT_FOUND');
     }
   } catch (err: any) {
     if (err?.statusCode === 404) throw err;
+    if (err instanceof RateLimitError) rateLimited = err;
     logger.warn('ReceitaWS indisponível', err);
+  }
+
+  // Rate limit distinguível → 429 claro (com Retry-After quando disponível).
+  if (rateLimited) {
+    throw createError(
+      'Consulta de CNPJ temporariamente limitada pelo provedor. Tente novamente em instantes.',
+      429,
+      'CNPJ_RATE_LIMITED',
+      rateLimited.retryAfterMs ? { retryAfterMs: rateLimited.retryAfterMs } : undefined
+    );
   }
 
   throw createError(

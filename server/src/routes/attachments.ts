@@ -3,35 +3,100 @@
  *
  * Handlers reais (dono B2) sobre `storageService` + `attachmentService`:
  *   POST   /attachments               multipart (file ≤25MB) + dealId?/companyId?
- *   GET    /attachments?dealId=|companyId=   metadados (sem bytes)
+ *   GET    /attachments?dealId=|companyId=   metadados (sem bytes) + autor (uploadedBy)
  *   GET    /attachments/usage         { usedMB, limitMB }  (antes de /:id/download)
  *   GET    /attachments/:id/download  stream com mimeType/Content-Disposition
- *   DELETE /attachments/:id           soft-delete (integra Lixeira P1)
+ *   DELETE /attachments/:id           soft-delete (integra Lixeira P1) + gate deleteRecords
  *
  * Multi-tenant: toda query filtra por tenantId. Upload valida allowlist de
  * mimeType, tamanho ≤25MB e sanitiza o nome; download força
  * `Content-Disposition: attachment` (nunca inline) para tipos perigosos.
+ *
+ * Visibilidade P1 (req 22): list/download/delete revalidam o acesso do usuário ao
+ * "pai" (deal/empresa) do anexo via `visibilityScope` — negam (404) se fora do
+ * escopo. DELETE exige a capability `deleteRecords` (builtins têm → sem regressão).
  */
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { authenticate } from '../middleware/auth.js';
+import type { Attachment } from '@prisma/client';
+import { authenticate, requirePermission } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import prisma from '../config/database.js';
 import { storageService } from '../services/storageService.js';
+import { visibilityScope } from '../services/permissionService.js';
+import type { PermissionUser } from '../services/permissionService.js';
 import {
   MAX_UPLOAD_BYTES,
   isAllowedMimeType,
   sanitizeFileName,
   attachmentSelect,
-  toAttachmentDto,
+  attachAuthors,
 } from '../services/attachmentService.js';
 
 const router = Router();
 
 router.use(authenticate);
 router.use(tenantScope);
+
+/** Usuário do req adaptado ao contrato do permissionService (visibilidade P1). */
+function permUser(u: {
+  userId: string;
+  tenantId: string;
+  role?: string;
+  isPlatformAdmin?: boolean;
+}): PermissionUser {
+  return {
+    userId: u.userId,
+    tenantId: u.tenantId,
+    role: u.role,
+    isPlatformAdmin: u.isPlatformAdmin,
+  };
+}
+
+/**
+ * Revalida o acesso do usuário ao "pai" (deal/empresa) de um anexo via a
+ * visibilidade efetiva do P1 (req 22). Retorna `true` quando o anexo é acessível.
+ *
+ * - Anexo SEM pai (dealId/companyId nulos): acessível (só o filtro de tenant vale).
+ * - Anexo COM dealId: acessível se o deal cai no `visibilityScope(user,'deals')`
+ *   (GERAL → sem filtro; PROPRIA → só do próprio; EQUIPE → da equipe).
+ * - Anexo COM companyId: idem via `visibilityScope(user,'companies')`.
+ *
+ * FAIL-CLOSED / == HOJE: sem perfil custom, USER tem deals=PROPRIA e companies=GERAL
+ * (exatamente o de hoje); qualquer erro recai nos defaults do role.
+ */
+async function canAccessAttachmentParent(
+  user: PermissionUser,
+  att: Pick<Attachment, 'dealId' | 'companyId'>
+): Promise<boolean> {
+  const tenantId = user.tenantId;
+
+  if (att.dealId) {
+    const scope = await visibilityScope(user, 'deals');
+    if (scope !== undefined) {
+      const deal = await prisma.deal.findFirst({
+        where: { id: att.dealId, tenantId, assignedTo: scope },
+        select: { id: true },
+      });
+      if (!deal) return false;
+    }
+  }
+
+  if (att.companyId) {
+    const scope = await visibilityScope(user, 'companies');
+    if (scope !== undefined) {
+      const company = await prisma.company.findFirst({
+        where: { id: att.companyId, tenantId, assignedTo: scope },
+        select: { id: true },
+      });
+      if (!company) return false;
+    }
+  }
+
+  return true;
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -116,7 +181,9 @@ router.post('/', handleUpload('file'), async (req, res, next) => {
       uploadedById: req.user.userId,
     });
 
-    res.status(201).json({ status: 201, data: toAttachmentDto(attachment) });
+    // Devolve com o autor resolvido (coluna "autor" da UI, req 22).
+    const [dto] = await attachAuthors(prisma, tenantId, [attachment]);
+    res.status(201).json({ status: 201, data: dto });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
@@ -134,6 +201,7 @@ router.get('/', async (req, res, next) => {
     }
     const { dealId, companyId } = listQuerySchema.parse(req.query);
     const { tenantId } = req.user;
+    const user = permUser(req.user);
 
     const attachments = await prisma.attachment.findMany({
       where: {
@@ -146,7 +214,15 @@ router.get('/', async (req, res, next) => {
       select: attachmentSelect,
     });
 
-    res.json({ status: 200, data: attachments.map(toAttachmentDto) });
+    // Visibilidade P1 (req 22): só devolve anexos cujo pai (deal/empresa) o usuário
+    // pode ver. Sem perfil custom, o escopo é GERAL/PROPRIA de hoje (fail-closed).
+    const visible = [];
+    for (const att of attachments) {
+      if (await canAccessAttachmentParent(user, att)) visible.push(att);
+    }
+
+    const data = await attachAuthors(prisma, tenantId, visible);
+    res.json({ status: 200, data });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
@@ -187,6 +263,12 @@ router.get('/:id/download', async (req, res, next) => {
       return next(createError('Arquivo não encontrado.', 404, 'ATTACHMENT_NOT_FOUND'));
     }
 
+    // Visibilidade P1 (req 22): nega (404) a entrega dos bytes se o anexo pertence
+    // a um deal/empresa fora do escopo do usuário. Fail-closed / == hoje sem perfil.
+    if (!(await canAccessAttachmentParent(permUser(req.user), attachment))) {
+      return next(createError('Arquivo não encontrado.', 404, 'ATTACHMENT_NOT_FOUND'));
+    }
+
     const buffer = await storageService.get(attachment);
 
     res.setHeader('Content-Type', attachment.mimeType || 'application/octet-stream');
@@ -202,9 +284,12 @@ router.get('/:id/download', async (req, res, next) => {
   }
 });
 
-// ─── DELETE /:id — Soft-delete ───────────────────────────────────────────────
+// ─── DELETE /:id — Soft-delete (integra Lixeira P1) ──────────────────────────
+// Gate de permissão (req 22 + P1): exige `deleteRecords`. Builtins têm
+// deleteRecords=true → sem regressão; só um perfil custom que desligou a capability
+// nega (403). Fail-closed via requirePermission.
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requirePermission('deleteRecords'), async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
@@ -214,9 +299,14 @@ router.delete('/:id', async (req, res, next) => {
 
     const existing = await prisma.attachment.findFirst({
       where: { id, tenantId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, dealId: true, companyId: true },
     });
     if (!existing) {
+      return next(createError('Arquivo não encontrado.', 404, 'ATTACHMENT_NOT_FOUND'));
+    }
+
+    // Visibilidade P1 (req 22): não permite excluir anexo de um pai fora do escopo.
+    if (!(await canAccessAttachmentParent(permUser(req.user), existing))) {
       return next(createError('Arquivo não encontrado.', 404, 'ATTACHMENT_NOT_FOUND'));
     }
 

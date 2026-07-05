@@ -70,6 +70,26 @@ function mapZapSignStatus(raw: string | undefined | null): SignatureStatus | nul
   return null;
 }
 
+/**
+ * Texto pt-BR do evento de assinatura para a timeline do deal, por status.
+ * SENT é omitido aqui (já registrado no envio). Retorna null para status sem
+ * evento acionável na timeline.
+ */
+function signatureTimelineText(status: SignatureStatus, version: number): string | null {
+  switch (status) {
+    case 'VIEWED':
+      return `Proposta v${version} visualizada pelo destinatário.`;
+    case 'SIGNED':
+      return `Proposta v${version} assinada eletronicamente.`;
+    case 'REFUSED':
+      return `Proposta v${version} recusada pelo destinatário.`;
+    case 'EXPIRED':
+      return `Proposta v${version} expirada sem assinatura.`;
+    default:
+      return null; // SENT (registrado no envio) e demais
+  }
+}
+
 export const signatureService = {
   mapZapSignStatus,
 
@@ -229,7 +249,28 @@ export const signatureService = {
       data: { signatureStatus: nextStatus },
     });
 
-    // Notifica o responsável pelo deal quando assinado.
+    // Evento na timeline do deal para TODAS as transições relevantes (req 19).
+    // SENT já é registrado no envio (sendForSignature); aqui cobrimos
+    // VIEWED/SIGNED/REFUSED/EXPIRED com conteúdo pt-BR por status. Best-effort.
+    if (deal) {
+      const timelineText = signatureTimelineText(nextStatus, proposal.version);
+      if (timelineText) {
+        await prisma.interaction
+          .create({
+            data: {
+              tenantId: proposal.tenantId,
+              dealId: deal.id,
+              type: 'NOTE',
+              direction: 'INBOUND',
+              content: timelineText,
+              metadata: { proposalId: proposal.id, signatureStatus: nextStatus },
+            },
+          })
+          .catch((err) => logger.error('Falha ao registrar interação de assinatura', err));
+      }
+    }
+
+    // Notifica o responsável pelo deal APENAS quando assinado.
     if (nextStatus === 'SIGNED' && deal?.assignedTo) {
       await notificationService
         .create(proposal.tenantId, {
@@ -241,20 +282,6 @@ export const signatureService = {
           metadata: { proposalId: proposal.id, dealId: deal.id },
         })
         .catch((err) => logger.error('Falha ao notificar assinatura', err));
-
-      // Evento na timeline do deal.
-      await prisma.interaction
-        .create({
-          data: {
-            tenantId: proposal.tenantId,
-            dealId: deal.id,
-            type: 'NOTE',
-            direction: 'INBOUND',
-            content: `Proposta v${proposal.version} assinada eletronicamente.`,
-            metadata: { proposalId: proposal.id, signatureStatus: nextStatus },
-          },
-        })
-        .catch((err) => logger.error('Falha ao registrar interação de assinatura', err));
     }
 
     return { handled: true, signatureStatus: nextStatus };

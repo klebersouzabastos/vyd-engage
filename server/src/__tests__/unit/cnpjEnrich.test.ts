@@ -119,4 +119,44 @@ describe('cnpjService.enrich', () => {
       code: 'COMPANY_NOT_FOUND',
     });
   });
+
+  // Rate limit / backoff (req 20): 429 persistente em AMBOS os provedores →
+  // erro 429 CLARO (não mascarado como 502). Retry-After: 0 mantém o teste rápido.
+  it('429 persistente → 429 CNPJ_RATE_LIMITED (não 502), com retry/backoff', async () => {
+    const make429 = () =>
+      new Response(JSON.stringify({ message: 'rate limit' }), {
+        status: 429,
+        headers: { 'retry-after': '0' },
+      });
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async () => make429());
+
+    await expect(cnpjService.enrich('t1', '12345678000195')).rejects.toMatchObject({
+      statusCode: 429,
+      code: 'CNPJ_RATE_LIMITED',
+    });
+
+    // Houve retry: >1 chamada por provedor (BrasilAPI: 1 inicial + MAX_RETRIES_429).
+    // Total mínimo = (1+2) BrasilAPI + (1+2) ReceitaWS = 6.
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(4);
+  }, 20000);
+
+  it('429 → fallback bem-sucedido no segundo provedor não vira erro', async () => {
+    let call = 0;
+    vi.spyOn(global, 'fetch').mockImplementation(async () => {
+      call += 1;
+      // BrasilAPI (1ª chamada) responde 429 esgotando retries; ReceitaWS responde OK.
+      if (call <= 1 + 2) {
+        return new Response('{}', { status: 429, headers: { 'retry-after': '0' } });
+      }
+      return new Response(
+        JSON.stringify({ status: 'OK', nome: 'BETA LTDA', porte: 'MICRO EMPRESA' }),
+        { status: 200 }
+      );
+    });
+
+    const result = await cnpjService.enrich('t1', '12345678000195');
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.key, f]));
+    expect(byKey.name.suggested).toBe('BETA LTDA');
+    expect(byKey.size.suggested).toBe('MICRO');
+  }, 20000);
 });

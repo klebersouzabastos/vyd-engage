@@ -117,6 +117,21 @@ export function ProposalTemplatesTab() {
     }
   };
 
+  /**
+   * Click-to-insert de variável (req 17): insere o token no corpo do modelo para
+   * evitar digitação errada. O RichTextEditor não expõe insert-at-cursor ao pai,
+   * então usamos o método simples documentado — APPEND ao corpo (bodyHtml). O
+   * editor sincroniza o novo `value` quando não está focado. O token entra em um
+   * parágrafo próprio (HTML válido), pronto para o usuário reposicionar se quiser.
+   */
+  const insertVariable = (token: string) => {
+    setDraft((p) => {
+      if (!p) return p;
+      const base = p.bodyHtml && p.bodyHtml !== '<p></p>' ? p.bodyHtml : '';
+      return { ...p, bodyHtml: `${base}<p>${token}</p>` };
+    });
+  };
+
   const remove = async (item: ProposalTemplate) => {
     if (!confirm(`Excluir o modelo "${item.name}"?`)) return;
     try {
@@ -210,14 +225,22 @@ export function ProposalTemplatesTab() {
         <div className="rounded-md border border-border p-3">
           <p className="text-xs font-medium text-foreground">Variáveis disponíveis</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Use no corpo; são substituídas pelos dados da negociação na geração da proposta.
+            Clique para inserir no corpo; são substituídas pelos dados da negociação na geração da
+            proposta.
           </p>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {TEMPLATE_VARIABLES.map((v) => (
-              <span key={v.token} className="text-xs text-muted-foreground">
-                <code className="rounded bg-muted px-1 py-0.5 text-foreground">{v.token}</code>{' '}
-                {v.description}
-              </span>
+              <button
+                key={v.token}
+                type="button"
+                onClick={() => insertVariable(v.token)}
+                title={`Inserir ${v.token} — ${v.description}`}
+                aria-label={`Inserir variável ${v.token} (${v.description})`}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Plus size={11} />
+                <code className="text-foreground">{v.token}</code>
+              </button>
             ))}
           </div>
         </div>

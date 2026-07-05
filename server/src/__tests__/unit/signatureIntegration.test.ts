@@ -192,9 +192,53 @@ describe('signatureService.handleWebhook — atualiza status + notifica', () => 
     expect(notifyCreateMock).not.toHaveBeenCalled();
   });
 
+  // Timeline em TODAS as transições relevantes (req 19). VIEWED/REFUSED/EXPIRED
+  // criam Interaction pt-BR, mas NÃO notificam (só SIGNED notifica).
+  it.each([
+    ['viewed', 'VIEWED', 'visualizada'],
+    ['refused', 'REFUSED', 'recusada'],
+    ['expired', 'EXPIRED', 'expirada'],
+  ])('status %s → Interaction pt-BR "%s" sem notificação', async (raw, expected, needle) => {
+    const body = buildBody(raw);
+    const sig = crypto.createHmac('sha256', SECRET).update(body).digest('hex');
+
+    const res = await signatureService.handleWebhook(body, sig);
+
+    expect(res).toMatchObject({ handled: true, signatureStatus: expected });
+    expect(prismaMock.interaction.create).toHaveBeenCalledOnce();
+    const intArg = firstCallArg(prismaMock.interaction.create) as { data: Record<string, unknown> };
+    expect(String(intArg.data.content)).toContain('Proposta v2');
+    expect(String(intArg.data.content)).toContain(needle);
+    expect((intArg.data.metadata as Record<string, unknown>).signatureStatus).toBe(expected);
+    expect(notifyCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('status signed → Interaction pt-BR "assinada" + notificação', async () => {
+    const body = buildBody('signed');
+    const sig = crypto.createHmac('sha256', SECRET).update(body).digest('hex');
+    await signatureService.handleWebhook(body, sig);
+    const intArg = firstCallArg(prismaMock.interaction.create) as { data: Record<string, unknown> };
+    expect(String(intArg.data.content)).toContain('assinada');
+    expect(notifyCreateMock).toHaveBeenCalledOnce();
+  });
+
   it('envelope desconhecido → proposal_not_found (não quebra)', async () => {
     prismaMock.proposal.findFirst.mockResolvedValue(null as never);
     const res = await signatureService.handleWebhook(buildBody('signed'), 'x');
     expect(res).toMatchObject({ handled: false, reason: 'proposal_not_found' });
+  });
+
+  // HMAC sobre o corpo CRU (req 3 do escopo B3): um payload com espaçamento e
+  // ordem de chaves que JSON.stringify(JSON.parse(raw)) NÃO reproduziria. A
+  // assinatura só bate se validarmos sobre os bytes exatos recebidos.
+  it('valida HMAC sobre o RAW body (whitespace/ordem preservados)', async () => {
+    const rawBody = '{\n  "status": "signed",\n  "token": "env-1"\n}';
+    // Prova de que o raw difere da reserialização (o antigo proxy quebraria).
+    expect(JSON.stringify(JSON.parse(rawBody))).not.toBe(rawBody);
+
+    const sig = crypto.createHmac('sha256', SECRET).update(rawBody).digest('hex');
+    const res = await signatureService.handleWebhook(rawBody, sig);
+
+    expect(res).toMatchObject({ handled: true, signatureStatus: 'SIGNED' });
   });
 });

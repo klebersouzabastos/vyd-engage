@@ -289,12 +289,14 @@ router.post('/email/resend', async (req: Request, res: Response) => {
 // POST /api/webhooks/zapsign — status de assinatura (público, sem CSRF).
 // Identifica o tenant pelo envelopeId (Proposal.signatureEnvelopeId) e valida o
 // HMAC com o webhookSecret DESSE tenant (feito dentro do signatureService). A
-// assinatura é computada sobre JSON.stringify(req.body) — mesmo proxy dos demais
-// webhooks IN (express.json já consumiu o corpo cru).
+// assinatura é computada sobre o corpo CRU (req.rawBody, capturado no verify do
+// express.json em index.ts) — os bytes EXATOS recebidos, para o HMAC bater com o
+// provedor. Fallback para JSON.stringify(req.body) se rawBody não estiver presente.
 router.post('/zapsign', async (req: Request, res: Response) => {
   try {
     const { signatureService } = await import('../services/signatureService.js');
-    const rawBody = JSON.stringify(req.body ?? {});
+    const rawBody =
+      (req as Request & { rawBody?: string }).rawBody ?? JSON.stringify(req.body ?? {});
     const headerSignature =
       (req.headers['x-zapsign-signature'] as string | undefined) ||
       (req.headers['x-signature'] as string | undefined) ||

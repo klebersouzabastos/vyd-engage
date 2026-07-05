@@ -16,7 +16,7 @@ import prisma from '../config/database.js';
 import { ApprovalStatus, NotificationType } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ensureBuiltinProfiles } from '../services/permissionService.js';
-import { TRASH_ENTITIES, purgeExpiredForEntity } from '../services/trashService.js';
+import { ALL_TRASH_ENTITIES, purgeExpiredForEntity } from '../services/trashService.js';
 
 const CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 horas
 const INITIAL_DELAY_MS = 45 * 1000; // 45 segundos (após salesOps/follow-up)
@@ -79,9 +79,11 @@ export const TRASH_RETENTION_DAYS = 30;
 
 /**
  * Expurga (hard-delete) registros soft-deletados há mais de 30 dias, por tenant e
- * por entidade da lixeira (lead/deal/task/company/empreendimento/roadmap),
- * respeitando FKs (best-effort por item). Retorna o total expurgado. Idempotente:
- * só toca registros com deletedAt < cutoff. Loga a contagem por tenant.
+ * por entidade da lixeira (lead/deal/task/company/empreendimento/roadmap +
+ * attachments), respeitando FKs (best-effort por item). Para `attachments`, apaga
+ * TAMBÉM os bytes (AttachmentBlob "db" | objeto S3) — sem isso o blob ficaria órfão
+ * (vazamento). Retorna o total expurgado. Idempotente: só toca registros com
+ * deletedAt < cutoff. Loga a contagem por tenant.
  */
 export async function runPurgeTrash(now: Date = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000);
@@ -90,7 +92,7 @@ export async function runPurgeTrash(now: Date = new Date()): Promise<number> {
   let total = 0;
   for (const tenant of tenants) {
     let tenantTotal = 0;
-    for (const entity of TRASH_ENTITIES) {
+    for (const entity of ALL_TRASH_ENTITIES) {
       try {
         tenantTotal += await purgeExpiredForEntity(tenant.id, entity, cutoff);
       } catch (err) {

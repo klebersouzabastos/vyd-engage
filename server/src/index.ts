@@ -65,7 +65,17 @@ app.use(
   })
 );
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
+// express.json com captura do corpo CRU (req.rawBody) — necessário para validar
+// HMAC de webhooks sobre os bytes EXATOS recebidos (ex.: ZapSign, req 19). O
+// req.body segue populado normalmente; os demais parsers/handlers não mudam.
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req: express.Request & { rawBody?: string }, _res, buf) => {
+      req.rawBody = buf.toString('utf8');
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // HTTP access logging (pino-http) — structured JSON in prod, with secret redaction.

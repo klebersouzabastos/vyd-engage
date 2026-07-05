@@ -40,6 +40,25 @@ function normalizeCnpj(raw: string): string {
   return raw.replace(/\D/g, '');
 }
 
+/**
+ * Rótulos humanos do enum CompanySize (o backend devolve o VALOR cru do enum no
+ * campo `size` — ex. "MEDIUM" — para ser aplicável direto via PUT /companies).
+ * A tradução para exibição (Atual/Sugerido) fica aqui; o apply mantém o valor cru.
+ */
+const SIZE_LABELS: Record<string, string> = {
+  MICRO: 'Micro',
+  SMALL: 'Pequena',
+  MEDIUM: 'Média',
+  LARGE: 'Grande',
+  ENTERPRISE: 'Enterprise',
+};
+
+/** Exibe o rótulo humano de `size`; demais campos passam direto. */
+function displayValue(field: EnrichFieldDiff, value: string | null): string | null {
+  if (field.key === 'size' && value) return SIZE_LABELS[value] ?? value;
+  return value;
+}
+
 export function CnpjEnrichDialog({
   open,
   onOpenChange,
@@ -175,10 +194,12 @@ export function CnpjEnrichDialog({
                     </td>
                     <td className="py-2 pr-3 font-medium text-foreground">{f.label}</td>
                     <td className="py-2 pr-3 text-muted-foreground">
-                      {f.current || <span className="italic">vazio</span>}
+                      {displayValue(f, f.current) || <span className="italic">vazio</span>}
                     </td>
                     <td className="py-2 text-foreground">
-                      {f.suggested || <span className="italic text-muted-foreground">vazio</span>}
+                      {displayValue(f, f.suggested) || (
+                        <span className="italic text-muted-foreground">vazio</span>
+                      )}
                     </td>
                   </tr>
                 ))}
