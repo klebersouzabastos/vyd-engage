@@ -1,9 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
 import { dealService } from '../services/dealService.js';
 import { forecastService } from '../services/forecastService.js';
 import { getDealNextAction, getActionSummary } from '../services/nextActionService.js';
 import { dealScoringService } from '../services/dealScoringService.js';
+import { meetingService } from '../services/meetingService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { aiLimiter } from '../middleware/rateLimit.js';
@@ -15,6 +17,27 @@ import { createAuditLog } from '../utils/auditLogger.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { approvalService } from '../services/approvalService.js';
 import { proposalService } from '../services/proposalService.js';
+
+// IA de reuniões (Upgrade RD P3, req 26): upload de áudio em memória (multipart,
+// campo "audio"). Limite de 25 MB coerente com os anexos (P2). O áudio, quando
+// presente, é transcrito (Whisper) e persistido como Attachment(source=MEETING).
+const MEETING_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
+const meetingUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MEETING_AUDIO_MAX_BYTES },
+});
+function handleMeetingAudioUpload(req: Request, res: Response, next: NextFunction) {
+  const mw = meetingUpload.single('audio');
+  mw(req, res, (err: unknown) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return next(createError('Áudio excede o tamanho máximo de 25 MB.', 413, 'FILE_TOO_LARGE'));
+      }
+      return next(createError('Falha no upload do áudio.', 400, 'UPLOAD_FAILED'));
+    }
+    next();
+  });
+}
 
 const router = Router();
 
@@ -290,6 +313,22 @@ async function enforceDealOwnership(req: Request, res: Response, next: NextFunct
     next(err);
   }
 }
+
+// ── IA de reuniões — detalhe por id da interação (req 26) ──
+// GET /api/deals/meetings/:iid — DEVE ficar ANTES de `router.use('/:id', …)`, senão
+// o prefixo `/:id` capturaria `/meetings/...` (id="meetings") e rodaria o guard de
+// posse com um id inválido. Escopado por tenant no service (não expõe outros tenants).
+router.get('/meetings/:iid', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+    const meeting = await meetingService.getMeeting(req.user.tenantId, req.params.iid);
+    res.json({ status: 200, data: meeting });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.use('/:id', enforceDealOwnership);
 
 // GET /api/deals/:id/audit - Get audit trail for a deal
@@ -435,6 +474,97 @@ router.get('/:id/ai-score', aiLimiter, async (req, res, next) => {
 
     res.json({ status: 200, data: result });
   } catch (error) {
+    next(error);
+  }
+});
+
+// ── IA de reuniões no deal (Upgrade RD P3, req 26) ──
+// Estas rotas herdam `enforceDealOwnership` (posse/visibilidade P1) por estarem sob
+// `/:id`. Gating: sem IA → 503 AI_NOT_CONFIGURED (nunca 500). Aceita ÁUDIO (multipart,
+// campo "audio", exige Whisper/OpenAI) OU transcrição colada ({ transcript }).
+
+// POST /api/deals/:id/meetings — cria reunião (áudio OU transcrição colada) → resumo
+// + tarefas/campos sugeridos.
+router.post('/:id/meetings', handleMeetingAudioUpload, async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+
+    // Confirma que o deal existe/pertence ao tenant (o guard de posse já passou).
+    const deal = await prisma.deal.findFirst({
+      where: { id: req.params.id, tenantId: req.user.tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!deal) return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
+
+    const file = (req as unknown as { file?: { originalname: string; mimetype: string; buffer: Buffer } })
+      .file;
+    const transcript =
+      typeof req.body?.transcript === 'string' ? req.body.transcript : undefined;
+
+    if (!file && !transcript?.trim()) {
+      return next(
+        createError(
+          'Envie um áudio da reunião (campo "audio") ou cole a transcrição.',
+          400,
+          'MEETING_INPUT_REQUIRED'
+        )
+      );
+    }
+
+    const meeting = await meetingService.createMeeting(req.user.tenantId, req.params.id, {
+      audio: file
+        ? { buffer: file.buffer, mimeType: file.mimetype, filename: file.originalname }
+        : null,
+      transcript: transcript ?? null,
+      userId: req.user.userId,
+    });
+    res.status(201).json({ status: 201, data: meeting });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/meetings — lista as reuniões (Interaction MEETING) do deal.
+router.get('/:id/meetings', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+    const meetings = await meetingService.listMeetings(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: meetings });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/meetings/:iid/apply — aplica só as sugestões ACEITAS.
+const applyMeetingSchema = z.object({
+  taskIds: z.array(z.string()).default([]),
+  fieldUpdates: z
+    .object({
+      value: z.string().optional(),
+      stage: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .default({}),
+});
+router.post('/:id/meetings/:iid/apply', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    meetingService.assertAIEnabled();
+    const body = applyMeetingSchema.parse(req.body ?? {});
+    const result = await meetingService.applyMeeting(
+      req.user.tenantId,
+      req.params.id,
+      req.params.iid,
+      body,
+      req.user.userId
+    );
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });

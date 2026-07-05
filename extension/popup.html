@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VYD Engage — Copiloto</title>
+    <style>
+      /* Extensão standalone: CSS próprio simples (fora do design-system do app). */
+      :root {
+        --bg: #0f1115;
+        --panel: #171a21;
+        --border: #2a2f3a;
+        --text: #e7e9ee;
+        --muted: #9aa3b2;
+        --accent: #4f8cff;
+        --accent-text: #ffffff;
+        --danger: #ff6b6b;
+        --ok: #35c48a;
+        --radius: 8px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        width: 360px;
+        font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      header .logo {
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      header .tag {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      main {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 7px 9px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-size: 13px;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 6px;
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+      button.primary {
+        background: var(--accent);
+        color: var(--accent-text);
+        border-color: transparent;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .title {
+        font-weight: 600;
+        margin: 0 0 2px;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 11px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .deal {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 0;
+        border-top: 1px solid var(--border);
+      }
+      .interaction {
+        padding: 5px 0;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .status {
+        font-size: 12px;
+        min-height: 16px;
+      }
+      .status.err {
+        color: var(--danger);
+      }
+      .status.ok {
+        color: var(--ok);
+      }
+      .hidden {
+        display: none;
+      }
+      a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="logo">VYD Engage</span>
+      <span class="tag">Copiloto no WhatsApp</span>
+    </header>
+    <main>
+      <!-- Configuração da API Key -->
+      <section class="card" id="config-card">
+        <label for="base-url">URL da API</label>
+        <input id="base-url" type="text" placeholder="https://api.vydengage.com" />
+        <label for="api-key" style="margin-top: 8px">API Key</label>
+        <input id="api-key" type="password" placeholder="Cole sua chave (X-API-Key)" />
+        <div class="row" style="margin-top: 8px">
+          <button class="primary" id="save-config">Salvar chave</button>
+          <span class="status" id="config-status"></span>
+        </div>
+        <p class="muted" style="margin: 8px 0 0; font-size: 11px">
+          A chave fica só neste navegador (chrome.storage). Crie uma API Key com o escopo
+          <code>contacts:read</code> nas configurações do VYD Engage.
+        </p>
+      </section>
+
+      <!-- Resolução do contato -->
+      <section class="card" id="resolve-card">
+        <div class="row">
+          <div style="flex: 1">
+            <p class="title" id="phone-label">Abra uma conversa no WhatsApp Web</p>
+            <p class="muted" id="phone-value" style="margin: 0; font-size: 12px"></p>
+          </div>
+          <button id="refresh">Atualizar</button>
+        </div>
+        <div class="status err hidden" id="resolve-status" style="margin-top: 8px"></div>
+        <div id="result" class="hidden" style="margin-top: 10px"></div>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

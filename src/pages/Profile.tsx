@@ -18,6 +18,9 @@ export function Profile() {
     name: '',
     email: '',
     phone: '',
+    // Número de WhatsApp do usuário — usado pelo Copiloto IA para reconhecer
+    // quem comanda (só números cadastrados comandam a IA). Upgrade RD P3, req 25.
+    whatsappNumber: '',
     avatar: null as string | null,
     role: '',
     createdAt: '',
@@ -41,6 +44,7 @@ export function Profile() {
         name: user.name || '',
         email: user.email || '',
         phone: (user as any).phone || '',
+        whatsappNumber: (user as any).whatsappNumber || '',
         avatar: user.avatar || null,
         role: user.role || '',
         createdAt: (user as any).createdAt || '',
@@ -114,6 +118,9 @@ export function Profile() {
         phone: profileData.phone,
         avatar: profileData.avatar,
       });
+      // O número do WhatsApp usa endpoint próprio (self-service) — persistido em
+      // paralelo ao restante do perfil. String vazia limpa o número.
+      await apiClient.updateMyWhatsAppNumber(profileData.whatsappNumber.trim() || null);
       if (refreshUser) await refreshUser();
       setAvatarPreview(null);
       setIsEditing(false);
@@ -156,6 +163,7 @@ export function Profile() {
         name: user.name || '',
         email: user.email || '',
         phone: (user as any).phone || '',
+        whatsappNumber: (user as any).whatsappNumber || '',
         avatar: user.avatar || null,
         role: user.role || '',
         createdAt: (user as any).createdAt || '',
@@ -289,6 +297,21 @@ export function Profile() {
                       disabled={!isEditing}
                       className="mt-1.5"
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="whatsapp-number">Meu número de WhatsApp</Label>
+                    <Input
+                      id="whatsapp-number"
+                      value={profileData.whatsappNumber}
+                      onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="+55 11 99999-0000"
+                      className="mt-1.5"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Usado pelo Copiloto IA no WhatsApp para reconhecer você. Só quem tem o número
+                      cadastrado aqui pode comandar a IA por mensagem.
+                    </p>
                   </div>
                 </div>
               </div>

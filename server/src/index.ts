@@ -54,7 +54,9 @@ app.use(
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
+    // `x-api-key` habilita a extensão Chrome (Upgrade RD P3, req 24) a chamar os
+    // endpoints autenticados por API key (ex.: /contacts/resolve) do navegador.
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-api-key'],
   })
 );
 app.use(cookieParser());
@@ -269,6 +271,8 @@ import proposalTemplateRoutes from './routes/proposalTemplates.js';
 import integrationRoutes from './routes/integrations.js';
 import phoneRoutes from './routes/phone.js';
 import proposalRoutes from './routes/proposals.js';
+// Contatos — resolução por telefone p/ a extensão Chrome (Upgrade RD P3, req 24)
+import contactRoutes from './routes/contacts.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -366,6 +370,9 @@ v1Router.use('/attachments', csrfProtection);
 v1Router.use('/proposal-templates', csrfProtection);
 v1Router.use('/proposals', csrfProtection);
 v1Router.use('/phone', csrfProtection);
+// Upgrade RD P3: `/contacts` (resolução por telefone p/ a extensão Chrome, req 24)
+// autentica por `X-API-Key` (não sessão/cookie) → FORA do CSRF, como `/zapier`.
+// NÃO adicionar csrfProtection aqui.
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -439,6 +446,9 @@ v1Router.use('/proposal-templates', proposalTemplateRoutes);
 v1Router.use('/integrations', integrationRoutes);
 v1Router.use('/phone', phoneRoutes);
 v1Router.use('/proposals', proposalRoutes);
+// Contatos — resolução por telefone p/ a extensão Chrome (Upgrade RD P3, req 24).
+// API-key auth (X-API-Key), sem sessão/CSRF (fora da whitelist acima).
+v1Router.use('/contacts', contactRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

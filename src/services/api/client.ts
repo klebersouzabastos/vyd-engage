@@ -73,6 +73,12 @@ import type {
   LogCallInput,
   EnrichCnpjResult,
 } from '../../types/documents';
+import type {
+  Meeting,
+  ApplyMeetingInput,
+  ApplyMeetingResult,
+  ResolvedContact,
+} from '../../types/meetings';
 
 // Detect API URL automatically in production, use env var or localhost in development
 const getApiUrl = () => {
@@ -1016,6 +1022,9 @@ class ApiClient {
     templateParams?: string[];
     mediaUrl?: string;
     leadId?: string;
+    // Upgrade RD P3 (req 23) — vincula a mensagem à timeline do deal/empresa.
+    dealId?: string;
+    companyId?: string;
   }) {
     return this.request<{ messageId?: string; success: boolean }>('/api/v1/whatsapp/send', {
       method: 'POST',
@@ -3147,6 +3156,127 @@ class ApiClient {
       '/api/v1/phone/log-call',
       { method: 'POST', body: JSON.stringify(data) }
     );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // Upgrade RD parity — P3 (WhatsApp no deal/empresa, copiloto,
+  // extensão, IA de reuniões — reqs 23–26). GATING GRACIOSO:
+  // recursos de IA/WhatsApp só aparecem quando configurados.
+  // ════════════════════════════════════════════════════════
+
+  // ── IA de reuniões no deal (req 26) ──────────────────
+
+  /**
+   * Cria uma reunião a partir de ÁUDIO (multipart, campo `audio`). Não usa
+   * `request()` porque o FormData precisa deixar o browser definir o boundary.
+   * Mantém cookie + CSRF como o resto do client. Áudio exige IA/Whisper (OpenAI);
+   * sem IA → 503 AI_NOT_CONFIGURED. Retorna a reunião com resumo + sugestões.
+   */
+  async createMeetingFromAudio(dealId: string, file: File): Promise<{ status: number; data: Meeting }> {
+    const csrfToken = this.getCsrfToken();
+    const headers: Record<string, string> = {};
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    const formData = new FormData();
+    formData.append('audio', file);
+    const response = await fetch(`${this.baseURL}/api/v1/deals/${dealId}/meetings`, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      let errorData: Record<string, unknown>;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: response.statusText || 'Falha ao processar a reunião' };
+      }
+      const message =
+        (errorData.error as string) || (errorData.message as string) || 'Falha ao processar a reunião';
+      throw new ApiError(message, response.status, errorData, errorData.code as string | undefined);
+    }
+    return response.json();
+  }
+
+  /**
+   * Cria uma reunião a partir de TRANSCRIÇÃO COLADA (sem áudio → não exige
+   * Whisper, só a análise). Sem IA → 503 AI_NOT_CONFIGURED.
+   */
+  async createMeetingFromTranscript(dealId: string, transcript: string) {
+    return this.request<{ status: number; data: Meeting }>(
+      `/api/v1/deals/${dealId}/meetings`,
+      { method: 'POST', body: JSON.stringify({ transcript }) }
+    );
+  }
+
+  /** Lista as reuniões (Interaction MEETING) de um deal. */
+  async getDealMeetings(dealId: string) {
+    return this.request<{ status: number; data: Meeting[] }>(
+      `/api/v1/deals/${dealId}/meetings`
+    );
+  }
+
+  /** Detalhe de uma reunião (resumo + sugestões) por id da interação. */
+  async getMeeting(interactionId: string) {
+    return this.request<{ status: number; data: Meeting }>(
+      `/api/v1/deals/meetings/${interactionId}`
+    );
+  }
+
+  /**
+   * Aplica as sugestões ACEITAS: cria só as tarefas marcadas + atualiza só os
+   * campos aceitos do deal (nunca silencioso). Marca appliedAt/appliedBy.
+   */
+  async applyMeeting(dealId: string, interactionId: string, data: ApplyMeetingInput) {
+    return this.request<{ status: number; data: ApplyMeetingResult }>(
+      `/api/v1/deals/${dealId}/meetings/${interactionId}/apply`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  // ── Copiloto IA via WhatsApp (req 25) ────────────────
+  // O toggle isCopilot da conexão é feito via updateWhatsAppConnection(id, { isCopilot })
+  // em IntegrationsTab (PUT /whatsapp/:id) — sem endpoint dedicado.
+
+  /**
+   * Define o "meu número WhatsApp" do usuário logado — usado pelo copiloto p/
+   * reconhecer quem comanda (só números conhecidos comandam). Endpoint próprio
+   * self-service `PUT /users/me/whatsapp` (o schema de /auth/profile NÃO aceita
+   * este campo, então usá-lo descartaria o número silenciosamente). `null` limpa.
+   */
+  async updateMyWhatsAppNumber(whatsappNumber: string | null) {
+    return this.request<{ id: string; whatsappNumber?: string | null }>(
+      '/api/v1/users/me/whatsapp',
+      { method: 'PUT', body: JSON.stringify({ whatsappNumber }) }
+    );
+  }
+
+  // ── Resolução de contato por telefone — extensão (req 24) ──
+
+  /**
+   * Resolve um telefone no CRM → lead/empresa/deals/últimas interações. Este
+   * endpoint autentica por `X-API-Key` (usado direto pela extensão Chrome);
+   * exposto aqui p/ referência do contrato. Escopo exigido: `contacts:read`.
+   */
+  async resolveContactByPhone(phone: string, apiKey: string) {
+    const url = `${this.baseURL}/api/v1/contacts/resolve?phone=${encodeURIComponent(phone)}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'x-api-key': apiKey },
+    });
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Falha ao resolver contato' }));
+      throw new ApiError(
+        (errorData.error as string) || 'Falha ao resolver contato',
+        response.status,
+        errorData,
+        errorData.code as string | undefined
+      );
+    }
+    const json = (await response.json()) as { status: number; data: ResolvedContact };
+    return json.data;
   }
 }
 

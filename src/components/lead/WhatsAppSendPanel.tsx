@@ -4,17 +4,55 @@ import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { MessageSquare, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Loader2, ExternalLink } from 'lucide-react';
 import { apiClient } from '../../services/api/client';
 import { toast } from 'sonner';
 
+/**
+ * Painel de envio de WhatsApp genérico por contexto (Upgrade RD P3, req 23).
+ *
+ * Aceita exatamente UM contexto: lead, deal ou empresa. O telefone é resolvido
+ * pelo chamador a partir do contexto (deal → telefone do lead/empresa vinculados;
+ * empresa → phone da empresa) e passado em `phone`. Os props legados
+ * `leadId`/`leadPhone`/`leadName` continuam funcionando (uso atual em LeadForm).
+ *
+ * Sem conexão CONNECTED → mostra link wa.me + registra a interação (register-only),
+ * vinculada ao contexto (lead/deal/empresa), como no Inbox.
+ */
 interface WhatsAppSendPanelProps {
-  leadId: string;
+  /** Contexto do envio. Passe exatamente um destes. */
+  leadId?: string;
+  dealId?: string;
+  companyId?: string;
+  /** Telefone do destinatário resolvido do contexto. */
+  phone?: string;
+  /** Nome exibido no placeholder da mensagem. */
+  name?: string;
+
+  // --- Compat: props legados usados por LeadForm (leadId/leadPhone/leadName). ---
+  /** @deprecated Use `phone`. */
   leadPhone?: string;
+  /** @deprecated Use `name`. */
   leadName?: string;
 }
 
-export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendPanelProps) {
+function sanitizePhone(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
+export function WhatsAppSendPanel({
+  leadId,
+  dealId,
+  companyId,
+  phone,
+  name,
+  leadPhone,
+  leadName,
+}: WhatsAppSendPanelProps) {
+  // Resolve contexto/valores considerando os props legados.
+  const targetPhone = phone ?? leadPhone;
+  const targetName = name ?? leadName;
+
   const [connections, setConnections] = useState<any[]>([]);
   const [selectedConnection, setSelectedConnection] = useState('');
   const [messageType, setMessageType] = useState<'text' | 'template'>('text');
@@ -38,10 +76,10 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
   const loadConnections = async () => {
     try {
       const data = await apiClient.getWhatsAppConnections();
-      const connected = (data || []).filter((c: any) => c.status === 'CONNECTED');
+      const connected = ((data as any[]) || []).filter((c: any) => c.status === 'CONNECTED');
       setConnections(connected);
       if (connected.length > 0) {
-        setSelectedConnection(connected[0].id);
+        setSelectedConnection(String(connected[0].id));
       }
     } catch (error) {
       console.error('Erro ao carregar conexões:', error);
@@ -52,7 +90,9 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
 
   const loadTemplates = async (connectionId: string) => {
     try {
-      const result = await apiClient.getWhatsAppTemplates(connectionId);
+      const result = (await apiClient.getWhatsAppTemplates(connectionId)) as {
+        data?: any[];
+      } | null;
       setTemplates(result?.data || []);
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
@@ -60,9 +100,12 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
     }
   };
 
+  // Campos de contexto enviados ao backend (vincula a interação à timeline correta).
+  const contextIds = { leadId, dealId, companyId };
+
   const handleSend = async () => {
-    if (!selectedConnection || !leadPhone) {
-      toast.error('Selecione uma conexão e verifique o telefone do lead');
+    if (!selectedConnection || !targetPhone) {
+      toast.error('Selecione uma conexão e verifique o telefone do contato');
       return;
     }
 
@@ -75,12 +118,12 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
     try {
       await apiClient.sendWhatsAppMessage({
         connectionId: selectedConnection,
-        to: leadPhone,
+        to: targetPhone,
         type: messageType,
         content: content,
         templateName: messageType === 'template' ? selectedTemplate : undefined,
         templateParams: messageType === 'template' ? templateParams : undefined,
-        leadId,
+        ...contextIds,
       });
       toast.success('Mensagem WhatsApp enviada!');
       setContent('');
@@ -92,30 +135,85 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
     }
   };
 
+  // Fallback sem conexão CONNECTED: abre wa.me e registra a interação (register-only).
+  const handleRegisterOnly = async () => {
+    if (!targetPhone) {
+      toast.error('Contato não possui telefone cadastrado');
+      return;
+    }
+    if (!content.trim()) {
+      toast.error('Digite uma mensagem');
+      return;
+    }
+
+    setSending(true);
+    try {
+      await apiClient.createInteraction({
+        ...contextIds,
+        type: 'WHATSAPP',
+        direction: 'OUTBOUND',
+        content: content,
+      });
+      const waUrl = `https://wa.me/${sanitizePhone(targetPhone)}?text=${encodeURIComponent(content)}`;
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+      toast.success('Mensagem registrada (sem conexão WhatsApp ativa)');
+      setContent('');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao registrar mensagem');
+    } finally {
+      setSending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        <span className="text-sm text-gray-500">Carregando...</span>
+        <span className="text-sm text-secondary">Carregando...</span>
       </div>
     );
   }
 
+  if (!targetPhone) {
+    return (
+      <div className="p-4 text-center text-sm text-secondary">
+        <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
+        <p>Contato não possui telefone cadastrado.</p>
+      </div>
+    );
+  }
+
+  // Sem conexão CONNECTED → modo register-only + wa.me (fallback gracioso).
   if (connections.length === 0) {
     return (
-      <div className="p-4 text-center text-sm text-gray-500">
-        <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-        <p>Nenhuma conexão WhatsApp ativa.</p>
-        <p className="text-xs mt-1">Configure em Configurações &gt; WhatsApp</p>
-      </div>
-    );
-  }
-
-  if (!leadPhone) {
-    return (
-      <div className="p-4 text-center text-sm text-gray-500">
-        <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-        <p>Lead não possui telefone cadastrado.</p>
+      <div className="space-y-3 p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <MessageSquare className="h-4 w-4 text-action-primary" />
+          <h4 className="font-medium text-sm text-primary">Enviar WhatsApp</h4>
+        </div>
+        <p className="text-xs text-secondary">
+          Nenhuma conexão WhatsApp ativa. A mensagem será registrada na timeline e aberta no
+          WhatsApp Web/App.
+        </p>
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={`Mensagem para ${targetName || targetPhone}...`}
+          className="text-sm min-h-[80px]"
+        />
+        <Button
+          onClick={handleRegisterOnly}
+          disabled={sending}
+          size="sm"
+          className="w-full bg-action-primary text-on-accent hover:opacity-90"
+        >
+          {sending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <ExternalLink className="h-4 w-4 mr-1" />
+          )}
+          Abrir no WhatsApp e registrar
+        </Button>
       </div>
     );
   }
@@ -123,8 +221,8 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
   return (
     <div className="space-y-3 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <MessageSquare className="h-4 w-4 text-green-600" />
-        <h4 className="font-medium text-sm">Enviar WhatsApp</h4>
+        <MessageSquare className="h-4 w-4 text-action-primary" />
+        <h4 className="font-medium text-sm text-primary">Enviar WhatsApp</h4>
       </div>
 
       {connections.length > 1 && (
@@ -167,7 +265,7 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={`Mensagem para ${leadName || leadPhone}...`}
+            placeholder={`Mensagem para ${targetName || targetPhone}...`}
             className="text-sm min-h-[80px]"
           />
         </div>
@@ -214,7 +312,7 @@ export function WhatsAppSendPanel({ leadId, leadPhone, leadName }: WhatsAppSendP
         onClick={handleSend}
         disabled={sending}
         size="sm"
-        className="w-full bg-green-600 hover:bg-green-700"
+        className="w-full bg-action-primary text-on-accent hover:opacity-90"
       >
         {sending ? (
           <Loader2 className="h-4 w-4 animate-spin mr-1" />

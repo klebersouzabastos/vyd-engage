@@ -16,6 +16,8 @@ const createConnectionSchema = z.object({
   name: z.string().min(1),
   provider: z.nativeEnum(WhatsAppProvider),
   config: z.any(),
+  // Copiloto IA (Upgrade RD P3, req 25): ADMIN designa a conexão do copiloto.
+  isCopilot: z.boolean().optional(),
 });
 
 const updateConnectionSchema = createConnectionSchema.extend({
@@ -113,6 +115,9 @@ const sendMessageSchema = z.object({
   templateParams: z.array(z.string()).optional(),
   mediaUrl: z.string().url().optional(),
   leadId: z.string().uuid().optional(),
+  // Upgrade RD P3 (req 23): vincula a mensagem à timeline do deal/empresa.
+  dealId: z.string().uuid().optional(),
+  companyId: z.string().uuid().optional(),
 });
 
 // POST /api/whatsapp/send - Send a message

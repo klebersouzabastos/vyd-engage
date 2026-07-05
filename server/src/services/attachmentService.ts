@@ -10,8 +10,9 @@ import type { Attachment } from '@prisma/client';
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
 
-// Allowlist de mimeTypes (PDF / imagem / office / texto / csv). Qualquer tipo
-// fora da lista é recusado (415) no upload de usuário.
+// Allowlist de mimeTypes (PDF / imagem / office / texto / csv / áudio). Qualquer
+// tipo fora da lista é recusado (415) no upload de usuário. Os tipos de áudio
+// habilitam o upload de gravação de reunião (IA de reuniões, Upgrade RD P3).
 export const ALLOWED_MIME_TYPES = new Set<string>([
   'application/pdf',
   'image/png',
@@ -27,6 +28,13 @@ export const ALLOWED_MIME_TYPES = new Set<string>([
   'text/plain',
   'text/csv',
   'application/csv',
+  // Áudio de reunião (P3) — usado por POST /deals/:id/meetings.
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
+  'audio/webm',
+  'audio/mp4',
+  'audio/x-m4a',
 ]);
 
 export function isAllowedMimeType(mimeType: string): boolean {

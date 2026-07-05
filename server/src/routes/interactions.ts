@@ -15,6 +15,10 @@ router.use(tenantScope);
 const createInteractionSchema = z.object({
   leadId: z.string().uuid().optional(),
   dealId: z.string().uuid().optional(),
+  // Upgrade RD P3 (req 23): permite vincular a interação à empresa (ex.: fallback
+  // register-only do WhatsAppSendPanel montado em CompanyDetail). Sem isto, o Zod
+  // descartaria o companyId e a mensagem não apareceria na timeline da empresa.
+  companyId: z.string().uuid().optional(),
   type: z.nativeEnum(InteractionType),
   direction: z.nativeEnum(InteractionDirection),
   subject: z.string().optional(),

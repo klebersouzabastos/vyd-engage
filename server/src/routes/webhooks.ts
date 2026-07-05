@@ -5,6 +5,10 @@ import { whatsappMessagingService } from '../services/whatsappMessagingService.j
 import { emailMessagingService } from '../services/emailMessagingService.js';
 import { recordBounceByEmail } from '../services/campaignService.js';
 import { logger } from '../utils/logger.js';
+import prisma from '../config/database.js';
+import { safeDecryptConfig } from '../utils/encryption.js';
+import { copilotService } from '../services/copilotService.js';
+import { isAIEnabled } from '../services/aiProvider.js';
 
 /**
  * Extract bounced recipient emails from a provider webhook payload and record a
@@ -128,6 +132,70 @@ router.get('/whatsapp', (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Roteamento do Copiloto IA (Upgrade RD P3, req 25).
+ *
+ * Para conexões marcadas `isCopilot`, mensagens de TEXTO recebidas são roteadas ao
+ * `copilotService` em vez de apenas logadas pelo fluxo genérico. Retorna um payload
+ * FILTRADO contendo só os `changes` de conexões NÃO-copiloto, para o
+ * `whatsappMessagingService.processWebhook` seguir seu fluxo normal sem duplicar as
+ * mensagens já tratadas pelo copiloto (o copiloto grava sua própria Interaction).
+ *
+ * Gating: sem `isAIEnabled()`, o roteamento é ignorado (o payload passa inteiro ao
+ * fluxo genérico) — nada quebra quando a IA não está configurada.
+ */
+async function routeCopilotAndFilter(payload: any): Promise<any> {
+  if (!isAIEnabled() || !payload?.entry) return payload;
+
+  // Cache de conexões CONNECTED por phone_number_id (decripta config uma vez).
+  const connections = await prisma.whatsAppConnection.findMany({
+    where: { status: 'CONNECTED' },
+    select: { id: true, tenantId: true, isCopilot: true, config: true },
+  });
+  const byPhoneId = new Map<string, { id: string; tenantId: string; isCopilot: boolean }>();
+  for (const c of connections) {
+    const cfg = safeDecryptConfig(c.config) as any;
+    if (cfg?.phoneNumberId) {
+      byPhoneId.set(cfg.phoneNumberId, { id: c.id, tenantId: c.tenantId, isCopilot: c.isCopilot });
+    }
+  }
+
+  const outEntries: any[] = [];
+  for (const entry of payload.entry || []) {
+    const outChanges: any[] = [];
+    for (const change of entry.changes || []) {
+      const phoneNumberId = change?.value?.metadata?.phone_number_id;
+      const conn = phoneNumberId ? byPhoneId.get(phoneNumberId) : undefined;
+
+      // Conexão não-copiloto (ou desconhecida) → segue o fluxo genérico.
+      if (!conn || !conn.isCopilot) {
+        outChanges.push(change);
+        continue;
+      }
+
+      // Conexão copiloto: roteia mensagens de TEXTO ao copiloto; ignora o resto
+      // (status updates de uma conexão-copiloto não precisam do fluxo genérico).
+      const messages = change?.value?.messages || [];
+      for (const message of messages) {
+        if (message?.type !== 'text') continue;
+        const from = message.from;
+        const text = message.text?.body || '';
+        try {
+          await copilotService.handleCopilotMessage(conn.tenantId, conn, from, text);
+        } catch (err) {
+          logger.error('Copilot: erro ao rotear mensagem', err as any);
+        }
+      }
+      // NÃO reencaminha ao fluxo genérico (evita Interaction duplicada).
+    }
+    if (outChanges.length > 0) {
+      outEntries.push({ ...entry, changes: outChanges });
+    }
+  }
+
+  return { ...payload, entry: outEntries };
+}
+
 // POST /api/webhooks/whatsapp - Incoming WhatsApp messages & status updates
 router.post('/whatsapp', async (req: Request, res: Response) => {
   try {
@@ -154,10 +222,14 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
 
     logger.info('WhatsApp webhook received', { object: req.body?.object });
 
-    // Process webhook asynchronously - always return 200 quickly
-    whatsappMessagingService.processWebhook(req.body).catch((error) => {
-      logger.error('Error processing WhatsApp webhook async', error);
-    });
+    // Copiloto IA (req 25): roteia mensagens de conexões `isCopilot` e devolve um
+    // payload filtrado (sem os changes já tratados pelo copiloto) ao fluxo genérico.
+    // Assíncrono — sempre retorna 200 rápido.
+    routeCopilotAndFilter(req.body)
+      .then((filtered) => whatsappMessagingService.processWebhook(filtered))
+      .catch((error) => {
+        logger.error('Error processing WhatsApp webhook async', error);
+      });
 
     res.status(200).json({ received: true });
   } catch (error) {

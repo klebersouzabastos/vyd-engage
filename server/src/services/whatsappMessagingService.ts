@@ -18,6 +18,11 @@ export interface SendMessageData {
   templateParams?: string[];
   mediaUrl?: string;
   leadId?: string;
+  // Upgrade RD P3 (req 23): vincula a mensagem à timeline do deal/empresa (além do
+  // lead). A Interaction WHATSAPP OUTBOUND aponta para leadId/dealId/companyId
+  // conforme informados, aparecendo no histórico da entidade correspondente.
+  dealId?: string;
+  companyId?: string;
 }
 
 export interface MessageStatus {
@@ -187,12 +192,34 @@ export const whatsappMessagingService = {
       data: { messagesSent: { increment: 1 } },
     });
 
-    // Create interaction record
-    if (data.leadId) {
+    // Create interaction record. Vincula a leadId/dealId/companyId conforme
+    // informados (req 23) — a mensagem passa a aparecer na timeline do deal/empresa,
+    // não só do lead. Só cria a Interaction se houver ao menos um vínculo. Cada
+    // vínculo é validado contra o tenant (não referencia deal/empresa de outro tenant).
+    let dealId: string | null = null;
+    if (data.dealId) {
+      const deal = await prisma.deal.findFirst({
+        where: { id: data.dealId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      dealId = deal?.id ?? null;
+    }
+    let companyId: string | null = null;
+    if (data.companyId) {
+      const company = await prisma.company.findFirst({
+        where: { id: data.companyId, tenantId },
+        select: { id: true },
+      });
+      companyId = company?.id ?? null;
+    }
+
+    if (data.leadId || dealId || companyId) {
       await prisma.interaction.create({
         data: {
           tenantId,
-          leadId: data.leadId,
+          leadId: data.leadId ?? null,
+          dealId,
+          companyId,
           type: InteractionType.WHATSAPP,
           direction: InteractionDirection.OUTBOUND,
           subject: data.type === 'template' ? `Template: ${data.templateName}` : undefined,

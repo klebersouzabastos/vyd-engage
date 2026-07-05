@@ -8,6 +8,9 @@ export interface CreateWhatsAppConnectionData {
   name: string;
   provider: WhatsAppProvider;
   config?: any; // JSON - encrypted in production
+  // Copiloto IA (Upgrade RD P3, req 25): designa esta conexão/número como o
+  // canal do copiloto (ADMIN configura). Default false.
+  isCopilot?: boolean;
 }
 
 export interface UpdateWhatsAppConnectionData extends Partial<CreateWhatsAppConnectionData> {
@@ -27,6 +30,7 @@ export const whatsappService = {
         provider: data.provider,
         status: WhatsAppConnectionStatus.DISCONNECTED,
         config: safeEncryptConfig(data.config) as any,
+        isCopilot: data.isCopilot ?? false,
       },
     });
 
@@ -72,6 +76,7 @@ export const whatsappService = {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.config !== undefined) updateData.config = safeEncryptConfig(data.config);
+    if (data.isCopilot !== undefined) updateData.isCopilot = data.isCopilot;
     if (data.qrCode !== undefined) {
       updateData.qrCode = data.qrCode;
       updateData.qrCodeExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes

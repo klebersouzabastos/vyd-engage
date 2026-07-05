@@ -76,6 +76,44 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+// PUT /api/users/me/whatsapp - o próprio usuário cadastra/edita o seu número de
+// WhatsApp para o Copiloto IA (Upgrade RD P3, req 25). Só afeta o registro do
+// requisitante — não exige papel ADMIN/GESTOR. `null`/"" limpa o número.
+router.put('/me/whatsapp', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+
+    const { whatsappNumber } = z
+      .object({
+        // Aceita dígitos, +, espaços e traços; até 20 chars. String vazia → limpa.
+        whatsappNumber: z
+          .string()
+          .trim()
+          .max(20, 'Número inválido')
+          .regex(/^[+0-9()\-\s]*$/, 'Número inválido')
+          .nullable(),
+      })
+      .parse(req.body);
+
+    const normalized = whatsappNumber && whatsappNumber.trim() !== '' ? whatsappNumber.trim() : null;
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { whatsappNumber: normalized },
+      select: { id: true, whatsappNumber: true },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
 // PUT /api/users/:id - Update user (Admin only)
 router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
   try {
