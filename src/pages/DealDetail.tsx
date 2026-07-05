@@ -30,7 +30,6 @@ import {
   Sparkles,
   Flame,
   Trash2,
-  Paperclip,
   FileSignature,
   CheckSquare,
   Building2,
@@ -50,6 +49,8 @@ import { SendEmailDialog } from '../components/deals/SendEmailDialog';
 import { MultiSaleDialog } from '../components/deals/MultiSaleDialog';
 import { CelebrationModal } from '../components/deals/CelebrationModal';
 import { ScheduledDealsSection } from '../components/deals/ScheduledDealsSection';
+import { ProposalsSection } from '../components/deals/ProposalsSection';
+import { AttachmentsTab } from '../components/attachments/AttachmentsTab';
 import { NextActionCard } from '../components/NextActionCard';
 import { AIDraftDialog } from '../components/ai/AIDraftDialog';
 import { AuditTimeline } from '../components/AuditTimeline';
@@ -844,21 +845,14 @@ export function DealDetail() {
                 </div>
               </TabsContent>
 
-              {/* Aba Arquivos (req 30, P1) */}
-              <TabsContent value="arquivos">
-                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 text-center">
-                  <Paperclip size={36} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-sm text-gray-500">Anexos da negociação em breve.</p>
-                </div>
-              </TabsContent>
+              {/* Aba Arquivos — central de anexos do deal (Upgrade RD P2, req 22) */}
+              <TabsContent value="arquivos">{id && <AttachmentsTab dealId={id} />}</TabsContent>
 
-              {/* Aba Propostas (req 31, P1) */}
-              <TabsContent value="propostas">
-                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6 space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Exporte a proposta em PDF. Modelos e histórico de propostas serão adicionados em
-                    seguida.
-                  </p>
+              {/* Aba Propostas — modelos → gerar versão em PDF + assinatura (reqs 17-19) */}
+              <TabsContent value="propostas" className="space-y-4">
+                {id && <ProposalsSection dealId={id} />}
+                {/* Exportação rápida em PDF (P1) — atalho preservado */}
+                <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-4">
                   <Button
                     variant="outline"
                     className="gap-2"
@@ -870,7 +864,7 @@ export function DealDetail() {
                     ) : (
                       <FileSignature size={14} />
                     )}
-                    Exportar Proposta
+                    Exportar proposta rápida (PDF)
                   </Button>
                 </div>
               </TabsContent>

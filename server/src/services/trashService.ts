@@ -15,9 +15,16 @@
 import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { storageService } from './storageService.js';
 
 // ── Registry de entidades da lixeira ─────────────────────────────────────────
 
+/**
+ * Entidades "clássicas" da lixeira (as que passam pelo fluxo de aprovação de
+ * exclusão do approvalService). Este union é o CONTRATO com o approvalService
+ * (mapas exaustivos `Record<TrashEntity,…>`) — NÃO adicionar novos membros aqui
+ * sem atualizar aquele serviço.
+ */
 export type TrashEntity =
   | 'leads'
   | 'deals'
@@ -25,6 +32,16 @@ export type TrashEntity =
   | 'companies'
   | 'empreendimentos'
   | 'roadmaps';
+
+/**
+ * Entidade da lixeira específica de ANEXOS (CF-B, req 22). É tratada em separado
+ * do union `TrashEntity` porque (a) não passa pelo gate de aprovação de exclusão e
+ * (b) o expurgo definitivo precisa APAGAR os bytes (AttachmentBlob "db" ou objeto
+ * S3) — o `delegate.delete` genérico deixaria o blob órfão (vazamento). Registrada
+ * em runtime em `ALL_TRASH_ENTITIES`/`isTrashEntity` para aparecer na UI e no job.
+ */
+export const ATTACHMENTS_ENTITY = 'attachments' as const;
+export type AnyTrashEntity = TrashEntity | typeof ATTACHMENTS_ENTITY;
 
 /** Chave do AuditLog.entityType correspondente (para "quem/quando" excluiu). */
 type AuditEntityType = 'lead' | 'deal' | 'task' | 'company' | 'empreendimento' | 'roadmap';
@@ -141,10 +158,20 @@ const ENTITIES: Record<TrashEntity, EntityConfig> = {
   },
 };
 
+/** Entidades "clássicas" (contrato com approvalService). NÃO inclui attachments. */
 export const TRASH_ENTITIES = Object.keys(ENTITIES) as TrashEntity[];
 
+/** TODAS as entidades da lixeira, incluindo `attachments` (UI, route e job). */
+export const ALL_TRASH_ENTITIES: AnyTrashEntity[] = [...TRASH_ENTITIES, ATTACHMENTS_ENTITY];
+
+/** Guarda estrita p/ o approvalService (só as 6 clássicas). */
 export function isTrashEntity(value: unknown): value is TrashEntity {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(ENTITIES, value);
+}
+
+/** Guarda ampla: aceita as 6 clássicas + `attachments` (route/UI). */
+export function isAnyTrashEntity(value: unknown): value is AnyTrashEntity {
+  return isTrashEntity(value) || value === ATTACHMENTS_ENTITY;
 }
 
 function getConfig(entity: TrashEntity): EntityConfig {
@@ -155,7 +182,7 @@ function getConfig(entity: TrashEntity): EntityConfig {
 
 export interface TrashItem {
   id: string;
-  entity: TrashEntity;
+  entity: AnyTrashEntity;
   label: string; // nome/título do registro
   deletedAt: Date;
   deletedBy?: { id: string; name: string | null; email: string } | null;
@@ -164,16 +191,35 @@ export interface TrashItem {
 
 const PAGE_SIZE = 25;
 
+type TrashList = {
+  items: TrashItem[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+function paginate(items: TrashItem[], page: number, total: number): TrashList {
+  return {
+    items,
+    pagination: {
+      page: Math.max(1, page),
+      limit: PAGE_SIZE,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    },
+  };
+}
+
 /**
  * Lista registros na lixeira de uma entidade (deletedAt != null), tenant-scoped,
  * paginado. Enriquece com "quem/quando" a partir do AuditLog (action 'delete')
- * quando houver.
+ * quando houver. `attachments` tem caminho próprio (`listAttachmentsTrash`).
  */
 export async function listTrash(
   tenantId: string,
-  entity: TrashEntity,
+  entity: AnyTrashEntity,
   page = 1
-): Promise<{ items: TrashItem[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+): Promise<TrashList> {
+  if (entity === ATTACHMENTS_ENTITY) return listAttachmentsTrash(tenantId, page);
+
   const cfg = getConfig(entity);
   const delegate = cfg.delegate();
   const where = { tenantId, deletedAt: { not: null } };
@@ -230,15 +276,56 @@ export async function listTrash(
     };
   });
 
-  return {
-    items,
-    pagination: {
-      page: Math.max(1, page),
-      limit: PAGE_SIZE,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-    },
-  };
+  return paginate(items, page, total);
+}
+
+/**
+ * Lista de anexos na lixeira (deletedAt != null), tenant-scoped, paginado.
+ * "Quem" = o `uploadedById` (autor do upload); label = `name`. Não usa AuditLog
+ * (anexos não têm entityType próprio no fluxo de aprovação).
+ */
+async function listAttachmentsTrash(tenantId: string, page: number): Promise<TrashList> {
+  const where = { tenantId, deletedAt: { not: null } };
+  const skip = (Math.max(1, page) - 1) * PAGE_SIZE;
+
+  const [records, total] = await Promise.all([
+    prisma.attachment.findMany({
+      where,
+      orderBy: { deletedAt: 'desc' },
+      skip,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        name: true,
+        deletedAt: true,
+        uploadedById: true,
+        createdAt: true,
+      },
+    }),
+    prisma.attachment.count({ where }),
+  ]);
+
+  const userIds = [...new Set(records.map((r) => r.uploadedById).filter((v): v is string => !!v))];
+  const users =
+    userIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds }, tenantId },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  const items: TrashItem[] = records.map((r) => ({
+    id: r.id,
+    entity: ATTACHMENTS_ENTITY,
+    label: r.name || '(sem nome)',
+    deletedAt: r.deletedAt as Date,
+    deletedBy: r.uploadedById ? userMap.get(r.uploadedById) ?? null : null,
+    // O anexo não registra "quando" foi excluído em AuditLog; usa o deletedAt.
+    deletedByAt: (r.deletedAt as Date) ?? null,
+  }));
+
+  return paginate(items, page, total);
 }
 
 function labelForRecord(entity: TrashEntity, record: Record<string, unknown>): string {
@@ -255,9 +342,20 @@ function labelForRecord(entity: TrashEntity, record: Record<string, unknown>): s
  */
 export async function restoreItem(
   tenantId: string,
-  entity: TrashEntity,
+  entity: AnyTrashEntity,
   id: string
 ): Promise<void> {
+  if (entity === ATTACHMENTS_ENTITY) {
+    const found = await prisma.attachment.updateMany({
+      where: { id, tenantId, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+    if (found.count === 0) {
+      throw createError('Registro não encontrado na lixeira', 404, 'TRASH_ITEM_NOT_FOUND');
+    }
+    return;
+  }
+
   const cfg = getConfig(entity);
   const delegate = cfg.delegate();
 
@@ -284,12 +382,15 @@ export async function restoreItem(
 /**
  * Expurga definitivamente (hard-delete) UM item que já está na lixeira.
  * Tenant-scoped; recusa itens que não estão na lixeira (deletedAt=null).
+ * Para `attachments`, apaga TAMBÉM os bytes (AttachmentBlob "db" | objeto S3).
  */
 export async function purgeItem(
   tenantId: string,
-  entity: TrashEntity,
+  entity: AnyTrashEntity,
   id: string
 ): Promise<void> {
+  if (entity === ATTACHMENTS_ENTITY) return purgeAttachment(tenantId, id);
+
   const cfg = getConfig(entity);
   const delegate = cfg.delegate();
 
@@ -310,15 +411,39 @@ export async function purgeItem(
 }
 
 /**
+ * Expurga UM anexo já na lixeira: apaga os bytes (blob "db" ou objeto S3) e o
+ * metadado Attachment. Recusa (404) itens que não estão na lixeira.
+ */
+async function purgeAttachment(tenantId: string, id: string): Promise<void> {
+  const att = await prisma.attachment.findFirst({
+    where: { id, tenantId, deletedAt: { not: null } },
+    select: { id: true, storageProvider: true, storageKey: true },
+  });
+  if (!att) {
+    throw createError(
+      'Registro não encontrado na lixeira (apenas itens já excluídos podem ser expurgados)',
+      404,
+      'TRASH_ITEM_NOT_FOUND'
+    );
+  }
+  // Apaga os bytes ANTES do metadado (best-effort — falha nos bytes não aborta).
+  await storageService.purgeBytes(att);
+  await prisma.attachment.delete({ where: { id } });
+}
+
+/**
  * Expurgo em lote por entidade de itens com deletedAt < cutoff (job de governança).
  * Tenant-scoped; hard-delete respeitando FKs (deleta filhos antes quando aplicável).
  * Retorna a contagem expurgada. Best-effort por item (uma falha não aborta o resto).
+ * Para `attachments`, apaga TAMBÉM os bytes de cada anexo (blob/S3).
  */
 export async function purgeExpiredForEntity(
   tenantId: string,
-  entity: TrashEntity,
+  entity: AnyTrashEntity,
   cutoff: Date
 ): Promise<number> {
+  if (entity === ATTACHMENTS_ENTITY) return purgeExpiredAttachments(tenantId, cutoff);
+
   const cfg = getConfig(entity);
   const delegate = cfg.delegate();
 
@@ -343,9 +468,37 @@ export async function purgeExpiredForEntity(
   return purged;
 }
 
+/**
+ * Expurgo em lote de anexos soft-deletados há > cutoff: apaga os bytes (blob/S3)
+ * e o metadado de cada um. Best-effort por item. Retorna a contagem expurgada.
+ */
+async function purgeExpiredAttachments(tenantId: string, cutoff: Date): Promise<number> {
+  const stale = await prisma.attachment.findMany({
+    where: { tenantId, deletedAt: { lt: cutoff } },
+    orderBy: { deletedAt: 'asc' },
+    take: 500,
+    select: { id: true, storageProvider: true, storageKey: true },
+  });
+
+  let purged = 0;
+  for (const att of stale) {
+    try {
+      await storageService.purgeBytes(att);
+      await prisma.attachment.delete({ where: { id: att.id } });
+      purged++;
+    } catch (err) {
+      logger.error(`trashService.purgeExpired: falha ao expurgar attachments/${att.id}`, err);
+    }
+  }
+  return purged;
+}
+
 export const trashService = {
   TRASH_ENTITIES,
+  ALL_TRASH_ENTITIES,
+  ATTACHMENTS_ENTITY,
   isTrashEntity,
+  isAnyTrashEntity,
   listTrash,
   restoreItem,
   purgeItem,

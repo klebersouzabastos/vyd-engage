@@ -9,6 +9,8 @@ import { CompanyForm } from '../components/CompanyForm';
 import { EmpreendimentosManager } from '../components/comercial/EmpreendimentosManager';
 import { ClientStatusBadge } from '../components/companies/CompanyBadges';
 import { ContractCard } from '../components/companies/ContractCard';
+import { AttachmentsTab } from '../components/attachments/AttachmentsTab';
+import { CallButton } from '../components/phone/CallButton';
 import { Company, CompanySize } from '../types';
 import { apiClient } from '../services/api/client';
 import {
@@ -115,7 +117,7 @@ export function CompanyDetail() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loadingCompany, setLoadingCompany] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'leads' | 'deals' | 'empreendimentos' | 'timeline' | 'info'
+    'leads' | 'deals' | 'empreendimentos' | 'arquivos' | 'timeline' | 'info'
   >('leads');
   const [editFormOpen, setEditFormOpen] = useState(false);
 
@@ -181,6 +183,7 @@ export function CompanyDetail() {
       count: company._count?.deals ?? company.deals?.length ?? 0,
     },
     { id: 'empreendimentos' as const, label: 'Empreendimentos', count: null },
+    { id: 'arquivos' as const, label: 'Arquivos', count: null },
     { id: 'timeline' as const, label: 'Timeline', count: company.interactions?.length ?? 0 },
     { id: 'info' as const, label: 'Informacoes', count: null },
   ];
@@ -409,6 +412,9 @@ export function CompanyDetail() {
 
         {activeTab === 'empreendimentos' && id && <EmpreendimentosManager companyId={id} />}
 
+        {/* Aba Arquivos — central de anexos da empresa (Upgrade RD P2, req 22) */}
+        {activeTab === 'arquivos' && id && <AttachmentsTab companyId={id} />}
+
         {activeTab === 'timeline' && (
           <div className="bg-card rounded-lg shadow-sm border border-gray-300 p-6">
             {!company.interactions || company.interactions.length === 0 ? (
@@ -463,6 +469,15 @@ export function CompanyDetail() {
                 value={company.size ? SIZE_LABELS[company.size] : null}
               />
               <InfoItem icon={<Phone size={16} />} label="Telefone" value={company.phone} />
+              {company.phone && (
+                <div className="pl-6">
+                  <CallButton
+                    phone={company.phone}
+                    companyId={company.id}
+                    onLogged={fetchCompany}
+                  />
+                </div>
+              )}
               <InfoItem
                 icon={<LinkIcon size={16} />}
                 label="Website"

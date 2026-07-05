@@ -13,6 +13,8 @@ import { ConnectionCard } from '../whatsapp/ConnectionCard';
 import { ConnectionForm } from '../whatsapp/ConnectionForm';
 import { EmailConfigCard } from '../email/EmailConfigCard';
 import { EmailConfigForm } from '../email/EmailConfigForm';
+import { SignatureConfigCard } from '../integrations/SignatureConfigCard';
+import { PhoneConfigCard } from '../integrations/PhoneConfigCard';
 
 const scrollbarStyle = {
   scrollbarWidth: 'thin' as const,
@@ -788,6 +790,12 @@ export function IntegrationsTab() {
           )}
         </div>
       </div>
+
+      {/* Assinatura eletrônica (ZapSign) — gated (req 19) */}
+      <SignatureConfigCard />
+
+      {/* Telefone virtual (Twilio) — gated (req 21) */}
+      <PhoneConfigCard />
 
       {/* Webhook */}
       <WebhookCaptureSection />

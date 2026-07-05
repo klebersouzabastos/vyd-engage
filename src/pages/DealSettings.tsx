@@ -5,6 +5,7 @@ import {
   Bell,
   Building2,
   ClipboardList,
+  FileText,
   ListChecks,
   Mail,
   Megaphone,
@@ -26,6 +27,7 @@ import { FieldPresetsTab } from '../components/settings/FieldPresetsTab';
 import { ManagerTriggersTab } from '../components/settings/ManagerTriggersTab';
 import { SalesFlagsTab } from '../components/settings/SalesFlagsTab';
 import { EmailTemplatesTab } from '../components/settings/EmailTemplatesTab';
+import { ProposalTemplatesTab } from '../components/settings/ProposalTemplatesTab';
 import { apiClient, ConfigItem } from '../services/api/client';
 
 type Api = {
@@ -259,6 +261,10 @@ export function DealSettings() {
                   <Mail size={16} className="mr-2" />
                   Modelos de e-mail
                 </TabsTrigger>
+                <TabsTrigger value="proposal-templates" className={TAB_TRIGGER_CLASS}>
+                  <FileText size={16} className="mr-2" />
+                  Modelos de proposta
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -332,6 +338,10 @@ export function DealSettings() {
 
             <TabsContent value="email-templates" className="p-6">
               <EmailTemplatesTab />
+            </TabsContent>
+
+            <TabsContent value="proposal-templates" className="p-6">
+              <ProposalTemplatesTab />
             </TabsContent>
           </Tabs>
         </div>

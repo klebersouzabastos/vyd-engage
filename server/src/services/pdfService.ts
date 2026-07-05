@@ -1,5 +1,6 @@
 import { generate } from '@pdfme/generator';
 import type { Template } from '@pdfme/common';
+import PDFDocument from 'pdfkit';
 import prisma from '../config/database.js';
 
 const FONT_URL = 'https://fonts.gstatic.com/s/notosans/v36/o-0IIpQlx3QUlC5A4PNr5TRASf6M7Q.woff2';
@@ -210,4 +211,173 @@ export async function generateProposalPDF(dealId: string, tenantId: string): Pro
 
   const pdf = await generate({ template, inputs, options: { font } });
   return Buffer.from(pdf.buffer);
+}
+
+// ─── Proposta a partir de MODELO (Upgrade RD P2, req 18) ─────────────────────
+// Renderiza o corpo do modelo já com variáveis resolvidas + a tabela de itens
+// do deal, num PDF de fluxo livre (pdfkit; fonte Helvetica embutida cobre os
+// acentos pt-BR via WinAnsi). Layout flexível p/ corpo e tabela de tamanho
+// variável — sem dependência externa nova.
+
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export interface ProposalItemLine {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number; // percentual (0-100)
+  subtotal: number;
+}
+
+export interface ProposalPdfInput {
+  tenantName: string;
+  title: string; // cabeçalho (nome do modelo/proposta)
+  clientName?: string;
+  clientCompany?: string;
+  clientEmail?: string;
+  version: number;
+  bodyText: string; // corpo do modelo já interpolado (texto estruturado, sem HTML)
+  items: ProposalItemLine[];
+  total: number;
+  generatedBy?: string;
+}
+
+/**
+ * Gera o PDF de uma proposta a partir do corpo (já interpolado) + itens do deal.
+ * Deterministic (sem rede) — bom p/ teste com mock. Retorna o Buffer do PDF.
+ */
+export function renderProposalPdf(input: ProposalPdfInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const accent = '#1e3a5f';
+      const muted = '#64748b';
+      const ink = '#1f2937';
+
+      // Cabeçalho
+      doc.fillColor(accent).fontSize(20).font('Helvetica-Bold').text(input.title || 'Proposta Comercial');
+      doc
+        .moveDown(0.2)
+        .fillColor(muted)
+        .fontSize(11)
+        .font('Helvetica')
+        .text(`${input.tenantName} — versão ${input.version}`);
+      doc.moveDown(0.5);
+      doc
+        .strokeColor('#e2e8f0')
+        .lineWidth(0.5)
+        .moveTo(doc.page.margins.left, doc.y)
+        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+        .stroke();
+      doc.moveDown(0.8);
+
+      // Dados do cliente
+      const clientLines = [
+        input.clientName ? `Cliente: ${input.clientName}` : '',
+        input.clientCompany ? `Empresa: ${input.clientCompany}` : '',
+        input.clientEmail ? `E-mail: ${input.clientEmail}` : '',
+      ].filter(Boolean);
+      if (clientLines.length) {
+        doc.fillColor(ink).fontSize(10).font('Helvetica');
+        for (const line of clientLines) doc.text(line);
+        doc.moveDown(0.8);
+      }
+
+      // Corpo do modelo (texto interpolado; parágrafos separados por linha em branco)
+      if (input.bodyText.trim()) {
+        doc.fillColor(ink).fontSize(11).font('Helvetica');
+        const paragraphs = input.bodyText.split(/\n{2,}/);
+        for (const para of paragraphs) {
+          const text = para.trim();
+          if (!text) continue;
+          doc.text(text, { align: 'left' });
+          doc.moveDown(0.5);
+        }
+        doc.moveDown(0.3);
+      }
+
+      // Tabela de itens
+      if (input.items.length) {
+        doc.fillColor(accent).fontSize(12).font('Helvetica-Bold').text('Itens');
+        doc.moveDown(0.4);
+
+        const left = doc.page.margins.left;
+        const right = doc.page.width - doc.page.margins.right;
+        const colName = left;
+        const colQty = right - 200;
+        const colPrice = right - 140;
+        const colDisc = right - 70;
+        const colSub = right - 5;
+
+        const header = (y: number) => {
+          doc.fillColor(muted).fontSize(9).font('Helvetica-Bold');
+          doc.text('Item', colName, y, { width: colQty - colName - 4 });
+          doc.text('Qtd', colQty - 20, y, { width: 40, align: 'right' });
+          doc.text('Preço', colPrice - 20, y, { width: 55, align: 'right' });
+          doc.text('Desc.', colDisc - 20, y, { width: 40, align: 'right' });
+          doc.text('Subtotal', colSub - 65, y, { width: 65, align: 'right' });
+        };
+        header(doc.y);
+        doc.moveDown(0.3);
+        doc
+          .strokeColor('#e2e8f0')
+          .lineWidth(0.5)
+          .moveTo(left, doc.y)
+          .lineTo(right, doc.y)
+          .stroke();
+        doc.moveDown(0.3);
+
+        doc.fillColor(ink).fontSize(9).font('Helvetica');
+        for (const item of input.items) {
+          if (doc.y > doc.page.height - doc.page.margins.bottom - 60) {
+            doc.addPage();
+            header(doc.y);
+            doc.moveDown(0.5);
+          }
+          const rowY = doc.y;
+          doc.text(item.name, colName, rowY, { width: colQty - colName - 24 });
+          const lineY = rowY;
+          doc.text(String(item.quantity), colQty - 20, lineY, { width: 40, align: 'right' });
+          doc.text(BRL.format(item.unitPrice), colPrice - 20, lineY, { width: 55, align: 'right' });
+          doc.text(`${item.discount}%`, colDisc - 20, lineY, { width: 40, align: 'right' });
+          doc.text(BRL.format(item.subtotal), colSub - 65, lineY, { width: 65, align: 'right' });
+          doc.moveDown(0.5);
+        }
+
+        doc.moveDown(0.3);
+        doc
+          .strokeColor('#e2e8f0')
+          .lineWidth(0.5)
+          .moveTo(left, doc.y)
+          .lineTo(right, doc.y)
+          .stroke();
+        doc.moveDown(0.4);
+        doc
+          .fillColor(accent)
+          .fontSize(13)
+          .font('Helvetica-Bold')
+          .text(`Total: ${BRL.format(input.total)}`, left, doc.y, { align: 'right' });
+      }
+
+      // Rodapé
+      doc.moveDown(2);
+      doc
+        .fillColor(muted)
+        .fontSize(9)
+        .font('Helvetica')
+        .text(
+          input.generatedBy ? `Gerado por ${input.generatedBy} via VYD Engage` : 'Gerado via VYD Engage',
+          { align: 'center' }
+        );
+
+      doc.end();
+    } catch (err) {
+      reject(err as Error);
+    }
+  });
 }

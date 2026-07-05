@@ -44,6 +44,7 @@ import { AISummaryCard } from '../components/leads/AISummaryCard';
 import { NextActionBadge } from '../components/leads/NextActionBadge';
 import { AIChatPanel } from '../components/leads/AIChatPanel';
 import { AuditTimeline } from '../components/AuditTimeline';
+import { CallButton } from '../components/phone/CallButton';
 import { Deal, DealStage } from '../types';
 import { Handshake, DollarSign } from 'lucide-react';
 import { Timeline, TimelineItem } from '../components/ui/timeline';
@@ -561,6 +562,13 @@ export function LeadDetail() {
                     <a href={`tel:${lead.phone}`} className="text-gray-700 hover:underline">
                       {lead.phone}
                     </a>
+                    {/* Click-to-call — só aparece com telefonia configurada; tel: é o fallback */}
+                    <CallButton
+                      phone={lead.phone}
+                      leadId={lead.id}
+                      onLogged={fetchInteractions}
+                      className="ml-auto"
+                    />
                   </div>
                 )}
                 {lead.company && (
