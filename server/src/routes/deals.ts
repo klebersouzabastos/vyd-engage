@@ -519,7 +519,13 @@ router.get('/:id/ai-score', aiLimiter, async (req, res, next) => {
 
 // POST /api/deals/:id/meetings — cria reunião (áudio OU transcrição colada) → resumo
 // + tarefas/campos sugeridos.
-router.post('/:id/meetings', handleMeetingAudioUpload, async (req, res, next) => {
+// Teto de caracteres da transcrição colada: evita prompt arbitrariamente grande ao LLM
+// (coerente com o limite de 25 MB do áudio).
+const MEETING_TRANSCRIPT_MAX_CHARS = 100000;
+const createMeetingSchema = z.object({
+  transcript: z.string().max(MEETING_TRANSCRIPT_MAX_CHARS).optional(),
+});
+router.post('/:id/meetings', aiLimiter, handleMeetingAudioUpload, async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     meetingService.assertAIEnabled();
@@ -531,10 +537,11 @@ router.post('/:id/meetings', handleMeetingAudioUpload, async (req, res, next) =>
     });
     if (!deal) return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
 
+    const parsed = createMeetingSchema.parse({ transcript: req.body?.transcript });
+
     const file = (req as unknown as { file?: { originalname: string; mimetype: string; buffer: Buffer } })
       .file;
-    const transcript =
-      typeof req.body?.transcript === 'string' ? req.body.transcript : undefined;
+    const transcript = parsed.transcript;
 
     if (!file && !transcript?.trim()) {
       return next(
@@ -555,6 +562,9 @@ router.post('/:id/meetings', handleMeetingAudioUpload, async (req, res, next) =>
     });
     res.status(201).json({ status: 201, data: meeting });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });
@@ -582,7 +592,7 @@ const applyMeetingSchema = z.object({
     })
     .default({}),
 });
-router.post('/:id/meetings/:iid/apply', async (req, res, next) => {
+router.post('/:id/meetings/:iid/apply', aiLimiter, async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     meetingService.assertAIEnabled();

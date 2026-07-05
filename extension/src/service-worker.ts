@@ -123,7 +123,11 @@ async function handleMessage(message: RuntimeMessage): Promise<ApiResult<unknown
     case 'CREATE_TASK':
       return apiFetch('/api/v1/contacts/tasks', {
         method: 'POST',
-        body: JSON.stringify({ title: message.title, leadId: message.leadId }),
+        body: JSON.stringify({
+          title: message.title,
+          leadId: message.leadId,
+          companyId: message.companyId,
+        }),
       });
     case 'CREATE_NOTE':
       return apiFetch('/api/v1/contacts/notes', {

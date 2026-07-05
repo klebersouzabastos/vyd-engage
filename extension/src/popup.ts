@@ -262,7 +262,11 @@ function wireActions() {
   document.getElementById('act-task')?.addEventListener('click', async () => {
     const title = prompt('Título da tarefa:', 'Retornar contato do WhatsApp');
     if (!title) return;
-    const r = await sendToWorker({ type: 'CREATE_TASK', title, leadId: currentLeadId });
+    // Contato resolvido só por empresa (sem lead): envia companyId para a tarefa
+    // não ficar órfã. Havendo lead, mantém o vínculo pelo leadId.
+    const r = currentLeadId
+      ? await sendToWorker({ type: 'CREATE_TASK', title, leadId: currentLeadId })
+      : await sendToWorker({ type: 'CREATE_TASK', title, companyId: currentCompanyId });
     setStatus(r.ok ? 'Tarefa criada.' : r.error || 'Erro ao criar tarefa.', r.ok);
   });
 

@@ -224,6 +224,10 @@ router.post('/leads', requireScope('leads:write'), async (req, res, next) => {
     if (!parsed.success) {
       return next(createError('Validation error', 400, 'VALIDATION_ERROR', parsed.error.errors));
     }
+    // Impõe a cota do plano do tenant (mesmo padrão da rota JWT POST /leads):
+    // a criação pela extensão NÃO pode furar o limite de leads do plano.
+    const { planLimitsService } = await import('../services/planLimitsService.js');
+    await planLimitsService.enforceLimit(req.apiKey.tenantId, 'leads');
     const lead = await leadService.create(req.apiKey.tenantId, {
       ...parsed.data,
       // Origem fixa: veio pela extensão do WhatsApp. WHATSAPP não é um LeadSource
@@ -241,6 +245,9 @@ const createTaskSchema = z.object({
   title: z.string().min(1, 'Título obrigatório'),
   description: z.string().optional(),
   leadId: z.string().optional(),
+  // Uma tarefa da extensão pode nascer de um contato resolvido SÓ por empresa
+  // (sem lead). Aceita companyId opcional para não deixar a tarefa órfã.
+  companyId: z.string().optional(),
   dueDate: z.string().optional(),
 });
 router.post('/tasks', requireScope('tasks:write'), async (req, res, next) => {
@@ -258,10 +265,19 @@ router.post('/tasks', requireScope('tasks:write'), async (req, res, next) => {
       });
       if (!lead) return next(createError('Lead não encontrado', 404, 'LEAD_NOT_FOUND'));
     }
+    // Valida a empresa cross-tenant (não vaza empresa de outro tenant).
+    if (parsed.data.companyId) {
+      const company = await prisma.company.findFirst({
+        where: { id: parsed.data.companyId, tenantId: req.apiKey.tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!company) return next(createError('Empresa não encontrada', 404, 'COMPANY_NOT_FOUND'));
+    }
     const task = await taskService.create(req.apiKey.tenantId, {
       title: parsed.data.title,
       description: parsed.data.description,
       leadId: parsed.data.leadId,
+      companyId: parsed.data.companyId,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : undefined,
     });
     res.status(201).json({ status: 201, data: task });

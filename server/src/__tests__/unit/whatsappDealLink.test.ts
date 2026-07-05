@@ -189,6 +189,29 @@ describe('whatsappMessagingService.sendMessage — vínculo ao deal (req 23)', (
     expect(prismaMock.interaction.create).not.toHaveBeenCalled();
   });
 
+  it('telefone mascarado → payload do Meta usa só dígitos (lacuna #4)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-1' } as never);
+
+    const result = await whatsappMessagingService.sendMessage(tenantId, {
+      connectionId: 'conn-1',
+      to: '(11) 99999-0000',
+      type: 'text',
+      content: 'Olá!',
+      dealId: 'deal-1',
+    });
+
+    // Meta Graph recebeu o destino apenas em dígitos (sem parênteses/espaço/hífen).
+    const fetchArgs = (global.fetch as any).mock.calls[0];
+    const body = JSON.parse(fetchArgs[1].body);
+    expect(body.to).toBe('11999990000');
+    expect(body.to).toMatch(/^\d+$/);
+
+    // Retorno e metadata refletem o número normalizado.
+    expect(result.to).toBe('11999990000');
+    const data = arg0(prismaMock.interaction.create).data;
+    expect((data.metadata as any).to).toBe('11999990000');
+  });
+
   it('sem conexão CONNECTED → 400 WHATSAPP_NOT_CONNECTED (gating)', async () => {
     prismaMock.whatsAppConnection.findFirst.mockResolvedValue(null as never);
     await expect(

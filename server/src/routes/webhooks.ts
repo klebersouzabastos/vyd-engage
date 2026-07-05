@@ -137,9 +137,12 @@ router.get('/whatsapp', (req: Request, res: Response) => {
  *
  * Para conexões marcadas `isCopilot`, mensagens de TEXTO recebidas são roteadas ao
  * `copilotService` em vez de apenas logadas pelo fluxo genérico. Retorna um payload
- * FILTRADO contendo só os `changes` de conexões NÃO-copiloto, para o
- * `whatsappMessagingService.processWebhook` seguir seu fluxo normal sem duplicar as
- * mensagens já tratadas pelo copiloto (o copiloto grava sua própria Interaction).
+ * FILTRADO para o `whatsappMessagingService.processWebhook` seguir seu fluxo normal
+ * sem duplicar as mensagens já tratadas pelo copiloto (o copiloto grava sua própria
+ * Interaction). O filtro contém: os `changes` inteiros de conexões NÃO-copiloto e,
+ * para conexões copiloto, um change apenas com `value.statuses` (sem `messages`)
+ * quando houver statuses — preserva o tracking de status (sent/delivered/read/failed)
+ * das mensagens enviadas pela conexão-copiloto (LACUNA #10).
  *
  * Gating: sem `isAIEnabled()`, o roteamento é ignorado (o payload passa inteiro ao
  * fluxo genérico) — nada quebra quando a IA não está configurada.
@@ -179,8 +182,7 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
         continue;
       }
 
-      // Conexão copiloto: roteia mensagens de TEXTO ao copiloto; ignora o resto
-      // (status updates de uma conexão-copiloto não precisam do fluxo genérico).
+      // Conexão copiloto: roteia mensagens de TEXTO ao copiloto.
       const messages = change?.value?.messages || [];
       for (const message of messages) {
         if (message?.type !== 'text') continue;
@@ -192,7 +194,18 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
           logger.error('Copilot: erro ao rotear mensagem', err as any);
         }
       }
-      // NÃO reencaminha ao fluxo genérico (evita Interaction duplicada).
+
+      // LACUNA #10: as mensagens de texto já foram tratadas pelo copiloto e NÃO são
+      // reencaminhadas (evita Interaction duplicada). Mas os `statuses`
+      // (sent/delivered/read/failed) das mensagens ENVIADAS pela conexão-copiloto
+      // ainda precisam do fluxo genérico para manter o tracking de status. Então,
+      // quando houver statuses, reencaminhamos um change contendo APENAS
+      // `value.statuses` (sem `messages`).
+      const statuses = change?.value?.statuses || [];
+      if (Array.isArray(statuses) && statuses.length > 0) {
+        const { messages: _omitMessages, ...valueWithoutMessages } = change.value;
+        outChanges.push({ ...change, value: valueWithoutMessages });
+      }
     }
     if (outChanges.length > 0) {
       outEntries.push({ ...entry, changes: outChanges });

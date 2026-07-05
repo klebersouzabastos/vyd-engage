@@ -482,11 +482,23 @@ async function executePending(
     });
     throw new DealAccessError();
   }
+  // #2: notas ANEXAM (não sobrescrevem). O usuário digitou só o texto a acrescentar;
+  // passar direto p/ dealService.update apagaria as notas existentes do deal. Carrega
+  // as notas atuais e concatena — espelha meetingService.applyMeeting.
+  let notesUpdate: string | undefined;
+  if (args.notes) {
+    const currentDeal = await prisma.deal.findFirst({
+      where: { id: args.dealId, tenantId },
+      select: { notes: true },
+    });
+    const currentNotes = currentDeal?.notes ?? '';
+    notesUpdate = currentNotes ? `${currentNotes}\n\n${args.notes}` : args.notes;
+  }
   const updated = await dealService.update(tenantId, {
     id: args.dealId,
     ...(args.stage ? { stage: args.stage as DealStage } : {}),
     ...(typeof args.value === 'number' ? { value: args.value } : {}),
-    ...(args.notes ? { notes: args.notes } : {}),
+    ...(notesUpdate !== undefined ? { notes: notesUpdate } : {}),
   });
   logger.info('Copilot tool executed', {
     tool: 'atualizar_deal',
@@ -631,14 +643,10 @@ export const copilotService = {
         await this.reply(tenantId, connection.id, from, reply).catch(() => {});
         return { handled: true, reply, toolsUsed: [] };
       }
-      // decision === 'none': EXPIRA a proposta (claim atômico) e segue como nova
-      // consulta. Não importa quem vença aqui — só evitamos ressuscitá-la.
-      await claimPending(
-        tenantId,
-        pendingHit.interactionId,
-        pendingHit.metadata,
-        pendingHit.pending
-      );
+      // decision === 'none': o texto é uma NOVA consulta (não confirma/cancela).
+      // #6: NÃO expira a proposta antes de garantir que há modelo p/ processar a nova
+      // consulta — se getActiveModel() for null, sairíamos consumindo a proposta à toa.
+      // A expiração acontece logo abaixo, DEPOIS de resolver o modelo.
     }
 
     // ── Volta normal: dispara o modelo com tools ───────────────────────────────
@@ -646,6 +654,17 @@ export const copilotService = {
     if (!model) {
       logger.info('Copilot: modelo indisponível apesar de IA habilitada', { tenantId });
       return { handled: false, reply: null, toolsUsed: [] };
+    }
+
+    // #6: só agora que há modelo, EXPIRA a proposta pendente (claim atômico) e segue
+    // como nova consulta. Não importa quem vença aqui — só evitamos ressuscitá-la.
+    if (pendingHit) {
+      await claimPending(
+        tenantId,
+        pendingHit.interactionId,
+        pendingHit.metadata,
+        pendingHit.pending
+      );
     }
 
     const toolsUsed: string[] = [];

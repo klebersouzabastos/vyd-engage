@@ -308,7 +308,7 @@ export function Profile() {
                       placeholder="+55 11 99999-0000"
                       className="mt-1.5"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-secondary mt-1">
                       Usado pelo Copiloto IA no WhatsApp para reconhecer você. Só quem tem o número
                       cadastrado aqui pode comandar a IA por mensagem.
                     </p>

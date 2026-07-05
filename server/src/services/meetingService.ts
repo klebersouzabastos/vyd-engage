@@ -102,7 +102,7 @@ A partir da transcrição, produza:
 - suggestedTasks: próximas ações concretas de follow-up (title curto no imperativo; description opcional; dueDate ISO 8601 opcional só quando a reunião citar prazo claro).
 - suggestedFields: atualizações sugeridas para o negócio, SOMENTE quando a reunião indicar. Chaves permitidas:
     "value" (novo valor numérico do negócio, sem símbolo de moeda),
-    "stage" (uma de: QUALIFICATION, PROPOSAL, NEGOTIATION, CLOSING, WON, LOST),
+    "stage" (uma de: QUALIFICATION, PROPOSAL, NEGOTIATION, CLOSING). NUNCA sugira WON nem LOST em "stage": ganho e perda têm fluxo próprio e não podem ser aplicados por aqui.
     "notes" (anotações relevantes a acrescentar).
   Para cada campo, "suggested" é o novo valor e "reason" a justificativa curta.
 Não invente informações que não estejam na transcrição.`;
@@ -304,9 +304,7 @@ export const meetingService = {
         mimeType: input.audio.mimeType,
         buffer: input.audio.buffer,
         dealId,
-        // O tipo de PutAttachmentInput ainda não lista "MEETING" (arquivo de outro
-        // dono); a coluna Attachment.source é String e aceita o valor.
-        source: 'MEETING' as unknown as 'UPLOAD',
+        source: 'MEETING',
         uploadedById: input.userId ?? null,
       });
       audioAttachmentId = attachment.id;

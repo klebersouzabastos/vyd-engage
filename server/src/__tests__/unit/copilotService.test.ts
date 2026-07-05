@@ -504,6 +504,79 @@ describe('escrita com aceite', () => {
     expect(dealUpdateMock).not.toHaveBeenCalled();
     expect(res.reply).toMatch(/fluxo próprio/i);
   });
+
+  it('confirmar atualizar_deal com notas ANEXA (não sobrescreve) as notas atuais (#2)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'atualizar_deal',
+            args: { dealId: 'deal-1', notes: 'Cliente pediu desconto' },
+            summary: 'Vou atualizar...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    // executePending faz DOIS findFirst no deal: [1] revalida visibilidade (select id),
+    // [2] carrega as notas atuais p/ anexar (select notes).
+    (prismaMock.deal.findFirst as any)
+      .mockResolvedValueOnce({ id: 'deal-1' }) // visível no escopo do usuário
+      .mockResolvedValueOnce({ notes: 'Nota antiga' }); // notas atuais do deal
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    expect(res.handled).toBe(true);
+    expect(dealUpdateMock).toHaveBeenCalledTimes(1);
+    // As notas atuais foram PRESERVADAS e o novo texto ANEXADO (não sobrescrito).
+    expect(dealUpdateMock.mock.calls[0][1]).toMatchObject({
+      id: 'deal-1',
+      notes: 'Nota antiga\n\nCliente pediu desconto',
+    });
+    expect(res.reply).toMatch(/atualizada/i);
+  });
+
+  it('confirmar atualizar_deal com notas quando o deal não tinha notas → usa só o novo texto (#2)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'atualizar_deal',
+            args: { dealId: 'deal-1', notes: 'Primeira nota' },
+            summary: 'Vou atualizar...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    (prismaMock.deal.findFirst as any)
+      .mockResolvedValueOnce({ id: 'deal-1' }) // visível
+      .mockResolvedValueOnce({ notes: null }); // deal sem notas
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    expect(res.handled).toBe(true);
+    expect(dealUpdateMock.mock.calls[0][1]).toMatchObject({
+      id: 'deal-1',
+      notes: 'Primeira nota',
+    });
+  });
 });
 
 describe('nunca exclui', () => {

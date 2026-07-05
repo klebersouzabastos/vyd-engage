@@ -18,7 +18,7 @@ export type RuntimeMessage =
   | { type: 'ACTIVE_PHONE'; phone: string | null }
   | { type: 'RESOLVE'; phone: string }
   | { type: 'CREATE_LEAD'; name: string; phone: string }
-  | { type: 'CREATE_TASK'; title: string; leadId?: string }
+  | { type: 'CREATE_TASK'; title: string; leadId?: string; companyId?: string }
   | { type: 'CREATE_NOTE'; content: string; leadId?: string; companyId?: string };
 
 /** Contrato de GET /contacts/resolve?phone= (espelha o backend). */

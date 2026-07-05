@@ -44,15 +44,22 @@ vi.mock('../../middleware/apiKeyAuth.js', async (importOriginal) => {
   };
 });
 
-const { createLeadMock, createTaskMock, createInteractionMock } = vi.hoisted(() => ({
-  createLeadMock: vi.fn(),
-  createTaskMock: vi.fn(),
-  createInteractionMock: vi.fn(),
-}));
+const { createLeadMock, createTaskMock, createInteractionMock, enforceLimitMock } = vi.hoisted(
+  () => ({
+    createLeadMock: vi.fn(),
+    createTaskMock: vi.fn(),
+    createInteractionMock: vi.fn(),
+    enforceLimitMock: vi.fn(),
+  })
+);
 vi.mock('../../services/leadService.js', () => ({ leadService: { create: createLeadMock } }));
 vi.mock('../../services/taskService.js', () => ({ taskService: { create: createTaskMock } }));
 vi.mock('../../services/interactionService.js', () => ({
   interactionService: { create: createInteractionMock },
+}));
+// planLimitsService é importado dinamicamente em POST /contacts/leads (enforceLimit).
+vi.mock('../../services/planLimitsService.js', () => ({
+  planLimitsService: { enforceLimit: enforceLimitMock },
 }));
 
 import prisma from '../../config/database.js';
@@ -75,6 +82,9 @@ beforeEach(() => {
   createLeadMock.mockReset();
   createTaskMock.mockReset();
   createInteractionMock.mockReset();
+  enforceLimitMock.mockReset();
+  // Por padrão, a cota do plano permite criar (não rejeita).
+  enforceLimitMock.mockResolvedValue(undefined);
 });
 
 describe('POST /contacts/leads — req 24', () => {
@@ -110,6 +120,26 @@ describe('POST /contacts/leads — req 24', () => {
     expect(res.body.code).toBe('VALIDATION_ERROR');
     expect(createLeadMock).not.toHaveBeenCalled();
   });
+
+  it('acima da cota do plano → 403 PLAN_LIMIT_REACHED (não cria lead)', async () => {
+    // enforceLimit rejeita quando a cota do plano foi atingida (mesmo padrão de
+    // POST /leads JWT). A criação pela extensão NÃO pode furar o limite.
+    const err = Object.assign(new Error('Plan limit reached for leads. Current: 100, Limit: 100'), {
+      statusCode: 403,
+      code: 'PLAN_LIMIT_REACHED',
+    });
+    enforceLimitMock.mockRejectedValue(err);
+    const res = await request(makeApp())
+      .post('/contacts/leads')
+      .set('x-api-key', 'tenant-cap|leads:write')
+      .send({ name: 'Fulano', phone: '11999990000' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('PLAN_LIMIT_REACHED');
+    // enforceLimit foi imposto com o tenant do apiKey e o recurso 'leads'.
+    expect(enforceLimitMock).toHaveBeenCalledWith('tenant-cap', 'leads');
+    // Lead NÃO foi criado (limite barrou antes do leadService.create).
+    expect(createLeadMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('POST /contacts/tasks — req 24', () => {
@@ -133,6 +163,42 @@ describe('POST /contacts/tasks — req 24', () => {
     expect(res.status).toBe(201);
     expect(res.body.data).toMatchObject({ id: 'task-1' });
     expect(createTaskMock).toHaveBeenCalledOnce();
+  });
+
+  it('companyId sem leadId → 201 e tarefa vinculada à empresa', async () => {
+    // Contato resolvido só por empresa (sem lead): a tarefa deve ficar vinculada
+    // à empresa (companyId), não órfã.
+    prismaMock.company.findFirst.mockResolvedValue({ id: 'company-1' } as never);
+    createTaskMock.mockResolvedValue({ id: 'task-c1', title: 'Ligar' });
+    const res = await request(makeApp())
+      .post('/contacts/tasks')
+      .set('x-api-key', 'tenant-q|tasks:write')
+      .send({ title: 'Ligar', companyId: 'company-1' });
+    expect(res.status).toBe(201);
+    // Empresa validada cross-tenant (findFirst com o tenant do apiKey).
+    const companyWhere = (prismaMock.company.findFirst.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { id: string; tenantId: string };
+    };
+    expect(companyWhere.where.id).toBe('company-1');
+    expect(companyWhere.where.tenantId).toBe('tenant-q');
+    // taskService.create recebeu companyId e sem leadId, com o tenant do apiKey.
+    const [tenantArg, data] = createTaskMock.mock.calls[0];
+    expect(tenantArg).toBe('tenant-q');
+    expect(data.companyId).toBe('company-1');
+    expect(data.leadId).toBeUndefined();
+    // Não deve ter consultado lead (não veio leadId).
+    expect(prismaMock.lead.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('companyId de outro tenant → 404 COMPANY_NOT_FOUND (não vaza cross-tenant)', async () => {
+    prismaMock.company.findFirst.mockResolvedValue(null as never);
+    const res = await request(makeApp())
+      .post('/contacts/tasks')
+      .set('x-api-key', 't1|tasks:write')
+      .send({ title: 'Ligar', companyId: 'company-de-outro-tenant' });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('COMPANY_NOT_FOUND');
+    expect(createTaskMock).not.toHaveBeenCalled();
   });
 });
 

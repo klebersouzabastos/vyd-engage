@@ -130,10 +130,17 @@ export const whatsappMessagingService = {
       );
     }
 
+    // Meta Graph espera o destino apenas em dígitos (E.164 sem símbolos). O
+    // frontend (fallback wa.me) já sanitiza, mas o caminho CONNECTED recebia
+    // `data.to` como veio (podia estar mascarado, ex.: "(11) 99999-0000"). Aqui
+    // normalizamos para dígitos antes de montar o payload. Se ficar vazio,
+    // mantemos o comportamento de erro atual (a própria Meta API rejeita).
+    const to = (data.to || '').replace(/\D+/g, '');
+
     // Build message payload
     const messagePayload: any = {
       messaging_product: 'whatsapp',
-      to: data.to,
+      to,
     };
 
     switch (data.type) {
@@ -240,7 +247,7 @@ export const whatsappMessagingService = {
           metadata: {
             messageId,
             connectionId: data.connectionId,
-            to: data.to,
+            to,
             type: data.type,
           },
         },
@@ -250,7 +257,7 @@ export const whatsappMessagingService = {
     return {
       messageId,
       status: 'sent',
-      to: data.to,
+      to,
     };
   },
 
