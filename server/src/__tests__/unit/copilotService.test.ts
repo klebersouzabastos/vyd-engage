@@ -271,6 +271,77 @@ describe('escrita com aceite', () => {
     expect(sendMessageMock).not.toHaveBeenCalled();
   });
 
+  it('"sim, pode criar" confirma a pendência (não exige match exato da string) (#13)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim, pode criar'
+    );
+
+    // Reconhecida como confirmação → executa (não expira a proposta).
+    expect(res.handled).toBe(true);
+    expect(taskCreateMock).toHaveBeenCalledTimes(1);
+    expect(res.reply).toMatch(/criada/i);
+    // Não disparou o modelo (caminho de confirmação, não de nova consulta).
+    expect(res.toolsUsed).toEqual([]);
+  });
+
+  it('falha transitória na execução → REVERTE o claim p/ reconfirmação (#1)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    // A criação da tarefa falha (erro transitório de DB).
+    taskCreateMock.mockRejectedValueOnce(new Error('db timeout'));
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    // Respondeu "tente novamente" e NÃO deixou a proposta resolvida definitivamente.
+    expect(res.handled).toBe(true);
+    expect(res.reply).toMatch(/tente novamente/i);
+    // Dois updateMany: [0] o claim (resolved→true) e [1] a reversão (resolved→false).
+    expect(prismaMock.interaction.updateMany).toHaveBeenCalledTimes(2);
+    const claimArg = (prismaMock.interaction.updateMany as any).mock.calls[0][0];
+    expect(claimArg.where.metadata.equals).toBe(false); // claim: só a linha ainda aberta
+    const revertArg = (prismaMock.interaction.updateMany as any).mock.calls[1][0];
+    expect(revertArg.where.metadata.equals).toBe(true); // revert: só a linha que fechamos
+    // O metadata regravado volta a resolved=false → um novo "sim" reencontra a proposta.
+    expect((revertArg.data.metadata as any).copilotPending.resolved).toBe(false);
+  });
+
   it('após "não", cancela a pendência sem executar', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
     prismaMock.interaction.findMany.mockResolvedValue([

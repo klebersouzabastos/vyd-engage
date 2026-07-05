@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { InteractionType, InteractionDirection, ScoreEvent } from '@prisma/client';
+import { InteractionType, InteractionDirection, ScoreEvent, DealStatus } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { scoringService } from './scoringService.js';
@@ -340,11 +340,38 @@ export const whatsappMessagingService = {
       where: { tenantId, phone: { contains: from.slice(-8) } }, // Match last 8 digits
     });
 
+    // Upgrade RD P3 (req 23): mensagens RECEBIDAS também precisam aparecer na
+    // timeline do deal (a timeline do deal é buscada por dealId). Heurística
+    // conservadora: se o lead resolvido tem EXATAMENTE UM deal ABERTO (status
+    // != WON/LOST, deletedAt null) no tenant, vinculamos a Interaction INBOUND a
+    // esse deal (e à empresa do lead, quando houver). Com 0 ou >1 deals abertos
+    // mantemos só o leadId — não adivinhamos qual deal é o "certo".
+    let dealId: string | null = null;
+    let companyId: string | null = null;
+    if (lead) {
+      const openDeals = await prisma.deal.findMany({
+        where: {
+          tenantId,
+          leadId: lead.id,
+          deletedAt: null,
+          status: { notIn: [DealStatus.WON, DealStatus.LOST] },
+        },
+        select: { id: true },
+        take: 2, // só precisamos distinguir "exatamente 1" de "vários"
+      });
+      if (openDeals.length === 1) {
+        dealId = openDeals[0].id;
+        companyId = lead.companyId ?? null;
+      }
+    }
+
     // Create interaction
     const interaction = await prisma.interaction.create({
       data: {
         tenantId,
         leadId: lead?.id || null,
+        dealId,
+        companyId,
         type: InteractionType.WHATSAPP,
         direction: InteractionDirection.INBOUND,
         content,

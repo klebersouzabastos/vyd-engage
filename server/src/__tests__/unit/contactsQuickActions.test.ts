@@ -176,6 +176,33 @@ describe('GET /contacts/resolve — req 24', () => {
     expect(call.where.tenantId).toBe('tenant-y');
   });
 
+  it('lead SEM companyId → empresa NÃO resolvida por telefone (lead-first estrito)', async () => {
+    // Há lead, mas sem companyId. Ainda que uma empresa case pelo sufixo de
+    // telefone, o comportamento lead-first estrito NÃO deve resolver essa empresa
+    // "órfã" — nenhuma consulta de company.findFirst deve ocorrer.
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-3',
+      name: 'Beltrano',
+      email: null,
+      phone: '11955554444',
+      company: null,
+      companyId: null,
+    } as never);
+    prismaMock.deal.findMany.mockResolvedValue([] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([] as never);
+
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=11955554444')
+      .set('x-api-key', 'tenant-v|contacts:read');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.lead).toMatchObject({ id: 'lead-3' });
+    // Empresa não resolvida (sem companyId e sem fallback por telefone).
+    expect(res.body.data.company).toBeNull();
+    // company.findFirst NUNCA chamado — nem por id, nem pelo fallback de telefone.
+    expect(prismaMock.company.findFirst).not.toHaveBeenCalled();
+  });
+
   it('sem lead, com empresa → traz deals/interações ligados à empresa (companyId)', async () => {
     // Nenhum lead casa o telefone; a empresa casa pelo fallback de telefone.
     prismaMock.lead.findFirst.mockResolvedValue(null as never);

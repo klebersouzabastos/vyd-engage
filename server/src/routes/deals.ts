@@ -587,6 +587,23 @@ router.post('/:id/meetings/:iid/apply', async (req, res, next) => {
     if (!req.user) return next(createError('Authentication required', 401));
     meetingService.assertAIEnabled();
     const body = applyMeetingSchema.parse(req.body ?? {});
+
+    // Capability por-entidade (req 13): o apply muta o deal e/ou cria tarefas — precisa
+    // dos MESMOS gates de PUT /deals/:id (deals.edit) e POST /tasks (tasks.create).
+    // Um perfil custom com deals.edit=false / tasks.create=false não pode contornar via apply.
+    const eff = await getEffective({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    });
+    if (body.taskIds.length > 0 && !eff.entities.tasks.create) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+    if (Object.keys(body.fieldUpdates).length > 0 && !eff.entities.deals.edit) {
+      return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+    }
+
     const result = await meetingService.applyMeeting(
       req.user.tenantId,
       req.params.id,

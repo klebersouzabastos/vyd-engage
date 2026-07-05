@@ -164,3 +164,72 @@ describe('whatsappMessagingService.sendMessage — vínculo ao deal (req 23)', (
     ).rejects.toMatchObject({ statusCode: 400, code: 'WHATSAPP_NOT_CONNECTED' });
   });
 });
+
+describe('whatsappMessagingService.processIncomingMessage — vínculo ao deal (req 23)', () => {
+  const INBOUND_MESSAGE = {
+    id: 'wamid.in.1',
+    from: '5511988887777',
+    type: 'text',
+    timestamp: '1700000000',
+    text: { body: 'Oi, recebi sua proposta' },
+  };
+
+  it('inbound de lead com 1 deal aberto → Interaction INBOUND com dealId (e companyId do lead)', async () => {
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-1',
+      companyId: 'comp-1',
+    } as never);
+    // Exatamente 1 deal aberto vinculado ao lead.
+    prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-1' }] as never);
+
+    await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
+
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({
+      tenantId,
+      leadId: 'lead-1',
+      dealId: 'deal-1',
+      companyId: 'comp-1',
+      type: 'WHATSAPP',
+      direction: 'INBOUND',
+    });
+    // Busca de deals abertos filtra por tenant + lead + não WON/LOST + não deletado.
+    const dealArgs = arg0(prismaMock.deal.findMany);
+    expect(dealArgs.where).toMatchObject({
+      tenantId,
+      leadId: 'lead-1',
+      deletedAt: null,
+      status: { notIn: ['WON', 'LOST'] },
+    });
+  });
+
+  it('inbound de lead com 2 deals abertos → sem dealId (só leadId, evita adivinhar)', async () => {
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-1',
+      companyId: 'comp-1',
+    } as never);
+    // Dois deals abertos → ambíguo → não vincula.
+    prismaMock.deal.findMany.mockResolvedValue([{ id: 'deal-1' }, { id: 'deal-2' }] as never);
+
+    await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
+
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({
+      tenantId,
+      leadId: 'lead-1',
+      dealId: null,
+      companyId: null,
+      direction: 'INBOUND',
+    });
+  });
+
+  it('inbound sem lead resolvido → sem dealId/companyId e não consulta deals', async () => {
+    prismaMock.lead.findFirst.mockResolvedValue(null as never);
+
+    await whatsappMessagingService.processIncomingMessage('tenant-1', 'conn-1', INBOUND_MESSAGE);
+
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({ leadId: null, dealId: null, companyId: null });
+    expect(prismaMock.deal.findMany).not.toHaveBeenCalled();
+  });
+});

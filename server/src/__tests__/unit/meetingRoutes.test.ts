@@ -34,12 +34,11 @@ vi.mock('../../middleware/tenant.js', () => ({
 // Evita side-effects de módulos pesados importados por deals.ts.
 vi.mock('../../jobs/automationEngine.js', () => ({ dispatchTrigger: vi.fn(async () => {}) }));
 // Visibilidade P1: GERAL (undefined) → guard de posse passa direto.
+// getEffective: builtins dão entitiesAll(true) — default aqui é tudo liberado; testes
+// de capability (deals.edit/tasks.create=false) sobrescrevem via mockResolvedValueOnce.
 vi.mock('../../services/permissionService.js', () => ({
   visibilityScope: vi.fn(async () => undefined),
-  getEffective: vi.fn(async () => ({
-    entities: { deals: { create: true, edit: true } },
-    capabilities: { transferOwner: true },
-  })),
+  getEffective: getEffectiveMock,
 }));
 
 const {
@@ -48,13 +47,26 @@ const {
   listMeetingsMock,
   getMeetingMock,
   applyMeetingMock,
+  getEffectiveMock,
 } = vi.hoisted(() => ({
   assertAIEnabledMock: vi.fn(),
   createMeetingMock: vi.fn(),
   listMeetingsMock: vi.fn(),
   getMeetingMock: vi.fn(),
   applyMeetingMock: vi.fn(),
+  getEffectiveMock: vi.fn(),
 }));
+
+// entitiesAll(true): espelha o piso dos builtins (getEffective devolve tudo liberado).
+function effAll() {
+  return {
+    entities: {
+      deals: { create: true, edit: true, delete: true, view: true },
+      tasks: { create: true, edit: true, delete: true, view: true },
+    },
+    capabilities: { transferOwner: true },
+  };
+}
 vi.mock('../../services/meetingService.js', () => ({
   meetingService: {
     assertAIEnabled: assertAIEnabledMock,
@@ -100,6 +112,7 @@ beforeEach(() => {
   listMeetingsMock.mockReset();
   getMeetingMock.mockReset();
   applyMeetingMock.mockReset();
+  getEffectiveMock.mockReset().mockResolvedValue(effAll());
   // Guard de posse (/:id) e existência do deal.
   prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-1' } as never);
 });
@@ -160,6 +173,41 @@ describe('POST /deals/:id/meetings/:iid/apply', () => {
     expect(dealArg).toBe('deal-1');
     expect(iidArg).toBe('int-1');
     expect(body.taskIds).toEqual(['t0']);
+  });
+
+  // LACUNA #2: o apply muta o deal / cria tarefas — precisa dos MESMOS gates de
+  // PUT /deals/:id (deals.edit) e POST /tasks (tasks.create). Perfil custom restrito
+  // não pode contornar via apply.
+  it('perfil com deals.edit=false + fieldUpdates → 403 (não aplica)', async () => {
+    getEffectiveMock.mockResolvedValueOnce({
+      entities: {
+        deals: { create: true, edit: false, delete: true, view: true },
+        tasks: { create: true, edit: true, delete: true, view: true },
+      },
+      capabilities: { transferOwner: true },
+    });
+    const res = await request(makeApp())
+      .post('/deals/deal-1/meetings/int-1/apply')
+      .send({ taskIds: [], fieldUpdates: { value: '2000' } });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('INSUFFICIENT_PERMISSIONS');
+    expect(applyMeetingMock).not.toHaveBeenCalled();
+  });
+
+  it('perfil com tasks.create=false + taskIds → 403 (não aplica)', async () => {
+    getEffectiveMock.mockResolvedValueOnce({
+      entities: {
+        deals: { create: true, edit: true, delete: true, view: true },
+        tasks: { create: false, edit: true, delete: true, view: true },
+      },
+      capabilities: { transferOwner: true },
+    });
+    const res = await request(makeApp())
+      .post('/deals/deal-1/meetings/int-1/apply')
+      .send({ taskIds: ['t0'], fieldUpdates: {} });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('INSUFFICIENT_PERMISSIONS');
+    expect(applyMeetingMock).not.toHaveBeenCalled();
   });
 });
 

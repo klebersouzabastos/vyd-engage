@@ -209,11 +209,20 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
         return;
       }
 
+      // HMAC computado sobre o corpo CRU (req.rawBody, capturado no verify do
+      // express.json em index.ts) — os bytes EXATOS recebidos do Meta, senão o
+      // HMAC não bate e payloads legítimos são rejeitados. Espelha o ZapSign.
+      const raw =
+        (req as Request & { rawBody?: string }).rawBody ?? JSON.stringify(req.body ?? {});
       const expectedSignature =
-        'sha256=' +
-        crypto.createHmac('sha256', appSecret).update(JSON.stringify(req.body)).digest('hex');
+        'sha256=' + crypto.createHmac('sha256', appSecret).update(raw).digest('hex');
 
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+      // Guarda de comprimento antes de timingSafeEqual: um header forjado de
+      // tamanho diferente lançaria RangeError (cairia no catch → 200). Espelha o
+      // cuidado de validateMercadoPagoSignature.
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expectedSignature);
+      if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
         logger.warn('WhatsApp webhook: invalid signature');
         res.status(401).json({ error: 'Invalid signature' });
         return;

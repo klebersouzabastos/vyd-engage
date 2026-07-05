@@ -29,11 +29,12 @@ router.use(apiKeyRateLimiter);
 
 /**
  * GET /api/v1/contacts/health-stub
- * Sonda leve do grupo (confirma auth por API key). Não expõe dados do tenant.
+ * Sonda leve do grupo (confirma auth por API key). Não expõe dados do tenant:
+ * a resposta é apenas `{ ok: true }`, sem tenantId nem qualquer dado da chave.
  */
 router.get('/health-stub', (req, res, next) => {
   if (!req.apiKey) return next(createError('API key authentication required', 401));
-  res.json({ status: 200, data: { ok: true, tenantId: req.apiKey.tenantId } });
+  res.json({ status: 200, data: { ok: true } });
 });
 
 /** Normaliza o telefone para busca: mantém apenas dígitos. */
@@ -89,20 +90,22 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
       orderBy: { createdAt: 'desc' },
     });
 
-    // Resolução da empresa (tenant-scoped):
-    //  - Se o lead tem companyId, a empresa é a do lead. Se essa empresa estiver
-    //    indisponível (soft-deleted/não encontrada), retornamos company=null — NÃO
-    //    caímos no fallback por telefone, para não casar uma empresa arbitrária e
-    //    não relacionada (o companyId do lead já é a verdade da associação).
-    //  - Só quando o lead NÃO tem companyId (ou não há lead) é que tentamos o
-    //    fallback por sufixo de telefone.
+    // Resolução da empresa (tenant-scoped), lead-first ESTRITO:
+    //  - Se HÁ lead, a empresa vem EXCLUSIVAMENTE do lead.companyId. Sem companyId
+    //    (ou empresa indisponível/soft-deleted) → company=null. NUNCA caímos no
+    //    fallback por telefone quando há lead, para não exibir uma empresa "órfã"
+    //    sem relação com o lead (o vínculo do lead é a verdade da associação).
+    //  - O fallback de empresa por sufixo de telefone fica só para o caso SEM lead.
     let company: { id: string; name: string; phone: string | null } | null = null;
-    if (lead?.companyId) {
-      company = await prisma.company.findFirst({
-        where: { id: lead.companyId, tenantId, deletedAt: null },
-        select: { id: true, name: true, phone: true },
-      });
-      // Lead tem companyId porém empresa indisponível → company=null (sem fallback).
+    if (lead) {
+      if (lead.companyId) {
+        company = await prisma.company.findFirst({
+          where: { id: lead.companyId, tenantId, deletedAt: null },
+          select: { id: true, name: true, phone: true },
+        });
+        // Lead tem companyId porém empresa indisponível → company=null (sem fallback).
+      }
+      // Lead sem companyId → company=null (sem fallback por telefone).
     } else {
       company = await prisma.company.findFirst({
         where: { tenantId, deletedAt: null, phone: { contains: suffix } },

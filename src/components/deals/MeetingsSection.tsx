@@ -25,6 +25,7 @@ import {
   Sparkles,
   Upload,
 } from 'lucide-react';
+import { useAIStatus } from '../../hooks/useAIStatus';
 import { apiClient, ApiError } from '../../services/api/client';
 import type {
   Meeting,
@@ -255,10 +256,17 @@ function MeetingSuggestions({
 
 export function MeetingsSection({ dealId }: { dealId: string }) {
   const queryClient = useQueryClient();
+  // Transcrição de áudio (Whisper) exige a OpenAI. Com provedor Anthropic-only,
+  // o upload sempre falharia (503), então o modo "Áudio" fica oculto e "Colar
+  // transcrição" vira o padrão (gating gracioso do P3).
+  const { transcription: audioEnabled } = useAIStatus();
   const [mode, setMode] = useState<'audio' | 'transcript'>('audio');
   const [transcript, setTranscript] = useState('');
   const [processing, setProcessing] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Sem transcrição de áudio disponível, force o modo "transcript".
+  const effectiveMode: 'audio' | 'transcript' = audioEnabled ? mode : 'transcript';
 
   const { data: meetings = [], isLoading } = useQuery<Meeting[]>({
     queryKey: ['deal-meetings', dealId],
@@ -347,22 +355,32 @@ export function MeetingsSection({ dealId }: { dealId: string }) {
           sugestões de atualização do negócio — que você revisa e aplica manualmente.
         </p>
 
-        {/* Alternância de modo */}
+        {/* Aviso quando não há transcrição de áudio (provedor sem Whisper) */}
+        {!audioEnabled && (
+          <p className="text-xs text-muted-foreground rounded-md border border-border bg-muted/50 px-3 py-2">
+            Transcrição de áudio exige a OpenAI (Whisper); cole a transcrição ou configure a
+            OpenAI.
+          </p>
+        )}
+
+        {/* Alternância de modo — "Áudio" só quando há transcrição disponível */}
         <div className="flex gap-2">
+          {audioEnabled && (
+            <Button
+              type="button"
+              size="sm"
+              variant={effectiveMode === 'audio' ? 'default' : 'outline'}
+              className="gap-2"
+              onClick={() => setMode('audio')}
+              disabled={processing}
+            >
+              <Upload size={14} /> Áudio
+            </Button>
+          )}
           <Button
             type="button"
             size="sm"
-            variant={mode === 'audio' ? 'default' : 'outline'}
-            className="gap-2"
-            onClick={() => setMode('audio')}
-            disabled={processing}
-          >
-            <Upload size={14} /> Áudio
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === 'transcript' ? 'default' : 'outline'}
+            variant={effectiveMode === 'transcript' ? 'default' : 'outline'}
             className="gap-2"
             onClick={() => setMode('transcript')}
             disabled={processing}
@@ -375,7 +393,7 @@ export function MeetingsSection({ dealId }: { dealId: string }) {
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
             <Loader2 size={16} className="animate-spin" /> Processando a reunião com IA…
           </div>
-        ) : mode === 'audio' ? (
+        ) : effectiveMode === 'audio' ? (
           <div>
             <label
               htmlFor={`meeting-audio-${dealId}`}

@@ -83,12 +83,67 @@ function normalizeWord(text: string): string {
     .replace(/[.!,;]+$/g, '');
 }
 
+/**
+ * Quebra a mensagem em tokens normalizados (minúsculas, sem pontuação de borda).
+ * "Sim, pode criar!" → ['sim', 'pode', 'criar']. Vazios são descartados.
+ */
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.replace(/[.!,;:?]+/g, ''))
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * Reconhece confirmação se QUALQUER token da mensagem pertencer a CONFIRM_WORDS
+ * (ex.: "sim, pode criar" → 'sim' e 'pode' casam). Assim frases naturais de
+ * aceite não expiram a proposta por não baterem a string inteira (#13).
+ */
 function isConfirmation(text: string): boolean {
-  return CONFIRM_WORDS.has(normalizeWord(text));
+  const tokens = tokenize(text);
+  return tokens.some((t) => CONFIRM_WORDS.has(t));
 }
 
 function isCancellation(text: string): boolean {
-  return CANCEL_WORDS.has(normalizeWord(text));
+  const tokens = tokenize(text);
+  return tokens.some((t) => CANCEL_WORDS.has(t));
+}
+
+// ── Throttle da resposta a remetente desconhecido (#17) ──────────────────────
+
+/**
+ * Anti-amplificação: a resposta "número não autorizado" a remetentes DESCONHECIDOS
+ * é limitada por número (no máx. 1 a cada `UNKNOWN_REPLY_COOLDOWN_MS`). Sem isso,
+ * um remetente malicioso poderia forçar N respostas de saída → custo/abuso na API
+ * do Meta. O log (warn) continua SEMPRE acontecendo — só o ENVIO é limitado.
+ * Map in-memory com cap p/ não crescer sem limite (LRU-ish: descarta o mais antigo).
+ */
+const UNKNOWN_REPLY_COOLDOWN_MS = 6 * 60 * 60 * 1000; // ~6h
+const UNKNOWN_REPLY_MAX_ENTRIES = 5000;
+const unknownReplyLastSent = new Map<string, number>();
+
+/**
+ * Decide se DEVEMOS enviar a resposta de "não autorizado" a este número agora.
+ * Retorna true (e registra o envio) se passou o cooldown; false se ainda no janela.
+ */
+function shouldReplyUnknownSender(from: string): boolean {
+  const key = digitsOnly(from);
+  if (!key) return false;
+  const now = Date.now();
+  const last = unknownReplyLastSent.get(key);
+  if (last !== undefined && now - last < UNKNOWN_REPLY_COOLDOWN_MS) {
+    return false;
+  }
+  // Cap do Map: se cheio e é uma chave nova, remove a entrada mais antiga inserida.
+  if (!unknownReplyLastSent.has(key) && unknownReplyLastSent.size >= UNKNOWN_REPLY_MAX_ENTRIES) {
+    const oldest = unknownReplyLastSent.keys().next().value;
+    if (oldest !== undefined) unknownReplyLastSent.delete(oldest);
+  }
+  // Reinsere (delete+set) p/ manter ordem de recência aproximada no Map.
+  unknownReplyLastSent.delete(key);
+  unknownReplyLastSent.set(key, now);
+  return true;
 }
 
 // ── Resolução do remetente → usuário comandante ──────────────────────────────
@@ -238,6 +293,42 @@ async function claimPending(
 }
 
 /**
+ * REVERTE um claim vencido: regrava `copilotPending.resolved = false` na linha que
+ * este chamador havia marcado como `true`. Usado quando a execução da ação confirmada
+ * FALHA (erro transitório de DB / deal fora de escopo) — assim um novo "sim" do
+ * usuário reencontra a proposta e pode reconfirmar, honrando o "tente novamente" (#1).
+ * Best-effort: se a reversão em si falhar, apenas loga (a proposta expira em 30 min).
+ */
+async function revertClaim(
+  tenantId: string,
+  interactionId: string,
+  meta: Record<string, unknown>,
+  pending: Record<string, unknown>
+): Promise<void> {
+  try {
+    await prisma.interaction.updateMany({
+      where: {
+        id: interactionId,
+        tenantId,
+        metadata: { path: ['copilotPending', 'resolved'], equals: true },
+      },
+      data: {
+        metadata: {
+          ...meta,
+          copilotPending: { ...pending, resolved: false },
+        } as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (err: unknown) {
+    logger.error('Copilot: falha ao reverter claim da proposta', {
+      tenantId,
+      interactionId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * Persiste a mensagem INBOUND do comandante como Interaction WHATSAPP, opcionalmente
  * carregando a ação de escrita pendente em `metadata.copilotPending`.
  */
@@ -271,9 +362,21 @@ async function recordInbound(
 
 // ── Execução das ações de escrita (após aceite) ──────────────────────────────
 
+/**
+ * Sentinela lançado quando a revalidação de visibilidade em `executePending` falha
+ * (deal fora de escopo no momento da execução). O handler traduz isso numa resposta
+ * de "sem acesso" — e NÃO reverte o claim (a proposta é definitivamente inválida).
+ */
+class DealAccessError extends Error {
+  constructor() {
+    super('deal_out_of_scope');
+    this.name = 'DealAccessError';
+  }
+}
+
 async function executePending(
   tenantId: string,
-  user: { id: string },
+  permUser: PermissionUser,
   action: PendingAction
 ): Promise<string> {
   const { taskService } = await import('./taskService.js');
@@ -284,13 +387,13 @@ async function executePending(
     const task = await taskService.create(tenantId, {
       title: args.title,
       description: args.description,
-      assignedTo: user.id,
+      assignedTo: permUser.userId,
       status: TaskStatus.PENDING,
       dueDate: args.dueDate,
     });
     logger.info('Copilot tool executed', {
       tool: 'criar_tarefa',
-      userId: user.id,
+      userId: permUser.userId,
       tenantId,
       entity: 'task',
       entityId: task.id,
@@ -300,6 +403,30 @@ async function executePending(
 
   // atualizar_deal
   const args = action.args as { dealId: string; stage?: string; value?: number; notes?: string };
+  // #16: revalida a VISIBILIDADE no momento da execução. A proposta pode ter sido
+  // aceita até 30 min atrás; nesse intervalo o deal pode ter sido reatribuído p/ fora
+  // do escopo do usuário. Recomputa o visibilityScope e confirma com o MESMO filtro de
+  // owner ANTES de mutar — se não for mais visível, aborta (não atualiza).
+  const owner = await permissionService.visibilityScope(permUser, 'deals');
+  const visible = await prisma.deal.findFirst({
+    where: {
+      id: args.dealId,
+      tenantId,
+      deletedAt: null,
+      // owner: string (PROPRIA) | {in:[...]} (EQUIPE) | undefined (GERAL, sem filtro)
+      ...(owner === undefined ? {} : { assignedTo: owner }),
+    },
+    select: { id: true },
+  });
+  if (!visible) {
+    logger.warn('Copilot: deal fora de escopo na execução — atualização abortada', {
+      tenantId,
+      userId: permUser.userId,
+      entity: 'deal',
+      entityId: args.dealId,
+    });
+    throw new DealAccessError();
+  }
   const updated = await dealService.update(tenantId, {
     id: args.dealId,
     ...(args.stage ? { stage: args.stage as DealStage } : {}),
@@ -308,7 +435,7 @@ async function executePending(
   });
   logger.info('Copilot tool executed', {
     tool: 'atualizar_deal',
-    userId: user.id,
+    userId: permUser.userId,
     tenantId,
     entity: 'deal',
     entityId: args.dealId,
@@ -357,8 +484,13 @@ export const copilotService = {
     const user = await resolveCommandingUser(tenantId, from);
     if (!user) {
       const reply = 'Número não autorizado. Peça a um administrador para cadastrar seu WhatsApp no VYD Engage.';
-      await this.reply(tenantId, connection.id, from, reply).catch(() => {});
+      // SEMPRE loga o remetente desconhecido (warn). O ENVIO da resposta é limitado
+      // por número (#17): no máx. 1 a cada ~6h, para não permitir amplificação/custo
+      // de saída na API do Meta a partir de um número que não é usuário do tenant.
       logger.warn('Copilot: remetente desconhecido — ignorado', { tenantId, from: digitsOnly(from).slice(-4) });
+      if (shouldReplyUnknownSender(from)) {
+        await this.reply(tenantId, connection.id, from, reply).catch(() => {});
+      }
       return { handled: false, reply, toolsUsed: [] };
     }
 
@@ -392,14 +524,30 @@ export const copilotService = {
         await recordInbound(tenantId, connection.id, user.id, from, body);
         let reply: string;
         try {
-          reply = await executePending(tenantId, user, pendingHit.action);
+          reply = await executePending(tenantId, permUser, pendingHit.action);
         } catch (err: unknown) {
-          logger.error('Copilot: falha ao executar ação confirmada', {
-            tenantId,
-            userId: user.id,
-            err: err instanceof Error ? err.message : String(err),
-          });
-          reply = 'Não consegui concluir a ação agora. Tente novamente em instantes.';
+          if (err instanceof DealAccessError) {
+            // #16: o deal saiu do escopo do usuário entre a proposta e o aceite.
+            // A proposta é definitivamente inválida — NÃO reverte o claim (não faz
+            // sentido reconfirmar algo a que o usuário não tem mais acesso).
+            reply = 'Você não tem mais acesso a essa negociação. A ação foi cancelada.';
+          } else {
+            // #1: falha transitória (erro de DB). REVERTE o claim para que um novo
+            // "sim" reencontre a proposta e o usuário possa reconfirmar — honrando o
+            // "tente novamente" da mensagem.
+            logger.error('Copilot: falha ao executar ação confirmada', {
+              tenantId,
+              userId: user.id,
+              err: err instanceof Error ? err.message : String(err),
+            });
+            await revertClaim(
+              tenantId,
+              pendingHit.interactionId,
+              pendingHit.metadata,
+              pendingHit.pending
+            );
+            reply = 'Não consegui concluir a ação agora. Tente novamente em instantes.';
+          }
         }
         await this.reply(tenantId, connection.id, from, reply).catch(() => {});
         return { handled: true, reply, toolsUsed: [] };

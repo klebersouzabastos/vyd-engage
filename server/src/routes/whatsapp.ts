@@ -6,6 +6,8 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { WhatsAppProvider, WhatsAppConnectionStatus } from '@prisma/client';
+import prisma from '../config/database.js';
+import { visibilityScope } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -126,6 +128,53 @@ router.post('/send', async (req, res, next) => {
     if (!req.user) return next(createError('Authentication required', 401));
 
     const data = sendMessageSchema.parse(req.body);
+
+    // Visibilidade viva (P1): quando a mensagem vincula deal/empresa à timeline
+    // (cria Interaction), o registro-alvo DEVE estar DENTRO do escopo de
+    // visibilidade efetivo do usuário. Sem isso, um analista USER (deals=PROPRIA)
+    // escreveria na timeline de um deal de OUTRO dono no mesmo tenant.
+    // Espelha EXATAMENTE o padrão de enforceDealOwnership (deals.ts): scope
+    // undefined (GERAL) → sem filtro por dono; string (PROPRIA) ou { in } (EQUIPE)
+    // → só passa se o dono ∈ escopo. Fora do escopo → 404 (não vaza existência).
+    const permUser = {
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      role: req.user.role,
+      isPlatformAdmin: req.user.isPlatformAdmin,
+    };
+
+    if (data.dealId) {
+      const scope = await visibilityScope(permUser, 'deals');
+      const ok = await prisma.deal.findFirst({
+        where: {
+          id: data.dealId,
+          tenantId: req.user.tenantId,
+          deletedAt: null,
+          ...(scope === undefined ? {} : { assignedTo: scope }),
+        },
+        select: { id: true },
+      });
+      if (!ok) return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
+    }
+
+    if (data.companyId) {
+      // companies: no default do analista USER a visibilidade é GERAL → scope
+      // undefined → valida ao menos a posse por tenant (não vaza empresa de outro
+      // tenant). Um perfil custom pode restringir a PROPRIA/EQUIPE, e aí o filtro
+      // por dono passa a valer, sem regredir o comportamento de hoje.
+      const scope = await visibilityScope(permUser, 'companies');
+      const ok = await prisma.company.findFirst({
+        where: {
+          id: data.companyId,
+          tenantId: req.user.tenantId,
+          deletedAt: null,
+          ...(scope === undefined ? {} : { assignedTo: scope }),
+        },
+        select: { id: true },
+      });
+      if (!ok) return next(createError('Company not found', 404, 'COMPANY_NOT_FOUND'));
+    }
+
     const result = await whatsappMessagingService.sendMessage(req.user.tenantId, data);
     res.json({ status: 200, data: result });
   } catch (error) {

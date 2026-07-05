@@ -268,11 +268,11 @@ export const meetingService = {
     this.assertAIEnabled();
 
     let transcript = input.transcript?.trim() || '';
-    let audioAttachmentId: string | null = null;
 
     if (input.audio) {
       // Transcreve primeiro (falha cedo se não houver Whisper). Só persistimos o áudio
-      // DEPOIS de garantir que há transcrição — evita Attachment órfão num áudio mudo.
+      // DEPOIS de garantir que há transcrição E análise bem-sucedida — evita Attachment
+      // órfão tanto num áudio mudo quanto numa falha de análise (#15).
       transcript = (
         await this.transcribeAudio(tenantId, input.audio.buffer, input.audio.mimeType)
       ).trim();
@@ -283,6 +283,22 @@ export const meetingService = {
           'MEETING_TRANSCRIPTION_EMPTY'
         );
       }
+    }
+
+    if (!transcript) {
+      throw createError(
+        'Envie um áudio da reunião (campo "audio") ou cole a transcrição.',
+        400,
+        'MEETING_INPUT_REQUIRED'
+      );
+    }
+
+    // Analisa ANTES de persistir o áudio: se a análise falhar, não deixamos um
+    // Attachment(source=MEETING) órfão (#15).
+    const analysis = await this.analyzeTranscript(tenantId, dealId, transcript);
+
+    let audioAttachmentId: string | null = null;
+    if (input.audio) {
       const attachment = await storageService.put(tenantId, {
         name: input.audio.filename || 'reuniao.audio',
         mimeType: input.audio.mimeType,
@@ -295,16 +311,6 @@ export const meetingService = {
       });
       audioAttachmentId = attachment.id;
     }
-
-    if (!transcript) {
-      throw createError(
-        'Envie um áudio da reunião (campo "audio") ou cole a transcrição.',
-        400,
-        'MEETING_INPUT_REQUIRED'
-      );
-    }
-
-    const analysis = await this.analyzeTranscript(tenantId, dealId, transcript);
 
     const interaction = await prisma.interaction.create({
       data: {
@@ -381,24 +387,21 @@ export const meetingService = {
     }
 
     const meta = (interaction.metadata as Record<string, unknown>) || {};
+
+    // ── Idempotência: uma reunião já aplicada não pode ser reaplicada (#3/#9). ──
+    // Sem esta guarda, uma chamada direta à API reaplicaria tudo — duplicando tarefas
+    // e reanexando notas. Rejeita ANTES de qualquer efeito colateral.
+    if (meta.appliedAt != null) {
+      throw createError('Reunião já aplicada.', 409, 'MEETING_ALREADY_APPLIED');
+    }
+
     const suggestedTasks = (meta.suggestedTasks as SuggestedTask[]) || [];
     const suggestedFields = (meta.suggestedFields as SuggestedField[]) || [];
 
-    // ── Tarefas: só cria as sugeridas cujos ids foram aceitos ──
-    const acceptedTaskIds = new Set(input.taskIds || []);
-    const createdTaskIds: string[] = [];
-    for (const st of suggestedTasks) {
-      if (!acceptedTaskIds.has(st.id)) continue;
-      const task = await taskService.create(tenantId, {
-        title: st.title,
-        description: st.description,
-        dueDate: st.dueDate ? new Date(st.dueDate) : undefined,
-        dealId,
-      });
-      createdTaskIds.push(task.id);
-    }
-
-    // ── Campos: só aplica os aceitos, e só chaves realmente sugeridas ──
+    // ── Campos: valida/coage TODOS os fieldUpdates ANTES de criar qualquer tarefa (#4). ──
+    // Se uma coerção falhar (ex.: stage=WON/LOST → 400), as tarefas NÃO podem já ter sido
+    // criadas: um retry as duplicaria. Por isso a validação vem primeiro, e só depois
+    // criamos tarefas / atualizamos o deal / marcamos appliedAt.
     const suggestedKeys = new Set(suggestedFields.map((f) => f.key));
     const updatedFields: SuggestedFieldKey[] = [];
     const dealUpdate: {
@@ -445,6 +448,20 @@ export const meetingService = {
       const suggested = fieldUpdates.notes;
       dealUpdate.notes = currentNotes ? `${currentNotes}\n\n${suggested}` : suggested;
       updatedFields.push('notes');
+    }
+
+    // ── Tarefas: só cria as sugeridas cujos ids foram aceitos (após a validação). ──
+    const acceptedTaskIds = new Set(input.taskIds || []);
+    const createdTaskIds: string[] = [];
+    for (const st of suggestedTasks) {
+      if (!acceptedTaskIds.has(st.id)) continue;
+      const task = await taskService.create(tenantId, {
+        title: st.title,
+        description: st.description,
+        dueDate: st.dueDate ? new Date(st.dueDate) : undefined,
+        dealId,
+      });
+      createdTaskIds.push(task.id);
     }
 
     // Só chama o update se houver algum campo aceito (respeita as guardas de dealService).

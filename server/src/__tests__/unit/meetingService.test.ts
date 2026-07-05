@@ -211,6 +211,31 @@ describe('meetingService.createMeeting — áudio com OpenAI', () => {
     // A interação aponta para o Attachment do áudio.
     expect(arg0(prismaMock.interaction.create).data.audioAttachmentId).toBe('att-1');
   });
+
+  it('análise falha DEPOIS de transcrever → áudio NÃO é persistido (sem Attachment órfão) (#15)', async () => {
+    // Whisper transcreve com sucesso, mas a análise (generateObject) falha → 503.
+    // Como o put do áudio só acontece após a análise, nenhum Attachment é criado.
+    resolveProviderConfigMock.mockReturnValue({ provider: 'openai', apiKey: 'sk-test' });
+    transcribeMock.mockResolvedValue({ text: 'Texto transcrito da reunião.' });
+    prismaMock.deal.findFirst.mockResolvedValue({
+      value: 500,
+      stage: 'QUALIFICATION',
+      notes: null,
+    } as never);
+    generateObjectMock.mockRejectedValue(new Error('IA fora do ar'));
+
+    await expect(
+      meetingService.createMeeting(tenantId, dealId, {
+        audio: { buffer: Buffer.from('audio-bytes'), mimeType: 'audio/mpeg', filename: 'r.mp3' },
+        userId: 'user-1',
+      })
+    ).rejects.toMatchObject({ statusCode: 503, code: 'AI_PROVIDER_UNAVAILABLE' });
+
+    expect(transcribeMock).toHaveBeenCalledOnce();
+    // Áudio NÃO foi persistido (put ocorre só após a análise) → sem Attachment órfão.
+    expect(storagePutMock).not.toHaveBeenCalled();
+    expect(prismaMock.interaction.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('meetingService.applyMeeting — aplica só o aceito', () => {
@@ -269,6 +294,59 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
     const updateArg = (prismaMock.interaction.update as any).mock.calls[0][0].data;
     expect(updateArg.metadata.appliedAt).toEqual(expect.any(String));
     expect(updateArg.metadata.appliedById).toBe('user-1');
+  });
+
+  it('reunião já aplicada → 409 MEETING_ALREADY_APPLIED e nenhum efeito (#3/#9)', async () => {
+    // metadata com appliedAt setado → uma nova chamada NÃO pode reaplicar (duplicar
+    // tarefas / reanexar notas). Rejeita antes de qualquer efeito colateral.
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: { ...meetingMeta, appliedAt: '2026-07-05T09:00:00Z', appliedById: 'user-0' },
+    } as never);
+
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: ['t1'], fieldUpdates: { value: '2000' } },
+        'user-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 409, code: 'MEETING_ALREADY_APPLIED' });
+
+    // Nada foi criado/atualizado.
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+    expect(prismaMock.interaction.update).not.toHaveBeenCalled();
+  });
+
+  it('validação de campo falha ANTES de criar tarefa (stage inválido → 0 tarefas) (#4)', async () => {
+    // Uma tarefa é aceita (t1) E um campo inválido (stage=WON) é enviado. A validação
+    // do campo deve rejeitar ANTES de criar qualquer tarefa — senão um retry duplicaria.
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: {
+        ...meetingMeta,
+        suggestedFields: [{ key: 'stage', current: 'CLOSING', suggested: 'WON' }],
+      },
+    } as never);
+
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: ['t1'], fieldUpdates: { stage: 'WON' } },
+        'user-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'MEETING_FIELD_NOT_APPLICABLE' });
+
+    // Nenhuma tarefa criada (a validação veio primeiro) e o deal não foi tocado.
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+    expect(prismaMock.interaction.update).not.toHaveBeenCalled();
   });
 
   it('nada aceito → não cria tarefa nem atualiza deal', async () => {
