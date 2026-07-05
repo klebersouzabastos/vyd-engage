@@ -23,7 +23,7 @@
   },
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["https://web.whatsapp.com/*", "https://api.vydengage.com/*"],
-  "optional_host_permissions": ["https://*/*"],
+  "optional_host_permissions": ["https://*.vydengage.com/*", "https://*.vydhub.com/*"],
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],

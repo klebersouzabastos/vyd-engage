@@ -52,11 +52,6 @@ vi.mock('../../services/storageService.js', () => ({
   storageService: { put: storagePutMock },
 }));
 
-const { taskCreateMock } = vi.hoisted(() => ({ taskCreateMock: vi.fn() }));
-vi.mock('../../services/taskService.js', () => ({
-  taskService: { create: taskCreateMock },
-}));
-
 const { dealUpdateMock } = vi.hoisted(() => ({ dealUpdateMock: vi.fn() }));
 vi.mock('../../services/dealService.js', () => ({
   dealService: { update: dealUpdateMock },
@@ -71,12 +66,21 @@ const dealId = 'deal-1';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const arg0 = (fn: any) => fn.mock.calls[0][0];
 
+// $transaction(callback) → executa o callback com o próprio prismaMock como `tx`,
+// para que tx.task.create / tx.interaction.update caiam nos mocks do prismaMock
+// (padrão do repo: teamGovernance.test.ts / proposalService.test.ts).
+function wireTransaction() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (prismaMock.$transaction as any).mockImplementation(async (cb: any) => cb(prismaMock));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   isAIEnabledMock.mockReturnValue(true);
   resolveProviderConfigMock.mockReturnValue({ provider: 'openai', apiKey: 'sk-test' });
   getModelMock.mockReturnValue({ id: 'mock-model' } as never);
   delete process.env.OPENAI_API_KEY;
+  wireTransaction();
 });
 
 describe('meetingService.assertAIEnabled — gating', () => {
@@ -285,7 +289,11 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
     } as never);
     // Deal sem notas atuais → a anotação sugerida entra como está (sem prefixo).
     prismaMock.deal.findFirst.mockResolvedValue({ notes: null } as never);
-    taskCreateMock.mockImplementation(async () => ({ id: `task-${taskCreateMock.mock.calls.length}` }));
+    // Tarefas são criadas via tx.task.create (inline na transação).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (prismaMock.task.create as any).mockImplementation(async () => ({
+      id: `task-${(prismaMock.task.create as any).mock.calls.length}`,
+    }));
     dealUpdateMock.mockResolvedValue({ id: dealId });
     prismaMock.interaction.update.mockResolvedValue({ id: 'int-1' } as never);
 
@@ -297,10 +305,12 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
       'user-1'
     );
 
-    // Só a Tarefa B (t1) foi criada.
-    expect(taskCreateMock).toHaveBeenCalledOnce();
-    const taskArg = taskCreateMock.mock.calls[0][1];
-    expect(taskArg).toMatchObject({ title: 'Tarefa B', dealId });
+    // Só a Tarefa B (t1) foi criada, via tx.task.create com os campos essenciais.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(prismaMock.task.create as any).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const taskArg = (prismaMock.task.create as any).mock.calls[0][0].data;
+    expect(taskArg).toMatchObject({ title: 'Tarefa B', dealId, tenantId });
     expect(result.createdTaskIds).toHaveLength(1);
 
     // Só value + notes aplicados (stage NÃO foi aceito).
@@ -316,6 +326,62 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
     const updateArg = (prismaMock.interaction.update as any).mock.calls[0][0].data;
     expect(updateArg.metadata.appliedAt).toEqual(expect.any(String));
     expect(updateArg.metadata.appliedById).toBe('user-1');
+  });
+
+  it('update do deal falha → NENHUMA tarefa persiste e appliedAt não é gravado (à prova de retry) (#2)', async () => {
+    // O update do deal roda ANTES da criação das tarefas. Se ele lança, nem tarefas
+    // são criadas nem appliedAt é gravado → um retry NÃO duplica tarefas.
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: meetingMeta,
+    } as never);
+    prismaMock.deal.findFirst.mockResolvedValue({ notes: null } as never);
+    dealUpdateMock.mockRejectedValue(new Error('transição de etapa bloqueada'));
+
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: ['t1'], fieldUpdates: { value: '2000' } },
+        'user-1'
+      )
+    ).rejects.toThrow('transição de etapa bloqueada');
+
+    // Nenhuma tarefa criada, appliedAt não gravado (interaction.update nem foi chamado).
+    expect(prismaMock.task.create).not.toHaveBeenCalled();
+    expect(prismaMock.interaction.update).not.toHaveBeenCalled();
+  });
+
+  it('criação de tarefa falha na transação → rollback: appliedAt NÃO é gravado (à prova de retry) (#2)', async () => {
+    // "criar tarefas + gravar appliedAt" é atômico via $transaction. Se tx.task.create
+    // lança, o interaction.update (appliedAt) NÃO é executado → nada commita e o guard
+    // de idempotência não passa a bloquear (um retry pode aplicar de novo, sem duplicar).
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: meetingMeta,
+    } as never);
+    prismaMock.deal.findFirst.mockResolvedValue({ notes: null } as never);
+    dealUpdateMock.mockResolvedValue({ id: dealId });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (prismaMock.task.create as any).mockRejectedValue(new Error('falha ao inserir tarefa'));
+
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: ['t1'], fieldUpdates: {} },
+        'user-1'
+      )
+    ).rejects.toThrow('falha ao inserir tarefa');
+
+    // A tarefa foi tentada, mas o appliedAt (interaction.update) veio DEPOIS dela na
+    // mesma transação → não chegou a ser gravado (rollback conceitual).
+    expect(prismaMock.task.create).toHaveBeenCalledOnce();
+    expect(prismaMock.interaction.update).not.toHaveBeenCalled();
   });
 
   it('reunião já aplicada → 409 MEETING_ALREADY_APPLIED e nenhum efeito (#3/#9)', async () => {
@@ -338,7 +404,7 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
     ).rejects.toMatchObject({ statusCode: 409, code: 'MEETING_ALREADY_APPLIED' });
 
     // Nada foi criado/atualizado.
-    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(prismaMock.task.create).not.toHaveBeenCalled();
     expect(dealUpdateMock).not.toHaveBeenCalled();
     expect(prismaMock.interaction.update).not.toHaveBeenCalled();
   });
@@ -366,7 +432,7 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
     ).rejects.toMatchObject({ statusCode: 400, code: 'MEETING_FIELD_NOT_APPLICABLE' });
 
     // Nenhuma tarefa criada (a validação veio primeiro) e o deal não foi tocado.
-    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(prismaMock.task.create).not.toHaveBeenCalled();
     expect(dealUpdateMock).not.toHaveBeenCalled();
     expect(prismaMock.interaction.update).not.toHaveBeenCalled();
   });
@@ -387,7 +453,7 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
       'user-1'
     );
 
-    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(prismaMock.task.create).not.toHaveBeenCalled();
     expect(dealUpdateMock).not.toHaveBeenCalled();
     expect(result.createdTaskIds).toHaveLength(0);
     expect(result.updatedFields).toHaveLength(0);

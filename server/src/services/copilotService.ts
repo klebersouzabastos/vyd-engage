@@ -472,6 +472,23 @@ async function executePending(
       throw new PermissionError('Você não tem permissão para criar tarefas.');
     }
     const args = action.args as { title: string; description?: string; dueDate?: string };
+    // LACUNA #1: valida a dueDate ANTES de criar. O modelo pode emitir "amanhã" (o
+    // inputSchema aceita string livre); `new Date('amanhã')` = Invalid Date faria o
+    // Prisma lançar RangeError ao gravar o DateTime. Esse erro NÃO é DealAccessError
+    // nem PermissionError → cairia no ramo "falha transitória" que REVERTE o claim e
+    // responde "tente novamente" — mas o erro é DETERMINÍSTICO, então cada novo "sim"
+    // repetiria o mesmo erro → LOOP perpétuo (a tarefa nunca é criada). Recusamos como
+    // erro PERMANENTE (PermissionError NÃO reverte o claim e dá mensagem acionável).
+    if (args.dueDate !== undefined && Number.isNaN(new Date(args.dueDate).getTime())) {
+      logger.warn('Copilot: data de vencimento inválida — criação de tarefa recusada', {
+        tenantId,
+        userId: permUser.userId,
+        entity: 'task',
+      });
+      throw new PermissionError(
+        'Data de vencimento inválida — use uma data como 2026-07-10.'
+      );
+    }
     const task = await taskService.create(tenantId, {
       title: args.title,
       description: args.description,

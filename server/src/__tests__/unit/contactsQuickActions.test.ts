@@ -267,8 +267,9 @@ describe('POST /contacts/notes — req 24', () => {
 
 describe('GET /contacts/resolve — req 24', () => {
   it('resolve por telefone, tenant-scoped pelo apiKey', async () => {
-    // $queryRaw casa o lead por dígitos e devolve o id; findFirst rehidrata.
-    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-1' }] as never);
+    // $queryRaw traz o candidato por sufixo (id + phone); o match por dígitos
+    // COMPLETOS (phonesMatch) confirma e findFirst rehidrata.
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-1', phone: '11999990000' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-1',
       name: 'Fulano',
@@ -293,9 +294,12 @@ describe('GET /contacts/resolve — req 24', () => {
 
   it('telefone gravado COM máscara resolve o lead (match por dígitos no banco)', async () => {
     // O consumidor consulta pelos dígitos ("11999990000"); o cadastro está com
-    // máscara ("(11) 99999-0000"). O match por regexp_replace no $queryRaw casa
-    // e devolve o id; a prova é que $queryRaw dirige a resolução.
-    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-mask' }] as never);
+    // máscara ("(11) 99999-0000"). O sufixo casa no $queryRaw e o phonesMatch por
+    // dígitos completos confirma (máscara normalizada); a prova é que $queryRaw
+    // dirige a resolução.
+    prismaMock.$queryRaw.mockResolvedValue([
+      { id: 'lead-mask', phone: '(11) 99999-0000' },
+    ] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-mask',
       name: 'Mascarado',
@@ -325,7 +329,7 @@ describe('GET /contacts/resolve — req 24', () => {
     // Há lead, mas sem companyId. Ainda que uma empresa case pelo sufixo de
     // telefone, o comportamento lead-first estrito NÃO deve resolver essa empresa
     // "órfã" — nenhuma consulta de company.findFirst deve ocorrer.
-    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-3' }] as never);
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-3', phone: '11955554444' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-3',
       name: 'Beltrano',
@@ -354,7 +358,7 @@ describe('GET /contacts/resolve — req 24', () => {
     // $queryRaw: 1ª chamada (Lead) → vazio; 2ª chamada (Company) → id da empresa.
     prismaMock.$queryRaw
       .mockResolvedValueOnce([] as never)
-      .mockResolvedValueOnce([{ id: 'company-1' }] as never);
+      .mockResolvedValueOnce([{ id: 'company-1', phone: '1133330000' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue(null as never);
     prismaMock.company.findFirst.mockResolvedValue({
       id: 'company-1',
@@ -394,7 +398,7 @@ describe('GET /contacts/resolve — req 24', () => {
 
   it('lead com companyId de empresa soft-deleted → company=null (sem fallback por telefone)', async () => {
     // Lead resolvido tem companyId, mas a empresa está indisponível (deletada).
-    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-2' }] as never);
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-2', phone: '11988887777' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-2',
       name: 'Ciclano',
@@ -423,5 +427,84 @@ describe('GET /contacts/resolve — req 24', () => {
     };
     expect(companyWhere.where.id).toBe('company-deleted');
     expect(companyWhere.where.phone).toBeUndefined();
+  });
+
+  it('dois candidatos com o MESMO sufixo (DDDs diferentes) → resolve o certo por dígitos completos', async () => {
+    // O sufixo curto ("955554444") casa DOIS leads no $queryRaw, mas com DDDs
+    // diferentes: 11955554444 (consultado) e 21955554444 (outro). O match por
+    // dígitos COMPLETOS (phonesMatch) deve escolher SÓ o lead certo, não o primeiro.
+    prismaMock.$queryRaw.mockResolvedValue([
+      { id: 'lead-rj', phone: '21955554444' }, // sufixo igual, DDD diferente → NÃO casa
+      { id: 'lead-sp', phone: '11955554444' }, // dígitos completos batem → casa
+    ] as never);
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-sp',
+      name: 'Certo',
+      email: null,
+      phone: '11955554444',
+      company: null,
+      companyId: null,
+    } as never);
+    prismaMock.deal.findMany.mockResolvedValue([] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([] as never);
+
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=11955554444')
+      .set('x-api-key', 'tenant-sp|contacts:read');
+
+    expect(res.status).toBe(200);
+    // Resolveu o lead cujo NÚMERO COMPLETO bate, não o primeiro do sufixo.
+    expect(res.body.data.lead).toMatchObject({ id: 'lead-sp' });
+    // findFirst rehidratou o id correto (lead-sp), não lead-rj.
+    const call = (prismaMock.lead.findFirst.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { id: string };
+    };
+    expect(call.where.id).toBe('lead-sp');
+  });
+
+  it('candidato só com sufixo igual (nenhum dígito-completo casa) → lead=null', async () => {
+    // Único candidato do sufixo é de OUTRO DDD; por dígitos completos NÃO casa.
+    // Sem match completo → nenhum lead resolvido (e sem fallback de empresa aqui).
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-rj', phone: '21955554444' }] as never);
+    // Sem match, o fallback de empresa roda: 2ª chamada do $queryRaw (Company) → vazia.
+    prismaMock.$queryRaw.mockResolvedValueOnce([
+      { id: 'lead-rj', phone: '21955554444' },
+    ] as never);
+    prismaMock.$queryRaw.mockResolvedValueOnce([] as never);
+
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=11955554444')
+      .set('x-api-key', 'tenant-none|contacts:read');
+
+    expect(res.status).toBe(200);
+    // Nenhum lead casou por dígitos completos → lead=null.
+    expect(res.body.data.lead).toBeNull();
+    // Não rehidratou nenhum lead (nenhum id casou).
+    expect(prismaMock.lead.findFirst).not.toHaveBeenCalled();
+    // Nenhuma empresa casou o fallback → company=null.
+    expect(res.body.data.company).toBeNull();
+  });
+
+  it('tolera o DDI 55: consulta com 55 e cadastro sem 55 → resolve', async () => {
+    // Consulta "5511955554444" (com DDI); o cadastro está "11955554444" (sem DDI).
+    // phonesMatch tolera a presença/ausência do 55 de um dos lados → casa.
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-ddi', phone: '11955554444' }] as never);
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-ddi',
+      name: 'Com DDI',
+      email: null,
+      phone: '11955554444',
+      company: null,
+      companyId: null,
+    } as never);
+    prismaMock.deal.findMany.mockResolvedValue([] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([] as never);
+
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=5511955554444')
+      .set('x-api-key', 'tenant-ddi|contacts:read');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.lead).toMatchObject({ id: 'lead-ddi' });
   });
 });

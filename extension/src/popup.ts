@@ -109,6 +109,25 @@ function isDefaultHost(baseUrl: string): boolean {
   }
 }
 
+/**
+ * Hosts do ecossistema VYD que o manifest permite conceder sob demanda
+ * (optional_host_permissions). Um baseUrl custom só pode pedir host_permission
+ * se casar com um destes sufixos — senão o Chrome rejeitaria a request porque
+ * o padrão não está declarado no manifest. Manter em sincronia com
+ * `optional_host_permissions` em manifest.json.
+ */
+const ALLOWED_HOST_SUFFIXES = ['.vydengage.com', '.vydhub.com'] as const;
+
+/** true se o host do baseUrl pertence ao ecossistema VYD permitido. */
+function isAllowedHost(baseUrl: string): boolean {
+  try {
+    const { host } = new URL(baseUrl);
+    return ALLOWED_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix));
+  } catch {
+    return false;
+  }
+}
+
 async function saveConfig() {
   const apiKey = ($('api-key') as HTMLInputElement).value.trim();
   const baseUrl =
@@ -122,6 +141,15 @@ async function saveConfig() {
     const pattern = originPattern(baseUrl);
     if (!pattern) {
       status.textContent = 'URL da API inválida. Use uma URL https:// completa.';
+      status.className = 'status err';
+      return;
+    }
+    // Só hosts do ecossistema VYD podem receber host_permission sob demanda
+    // (o manifest declara apenas *.vydengage.com / *.vydhub.com). Fora disso,
+    // erro claro em vez de pedir uma permissão que o manifest não cobre.
+    if (!isAllowedHost(baseUrl)) {
+      status.textContent =
+        'Host não permitido. Use api.vydengage.com ou um domínio *.vydengage.com / *.vydhub.com.';
       status.className = 'status err';
       return;
     }

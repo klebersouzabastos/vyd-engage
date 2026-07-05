@@ -10,9 +10,10 @@
  *  3. Persistência: grava o áudio como Attachment (source=MEETING) via storageService
  *     (quando houver áudio) + uma Interaction (type MEETING, audioAttachmentId,
  *     direction OUTBOUND, metadata { transcript, summary, suggestedTasks, suggestedFields }).
- *  4. apply: cria só as Tasks aceitas (taskService, vinculadas ao deal) + atualiza só os
- *     campos aceitos do deal (dealService.update — respeita as guardas P1) e marca
- *     appliedAt/appliedBy no metadata. NUNCA aplica silenciosamente.
+ *  4. apply: atualiza só os campos aceitos do deal (dealService.update — respeita as
+ *     guardas P1) PRIMEIRO e, num único prisma.$transaction, cria só as Tasks aceitas
+ *     (vinculadas ao deal) + marca appliedAt/appliedBy no metadata (à prova de retry:
+ *     ou tudo commita, ou nada). NUNCA aplica silenciosamente.
  *
  * GATING GRACIOSO: sem `aiProvider.isAIEnabled()` → 503 AI_NOT_CONFIGURED (nunca 500).
  * Multi-tenant: todo acesso é escopado por tenantId; a rota valida o deal do tenant +
@@ -22,7 +23,14 @@ import { z } from 'zod';
 import { generateObject, experimental_transcribe as transcribe } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import prisma from '../config/database.js';
-import { InteractionType, InteractionDirection, DealStage, type Prisma } from '@prisma/client';
+import {
+  InteractionType,
+  InteractionDirection,
+  DealStage,
+  TaskStatus,
+  TaskPriority,
+  type Prisma,
+} from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import {
@@ -32,7 +40,6 @@ import {
   logAiUsage,
 } from './aiProvider.js';
 import { storageService } from './storageService.js';
-import { taskService } from './taskService.js';
 import { dealService } from './dealService.js';
 
 // ========================
@@ -469,36 +476,53 @@ export const meetingService = {
       updatedFields.push('notes');
     }
 
-    // ── Tarefas: só cria as sugeridas cujos ids foram aceitos (após a validação). ──
-    const acceptedTaskIds = new Set(input.taskIds || []);
-    const createdTaskIds: string[] = [];
-    for (const st of suggestedTasks) {
-      if (!acceptedTaskIds.has(st.id)) continue;
-      const task = await taskService.create(tenantId, {
-        title: st.title,
-        description: st.description,
-        dueDate: st.dueDate ? new Date(st.dueDate) : undefined,
-        dealId,
-      });
-      createdTaskIds.push(task.id);
-    }
-
+    // ── Ordem à prova de retry (LACUNA #2). ──
+    // O passo mais propenso a lançar é o update do deal (DB/rede/guardas de etapa P1).
+    // Rodá-lo PRIMEIRO (é idempotente: seta valores) evita criar tarefas antes de uma
+    // falha que deixaria appliedAt=null → um retry recriaria as mesmas tarefas.
     // Só chama o update se houver algum campo aceito (respeita as guardas de dealService).
     if (updatedFields.length > 0) {
       await dealService.update(tenantId, dealUpdate);
     }
 
-    // Marca a reunião como aplicada (metadata), preservando o restante.
+    // ── Criar tarefas + marcar appliedAt = UMA transação atômica. ──
+    // Se qualquer passo falhar, NADA commita (rollback das tarefas) e appliedAt segue
+    // null; se suceder, appliedAt fica setado e o guard 409 MEETING_ALREADY_APPLIED
+    // impede que um retry duplique as tarefas. tx.task.create é inline (mesmos campos
+    // essenciais de taskService.create); tx.interaction.update grava o metadata.
+    const acceptedTaskIds = new Set(input.taskIds || []);
+    const tasksToCreate = suggestedTasks.filter((st) => acceptedTaskIds.has(st.id));
     const appliedAt = new Date().toISOString();
-    await prisma.interaction.update({
-      where: { id: interactionId },
-      data: {
-        metadata: {
-          ...meta,
-          appliedAt,
-          appliedById: userId ?? null,
-        } as unknown as Prisma.InputJsonValue,
-      },
+
+    const createdTaskIds = await prisma.$transaction(async (tx) => {
+      const ids: string[] = [];
+      for (const st of tasksToCreate) {
+        const task = await tx.task.create({
+          data: {
+            tenantId,
+            title: st.title,
+            description: st.description,
+            dealId,
+            dueDate: st.dueDate ? new Date(st.dueDate) : null,
+            status: TaskStatus.PENDING,
+            priority: TaskPriority.MEDIUM,
+          },
+        });
+        ids.push(task.id);
+      }
+
+      await tx.interaction.update({
+        where: { id: interactionId },
+        data: {
+          metadata: {
+            ...meta,
+            appliedAt,
+            appliedById: userId ?? null,
+          } as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      return ids;
     });
 
     return { createdTaskIds, updatedFields };

@@ -42,6 +42,42 @@ export function normalizePhoneDigits(raw: string): string {
   return raw.replace(/\D+/g, '');
 }
 
+// ── Match de telefone por DÍGITOS COMPLETOS (réplica da semântica de
+//    copilotService/whatsappMessagingService) ────────────────────────────────
+// O `$queryRaw` abaixo busca CANDIDATOS por um sufixo curto de dígitos (barato e
+// tolerante a máscara/DDI no banco), mas a DECISÃO de match é feita aqui em JS
+// pelos dígitos COMPLETOS — tolerando apenas a presença/ausência do DDI 55 de UM
+// dos lados. Isso evita o bug de dois números com o mesmo sufixo (DDDs diferentes)
+// resolverem o contato errado.
+
+/** Mantém apenas dígitos de um telefone. */
+function digitsOnly(raw: string): string {
+  return (raw || '').replace(/\D+/g, '');
+}
+
+/**
+ * Normaliza um telefone para comparação: retorna o número em dígitos e a variante
+ * sem o prefixo de DDI 55 (quando presente). Dois números casam se os dígitos
+ * COMPLETOS batem, ou se batem depois de remover o '55' inicial de UM dos lados —
+ * assim toleramos apenas a presença/ausência do DDI brasileiro, sem colidir por
+ * sufixo (o bug: mesmos dígitos finais em DDDs diferentes casaria o contato errado).
+ */
+function phoneVariants(raw: string): string[] {
+  const d = digitsOnly(raw);
+  if (!d) return [];
+  const variants = new Set<string>([d]);
+  if (d.startsWith('55') && d.length > 2) variants.add(d.slice(2));
+  return [...variants];
+}
+
+/** Dois telefones casam se compartilham alguma variante normalizada (com/sem DDI 55). */
+function phonesMatch(a: string, b: string): boolean {
+  const va = phoneVariants(a);
+  const vb = phoneVariants(b);
+  if (va.length === 0 || vb.length === 0) return false;
+  return va.some((x) => vb.includes(x));
+}
+
 const resolveQuerySchema = z.object({
   phone: z.string().min(4, 'Telefone inválido'),
 });
@@ -70,24 +106,32 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
     // de máscara/DDI entre WhatsApp e o cadastro.
     const suffix = digits.slice(-9);
 
-    // Lead cujo telefone, comparado SÓ pelos dígitos, termina no mesmo sufixo.
+    // Leads cujo telefone, comparado SÓ pelos dígitos, termina no mesmo sufixo.
     // O `contains` do Prisma casa a coluna crua, então telefones gravados COM
     // máscara ("(11) 99999-0000") não bateriam. Normalizamos os dígitos no banco
-    // via regexp_replace do Postgres e comparamos por sufixo. Query PARAMETRIZADA
-    // (tenantId e sufixo NUNCA concatenados) — imune a SQL injection. Filtro por
-    // tenant e soft-delete sempre aplicados. Tabela real: "Lead" (sem @@map).
-    const leadMatch = await prisma.$queryRaw<{ id: string }[]>`
-      SELECT "id" FROM "Lead"
+    // via regexp_replace do Postgres e buscamos CANDIDATOS por sufixo. Query
+    // PARAMETRIZADA (tenantId e sufixo NUNCA concatenados) — imune a SQL injection.
+    // Filtro por tenant e soft-delete sempre aplicados. Tabela real: "Lead" (sem
+    // @@map). O sufixo é só um pré-filtro barato; a decisão de match é por DÍGITOS
+    // COMPLETOS em JS (phonesMatch), evitando que dois números com o mesmo sufixo
+    // (DDDs diferentes) resolvam o lead errado. Trazemos vários candidatos.
+    const leadCandidates = await prisma.$queryRaw<{ id: string; phone: string | null }[]>`
+      SELECT "id", "phone" FROM "Lead"
       WHERE "tenantId" = ${tenantId}
         AND "deletedAt" IS NULL
         AND regexp_replace(COALESCE("phone", ''), '[^0-9]', '', 'g') LIKE ${'%' + suffix}
       ORDER BY "createdAt" DESC
-      LIMIT 1`;
+      LIMIT 20`;
+
+    // Filtra por dígitos COMPLETOS (tolerando só o DDI 55). Só sobra o candidato
+    // cujos dígitos realmente casam com o telefone consultado — sem colisão por
+    // sufixo. Se nenhum casar completo → sem lead.
+    const leadMatch = leadCandidates.find((c) => phonesMatch(c.phone || '', parsed.data.phone));
 
     // Rehidrata o lead pelo id (mantém o select tipado atual + tenant-scope).
-    const lead = leadMatch[0]
+    const lead = leadMatch
       ? await prisma.lead.findFirst({
-          where: { id: leadMatch[0].id, tenantId, deletedAt: null },
+          where: { id: leadMatch.id, tenantId, deletedAt: null },
           select: {
             id: true,
             name: true,
@@ -118,17 +162,22 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
     } else {
       // Fallback por telefone (SÓ quando não há lead): mesma normalização por
       // dígitos no banco, para casar empresas cujo telefone foi gravado com
-      // máscara. Query PARAMETRIZADA. Tabela real: "Company" (sem @@map).
-      const companyMatch = await prisma.$queryRaw<{ id: string }[]>`
-        SELECT "id" FROM "Company"
+      // máscara. Query PARAMETRIZADA. Tabela real: "Company" (sem @@map). Igual ao
+      // lead: sufixo é só pré-filtro; a decisão é por DÍGITOS COMPLETOS (phonesMatch),
+      // evitando colisão por sufixo entre DDDs diferentes.
+      const companyCandidates = await prisma.$queryRaw<{ id: string; phone: string | null }[]>`
+        SELECT "id", "phone" FROM "Company"
         WHERE "tenantId" = ${tenantId}
           AND "deletedAt" IS NULL
           AND regexp_replace(COALESCE("phone", ''), '[^0-9]', '', 'g') LIKE ${'%' + suffix}
         ORDER BY "createdAt" DESC
-        LIMIT 1`;
-      company = companyMatch[0]
+        LIMIT 20`;
+      const companyMatch = companyCandidates.find((c) =>
+        phonesMatch(c.phone || '', parsed.data.phone)
+      );
+      company = companyMatch
         ? await prisma.company.findFirst({
-            where: { id: companyMatch[0].id, tenantId, deletedAt: null },
+            where: { id: companyMatch.id, tenantId, deletedAt: null },
             select: { id: true, name: true, phone: true },
           })
         : null;

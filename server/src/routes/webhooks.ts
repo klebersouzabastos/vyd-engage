@@ -164,11 +164,16 @@ router.get('/whatsapp', (req: Request, res: Response) => {
  * sem duplicar as mensagens já tratadas pelo copiloto (o copiloto grava sua própria
  * Interaction). O filtro contém: os `changes` inteiros de conexões NÃO-copiloto e,
  * para conexões copiloto, um change com `value.statuses` (preserva o tracking de
- * status sent/delivered/read/failed das mensagens enviadas — LACUNA #10) e com as
+ * status sent/delivered/read/failed das mensagens enviadas — LACUNA #10), com as
  * `messages` INBOUND de tipo != 'text' (imagem/áudio/documento/vídeo), que o copiloto
  * NÃO trata — assim o fluxo genérico registra a Interaction INBOUND delas e incrementa
- * `messagesReceived` (LACUNA #2). As mensagens de TEXTO, já tratadas pelo copiloto, são
- * removidas do change reencaminhado (evita Interaction duplicada).
+ * `messagesReceived` (LACUNA #2), e com os TEXTOS de remetente NÃO autorizado (não
+ * cadastrado como `User.whatsappNumber`), que o copiloto só responde "não autorizado"
+ * e NÃO loga — reencaminhados para o log passivo (Interaction INBOUND + `messagesReceived`),
+ * equiparando o número copiloto a qualquer outro (LACUNA #4). O sinal de remetente não
+ * autorizado é o retorno `handled === false` COM `reply != null` de `handleCopilotMessage`.
+ * As mensagens de TEXTO de remetentes CONHECIDOS, já tratadas (e logadas) pelo copiloto,
+ * são removidas do change reencaminhado (evita Interaction duplicada).
  *
  * Gating: sem `isAIEnabled()`, o roteamento é ignorado (o payload passa inteiro ao
  * fluxo genérico) — nada quebra quando a IA não está configurada.
@@ -229,14 +234,14 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
       // mensagens INBOUND de tipo != 'text' (que o copiloto NÃO trata) para
       // reencaminhar ao fluxo genérico (LACUNA #2).
       const messages = change?.value?.messages || [];
-      const nonTextMessages: any[] = [];
+      const forwardMessages: any[] = [];
       for (const message of messages) {
         // LACUNA #2: mensagens INBOUND não-texto (imagem/áudio/documento/vídeo) o
         // copiloto não trata. Reencaminha ao fluxo genérico para que o
         // processWebhook registre a Interaction INBOUND ('[Imagem recebida]' etc.)
         // e incremente `messagesReceived`.
         if (message?.type !== 'text') {
-          nonTextMessages.push(message);
+          forwardMessages.push(message);
           continue;
         }
         // LACUNA #6: pula redelivery do Meta (mesmo message.id já roteado) para não
@@ -253,7 +258,23 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
         const from = message.from;
         const text = message.text?.body || '';
         try {
-          await copilotService.handleCopilotMessage(conn.tenantId, conn, from, text);
+          const result = await copilotService.handleCopilotMessage(conn.tenantId, conn, from, text);
+          // LACUNA #4: preservar o LOG PASSIVO de inbound também no número do copiloto
+          // para textos de remetente NÃO autorizado. O copiloto só responde "não
+          // autorizado" a números desconhecidos (não cadastrados como
+          // User.whatsappNumber) e NÃO grava Interaction para eles — divergindo de
+          // qualquer número não-copiloto (onde toda mensagem recebida é logada). Como o
+          // webhook não resolve o usuário nesta camada, delegamos a decisão ao retorno
+          // de `handleCopilotMessage`: um remetente NÃO reconhecido é o ÚNICO caso que
+          // devolve `handled === false` COM `reply != null` (a resposta de "não
+          // autorizado"). Nesse caso, reencaminhamos o texto ao fluxo genérico SOMENTE
+          // para o registro passivo (Interaction INBOUND + `messagesReceived`). Textos
+          // de remetentes CONHECIDOS (handled === true, ou os casos handled === false
+          // com reply === null: IA não configurada / modelo indisponível) NÃO são
+          // reencaminhados — evita Interaction duplicada com a que o copiloto grava.
+          if (result && result.handled === false && result.reply != null) {
+            forwardMessages.push(message);
+          }
         } catch (err) {
           logger.error('Copilot: erro ao rotear mensagem', err as any);
         }
@@ -262,17 +283,18 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
       // Reencaminha ao fluxo genérico um change com:
       //  - as `messages` INBOUND de tipo != 'text' (LACUNA #2) — que o copiloto não
       //    trata, para que o processWebhook registre a Interaction INBOUND delas;
+      //  - os textos de remetente NÃO autorizado (LACUNA #4) — para o log passivo;
       //  - os `statuses` (sent/delivered/read/failed) das mensagens ENVIADAS pela
       //    conexão-copiloto (LACUNA #10) — para manter o tracking de status.
-      // As mensagens de TEXTO, já tratadas pelo copiloto, são OMITIDAS (evita
-      // Interaction duplicada). Só reencaminha quando há algo a processar.
+      // As mensagens de TEXTO de remetentes conhecidos, já tratadas pelo copiloto, são
+      // OMITIDAS (evita Interaction duplicada). Só reencaminha quando há algo a processar.
       const statuses = change?.value?.statuses || [];
       const hasStatuses = Array.isArray(statuses) && statuses.length > 0;
-      if (nonTextMessages.length > 0 || hasStatuses) {
+      if (forwardMessages.length > 0 || hasStatuses) {
         const { messages: _omitMessages, ...valueWithoutMessages } = change.value;
         const filteredValue: any = { ...valueWithoutMessages };
-        if (nonTextMessages.length > 0) {
-          filteredValue.messages = nonTextMessages;
+        if (forwardMessages.length > 0) {
+          filteredValue.messages = forwardMessages;
         }
         outChanges.push({ ...change, value: filteredValue });
       }

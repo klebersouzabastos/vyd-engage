@@ -536,6 +536,46 @@ describe('escrita com aceite', () => {
     expect(res.reply).toMatch(/não tem permissão/i);
   });
 
+  it('criar_tarefa com dueDate inválida ("amanhã") → recusa acionável, não cria, não faz loop (#1)', async () => {
+    // LACUNA #1: o modelo pode emitir "amanhã" como dueDate. Antes, `new Date('amanhã')`
+    // = Invalid Date faria o Prisma lançar RangeError → ramo "falha transitória" que
+    // reverte o claim e responde "tente novamente" → cada novo "sim" repetiria o mesmo
+    // erro determinístico (LOOP). Agora a data inválida é recusada como erro PERMANENTE:
+    // resposta acionável, taskService.create NUNCA é chamado, e o claim NÃO é revertido.
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findFirst.mockResolvedValue({
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente', dueDate: 'amanhã' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      } as never);
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    expect(res.handled).toBe(true);
+    // Mensagem acionável (sugere formato de data válido), não "tente novamente".
+    expect(res.reply).toMatch(/data de vencimento inválida/i);
+    expect(res.reply).not.toMatch(/tente novamente/i);
+    // A tarefa NUNCA é criada com uma data inválida.
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    // Recusa PERMANENTE: só o claim (resolved→true) roda; NÃO há reversão (resolved→false)
+    // — sem reversão, um novo "sim" não reencontra a proposta e não repete o erro (não loopa).
+    expect(prismaMock.interaction.updateMany).toHaveBeenCalledTimes(1);
+    const claimArg = (prismaMock.interaction.updateMany as any).mock.calls[0][0];
+    expect(claimArg.where.metadata.equals).toBe(false);
+  });
+
   it('atualizar_deal com stage=WON → recusado (fluxo próprio) (#7/#10/#14)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
     prismaMock.interaction.findFirst.mockResolvedValue({
