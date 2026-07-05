@@ -828,8 +828,8 @@ export function DealDetail() {
                   <WhatsAppSendPanel
                     dealId={deal.id}
                     leadId={deal.leadId || undefined}
-                    phone={deal.lead?.phone}
-                    name={deal.lead?.name || deal.name}
+                    phone={deal.lead?.phone || deal.company?.phone || undefined}
+                    name={deal.lead?.name || deal.company?.name || deal.name}
                     onSent={fetchInteractions}
                   />
                 </div>

@@ -70,25 +70,34 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
     // de máscara/DDI entre WhatsApp e o cadastro.
     const suffix = digits.slice(-9);
 
-    // Lead cujo telefone (só dígitos) termina no mesmo sufixo. Prisma não faz
-    // "só dígitos" no banco, então busca por `contains` do sufixo já cobre a
-    // maioria dos formatos gravados; o filtro por tenant é sempre aplicado.
-    const lead = await prisma.lead.findFirst({
-      where: {
-        tenantId,
-        deletedAt: null,
-        phone: { contains: suffix },
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        company: true,
-        companyId: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Lead cujo telefone, comparado SÓ pelos dígitos, termina no mesmo sufixo.
+    // O `contains` do Prisma casa a coluna crua, então telefones gravados COM
+    // máscara ("(11) 99999-0000") não bateriam. Normalizamos os dígitos no banco
+    // via regexp_replace do Postgres e comparamos por sufixo. Query PARAMETRIZADA
+    // (tenantId e sufixo NUNCA concatenados) — imune a SQL injection. Filtro por
+    // tenant e soft-delete sempre aplicados. Tabela real: "Lead" (sem @@map).
+    const leadMatch = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "Lead"
+      WHERE "tenantId" = ${tenantId}
+        AND "deletedAt" IS NULL
+        AND regexp_replace(COALESCE("phone", ''), '[^0-9]', '', 'g') LIKE ${'%' + suffix}
+      ORDER BY "createdAt" DESC
+      LIMIT 1`;
+
+    // Rehidrata o lead pelo id (mantém o select tipado atual + tenant-scope).
+    const lead = leadMatch[0]
+      ? await prisma.lead.findFirst({
+          where: { id: leadMatch[0].id, tenantId, deletedAt: null },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            company: true,
+            companyId: true,
+          },
+        })
+      : null;
 
     // Resolução da empresa (tenant-scoped), lead-first ESTRITO:
     //  - Se HÁ lead, a empresa vem EXCLUSIVAMENTE do lead.companyId. Sem companyId
@@ -107,11 +116,22 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
       }
       // Lead sem companyId → company=null (sem fallback por telefone).
     } else {
-      company = await prisma.company.findFirst({
-        where: { tenantId, deletedAt: null, phone: { contains: suffix } },
-        select: { id: true, name: true, phone: true },
-        orderBy: { createdAt: 'desc' },
-      });
+      // Fallback por telefone (SÓ quando não há lead): mesma normalização por
+      // dígitos no banco, para casar empresas cujo telefone foi gravado com
+      // máscara. Query PARAMETRIZADA. Tabela real: "Company" (sem @@map).
+      const companyMatch = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT "id" FROM "Company"
+        WHERE "tenantId" = ${tenantId}
+          AND "deletedAt" IS NULL
+          AND regexp_replace(COALESCE("phone", ''), '[^0-9]', '', 'g') LIKE ${'%' + suffix}
+        ORDER BY "createdAt" DESC
+        LIMIT 1`;
+      company = companyMatch[0]
+        ? await prisma.company.findFirst({
+            where: { id: companyMatch[0].id, tenantId, deletedAt: null },
+            select: { id: true, name: true, phone: true },
+          })
+        : null;
     }
 
     // Deals e interações:
@@ -255,10 +275,19 @@ router.post('/tasks', requireScope('tasks:write'), async (req, res, next) => {
  * escopo `contacts:read` NÃO seria correto p/ escrita — usamos `leads:write` por
  * ser a permissão de escrita sobre o contato vinculado.
  */
-const createNoteSchema = z.object({
-  content: z.string().min(1, 'Conteúdo obrigatório'),
-  leadId: z.string().optional(),
-});
+const createNoteSchema = z
+  .object({
+    content: z.string().min(1, 'Conteúdo obrigatório'),
+    leadId: z.string().optional(),
+    // Uma nota da extensão pode ser vinculada a um contato resolvido SÓ por
+    // empresa (sem lead). Aceita companyId opcional para não deixar a nota órfã.
+    companyId: z.string().optional(),
+  })
+  // Exige ao menos um alvo — do contrário a nota ficaria sem vínculo.
+  .refine((d) => Boolean(d.leadId || d.companyId), {
+    message: 'Informe leadId ou companyId',
+    path: ['leadId'],
+  });
 router.post('/notes', requireScope('leads:write'), async (req, res, next) => {
   try {
     if (!req.apiKey) return next(createError('API key authentication required', 401));
@@ -273,11 +302,20 @@ router.post('/notes', requireScope('leads:write'), async (req, res, next) => {
       });
       if (!lead) return next(createError('Lead não encontrado', 404, 'LEAD_NOT_FOUND'));
     }
+    // Valida a empresa cross-tenant (não vaza empresa de outro tenant).
+    if (parsed.data.companyId) {
+      const company = await prisma.company.findFirst({
+        where: { id: parsed.data.companyId, tenantId: req.apiKey.tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!company) return next(createError('Empresa não encontrada', 404, 'COMPANY_NOT_FOUND'));
+    }
     const interaction = await interactionService.create(req.apiKey.tenantId, {
       type: InteractionType.NOTE,
       direction: InteractionDirection.OUTBOUND,
       content: parsed.data.content,
       leadId: parsed.data.leadId,
+      companyId: parsed.data.companyId,
     });
     res.status(201).json({ status: 201, data: interaction });
   } catch (error) {

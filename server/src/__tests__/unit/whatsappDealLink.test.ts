@@ -85,6 +85,44 @@ describe('whatsappMessagingService.sendMessage — vínculo ao deal (req 23)', (
     });
   });
 
+  it('com userId → Interaction OUTBOUND gravada com o remetente (lacuna #4)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-1' } as never);
+
+    await whatsappMessagingService.sendMessage(tenantId, {
+      connectionId: 'conn-1',
+      to: '5511999999999',
+      type: 'text',
+      content: 'Olá do vendedor',
+      dealId: 'deal-1',
+      userId: 'user-42',
+    });
+
+    // Interaction gravada com o userId do remetente → aparece na timeline para
+    // analista com visibilidade PROPRIA (filtra por userId).
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({
+      tenantId,
+      dealId: 'deal-1',
+      userId: 'user-42',
+      direction: 'OUTBOUND',
+    });
+  });
+
+  it('sem userId → Interaction OUTBOUND com userId null (compat retro)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-1' } as never);
+
+    await whatsappMessagingService.sendMessage(tenantId, {
+      connectionId: 'conn-1',
+      to: '5511999999999',
+      type: 'text',
+      content: 'Olá!',
+      dealId: 'deal-1',
+    });
+
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({ dealId: 'deal-1', userId: null, direction: 'OUTBOUND' });
+  });
+
   it('com companyId → Interaction vinculada à empresa', async () => {
     prismaMock.company.findFirst.mockResolvedValue({ id: 'comp-1' } as never);
 

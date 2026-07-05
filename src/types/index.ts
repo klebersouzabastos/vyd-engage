@@ -301,7 +301,7 @@ export interface Deal {
   leadId?: string | null;
   lead?: { id: string; name: string; email?: string; phone?: string; company?: string } | null;
   /** Empresa-alvo da negociação (Deal.companyId → Company) — distinta da empresa do contato. */
-  company?: { id: string; name: string } | null;
+  company?: { id: string; name: string; phone?: string | null } | null;
   assignedTo?: string | null;
   assignedUser?: { id: string; name: string; email: string } | null;
   notes?: string | null;

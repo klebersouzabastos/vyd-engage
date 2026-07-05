@@ -350,7 +350,7 @@ describe('escrita com aceite', () => {
         metadata: {
           copilotPending: {
             kind: 'atualizar_deal',
-            args: { dealId: 'deal-1', stage: 'WON' },
+            args: { dealId: 'deal-1', stage: 'NEGOTIATION' },
             summary: '...',
             connectionId: 'conn-1',
             resolved: false,
@@ -369,6 +369,140 @@ describe('escrita com aceite', () => {
     expect(res.handled).toBe(true);
     expect(dealUpdateMock).not.toHaveBeenCalled();
     expect(res.reply).toMatch(/cancel/i);
+  });
+
+  it('"isso não" cancela (o "não" forte decide; "isso" é filler) (#1/#6)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'isso não'
+    );
+
+    // "isso" é filler; o "não" forte manda → cancela (não executa a escrita pendente).
+    expect(res.handled).toBe(true);
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(res.reply).toMatch(/cancel/i);
+    expect(res.toolsUsed).toEqual([]);
+  });
+
+  it('consulta natural com filler ("ok, e o deal Y?") NÃO executa a pendência (#1/#6)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    // O "modelo" trata como nova consulta (chama leitura, não escreve nada).
+    let modelCalled = false;
+    generateTextImpl = async () => {
+      modelCalled = true;
+      return { text: 'O deal Y está em PROPOSAL.', usage: {} };
+    };
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'ok, e o status do deal Y?'
+    );
+
+    // >3 tokens → 'none': EXPIRA a proposta e vira nova consulta. NÃO cria a tarefa.
+    expect(res.handled).toBe(true);
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(modelCalled).toBe(true);
+    expect(res.reply).toMatch(/deal Y/i);
+    // A proposta pendente foi expirada via claim atômico antes de seguir.
+    expect(prismaMock.interaction.updateMany).toHaveBeenCalled();
+  });
+
+  it('VIEWER (sem capacidade) → escrita recusada mesmo após "sim" (#2)', async () => {
+    // Comandante é VIEWER: entities all-false (fail-closed via defaults, sem perfil custom).
+    prismaMock.user.findMany.mockResolvedValue([
+      { ...knownUser, role: 'VIEWER' },
+    ] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    // Recusado por falta de capacidade — a tarefa NUNCA é criada.
+    expect(res.handled).toBe(true);
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(res.reply).toMatch(/não tem permissão/i);
+  });
+
+  it('atualizar_deal com stage=WON → recusado (fluxo próprio) (#7/#10/#14)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'atualizar_deal',
+            args: { dealId: 'deal-1', stage: 'WON' },
+            summary: 'Vou atualizar...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    // USER tem deals.edit=true; a recusa vem da guarda de stage, não da capacidade.
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    // Recusado: WON não pode via update direto (contornaria markWon).
+    expect(res.handled).toBe(true);
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+    expect(res.reply).toMatch(/fluxo próprio/i);
   });
 });
 

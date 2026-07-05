@@ -143,9 +143,15 @@ router.get('/whatsapp', (req: Request, res: Response) => {
  *
  * Gating: sem `isAIEnabled()`, o roteamento é ignorado (o payload passa inteiro ao
  * fluxo genérico) — nada quebra quando a IA não está configurada.
+ *
+ * Segurança (LACUNA #3): o copiloto dispara AÇÕES DE ESCRITA no CRM. Só roteamos ao
+ * copiloto quando `signatureVerified === true` (WHATSAPP_APP_SECRET presente E HMAC
+ * válido nesta requisição). Sem assinatura verificada, o payload passa INTEIRO ao
+ * fluxo genérico (log passivo de Interaction, baixo risco) e o copiloto é ignorado —
+ * evita que um atacante forje um POST "from" o número de um usuário e dispare escritas.
  */
-async function routeCopilotAndFilter(payload: any): Promise<any> {
-  if (!isAIEnabled() || !payload?.entry) return payload;
+async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): Promise<any> {
+  if (!signatureVerified || !isAIEnabled() || !payload?.entry) return payload;
 
   // Cache de conexões CONNECTED por phone_number_id (decripta config uma vez).
   const connections = await prisma.whatsAppConnection.findMany({
@@ -199,6 +205,10 @@ async function routeCopilotAndFilter(payload: any): Promise<any> {
 // POST /api/webhooks/whatsapp - Incoming WhatsApp messages & status updates
 router.post('/whatsapp', async (req: Request, res: Response) => {
   try {
+    // Rastreia se a assinatura foi VERIFICADA nesta requisição (appSecret presente
+    // E HMAC válido). Gate do caminho de ESCRITA (copiloto) — ver LACUNA #3.
+    let signatureVerified = false;
+
     // Validate signature if secret is configured
     const appSecret = process.env.WHATSAPP_APP_SECRET;
     if (appSecret) {
@@ -227,14 +237,23 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
         res.status(401).json({ error: 'Invalid signature' });
         return;
       }
+
+      // Assinatura verificada com sucesso → caminho de escrita (copiloto) liberado.
+      signatureVerified = true;
+    } else {
+      // LACUNA #3: sem WHATSAPP_APP_SECRET não há como autenticar o remetente. O log
+      // passivo de inbound (Interaction) segue como hoje (baixo risco), mas o copiloto
+      // (AÇÕES DE ESCRITA no CRM) NÃO é roteado — evita escritas forjadas por atacante.
+      logger.warn('WhatsApp webhook: copiloto exige WHATSAPP_APP_SECRET — roteamento ao copiloto ignorado');
     }
 
     logger.info('WhatsApp webhook received', { object: req.body?.object });
 
     // Copiloto IA (req 25): roteia mensagens de conexões `isCopilot` e devolve um
     // payload filtrado (sem os changes já tratados pelo copiloto) ao fluxo genérico.
-    // Assíncrono — sempre retorna 200 rápido.
-    routeCopilotAndFilter(req.body)
+    // Assíncrono — sempre retorna 200 rápido. O roteamento ao copiloto só ocorre
+    // quando a assinatura foi verificada (LACUNA #3); senão o payload passa inteiro.
+    routeCopilotAndFilter(req.body, signatureVerified)
       .then((filtered) => whatsappMessagingService.processWebhook(filtered))
       .catch((error) => {
         logger.error('Error processing WhatsApp webhook async', error);

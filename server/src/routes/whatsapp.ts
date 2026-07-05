@@ -60,6 +60,15 @@ router.post('/', async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
+    // Copiloto IA (Upgrade RD P3, req 25): apenas ADMIN pode designar a conexão
+    // do copiloto. A criação/edição normal de conexão por não-admin continua livre;
+    // só o campo isCopilot é restrito.
+    if ('isCopilot' in req.body && req.user.role !== 'ADMIN') {
+      return next(
+        createError('Apenas administradores podem designar a conexão do copiloto', 403, 'INSUFFICIENT_PERMISSIONS'),
+      );
+    }
+
     const data = createConnectionSchema.parse(req.body);
     const connection = await whatsappService.create(req.user.tenantId, data);
     res.status(201).json(connection);
@@ -75,6 +84,15 @@ router.put('/:id', async (req, res, next) => {
   try {
     if (!req.user) {
       return next(createError('Authentication required', 401));
+    }
+
+    // Copiloto IA (Upgrade RD P3, req 25): apenas ADMIN pode designar a conexão
+    // do copiloto. A edição normal de conexão por não-admin continua livre;
+    // só o campo isCopilot é restrito.
+    if ('isCopilot' in req.body && req.user.role !== 'ADMIN') {
+      return next(
+        createError('Apenas administradores podem designar a conexão do copiloto', 403, 'INSUFFICIENT_PERMISSIONS'),
+      );
     }
 
     const data = updateConnectionSchema.parse({
@@ -175,7 +193,30 @@ router.post('/send', async (req, res, next) => {
       if (!ok) return next(createError('Company not found', 404, 'COMPANY_NOT_FOUND'));
     }
 
-    const result = await whatsappMessagingService.sendMessage(req.user.tenantId, data);
+    if (data.leadId) {
+      // Espelha o padrão de dealId para o lead/contato (escopo 'contacts'): o
+      // registro-alvo deve estar DENTRO do escopo de visibilidade efetivo do
+      // usuário, senão um analista USER escreveria na timeline de um lead de
+      // OUTRO dono no mesmo tenant. Fora do escopo → 404 (não vaza existência).
+      const scope = await visibilityScope(permUser, 'contacts');
+      const ok = await prisma.lead.findFirst({
+        where: {
+          id: data.leadId,
+          tenantId: req.user.tenantId,
+          deletedAt: null,
+          ...(scope === undefined ? {} : { assignedTo: scope }),
+        },
+        select: { id: true },
+      });
+      if (!ok) return next(createError('Lead not found', 404, 'LEAD_NOT_FOUND'));
+    }
+
+    // Propaga o userId do remetente à Interaction criada pelo service (dono B),
+    // para que a mensagem apareça na timeline do analista com visibilidade PROPRIA.
+    const result = await whatsappMessagingService.sendMessage(req.user.tenantId, {
+      ...data,
+      userId: req.user.userId,
+    });
     res.json({ status: 200, data: result });
   } catch (error) {
     if (error instanceof z.ZodError) {

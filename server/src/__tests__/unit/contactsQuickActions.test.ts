@@ -150,10 +150,59 @@ describe('POST /contacts/notes — req 24', () => {
     expect(data.direction).toBe('OUTBOUND');
     expect(data.content).toBe('Falei com o cliente.');
   });
+
+  it('companyId sem leadId → 201 e Interaction vinculada à empresa', async () => {
+    // Contato resolvido só por empresa (sem lead): a nota deve ficar vinculada
+    // à empresa (companyId), não órfã.
+    prismaMock.company.findFirst.mockResolvedValue({ id: 'company-1' } as never);
+    createInteractionMock.mockResolvedValue({ id: 'int-2' });
+    const res = await request(makeApp())
+      .post('/contacts/notes')
+      .set('x-api-key', 'tenant-q|leads:write')
+      .send({ content: 'Contato pela empresa.', companyId: 'company-1' });
+    expect(res.status).toBe(201);
+    // Empresa validada cross-tenant (findFirst com o tenant do apiKey).
+    const companyWhere = (prismaMock.company.findFirst.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { id: string; tenantId: string };
+    };
+    expect(companyWhere.where.id).toBe('company-1');
+    expect(companyWhere.where.tenantId).toBe('tenant-q');
+    // Interaction criada com companyId e sem leadId.
+    const [tenantArg, data] = createInteractionMock.mock.calls[0];
+    expect(tenantArg).toBe('tenant-q');
+    expect(data.companyId).toBe('company-1');
+    expect(data.leadId).toBeUndefined();
+    expect(data.type).toBe('NOTE');
+    // Não deve ter consultado lead (não veio leadId).
+    expect(prismaMock.lead.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('companyId de outro tenant → 404 COMPANY_NOT_FOUND (não vaza cross-tenant)', async () => {
+    prismaMock.company.findFirst.mockResolvedValue(null as never);
+    const res = await request(makeApp())
+      .post('/contacts/notes')
+      .set('x-api-key', 't1|leads:write')
+      .send({ content: 'Nota', companyId: 'company-de-outro-tenant' });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('COMPANY_NOT_FOUND');
+    expect(createInteractionMock).not.toHaveBeenCalled();
+  });
+
+  it('sem leadId e sem companyId → 400 VALIDATION_ERROR', async () => {
+    const res = await request(makeApp())
+      .post('/contacts/notes')
+      .set('x-api-key', 't1|leads:write')
+      .send({ content: 'Nota sem alvo.' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(createInteractionMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET /contacts/resolve — req 24', () => {
   it('resolve por telefone, tenant-scoped pelo apiKey', async () => {
+    // $queryRaw casa o lead por dígitos e devolve o id; findFirst rehidrata.
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-1' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-1',
       name: 'Fulano',
@@ -176,10 +225,41 @@ describe('GET /contacts/resolve — req 24', () => {
     expect(call.where.tenantId).toBe('tenant-y');
   });
 
+  it('telefone gravado COM máscara resolve o lead (match por dígitos no banco)', async () => {
+    // O consumidor consulta pelos dígitos ("11999990000"); o cadastro está com
+    // máscara ("(11) 99999-0000"). O match por regexp_replace no $queryRaw casa
+    // e devolve o id; a prova é que $queryRaw dirige a resolução.
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-mask' }] as never);
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-mask',
+      name: 'Mascarado',
+      email: null,
+      phone: '(11) 99999-0000',
+      company: null,
+      companyId: null,
+    } as never);
+    prismaMock.deal.findMany.mockResolvedValue([] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([] as never);
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=11999990000')
+      .set('x-api-key', 'tenant-m|contacts:read');
+    expect(res.status).toBe(200);
+    expect(res.body.data.lead).toMatchObject({ id: 'lead-mask', phone: '(11) 99999-0000' });
+    // A resolução do lead passou pelo $queryRaw (não pelo `contains` cru).
+    expect(prismaMock.$queryRaw).toHaveBeenCalled();
+    // findFirst rehidratou pelo id retornado, com o tenant do apiKey.
+    const call = (prismaMock.lead.findFirst.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { id: string; tenantId: string };
+    };
+    expect(call.where.id).toBe('lead-mask');
+    expect(call.where.tenantId).toBe('tenant-m');
+  });
+
   it('lead SEM companyId → empresa NÃO resolvida por telefone (lead-first estrito)', async () => {
     // Há lead, mas sem companyId. Ainda que uma empresa case pelo sufixo de
     // telefone, o comportamento lead-first estrito NÃO deve resolver essa empresa
     // "órfã" — nenhuma consulta de company.findFirst deve ocorrer.
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-3' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-3',
       name: 'Beltrano',
@@ -205,6 +285,10 @@ describe('GET /contacts/resolve — req 24', () => {
 
   it('sem lead, com empresa → traz deals/interações ligados à empresa (companyId)', async () => {
     // Nenhum lead casa o telefone; a empresa casa pelo fallback de telefone.
+    // $queryRaw: 1ª chamada (Lead) → vazio; 2ª chamada (Company) → id da empresa.
+    prismaMock.$queryRaw
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([{ id: 'company-1' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue(null as never);
     prismaMock.company.findFirst.mockResolvedValue({
       id: 'company-1',
@@ -244,6 +328,7 @@ describe('GET /contacts/resolve — req 24', () => {
 
   it('lead com companyId de empresa soft-deleted → company=null (sem fallback por telefone)', async () => {
     // Lead resolvido tem companyId, mas a empresa está indisponível (deletada).
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'lead-2' }] as never);
     prismaMock.lead.findFirst.mockResolvedValue({
       id: 'lead-2',
       name: 'Ciclano',

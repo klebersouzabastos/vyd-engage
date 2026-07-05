@@ -153,7 +153,7 @@ export const dealService = {
       include: {
         lead: { select: { id: true, name: true, email: true, phone: true, company: true } },
         assignedUser: { select: { id: true, name: true, email: true } },
-        company: { select: { id: true, name: true } },
+        company: { select: { id: true, name: true, phone: true } },
       },
     });
 

@@ -23,6 +23,10 @@ export interface SendMessageData {
   // conforme informados, aparecendo no histórico da entidade correspondente.
   dealId?: string;
   companyId?: string;
+  // Upgrade RD P3 (lacuna #4): remetente da mensagem. Gravado na Interaction
+  // OUTBOUND (userId) para que a mensagem enviada apareça na timeline do
+  // deal/empresa para analistas com visibilidade PROPRIA (que filtra por userId).
+  userId?: string;
 }
 
 export interface MessageStatus {
@@ -228,6 +232,7 @@ export const whatsappMessagingService = {
           leadId,
           dealId,
           companyId,
+          userId: data.userId ?? null,
           type: InteractionType.WHATSAPP,
           direction: InteractionDirection.OUTBOUND,
           subject: data.type === 'template' ? `Template: ${data.templateName}` : undefined,

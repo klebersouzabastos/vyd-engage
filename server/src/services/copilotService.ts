@@ -73,15 +73,14 @@ const defineTool = tool as unknown as <I extends z.ZodTypeAny>(def: {
 
 // ── Confirmação ──────────────────────────────────────────────────────────────
 
-const CONFIRM_WORDS = new Set(['sim', 'confirmar', 'confirmo', 'ok', 'pode', 'isso', 'confirma']);
-const CANCEL_WORDS = new Set(['não', 'nao', 'cancelar', 'cancela', 'para', 'esquece']);
-
-function normalizeWord(text: string): string {
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/[.!,;]+$/g, '');
-}
+/**
+ * Palavras FORTES de aceite/recusa. Deliberadamente SEM fillers ('ok','pode','isso'
+ * / 'para'): esses aparecem em consultas naturais ("ok, e o status do deal Y?") e,
+ * se contassem como confirmação, EXECUTARIAM a escrita pendente sem aceite real —
+ * violando o princípio inegociável "ESCRITA só com aceite EXPLÍCITO" (#1/#6).
+ */
+const STRONG_CONFIRM = new Set(['sim', 'confirmar', 'confirmo', 'confirma']);
+const STRONG_CANCEL = new Set(['não', 'nao', 'cancelar', 'cancela', 'esquece']);
 
 /**
  * Quebra a mensagem em tokens normalizados (minúsculas, sem pontuação de borda).
@@ -96,18 +95,22 @@ function tokenize(text: string): string[] {
 }
 
 /**
- * Reconhece confirmação se QUALQUER token da mensagem pertencer a CONFIRM_WORDS
- * (ex.: "sim, pode criar" → 'sim' e 'pode' casam). Assim frases naturais de
- * aceite não expiram a proposta por não baterem a string inteira (#13).
+ * Classifica a resposta a uma proposta pendente. Só devolve 'confirm'/'cancel'
+ * quando a mensagem é uma resposta CURTA e INEQUÍVOCA (até 3 tokens) contendo
+ * exatamente um dos lados. Caso contrário → 'none' (o handler expira a proposta e
+ * trata como nova consulta). Assim:
+ *   "sim" / "sim, pode criar" → 'confirm'
+ *   "não" / "isso não"        → 'cancel'  (o 'não' forte decide; 'isso' é filler)
+ *   "ok, e o deal Y?"         → 'none'    (>3 tokens → nova consulta, não executa)
  */
-function isConfirmation(text: string): boolean {
+function classifyReply(text: string): 'confirm' | 'cancel' | 'none' {
   const tokens = tokenize(text);
-  return tokens.some((t) => CONFIRM_WORDS.has(t));
-}
-
-function isCancellation(text: string): boolean {
-  const tokens = tokenize(text);
-  return tokens.some((t) => CANCEL_WORDS.has(t));
+  if (tokens.length === 0 || tokens.length > 3) return 'none';
+  const hasConfirm = tokens.some((t) => STRONG_CONFIRM.has(t));
+  const hasCancel = tokens.some((t) => STRONG_CANCEL.has(t));
+  if (hasConfirm && !hasCancel) return 'confirm';
+  if (hasCancel && !hasConfirm) return 'cancel';
+  return 'none';
 }
 
 // ── Throttle da resposta a remetente desconhecido (#17) ──────────────────────
@@ -374,6 +377,19 @@ class DealAccessError extends Error {
   }
 }
 
+/**
+ * Sentinela lançado quando o usuário NÃO tem a capacidade por-entidade exigida
+ * (#2: tasks.create / deals.edit) ou tenta ganhar/perder via fluxo errado (#7/#10/#14).
+ * O handler traduz `message` numa resposta em pt-BR e NÃO reverte o claim — a proposta
+ * é definitivamente inválida (recusa deliberada, não erro transitório).
+ */
+class PermissionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PermissionError';
+  }
+}
+
 async function executePending(
   tenantId: string,
   permUser: PermissionUser,
@@ -383,6 +399,18 @@ async function executePending(
   const { dealService } = await import('./dealService.js');
 
   if (action.kind === 'criar_tarefa') {
+    // #2: capacidade por-entidade ANTES de mutar. Um VIEWER (entities all-false) ou
+    // perfil custom com tasks.create=false não pode contornar via copiloto — espelha
+    // o gate de POST /tasks e de deals.ts:600.
+    const eff = await permissionService.getEffective(permUser);
+    if (!eff.entities.tasks.create) {
+      logger.warn('Copilot: sem permissão para criar tarefas — execução recusada', {
+        tenantId,
+        userId: permUser.userId,
+        entity: 'task',
+      });
+      throw new PermissionError('Você não tem permissão para criar tarefas.');
+    }
     const args = action.args as { title: string; description?: string; dueDate?: string };
     const task = await taskService.create(tenantId, {
       title: args.title,
@@ -403,6 +431,33 @@ async function executePending(
 
   // atualizar_deal
   const args = action.args as { dealId: string; stage?: string; value?: number; notes?: string };
+  // #2: capacidade por-entidade ANTES de mutar. Perfil sem deals.edit (VIEWER ou
+  // custom) não pode contornar via copiloto — espelha PUT /deals/:id e deals.ts:603.
+  const eff = await permissionService.getEffective(permUser);
+  if (!eff.entities.deals.edit) {
+    logger.warn('Copilot: sem permissão para editar negociações — execução recusada', {
+      tenantId,
+      userId: permUser.userId,
+      entity: 'deal',
+      entityId: args.dealId,
+    });
+    throw new PermissionError('Você não tem permissão para editar negociações.');
+  }
+  // #7/#10/#14: WON/LOST NÃO passam por dealService.update direto (contornariam
+  // markWon/markLost — e LOST exige lostReason). A tool já não expõe esses stages,
+  // mas guardamos defensivamente (espelha a guarda do meetingService).
+  if (args.stage === 'WON' || args.stage === 'LOST') {
+    logger.warn('Copilot: tentativa de ganhar/perder via update direto — recusada', {
+      tenantId,
+      userId: permUser.userId,
+      entity: 'deal',
+      entityId: args.dealId,
+      stage: args.stage,
+    });
+    throw new PermissionError(
+      'Para ganhar/perder a negociação, use o fluxo próprio na tela do negócio.'
+    );
+  }
   // #16: revalida a VISIBILIDADE no momento da execução. A proposta pode ter sido
   // aceita até 30 min atrás; nesse intervalo o deal pode ter sido reatribuído p/ fora
   // do escopo do usuário. Recomputa o visibilityScope e confirma com o MESMO filtro de
@@ -503,9 +558,12 @@ export const copilotService = {
     };
 
     // ── Fluxo de confirmação: se há proposta pendente e o texto é "sim"/"não" ──
+    // classifyReply só devolve 'confirm'/'cancel' p/ respostas curtas e inequívocas;
+    // qualquer outra coisa (incl. consulta natural com fillers) → 'none' → nova consulta.
     const pendingHit = await findPendingAction(tenantId, connection.id, user.id);
     if (pendingHit) {
-      if (isConfirmation(body)) {
+      const decision = classifyReply(body);
+      if (decision === 'confirm') {
         // Claim ATÔMICO: só executa quem venceu a corrida. Dois "sim" concorrentes
         // (ou redelivery do Meta) → só um vê count===1; o outro não reexecuta.
         const won = await claimPending(
@@ -531,6 +589,11 @@ export const copilotService = {
             // A proposta é definitivamente inválida — NÃO reverte o claim (não faz
             // sentido reconfirmar algo a que o usuário não tem mais acesso).
             reply = 'Você não tem mais acesso a essa negociação. A ação foi cancelada.';
+          } else if (err instanceof PermissionError) {
+            // #2/#7/#10/#14: recusa deliberada (sem capacidade por-entidade, ou
+            // WON/LOST via fluxo errado). Proposta definitivamente inválida — NÃO
+            // reverte o claim; responde a mensagem em pt-BR da própria exceção.
+            reply = err.message;
           } else {
             // #1: falha transitória (erro de DB). REVERTE o claim para que um novo
             // "sim" reencontre a proposta e o usuário possa reconfirmar — honrando o
@@ -552,7 +615,7 @@ export const copilotService = {
         await this.reply(tenantId, connection.id, from, reply).catch(() => {});
         return { handled: true, reply, toolsUsed: [] };
       }
-      if (isCancellation(body)) {
+      if (decision === 'cancel') {
         // Também atômico: dois "não" concorrentes cancelam só uma vez.
         const won = await claimPending(
           tenantId,
@@ -568,8 +631,8 @@ export const copilotService = {
         await this.reply(tenantId, connection.id, from, reply).catch(() => {});
         return { handled: true, reply, toolsUsed: [] };
       }
-      // Qualquer outra mensagem: expira a proposta (claim atômico) e segue como
-      // nova consulta. Não importa quem vença aqui — só evitamos ressuscitá-la.
+      // decision === 'none': EXPIRA a proposta (claim atômico) e segue como nova
+      // consulta. Não importa quem vença aqui — só evitamos ressuscitá-la.
       await claimPending(
         tenantId,
         pendingHit.interactionId,
@@ -768,8 +831,10 @@ export const copilotService = {
           'PROPÕE a atualização de uma negociação (etapa/valor/notas). NÃO altera imediatamente — o sistema pedirá confirmação. Nunca exclui.',
         inputSchema: z.object({
           dealId: z.string().min(1).describe('ID da negociação (use buscar/status para obter)'),
+          // WON/LOST NÃO são expostos: ganhar/perder exige o fluxo próprio (markWon/
+          // markLost, com lostReason) na tela do negócio — não via update direto (#7/#10/#14).
           stage: z
-            .enum(['QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSING', 'WON', 'LOST'])
+            .enum(['QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSING'])
             .optional(),
           value: z.number().optional(),
           notes: z.string().optional(),

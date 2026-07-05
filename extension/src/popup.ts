@@ -76,6 +76,7 @@ function getActivePhone(): Promise<string | null> {
 
 let currentPhone: string | null = null;
 let currentLeadId: string | undefined;
+let currentCompanyId: string | undefined;
 
 // ── Config ──────────────────────────────────────────
 async function loadConfig() {
@@ -163,6 +164,7 @@ function setResolveError(msg: string | null) {
 function renderResult(contact: ResolvedContact) {
   const result = $('result');
   currentLeadId = contact.lead?.id;
+  currentCompanyId = contact.company?.id;
   const parts: string[] = [];
 
   if (contact.lead) {
@@ -267,7 +269,11 @@ function wireActions() {
   document.getElementById('act-note')?.addEventListener('click', async () => {
     const content = prompt('Nota:', '');
     if (!content) return;
-    const r = await sendToWorker({ type: 'CREATE_NOTE', content, leadId: currentLeadId });
+    // Contato resolvido só por empresa (sem lead): envia companyId para a nota
+    // não ficar órfã. Havendo lead, mantém o vínculo pelo leadId.
+    const r = currentLeadId
+      ? await sendToWorker({ type: 'CREATE_NOTE', content, leadId: currentLeadId })
+      : await sendToWorker({ type: 'CREATE_NOTE', content, companyId: currentCompanyId });
     setStatus(r.ok ? 'Nota registrada.' : r.error || 'Erro ao registrar nota.', r.ok);
   });
 }

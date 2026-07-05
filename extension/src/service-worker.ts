@@ -128,7 +128,11 @@ async function handleMessage(message: RuntimeMessage): Promise<ApiResult<unknown
     case 'CREATE_NOTE':
       return apiFetch('/api/v1/contacts/notes', {
         method: 'POST',
-        body: JSON.stringify({ content: message.content, leadId: message.leadId }),
+        body: JSON.stringify({
+          content: message.content,
+          leadId: message.leadId,
+          companyId: message.companyId,
+        }),
       });
     default:
       return { ok: false, status: 0, error: 'Mensagem desconhecida.' };
