@@ -80,14 +80,16 @@ O resultado fica em **`extension/dist/`** com: `manifest.json`, `popup.html`,
 
 ## Dependências do backend
 
-- `GET /api/v1/contacts/resolve` já existe e autentica por `X-API-Key`
-  (`server/src/routes/contacts.ts`).
-- Para as **ações rápidas** funcionarem por API Key, os endpoints `POST /leads`,
-  `POST /tasks`, `POST /interactions` precisam aceitar `apiKeyAuth` (hoje usam JWT).
-  Enquanto isso não estiver liberado, os botões de ação retornam erro `401` legível no
-  popup (resolução por número já funciona). Além disso, o CORS do backend precisa
-  incluir `x-api-key` em `allowedHeaders` — a extensão contorna via `host_permissions`,
-  mas o header liberado é recomendado.
+Todas já implementadas (`server/src/routes/contacts.ts`), autenticadas por `X-API-Key`:
+
+- `GET /api/v1/contacts/resolve` — resolve o número (escopo `contacts:read`).
+- **Ações rápidas** — vivem no próprio grupo `/contacts`, cada uma com `apiKeyAuth` +
+  escopo próprio (não dependem das rotas JWT `/leads`, `/tasks`, `/interactions`):
+  - `POST /api/v1/contacts/leads` — cria lead (escopo `leads:write`).
+  - `POST /api/v1/contacts/tasks` — cria tarefa (escopo `tasks:write`).
+  - `POST /api/v1/contacts/notes` — registra nota/interação (escopo `leads:write`).
+- O CORS do backend já inclui `x-api-key` em `allowedHeaders`
+  (`server/src/index.ts`), então a extensão chama a API diretamente.
 
 ---
 

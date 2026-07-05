@@ -42,6 +42,29 @@ async function recordCampaignBounces(provider: string, payload: any): Promise<vo
 
 const router = Router();
 
+/**
+ * LACUNA #6: dedup de redelivery do Meta por `message.id`. O Meta reentrega o mesmo
+ * webhook (mesmo `message.id`) numa janela curta quando não recebe 200 a tempo; sem
+ * guarda, o copiloto reprocessa a mensagem (proposta duplicada / reprocesso). Guarda
+ * in-memory leve — suficiente para a janela curta de redelivery (BAIXA). Cap de
+ * tamanho por FIFO: ao atingir o limite, descarta os `message.id`s mais antigos.
+ * Não afeta o fluxo genérico de inbound (só gate do roteamento ao copiloto).
+ */
+const COPILOT_SEEN_MESSAGE_CAP = 5000;
+const copilotSeenMessageIds = new Set<string>();
+
+function copilotMessageAlreadySeen(messageId: string): boolean {
+  if (copilotSeenMessageIds.has(messageId)) return true;
+  copilotSeenMessageIds.add(messageId);
+  // Cap FIFO: Set preserva ordem de inserção — remove os mais antigos primeiro.
+  while (copilotSeenMessageIds.size > COPILOT_SEEN_MESSAGE_CAP) {
+    const oldest = copilotSeenMessageIds.values().next().value;
+    if (oldest === undefined) break;
+    copilotSeenMessageIds.delete(oldest);
+  }
+  return false;
+}
+
 // Validate Mercado Pago webhook signature
 function validateMercadoPagoSignature(req: Request): boolean {
   const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
@@ -163,9 +186,26 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
   });
   const byPhoneId = new Map<string, { id: string; tenantId: string; isCopilot: boolean }>();
   for (const c of connections) {
-    const cfg = safeDecryptConfig(c.config) as any;
-    if (cfg?.phoneNumberId) {
-      byPhoneId.set(cfg.phoneNumberId, { id: c.id, tenantId: c.tenantId, isCopilot: c.isCopilot });
+    // LACUNA #3: o decrypt/parse da config de UMA conexão pode lançar (config
+    // corrompida/adulterada). Isolar por conexão para que uma config quebrada não
+    // derrube o roteamento do lote inteiro (inclusive inbound de outros tenants no
+    // mesmo webhook). Se falhar: pular esta conexão (warn com id/tenant) e seguir.
+    try {
+      const cfg = safeDecryptConfig(c.config) as any;
+      if (cfg?.phoneNumberId) {
+        byPhoneId.set(cfg.phoneNumberId, {
+          id: c.id,
+          tenantId: c.tenantId,
+          isCopilot: c.isCopilot,
+        });
+      }
+    } catch (err) {
+      logger.warn('Copilot: falha ao decriptar config de conexão WhatsApp — conexão ignorada', {
+        connectionId: c.id,
+        tenantId: c.tenantId,
+        err: (err as any)?.message,
+      });
+      continue;
     }
   }
 
@@ -186,6 +226,17 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
       const messages = change?.value?.messages || [];
       for (const message of messages) {
         if (message?.type !== 'text') continue;
+        // LACUNA #6: pula redelivery do Meta (mesmo message.id já roteado) para não
+        // reprocessar a mensagem no copiloto. Só aplica ao roteamento do copiloto;
+        // o fluxo genérico de inbound é preservado (statuses seguem intactos).
+        const messageId = message?.id;
+        if (typeof messageId === 'string' && messageId && copilotMessageAlreadySeen(messageId)) {
+          logger.info('Copilot: message.id já processado (redelivery do Meta) — ignorado', {
+            messageId,
+            tenantId: conn.tenantId,
+          });
+          continue;
+        }
         const from = message.from;
         const text = message.text?.body || '';
         try {

@@ -158,10 +158,25 @@ export const meetingService = {
     // A inferência genérica do transcribe pode disparar TS2589 sob node16 —
     // chamamos sem tipar e validamos o formato do retorno em runtime.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await (transcribe as any)({
-      model: openai.transcription('whisper-1'),
-      audio: new Uint8Array(buffer),
-    });
+    let result: any;
+    try {
+      // Uma falha de runtime do provedor (timeout, 429, rede, credencial revogada
+      // mid-flight) sobe como erro cru SEM statusCode → viraria 500. Convertemos em
+      // 503 AI_PROVIDER_UNAVAILABLE, espelhando o que analyzeTranscript faz com
+      // generateObject — "NUNCA 500 no caminho de IA".
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      result = await (transcribe as any)({
+        model: openai.transcription('whisper-1'),
+        audio: new Uint8Array(buffer),
+      });
+    } catch (err: unknown) {
+      logger.warn('Falha na transcrição da reunião (IA).', err as Error);
+      throw createError(
+        'O serviço de transcrição está temporariamente indisponível. Tente novamente em instantes.',
+        503,
+        'AI_PROVIDER_UNAVAILABLE'
+      );
+    }
     logAiUsage({
       feature: 'meeting_transcription',
       tenantId,

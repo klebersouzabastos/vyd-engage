@@ -50,6 +50,38 @@ export interface WhatsAppTemplate {
 }
 
 // ========================
+// Phone matching (réplica da semântica do copilotService)
+// ========================
+
+/** Mantém apenas dígitos de um telefone. */
+function digitsOnly(raw: string): string {
+  return (raw || '').replace(/\D+/g, '');
+}
+
+/**
+ * Normaliza um telefone para comparação: retorna o número em dígitos e a variante
+ * sem o prefixo de DDI 55 (quando presente). Dois números casam se os dígitos
+ * COMPLETOS batem, ou se batem depois de remover o '55' inicial de UM dos lados —
+ * assim toleramos apenas a presença/ausência do DDI brasileiro, sem colidir por
+ * sufixo (o bug: 8 dígitos finais iguais em DDDs diferentes casaria o lead errado).
+ */
+function phoneVariants(raw: string): string[] {
+  const d = digitsOnly(raw);
+  if (!d) return [];
+  const variants = new Set<string>([d]);
+  if (d.startsWith('55') && d.length > 2) variants.add(d.slice(2));
+  return [...variants];
+}
+
+/** Dois telefones casam se compartilham alguma variante normalizada (com/sem DDI 55). */
+function phonesMatch(a: string, b: string): boolean {
+  const va = phoneVariants(a);
+  const vb = phoneVariants(b);
+  if (va.length === 0 || vb.length === 0) return false;
+  return va.some((x) => vb.includes(x));
+}
+
+// ========================
 // Meta Business API Client
 // ========================
 
@@ -369,9 +401,17 @@ export const whatsappMessagingService = {
     // != WON/LOST, deletedAt null) no tenant, vinculamos a Interaction INBOUND a
     // esse deal (e à empresa do lead, quando houver). Com 0 ou >1 deals abertos
     // mantemos só o leadId — não adivinhamos qual deal é o "certo".
+    //
+    // Lacuna #2: o lead é resolvido por SUFIXO de 8 dígitos (`from.slice(-8)`),
+    // que pode casar o lead ERRADO quando dois leads do tenant terminam nos
+    // mesmos 8 dígitos (DDDs diferentes). Para NÃO poluir a timeline do deal
+    // errado, só INFERIMOS o deal/empresa quando o telefone do lead resolvido
+    // casa por DÍGITOS COMPLETOS com `from` (tolerando só o DDI 55). Sem match
+    // completo, gravamos apenas o leadId (comportamento anterior ao P3) — o log
+    // básico por lead não regride, mas não arriscamos o vínculo de deal.
     let dealId: string | null = null;
     let companyId: string | null = null;
-    if (lead) {
+    if (lead && phonesMatch(lead.phone || '', from)) {
       const openDeals = await prisma.deal.findMany({
         where: {
           tenantId,

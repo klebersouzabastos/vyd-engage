@@ -549,19 +549,19 @@ function WhatsAppCopilotSection() {
   };
 
   return (
-    <div className="p-4 rounded-lg border border-gray-300">
+    <div className="p-4 rounded-lg border border-border">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <Bot size={16} className="text-primary" />
-            <h4 className="font-medium text-gray-900">Copiloto IA no WhatsApp</h4>
+            <h4 className="font-medium text-foreground">Copiloto IA no WhatsApp</h4>
             {aiEnabled && (
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+              <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
                 IA ativa
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Escolha uma conexão WhatsApp como número do Copiloto IA. Mensagens enviadas a esse
             número são interpretadas pela IA — ela consulta suas tarefas e negócios e propõe ações
             (a escrita só acontece após você confirmar). Apenas um número por conta.
@@ -570,20 +570,20 @@ function WhatsAppCopilotSection() {
       </div>
 
       {aiLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : !aiEnabled ? (
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <Sparkles size={16} className="text-blue-700 mt-0.5 shrink-0" />
-          <p className="text-sm text-blue-800">
+        <div className="flex items-start gap-2 bg-muted border border-border rounded-lg p-3">
+          <Sparkles size={16} className="text-primary mt-0.5 shrink-0" />
+          <p className="text-sm text-muted-foreground">
             Configure um provedor de IA (OpenAI ou Anthropic) para habilitar o Copiloto. Enquanto a
             IA não estiver configurada, o número do copiloto fica indisponível.
           </p>
         </div>
       ) : loading ? (
-        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : connections.length === 0 ? (
-        <div className="p-4 bg-gray-100 rounded-lg text-center">
-          <p className="text-sm text-gray-600">
+        <div className="p-4 bg-muted rounded-lg text-center">
+          <p className="text-sm text-muted-foreground">
             Nenhuma conexão WhatsApp configurada. Crie uma conexão acima para poder designar o
             número do Copiloto IA.
           </p>
@@ -593,17 +593,17 @@ function WhatsAppCopilotSection() {
           {connections.map((conn) => (
             <div
               key={conn.id}
-              className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-300 bg-card"
+              className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border bg-card"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{conn.name}</p>
-                <p className="text-xs text-gray-600">
+                <p className="text-sm font-medium text-foreground truncate">{conn.name}</p>
+                <p className="text-xs text-muted-foreground">
                   {conn.isCopilot ? 'Respondendo como Copiloto IA' : 'Conexão normal de mensagens'}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {savingId === conn.id && (
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
                 <Switch
                   checked={!!conn.isCopilot}
@@ -614,7 +614,7 @@ function WhatsAppCopilotSection() {
               </div>
             </div>
           ))}
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Dica: use um número dedicado ao Copiloto. Só usuários com o próprio número cadastrado no
             perfil conseguem comandar a IA por ele.
           </p>

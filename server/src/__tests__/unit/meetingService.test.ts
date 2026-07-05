@@ -236,6 +236,28 @@ describe('meetingService.createMeeting — áudio com OpenAI', () => {
     expect(storagePutMock).not.toHaveBeenCalled();
     expect(prismaMock.interaction.create).not.toHaveBeenCalled();
   });
+
+  it('Whisper falha em runtime (timeout/429/rede) → 503 AI_PROVIDER_UNAVAILABLE, não 500 (sem Attachment órfão)', async () => {
+    // Uma falha de runtime do provedor de transcrição sobe como erro cru SEM statusCode.
+    // O service deve convertê-la em 503 AI_PROVIDER_UNAVAILABLE (NUNCA 500 no caminho de
+    // IA) — espelhando o que analyzeTranscript faz. Como o put do áudio só ocorre após
+    // transcrição + análise, nenhum Attachment é criado.
+    resolveProviderConfigMock.mockReturnValue({ provider: 'openai', apiKey: 'sk-test' });
+    transcribeMock.mockRejectedValue(new Error('Request timed out (429)'));
+
+    await expect(
+      meetingService.createMeeting(tenantId, dealId, {
+        audio: { buffer: Buffer.from('audio-bytes'), mimeType: 'audio/mpeg', filename: 'r.mp3' },
+        userId: 'user-1',
+      })
+    ).rejects.toMatchObject({ statusCode: 503, code: 'AI_PROVIDER_UNAVAILABLE' });
+
+    expect(transcribeMock).toHaveBeenCalledOnce();
+    // Falhou na transcrição → nem análise, nem áudio persistido, nem Interaction.
+    expect(generateObjectMock).not.toHaveBeenCalled();
+    expect(storagePutMock).not.toHaveBeenCalled();
+    expect(prismaMock.interaction.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('meetingService.applyMeeting — aplica só o aceito', () => {
