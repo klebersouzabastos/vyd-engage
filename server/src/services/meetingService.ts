@@ -426,6 +426,12 @@ export const meetingService = {
 
     const fieldUpdates = input.fieldUpdates || {};
     if (fieldUpdates.value !== undefined && suggestedKeys.has('value')) {
+      // Number('') === 0 e Number('   ') === 0 — uma string vazia/espaços passaria pelas
+      // guardas num<0/!isFinite e gravaria 0 no deal silenciosamente. Rejeita ANTES de
+      // coagir (mesmo code de "value inválido").
+      if (typeof fieldUpdates.value === 'string' && fieldUpdates.value.trim() === '') {
+        throw createError('Valor sugerido inválido para o campo "value".', 400, 'VALIDATION_ERROR');
+      }
       const num = Number(fieldUpdates.value);
       if (!Number.isFinite(num) || num < 0) {
         throw createError('Valor sugerido inválido para o campo "value".', 400, 'VALIDATION_ERROR');

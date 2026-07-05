@@ -155,6 +155,51 @@ function shouldReplyUnknownSender(from: string): boolean {
   return true;
 }
 
+// ── Throttle da invocação do LLM por usuário autorizado (#6) ─────────────────
+
+/**
+ * Anti-abuso: mesmo um usuário AUTORIZADO não pode disparar o modelo (generateText,
+ * caro) em rajada. Limita a 1 invocação a cada `COPILOT_LLM_COOLDOWN_MS` por
+ * (tenantId+userId). Espelha o padrão do throttle de remetente desconhecido: Map
+ * in-memory com cap de tamanho (descarta o mais antigo). NÃO afeta os caminhos de
+ * confirmação/cancelamento — esses não chamam o LLM e são checados ANTES daqui.
+ */
+const COPILOT_LLM_COOLDOWN_MS = 3 * 1000; // ~3s por usuário
+const COPILOT_LLM_MAX_ENTRIES = 5000;
+const copilotLlmLastCall = new Map<string, number>();
+
+/**
+ * Decide se ESTE usuário pode disparar o LLM agora. Retorna true (e registra a
+ * invocação) se passou o cooldown; false se ainda dentro da janela.
+ */
+function shouldInvokeLlm(tenantId: string, userId: string): boolean {
+  const key = `${tenantId}:${userId}`;
+  const now = Date.now();
+  const last = copilotLlmLastCall.get(key);
+  if (last !== undefined && now - last < COPILOT_LLM_COOLDOWN_MS) {
+    return false;
+  }
+  // Cap do Map: se cheio e é uma chave nova, remove a entrada mais antiga inserida.
+  if (!copilotLlmLastCall.has(key) && copilotLlmLastCall.size >= COPILOT_LLM_MAX_ENTRIES) {
+    const oldest = copilotLlmLastCall.keys().next().value;
+    if (oldest !== undefined) copilotLlmLastCall.delete(oldest);
+  }
+  // Reinsere (delete+set) p/ manter ordem de recência aproximada no Map.
+  copilotLlmLastCall.delete(key);
+  copilotLlmLastCall.set(key, now);
+  return true;
+}
+
+/**
+ * Limpa o estado in-memory dos rate limiters (throttle de LLM por usuário e resposta
+ * a remetente desconhecido). Uso EXCLUSIVO de testes, para isolar casos que compartilham
+ * o mesmo tenant/usuário — em produção os Maps vivem pelo processo (intencional).
+ */
+export function __resetCopilotRateLimiters(): void {
+  copilotLlmLastCall.clear();
+  unknownReplyLastSent.clear();
+}
+
 // ── Resolução do remetente → usuário comandante ──────────────────────────────
 
 /** Mantém apenas dígitos de um telefone. */
@@ -486,7 +531,10 @@ async function executePending(
       // owner: string (PROPRIA) | {in:[...]} (EQUIPE) | undefined (GERAL, sem filtro)
       ...(owner === undefined ? {} : { assignedTo: owner }),
     },
-    select: { id: true },
+    // #1: carrega também a etapa ATUAL — se o deal já está WON/LOST, uma etapa
+    // não-terminal (ex.: NEGOTIATION) faria dealService.update tratar como REABERTURA
+    // (status=OPEN, wonAt/lostAt=null), contornando o fluxo dedicado de reabertura.
+    select: { id: true, stage: true },
   });
   if (!visible) {
     logger.warn('Copilot: deal fora de escopo na execução — atualização abortada', {
@@ -496,6 +544,20 @@ async function executePending(
       entityId: args.dealId,
     });
     throw new DealAccessError();
+  }
+  // #1: recusa REABERTURA implícita. Se o deal ALVO já está WON/LOST, mudar para uma
+  // etapa não-terminal reabriria a negociação por baixo dos panos — espelha a guarda
+  // de WON/LOST acima (fechar) para o caso simétrico (reabrir). Reabertura deve usar o
+  // fluxo próprio na tela do negócio.
+  if (visible.stage === 'WON' || visible.stage === 'LOST') {
+    logger.warn('Copilot: tentativa de reabrir deal fechado via update direto — recusada', {
+      tenantId,
+      userId: permUser.userId,
+      entity: 'deal',
+      entityId: args.dealId,
+      currentStage: visible.stage,
+    });
+    throw new PermissionError('Para reabrir a negociação, use o fluxo próprio na tela do negócio.');
   }
   // #2: notas ANEXAM (não sobrescrevem). O usuário digitou só o texto a acrescentar;
   // passar direto p/ dealService.update apagaria as notas existentes do deal. Carrega
@@ -665,6 +727,19 @@ export const copilotService = {
     }
 
     // ── Volta normal: dispara o modelo com tools ───────────────────────────────
+    // #6: throttle por usuário AUTORIZADO. Só o caminho do LLM (nova consulta) é
+    // limitado — os fluxos de confirmação/cancelamento já retornaram acima e nunca
+    // chamam o modelo. Em rajada, responde curtinho SEM invocar generateText.
+    if (!shouldInvokeLlm(tenantId, user.id)) {
+      logger.warn('Copilot: throttle de LLM por usuário — invocação recusada', {
+        tenantId,
+        userId: user.id,
+      });
+      const reply = 'Aguarde um instante e tente de novo.';
+      await this.reply(tenantId, connection.id, from, reply).catch(() => {});
+      return { handled: true, reply, toolsUsed: [] };
+    }
+
     const model = getActiveModel();
     if (!model) {
       logger.info('Copilot: modelo indisponível apesar de IA habilitada', { tenantId });

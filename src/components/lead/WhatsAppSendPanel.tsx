@@ -47,6 +47,38 @@ function sanitizePhone(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
+/**
+ * Conta quantas variáveis um template do WhatsApp exige.
+ *
+ * A Meta Graph API retorna cada template com `components[]`; o componente BODY
+ * tem `text` com placeholders `{{1}}..{{N}}`. Contamos os índices DISTINTOS
+ * (o maior índice referenciado), pois é isso que a API espera como parâmetros.
+ * Fallback: se `component.example.body_text` estiver presente, usa o tamanho do
+ * primeiro conjunto de exemplos.
+ */
+function countTemplateVariables(template: any): number {
+  const components: any[] = Array.isArray(template?.components) ? template.components : [];
+  const body = components.find((c: any) => c?.type === 'BODY' || c?.type === 'body');
+  if (!body) return 0;
+
+  const text: string = typeof body.text === 'string' ? body.text : '';
+  const matches = text.match(/\{\{\s*(\d+)\s*\}\}/g) || [];
+  if (matches.length > 0) {
+    const indices = matches
+      .map((m) => parseInt(m.replace(/[^\d]/g, ''), 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (indices.length > 0) return Math.max(...indices);
+  }
+
+  // Fallback via exemplo fornecido pela Meta (example.body_text = [[ex1, ex2, ...]]).
+  const bodyText = body.example?.body_text;
+  if (Array.isArray(bodyText) && Array.isArray(bodyText[0])) {
+    return bodyText[0].length;
+  }
+
+  return 0;
+}
+
 export function WhatsAppSendPanel({
   leadId,
   dealId,
@@ -80,6 +112,20 @@ export function WhatsAppSendPanel({
       loadTemplates(selectedConnection);
     }
   }, [selectedConnection, messageType]);
+
+  // Ao (re)selecionar um template — ou ao chegar a lista de templates — deriva a
+  // QUANTIDADE de variáveis do modelo e pré-popula templateParams com N strings
+  // vazias, uma por variável. Sem template selecionado → limpa os parâmetros.
+  useEffect(() => {
+    if (!selectedTemplate) {
+      setTemplateParams([]);
+      return;
+    }
+    const tmpl = templates.find((t: any) => t.name === selectedTemplate);
+    if (!tmpl) return;
+    const count = countTemplateVariables(tmpl);
+    setTemplateParams(Array.from({ length: count }, () => ''));
+  }, [selectedTemplate, templates]);
 
   const loadConnections = async () => {
     try {
@@ -124,6 +170,16 @@ export function WhatsAppSendPanel({
 
     if (messageType === 'template' && !selectedTemplate) {
       toast.error('Selecione um modelo de mensagem.');
+      return;
+    }
+
+    // Template com variáveis: todos os parâmetros devem estar preenchidos.
+    // Sem variáveis (templateParams vazio) → envio permitido sem parâmetros.
+    if (
+      messageType === 'template' &&
+      templateParams.some((p) => !p.trim())
+    ) {
+      toast.error('Preencha todas as variáveis do modelo.');
       return;
     }
 
@@ -298,34 +354,34 @@ export function WhatsAppSendPanel({
               ))}
             </SelectContent>
           </Select>
+          {selectedTemplate && templateParams.length === 0 && (
+            <p className="text-xs text-secondary">Este modelo não exige variáveis.</p>
+          )}
           {templateParams.map((param, idx) => (
-            <Input
-              key={idx}
-              value={param}
-              onChange={(e) => {
-                const newParams = [...templateParams];
-                newParams[idx] = e.target.value;
-                setTemplateParams(newParams);
-              }}
-              placeholder={`Parâmetro ${idx + 1}`}
-              className="h-8 text-xs"
-            />
+            <div key={idx}>
+              <Label className="text-xs">{`Variável ${idx + 1} ({{${idx + 1}}})`}</Label>
+              <Input
+                value={param}
+                onChange={(e) => {
+                  const newParams = [...templateParams];
+                  newParams[idx] = e.target.value;
+                  setTemplateParams(newParams);
+                }}
+                placeholder={`Valor da variável ${idx + 1}`}
+                className="h-8 text-xs"
+              />
+            </div>
           ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs h-7"
-            onClick={() => setTemplateParams([...templateParams, ''])}
-          >
-            + Parâmetro
-          </Button>
         </div>
       )}
 
       <Button
         onClick={handleSend}
-        disabled={sending}
+        disabled={
+          sending ||
+          (messageType === 'template' &&
+            (!selectedTemplate || templateParams.some((p) => !p.trim())))
+        }
         size="sm"
         className="w-full bg-action-primary text-on-accent hover:opacity-90"
       >

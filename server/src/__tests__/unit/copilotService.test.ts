@@ -52,7 +52,7 @@ vi.mock('../../services/dealService.js', () => ({
   dealService: { update: (...a: any[]) => dealUpdateMock(...(a as [string, any])) },
 }));
 
-import { copilotService } from '../../services/copilotService.js';
+import { copilotService, __resetCopilotRateLimiters } from '../../services/copilotService.js';
 
 const tenantId = 'tenant-1';
 const connection = { id: 'conn-1', tenantId, isCopilot: true };
@@ -70,6 +70,8 @@ const knownUser = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // #6: zera o throttle de LLM por usuário (Map módulo-nível persiste entre testes).
+  __resetCopilotRateLimiters();
   isAIEnabledMock.mockReturnValue(true);
   getActiveModelMock.mockReturnValue({ id: 'mock-model' } as any);
   generateTextImpl = async () => ({ text: 'ok', usage: {} });
@@ -561,6 +563,39 @@ describe('escrita com aceite', () => {
     expect(res.handled).toBe(true);
     expect(dealUpdateMock).not.toHaveBeenCalled();
     expect(res.reply).toMatch(/fluxo próprio/i);
+  });
+
+  it('atualizar_deal cujo deal-alvo já está WON → recusa REABERTURA (não chama update) (#1)', async () => {
+    // Proposta com etapa NÃO-terminal (NEGOTIATION) sobre um deal que JÁ está WON.
+    // dealService.update trataria isso como reabertura (status=OPEN, wonAt=null),
+    // contornando o fluxo próprio. A guarda de etapa ATUAL deve recusar ANTES do update.
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findFirst.mockResolvedValue({
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'atualizar_deal',
+            args: { dealId: 'deal-1', stage: 'NEGOTIATION' },
+            summary: 'Vou atualizar...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      } as never);
+    // A revalidação de visibilidade carrega a etapa ATUAL: o deal está fechado (WON).
+    (prismaMock.deal.findFirst as any).mockResolvedValueOnce({ id: 'deal-1', stage: 'WON' });
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    // Recusa de reabertura — dealService.update NUNCA é chamado.
+    expect(res.handled).toBe(true);
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+    expect(res.reply).toMatch(/reabrir a negociação/i);
   });
 
   it('confirmar atualizar_deal com notas ANEXA (não sobrescreve) as notas atuais (#2)', async () => {

@@ -106,6 +106,9 @@ const STRICT_SCOPE = new Set([
   // novos nascem 100% tokenizados.
   'src/components/attachments/AttachmentsTab.tsx',
   'src/components/deals/ProposalsSection.tsx',
+  // Upgrade RD parity — P3 (WhatsApp & IA / reuniões): arquivos novos nascem
+  // 100% tokenizados.
+  'src/components/deals/MeetingsSection.tsx',
 ]);
 const STRICT_FAMILIES =
   /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-(?:gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/;

@@ -824,7 +824,7 @@ export function DealDetail() {
               {/* Aba WhatsApp (req 23) — envia mensagem vinculada à timeline do deal.
                   O painel do F1 resolve conexão/fallback wa.me; passamos o telefone do lead. */}
               <TabsContent value="whatsapp">
-                <div className="bg-card rounded-lg shadow-sm border border-gray-300">
+                <div className="bg-card rounded-lg shadow-sm border border-default">
                   <WhatsAppSendPanel
                     dealId={deal.id}
                     leadId={deal.leadId || undefined}

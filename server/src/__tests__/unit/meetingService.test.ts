@@ -418,6 +418,38 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
     expect(dealUpdateMock).not.toHaveBeenCalled();
   });
 
+  it('value string vazia/whitespace → 400 VALIDATION_ERROR e NÃO grava 0 (#4)', async () => {
+    // Number('') === 0: sem a guarda, uma string vazia/espaços gravaria 0 no deal
+    // silenciosamente. Deve rejeitar com 400 VALIDATION_ERROR, sem tocar no deal.
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: meetingMeta,
+    } as never);
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: [], fieldUpdates: { value: '' } },
+        'user-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'VALIDATION_ERROR' });
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+
+    // Idem para espaços em branco.
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: [], fieldUpdates: { value: '   ' } },
+        'user-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'VALIDATION_ERROR' });
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+  });
+
   it('stage=LOST → 400 MEETING_FIELD_NOT_APPLICABLE e não atualiza deal (#9)', async () => {
     // A sugestão precisa conter a chave "stage" para o apply chegar na coerção.
     prismaMock.interaction.findFirst.mockResolvedValue({
