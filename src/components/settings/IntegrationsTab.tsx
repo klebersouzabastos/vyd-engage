@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useWhatsApp } from '../../contexts/WhatsAppContext';
 import { useAIStatus } from '../../hooks/useAIStatus';
 import { useEmail } from '../../contexts/EmailContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { ConnectionCard } from '../whatsapp/ConnectionCard';
 import { ConnectionForm } from '../whatsapp/ConnectionForm';
 import { EmailConfigCard } from '../email/EmailConfigCard';
@@ -494,6 +495,11 @@ interface RawWhatsAppConnection {
 
 function WhatsAppCopilotSection() {
   const { enabled: aiEnabled, loading: aiLoading } = useAIStatus();
+  const { user } = useAuth();
+  // Só ADMIN pode designar a conexão do copiloto — o backend (PUT /whatsapp/:id)
+  // rejeita isCopilot de não-ADMIN com 403. Espelhamos essa regra aqui: não-admin
+  // vê a seção (para entender o recurso) mas com o Switch desabilitado.
+  const isAdmin = user?.role === 'ADMIN';
   const [connections, setConnections] = useState<RawWhatsAppConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -515,6 +521,9 @@ function WhatsAppCopilotSection() {
   }, [load]);
 
   const handleToggle = async (conn: RawWhatsAppConnection, next: boolean) => {
+    // Guarda extra: o backend só permite ADMIN alterar isCopilot (403). Evita a
+    // chamada que resultaria em erro para não-admin, mesmo que o Switch seja acionado.
+    if (!isAdmin) return;
     setSavingId(conn.id);
     try {
       // Só 1 por tenant: ao ligar uma, desliga qualquer outra atualmente ativa.
@@ -607,17 +616,24 @@ function WhatsAppCopilotSection() {
                 )}
                 <Switch
                   checked={!!conn.isCopilot}
-                  disabled={savingId !== null}
+                  disabled={!isAdmin || savingId !== null}
                   onCheckedChange={(v) => handleToggle(conn, v)}
                   aria-label={`Usar "${conn.name}" como número do Copiloto IA`}
                 />
               </div>
             </div>
           ))}
-          <p className="text-xs text-muted-foreground">
-            Dica: use um número dedicado ao Copiloto. Só usuários com o próprio número cadastrado no
-            perfil conseguem comandar a IA por ele.
-          </p>
+          {isAdmin ? (
+            <p className="text-xs text-muted-foreground">
+              Dica: use um número dedicado ao Copiloto. Só usuários com o próprio número cadastrado
+              no perfil conseguem comandar a IA por ele.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Apenas administradores podem designar o número do Copiloto IA. Fale com um
+              administrador da conta para ativar ou trocar esse número.
+            </p>
+          )}
         </div>
       )}
     </div>

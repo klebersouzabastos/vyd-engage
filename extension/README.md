@@ -88,8 +88,17 @@ Todas já implementadas (`server/src/routes/contacts.ts`), autenticadas por `X-A
   - `POST /api/v1/contacts/leads` — cria lead (escopo `leads:write`).
   - `POST /api/v1/contacts/tasks` — cria tarefa (escopo `tasks:write`).
   - `POST /api/v1/contacts/notes` — registra nota/interação (escopo `leads:write`).
-- O CORS do backend já inclui `x-api-key` em `allowedHeaders`
-  (`server/src/index.ts`), então a extensão chama a API diretamente.
+- **Por que a chamada à API funciona:** o `fetch` roda no **service worker** da
+  extensão, que declara `host_permissions` para o host da API no `manifest.json`.
+  Quando o pedido parte do contexto da extensão para um host com `host_permission`
+  concedida, o **Chrome ignora (bypassa) o CORS** — a origin `chrome-extension://`
+  não precisa constar em `CORS_ORIGINS` (e, em produção, nunca consta). O
+  `allowedHeaders` do backend só define **quais headers o preflight aceita**; ele
+  **não** autoriza a origin da extensão.
+  > ⚠️ **Atenção:** manter o `fetch` no service worker é intencional. Movê-lo para o
+  > content script ou para o popup faria o pedido partir de um contexto sujeito a
+  > CORS, **reintroduzindo a barreira** — o navegador voltaria a exigir que a origin
+  > estivesse liberada em `CORS_ORIGINS`.
 
 ---
 

@@ -53,16 +53,24 @@ const router = Router();
 const COPILOT_SEEN_MESSAGE_CAP = 5000;
 const copilotSeenMessageIds = new Set<string>();
 
+// Apenas LÊ se o message.id já foi processado com sucesso — NÃO marca. A marcação
+// acontece só APÓS handleCopilotMessage retornar com sucesso (ver markCopilotMessageSeen).
+// Assim, se o roteamento ao copiloto lançar, o id NÃO fica marcado e uma reentrega
+// legítima do Meta é reprocessada (LACUNA #3).
 function copilotMessageAlreadySeen(messageId: string): boolean {
-  if (copilotSeenMessageIds.has(messageId)) return true;
+  return copilotSeenMessageIds.has(messageId);
+}
+
+// Marca o message.id como processado com sucesso. Chamar SOMENTE depois do await
+// bem-sucedido de handleCopilotMessage. Cap FIFO: ao atingir o limite, descarta os
+// message.id mais antigos (Set preserva ordem de inserção).
+function markCopilotMessageSeen(messageId: string): void {
   copilotSeenMessageIds.add(messageId);
-  // Cap FIFO: Set preserva ordem de inserção — remove os mais antigos primeiro.
   while (copilotSeenMessageIds.size > COPILOT_SEEN_MESSAGE_CAP) {
     const oldest = copilotSeenMessageIds.values().next().value;
     if (oldest === undefined) break;
     copilotSeenMessageIds.delete(oldest);
   }
-  return false;
 }
 
 // Validate Mercado Pago webhook signature
@@ -244,11 +252,15 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
           forwardMessages.push(message);
           continue;
         }
-        // LACUNA #6: pula redelivery do Meta (mesmo message.id já roteado) para não
-        // reprocessar a mensagem no copiloto. Só aplica ao roteamento do copiloto;
-        // o fluxo genérico de inbound é preservado (statuses seguem intactos).
+        // LACUNA #6: pula redelivery do Meta (mesmo message.id já PROCESSADO COM
+        // SUCESSO) para não reprocessar a mensagem no copiloto. Só aplica ao
+        // roteamento do copiloto; o fluxo genérico de inbound é preservado (statuses
+        // seguem intactos). LACUNA #3: aqui apenas LEMOS o Set — a marcação ocorre só
+        // após o await bem-sucedido de handleCopilotMessage. Se o roteamento lançar, o
+        // id NÃO é marcado, para que uma reentrega legítima do Meta seja reprocessada.
         const messageId = message?.id;
-        if (typeof messageId === 'string' && messageId && copilotMessageAlreadySeen(messageId)) {
+        const trackMessageId = typeof messageId === 'string' && messageId.length > 0;
+        if (trackMessageId && copilotMessageAlreadySeen(messageId)) {
           logger.info('Copilot: message.id já processado (redelivery do Meta) — ignorado', {
             messageId,
             tenantId: conn.tenantId,
@@ -259,6 +271,12 @@ async function routeCopilotAndFilter(payload: any, signatureVerified: boolean): 
         const text = message.text?.body || '';
         try {
           const result = await copilotService.handleCopilotMessage(conn.tenantId, conn, from, text);
+          // LACUNA #3: só marca o message.id como visto APÓS o handleCopilotMessage
+          // retornar com sucesso. Se lançar (catch abaixo), o id fica NÃO marcado e a
+          // reentrega do Meta é reprocessada em vez de silenciosamente descartada.
+          if (trackMessageId) {
+            markCopilotMessageSeen(messageId);
+          }
           // LACUNA #4: preservar o LOG PASSIVO de inbound também no número do copiloto
           // para textos de remetente NÃO autorizado. O copiloto só responde "não
           // autorizado" a números desconhecidos (não cadastrados como

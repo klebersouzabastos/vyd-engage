@@ -161,6 +161,11 @@ router.post('/send', async (req, res, next) => {
       isPlatformAdmin: req.user.isPlatformAdmin,
     };
 
+    // Rastreia se há um alvo deal/empresa VÁLIDO neste mesmo request. Como as
+    // validações de dealId/companyId abaixo abortam com 404 quando o alvo é
+    // inválido, chegar ao fim delas com a flag ligada garante que o alvo passou.
+    let hasValidDealOrCompany = false;
+
     if (data.dealId) {
       const scope = await visibilityScope(permUser, 'deals');
       const ok = await prisma.deal.findFirst({
@@ -173,6 +178,7 @@ router.post('/send', async (req, res, next) => {
         select: { id: true },
       });
       if (!ok) return next(createError('Deal not found', 404, 'DEAL_NOT_FOUND'));
+      hasValidDealOrCompany = true;
     }
 
     if (data.companyId) {
@@ -191,7 +197,12 @@ router.post('/send', async (req, res, next) => {
         select: { id: true },
       });
       if (!ok) return next(createError('Company not found', 404, 'COMPANY_NOT_FOUND'));
+      hasValidDealOrCompany = true;
     }
+
+    // leadId propagado ao service (pode ser zerado abaixo se não passar na
+    // validação e houver um alvo deal/empresa válido no mesmo request).
+    let effectiveLeadId = data.leadId;
 
     if (data.leadId) {
       // Espelha o padrão de dealId para o lead/contato (escopo 'contacts'): o
@@ -208,13 +219,24 @@ router.post('/send', async (req, res, next) => {
         },
         select: { id: true },
       });
-      if (!ok) return next(createError('Lead not found', 404, 'LEAD_NOT_FOUND'));
+      if (!ok) {
+        // Lead-alvo trashado (soft-deletado) ou fora de escopo. Se há um alvo
+        // deal/empresa VÁLIDO no mesmo request, o envio é legítimo pelo deal/
+        // empresa (ex.: DealDetail passa deal.leadId junto com dealId): NÃO
+        // bloqueia — apenas não propaga o leadId ao service. Se o lead era o
+        // ÚNICO alvo, mantém o 404 (não vaza existência).
+        if (!hasValidDealOrCompany) {
+          return next(createError('Lead not found', 404, 'LEAD_NOT_FOUND'));
+        }
+        effectiveLeadId = undefined;
+      }
     }
 
     // Propaga o userId do remetente à Interaction criada pelo service (dono B),
     // para que a mensagem apareça na timeline do analista com visibilidade PROPRIA.
     const result = await whatsappMessagingService.sendMessage(req.user.tenantId, {
       ...data,
+      leadId: effectiveLeadId,
       userId: req.user.userId,
     });
     res.json({ status: 200, data: result });

@@ -473,20 +473,18 @@ export const whatsappMessagingService = {
     const messageId = status.id;
     const statusValue = status.status; // sent, delivered, read, failed
 
-    // Find interaction with this messageId
-    const interactions = await prisma.interaction.findMany({
+    // Localiza a Interaction OUTBOUND diretamente pelo messageId via path de JSON do
+    // Postgres (`metadata.messageId`, o mesmo caminho gravado em sendMessage), em vez
+    // de varrer as 100 interações mais recentes em memória — sob volume alto o scan
+    // por janela poderia não achar a interação certa (lacuna #5). Esse é exatamente o
+    // messageId retornado pela Meta Graph e persistido no metadata da OUTBOUND.
+    const interaction = await prisma.interaction.findFirst({
       where: {
         tenantId,
         type: InteractionType.WHATSAPP,
         direction: InteractionDirection.OUTBOUND,
+        metadata: { path: ['messageId'], equals: messageId },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-
-    const interaction = interactions.find((i) => {
-      const meta = i.metadata as any;
-      return meta?.messageId === messageId;
     });
 
     if (interaction) {
