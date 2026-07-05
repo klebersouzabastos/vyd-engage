@@ -12,6 +12,31 @@ const router = Router();
 router.use(authenticate);
 router.use(tenantScope);
 
+// ── Normalização de telefone (coerente com o Copiloto IA) ────────────────────
+// O copiloto resolve o remetente comparando por DÍGITOS, tolerando apenas o
+// prefixo de DDI 55 (com/sem). Replicamos a mesma semântica aqui para que a
+// checagem de duplicidade de número seja coerente com a resolução do copiloto.
+function digitsOnly(raw: string): string {
+  return (raw || '').replace(/\D+/g, '');
+}
+
+/** Variantes normalizadas: dígitos completos + variante sem o DDI 55 inicial. */
+function phoneVariants(raw: string): string[] {
+  const d = digitsOnly(raw);
+  if (!d) return [];
+  const variants = new Set<string>([d]);
+  if (d.startsWith('55') && d.length > 2) variants.add(d.slice(2));
+  return [...variants];
+}
+
+/** Dois telefones casam se compartilham alguma variante (com/sem DDI 55). */
+function phonesMatch(a: string, b: string): boolean {
+  const va = phoneVariants(a);
+  const vb = phoneVariants(b);
+  if (va.length === 0 || vb.length === 0) return false;
+  return va.some((x) => vb.includes(x));
+}
+
 // GET /api/users - List all users in tenant
 router.get('/', async (req, res, next) => {
   try {
@@ -98,6 +123,34 @@ router.put('/me/whatsapp', async (req, res, next) => {
       .parse(req.body);
 
     const normalized = whatsappNumber && whatsappNumber.trim() !== '' ? whatsappNumber.trim() : null;
+
+    // Ao gravar um número NÃO-nulo, impede que dois usuários ATIVOS do mesmo
+    // tenant cadastrem o mesmo número. A resolução do copiloto é por DÍGITOS
+    // (tolerando o DDI 55); usamos o mesmo critério para não deixar passar
+    // uma colisão que depois faria o copiloto recusar o comando por match
+    // não-único. Limpar (número nulo) não checa.
+    if (normalized) {
+      const others = await prisma.user.findMany({
+        where: {
+          tenantId: req.user.tenantId,
+          status: 'ACTIVE',
+          whatsappNumber: { not: null },
+          id: { not: req.user.userId },
+        },
+        select: { id: true, whatsappNumber: true },
+      });
+
+      const collision = others.some((u) => phonesMatch(u.whatsappNumber || '', normalized));
+      if (collision) {
+        return next(
+          createError(
+            'Este número de WhatsApp já está vinculado a outro usuário do time.',
+            409,
+            'WHATSAPP_NUMBER_TAKEN'
+          )
+        );
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id: req.user.userId },

@@ -233,6 +233,17 @@ export const whatsappMessagingService = {
     }
 
     if (leadId || dealId || companyId) {
+      // Para envios por TEMPLATE, o corpo real (parâmetros) não vem em `data.content`
+      // (que fica vazio). Compomos um `content` legível a partir do nome do template +
+      // parâmetros para que a mensagem enviada apareça de fato na timeline do
+      // deal/empresa — não só o subject "Template: <nome>".
+      const content =
+        data.type === 'template'
+          ? data.templateParams?.length
+            ? `Template ${data.templateName}: ${data.templateParams.join(', ')}`
+            : `Template ${data.templateName}`
+          : data.content;
+
       await prisma.interaction.create({
         data: {
           tenantId,
@@ -243,7 +254,7 @@ export const whatsappMessagingService = {
           type: InteractionType.WHATSAPP,
           direction: InteractionDirection.OUTBOUND,
           subject: data.type === 'template' ? `Template: ${data.templateName}` : undefined,
-          content: data.content,
+          content,
           metadata: {
             messageId,
             connectionId: data.connectionId,

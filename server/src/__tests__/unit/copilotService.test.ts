@@ -271,7 +271,7 @@ describe('escrita com aceite', () => {
     expect(sendMessageMock).not.toHaveBeenCalled();
   });
 
-  it('"sim, pode criar" confirma a pendência (não exige match exato da string) (#13)', async () => {
+  it('"confirmo" (afirmação pura) confirma a pendência (não exige "sim" literal) (#13)', async () => {
     prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
     prismaMock.interaction.findMany.mockResolvedValue([
       {
@@ -292,15 +292,93 @@ describe('escrita com aceite', () => {
       tenantId,
       connection,
       KNOWN_FROM,
-      'sim, pode criar'
+      'sim confirmo'
     );
 
-    // Reconhecida como confirmação → executa (não expira a proposta).
+    // "sim confirmo" = afirmação PURA (todos os tokens fortes) → executa.
     expect(res.handled).toBe(true);
     expect(taskCreateMock).toHaveBeenCalledTimes(1);
     expect(res.reply).toMatch(/criada/i);
     // Não disparou o modelo (caminho de confirmação, não de nova consulta).
     expect(res.toolsUsed).toEqual([]);
+  });
+
+  it('"confirma a reunião" (nova consulta acionável) NÃO executa a pendência (#2)', async () => {
+    // ENDURECIMENTO: uma consulta curta acionável que por acaso contém "confirma"
+    // NÃO é aceite explícito. Deve virar nova consulta (proposta expira), NÃO executar.
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    // O "modelo" trata como nova consulta (não escreve nada).
+    let modelCalled = false;
+    generateTextImpl = async () => {
+      modelCalled = true;
+      return { text: 'Sua próxima reunião é amanhã às 10h.', usage: {} };
+    };
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'confirma a reunião'
+    );
+
+    // Não é confirmação pura → 'none': EXPIRA a proposta e vira nova consulta.
+    expect(res.handled).toBe(true);
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(modelCalled).toBe(true);
+    expect(res.reply).toMatch(/reunião/i);
+    // A proposta pendente foi expirada via claim atômico antes de seguir.
+    expect(prismaMock.interaction.updateMany).toHaveBeenCalled();
+  });
+
+  it('"sim quero relatório" (nova consulta acionável) NÃO executa a pendência (#2)', async () => {
+    // "sim" no início de uma consulta acionável não é aceite explícito da proposta.
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    let modelCalled = false;
+    generateTextImpl = async () => {
+      modelCalled = true;
+      return { text: 'Aqui está o relatório.', usage: {} };
+    };
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim quero relatório'
+    );
+
+    // 4 tokens (>3) e não puramente afirmativos → 'none': não executa.
+    expect(res.handled).toBe(true);
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(modelCalled).toBe(true);
+    expect(prismaMock.interaction.updateMany).toHaveBeenCalled();
   });
 
   it('falha transitória na execução → REVERTE o claim p/ reconfirmação (#1)', async () => {

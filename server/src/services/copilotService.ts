@@ -95,21 +95,27 @@ function tokenize(text: string): string[] {
 }
 
 /**
- * Classifica a resposta a uma proposta pendente. Só devolve 'confirm'/'cancel'
- * quando a mensagem é uma resposta CURTA e INEQUÍVOCA (até 3 tokens) contendo
- * exatamente um dos lados. Caso contrário → 'none' (o handler expira a proposta e
- * trata como nova consulta). Assim:
- *   "sim" / "sim, pode criar" → 'confirm'
- *   "não" / "isso não"        → 'cancel'  (o 'não' forte decide; 'isso' é filler)
- *   "ok, e o deal Y?"         → 'none'    (>3 tokens → nova consulta, não executa)
+ * Classifica a resposta a uma proposta pendente. A CONFIRMAÇÃO (executa escrita) é
+ * ENDURECIDA: só 'confirm' quando a mensagem é PURAMENTE afirmativa — curta (até 3
+ * tokens) e com TODOS os tokens em STRONG_CONFIRM. Assim uma NOVA consulta curta e
+ * acionável que por acaso contém 'confirma'/'sim' ("confirma a reunião", "sim quero
+ * relatório", "sim, pode criar") NÃO executa a proposta pendente — vira 'none' (expira
+ * a proposta e é tratada como nova consulta). O CANCELAMENTO permanece LENIENTE (só
+ * descarta, é seguro): qualquer token forte de recusa cancela, exceto se a mensagem
+ * for uma confirmação pura. Assim:
+ *   "sim" / "confirmo" / "sim confirmo" → 'confirm'  (afirmação pura)
+ *   "não" / "isso não"                  → 'cancel'   (o 'não' forte decide; 'isso' é filler)
+ *   "confirma a reunião" / "sim quero relatório" / "sim, pode criar" → 'none' (nova consulta)
+ *   "ok, e o deal Y?"                   → 'none'
  */
 function classifyReply(text: string): 'confirm' | 'cancel' | 'none' {
   const tokens = tokenize(text);
-  if (tokens.length === 0 || tokens.length > 3) return 'none';
-  const hasConfirm = tokens.some((t) => STRONG_CONFIRM.has(t));
+  if (tokens.length === 0) return 'none';
   const hasCancel = tokens.some((t) => STRONG_CANCEL.has(t));
-  if (hasConfirm && !hasCancel) return 'confirm';
-  if (hasCancel && !hasConfirm) return 'cancel';
+  // Confirmação PURA: até 3 tokens E todos afirmativos fortes.
+  const allConfirm = tokens.length <= 3 && tokens.every((t) => STRONG_CONFIRM.has(t));
+  if (hasCancel && !allConfirm) return 'cancel'; // cancelar é seguro (só descarta)
+  if (allConfirm) return 'confirm'; // só afirmação pura executa
   return 'none';
 }
 
@@ -855,7 +861,8 @@ export const copilotService = {
           stage: z
             .enum(['QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSING'])
             .optional(),
-          value: z.number().optional(),
+          // #5: piso em 0 — espelha a guarda `num < 0` do meetingService (sem valor negativo).
+          value: z.number().min(0).optional(),
           notes: z.string().optional(),
         }),
         execute: async ({ dealId, stage, value, notes }) => {

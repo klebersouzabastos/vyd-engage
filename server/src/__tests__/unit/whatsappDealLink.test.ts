@@ -123,6 +123,48 @@ describe('whatsappMessagingService.sendMessage — vínculo ao deal (req 23)', (
     expect(data).toMatchObject({ dealId: 'deal-1', userId: null, direction: 'OUTBOUND' });
   });
 
+  it('envio por template com parâmetros → content contém nome do template e os parâmetros (lacuna #4)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-1' } as never);
+
+    await whatsappMessagingService.sendMessage(tenantId, {
+      connectionId: 'conn-1',
+      to: '5511999999999',
+      type: 'template',
+      content: '',
+      templateName: 'boas_vindas',
+      templateParams: ['João', 'Plano Pro'],
+      dealId: 'deal-1',
+    });
+
+    const data = arg0(prismaMock.interaction.create).data;
+    // subject preservado + content legível com nome do template e parâmetros.
+    expect(data).toMatchObject({
+      subject: 'Template: boas_vindas',
+      dealId: 'deal-1',
+      direction: 'OUTBOUND',
+    });
+    expect(data.content).toContain('boas_vindas');
+    expect(data.content).toContain('João');
+    expect(data.content).toContain('Plano Pro');
+  });
+
+  it('envio por template sem parâmetros → content é o nome do template (lacuna #4)', async () => {
+    prismaMock.deal.findFirst.mockResolvedValue({ id: 'deal-1' } as never);
+
+    await whatsappMessagingService.sendMessage(tenantId, {
+      connectionId: 'conn-1',
+      to: '5511999999999',
+      type: 'template',
+      content: '',
+      templateName: 'lembrete',
+      dealId: 'deal-1',
+    });
+
+    const data = arg0(prismaMock.interaction.create).data;
+    expect(data).toMatchObject({ subject: 'Template: lembrete', direction: 'OUTBOUND' });
+    expect(data.content).toContain('lembrete');
+  });
+
   it('com companyId → Interaction vinculada à empresa', async () => {
     prismaMock.company.findFirst.mockResolvedValue({ id: 'comp-1' } as never);
 
