@@ -84,15 +84,64 @@ async function loadConfig() {
   ($('api-key') as HTMLInputElement).value = apiKey || '';
 }
 
+/**
+ * Deriva o padrão de origin (ex.: "https://api.exemplo.com/*") de uma baseUrl.
+ * Usado para pedir host_permission opcional quando o host difere do default —
+ * caso contrário o fetch do service worker é bloqueado pelo Chrome (req 19/20).
+ */
+function originPattern(baseUrl: string): string | null {
+  try {
+    const { protocol, host } = new URL(baseUrl);
+    if (protocol !== 'https:' && protocol !== 'http:') return null;
+    return `${protocol}//${host}/*`;
+  } catch {
+    return null;
+  }
+}
+
+/** Host do default (api.vydengage.com) — já coberto por host_permissions fixo. */
+function isDefaultHost(baseUrl: string): boolean {
+  try {
+    return new URL(baseUrl).host === new URL(DEFAULT_API_BASE_URL).host;
+  } catch {
+    return false;
+  }
+}
+
 async function saveConfig() {
   const apiKey = ($('api-key') as HTMLInputElement).value.trim();
   const baseUrl =
     ($('base-url') as HTMLInputElement).value.trim().replace(/\/+$/, '') || DEFAULT_API_BASE_URL;
+  const status = $('config-status');
+
+  // Se o baseUrl aponta para um host diferente do default, o Chrome bloqueia o
+  // fetch do service worker sem permissão explícita. Pede a host_permission
+  // opcional para esse origin antes de salvar; se negada, aborta com erro claro.
+  if (!isDefaultHost(baseUrl)) {
+    const pattern = originPattern(baseUrl);
+    if (!pattern) {
+      status.textContent = 'URL da API inválida. Use uma URL https:// completa.';
+      status.className = 'status err';
+      return;
+    }
+    let granted = false;
+    try {
+      granted = await chrome.permissions.request({ origins: [pattern] });
+    } catch {
+      granted = false;
+    }
+    if (!granted) {
+      status.textContent =
+        'Permissão negada para o host informado. Conceda o acesso ou use api.vydengage.com.';
+      status.className = 'status err';
+      return;
+    }
+  }
+
   await chrome.storage.local.set({
     [STORAGE_KEYS.apiKey]: apiKey,
     [STORAGE_KEYS.apiBaseUrl]: baseUrl,
   });
-  const status = $('config-status');
   status.textContent = apiKey ? 'Chave salva.' : 'Chave removida.';
   status.className = 'status ok';
   setTimeout(() => (status.textContent = ''), 2500);
@@ -124,6 +173,20 @@ function renderResult(contact: ResolvedContact) {
           ${escapeHtml(contact.lead.email || 'sem e-mail')} · ${escapeHtml(contact.lead.phone || '')}
         </p>
         ${contact.company ? `<p class="muted" style="margin:4px 0 0;font-size:12px">Empresa: ${escapeHtml(contact.company.name)}</p>` : ''}
+      </div>
+    `);
+  } else if (contact.company) {
+    // Sem lead, mas o backend resolveu uma EMPRESA — mostra o card da empresa
+    // (nome + telefone) em vez de descartá-la. Deals/interações abaixo continuam.
+    parts.push(`
+      <div class="card">
+        <p class="title">${escapeHtml(contact.company.name)}</p>
+        <p class="muted" style="margin:0;font-size:12px">
+          ${escapeHtml(contact.company.phone || 'sem telefone')}
+        </p>
+        <p class="muted" style="margin:4px 0 0;font-size:12px">
+          Empresa encontrada — nenhum lead vinculado a este número ainda.
+        </p>
       </div>
     `);
   } else {

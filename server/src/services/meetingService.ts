@@ -422,11 +422,28 @@ export const meetingService = {
       if (!Object.values(DealStage).includes(stage)) {
         throw createError('Etapa sugerida inválida para o campo "stage".', 400, 'VALIDATION_ERROR');
       }
+      // LOST/WON têm fluxo próprio (markLost exige lostReason; markWon tem guarda de
+      // transição). Aplicar esses estágios por aqui contornaria essas regras — rejeita.
+      if (stage === DealStage.LOST || stage === DealStage.WON) {
+        throw createError(
+          'Etapa LOST/WON exige o fluxo próprio de ganho/perda; ajuste manualmente na negociação.',
+          400,
+          'MEETING_FIELD_NOT_APPLICABLE'
+        );
+      }
       dealUpdate.stage = stage;
       updatedFields.push('stage');
     }
     if (fieldUpdates.notes !== undefined && suggestedKeys.has('notes')) {
-      dealUpdate.notes = fieldUpdates.notes;
+      // A IA devolve só o texto "a acrescentar" (não o conteúdo completo). ANEXA ao
+      // valor atual do deal em vez de sobrescrever — evita apagar notas existentes.
+      const currentDeal = await prisma.deal.findFirst({
+        where: { id: dealId, tenantId },
+        select: { notes: true },
+      });
+      const currentNotes = currentDeal?.notes ?? '';
+      const suggested = fieldUpdates.notes;
+      dealUpdate.notes = currentNotes ? `${currentNotes}\n\n${suggested}` : suggested;
       updatedFields.push('notes');
     }
 

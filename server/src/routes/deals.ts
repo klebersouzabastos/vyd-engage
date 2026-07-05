@@ -318,11 +318,45 @@ async function enforceDealOwnership(req: Request, res: Response, next: NextFunct
 // GET /api/deals/meetings/:iid — DEVE ficar ANTES de `router.use('/:id', …)`, senão
 // o prefixo `/:id` capturaria `/meetings/...` (id="meetings") e rodaria o guard de
 // posse com um id inválido. Escopado por tenant no service (não expõe outros tenants).
+//
+// ATENÇÃO (visibilidade P1): por estar ANTES de `router.use('/:id', enforceDealOwnership)`,
+// esta rota NÃO herda o guard de posse. Sem o escopo abaixo, um analista USER
+// (deals=PROPRIA) que adivinhe o UUID de uma Interaction MEETING leria transcrição,
+// valor e notas de deal de OUTRO dono no mesmo tenant. Por isso aplicamos aqui, à mão,
+// o MESMO escopo de visibilidade de `enforceDealOwnership`, ancorado no dealId da reunião.
 router.get('/meetings/:iid', async (req, res, next) => {
   try {
     if (!req.user) return next(createError('Authentication required', 401));
     meetingService.assertAIEnabled();
     const meeting = await meetingService.getMeeting(req.user.tenantId, req.params.iid);
+
+    // Visibilidade viva (req 14): resolve o escopo de "responsável" de deals e confirma
+    // que o dono da negociação da reunião está DENTRO do escopo do usuário.
+    //   - GERAL   → scope=undefined → sem filtro por dono (manager/admin de hoje).
+    //   - PROPRIA → scope=string (o próprio userId).
+    //   - EQUIPE  → scope={ in: [...] }.
+    // O padrão `assignedTo: scope` cobre string e { in }; undefined omite o filtro.
+    const scope = await visibilityScope(
+      {
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      },
+      'deals'
+    );
+    const owned = await prisma.deal.findFirst({
+      where: {
+        id: meeting.dealId,
+        tenantId: req.user.tenantId,
+        deletedAt: null,
+        ...(scope === undefined ? {} : { assignedTo: scope }),
+      },
+      select: { id: true },
+    });
+    // Fora do escopo → 404 (não vaza a existência da reunião nem do deal).
+    if (!owned) return next(createError('Reunião não encontrada', 404, 'MEETING_NOT_FOUND'));
+
     res.json({ status: 200, data: meeting });
   } catch (error) {
     next(error);

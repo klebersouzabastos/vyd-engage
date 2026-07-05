@@ -99,13 +99,39 @@ function digitsOnly(raw: string): string {
 }
 
 /**
+ * Normaliza um telefone para comparação: retorna o número em dígitos e a variante
+ * sem o prefixo de DDI 55 (quando presente). Dois números casam se os dígitos
+ * COMPLETOS batem, ou se batem depois de remover o '55' inicial de UM dos lados —
+ * assim toleramos apenas a presença/ausência do DDI brasileiro, sem colidir por
+ * sufixo (o bug antigo: 8 dígitos finais iguais em DDDs diferentes autorizava o
+ * usuário errado).
+ */
+function phoneVariants(raw: string): string[] {
+  const d = digitsOnly(raw);
+  if (!d) return [];
+  const variants = new Set<string>([d]);
+  if (d.startsWith('55') && d.length > 2) variants.add(d.slice(2));
+  return [...variants];
+}
+
+/** Dois telefones casam se compartilham alguma variante normalizada (com/sem DDI 55). */
+function phonesMatch(a: string, b: string): boolean {
+  const va = phoneVariants(a);
+  const vb = phoneVariants(b);
+  if (va.length === 0 || vb.length === 0) return false;
+  return va.some((x) => vb.includes(x));
+}
+
+/**
  * Resolve o número do remetente para um `User` do tenant com `whatsappNumber`
- * cadastrado, casando pelos últimos 8 dígitos (tolera DDI/máscara). Só usuários
- * ATIVOS comandam. Retorna null se nenhum número conhecido casar.
+ * cadastrado, casando pelo número NORMALIZADO por dígitos (tolerando só o prefixo
+ * de DDI 55). Só usuários ATIVOS comandam e o match precisa ser ÚNICO: se mais de
+ * um usuário ativo casar, RECUSA (retorna null → "número não autorizado") em vez de
+ * escolher o primeiro. Retorna null se nenhum número conhecido casar.
  */
 async function resolveCommandingUser(tenantId: string, from: string) {
-  const suffix = digitsOnly(from).slice(-8);
-  if (suffix.length < 6) return null;
+  const fromDigits = digitsOnly(from);
+  if (fromDigits.length < 6) return null;
 
   const candidates = await prisma.user.findMany({
     where: {
@@ -121,11 +147,15 @@ async function resolveCommandingUser(tenantId: string, from: string) {
       permissionProfileId: true,
       whatsappNumber: true,
     },
+    // orderBy determinístico para tornar a consulta estável (a decisão de match
+    // não depende da ordem, mas evitamos não-determinismo de driver).
+    orderBy: { id: 'asc' },
   });
 
-  return (
-    candidates.find((u) => digitsOnly(u.whatsappNumber || '').endsWith(suffix)) || null
-  );
+  const matches = candidates.filter((u) => phonesMatch(u.whatsappNumber || '', from));
+  // Match precisa ser único: >1 usuário ativo com o mesmo número → recusa.
+  if (matches.length !== 1) return null;
+  return matches[0];
 }
 
 // ── Estado pendente (Interaction.metadata) ───────────────────────────────────
@@ -138,7 +168,14 @@ async function findPendingAction(
   tenantId: string,
   connectionId: string,
   userId: string
-): Promise<{ interactionId: string; action: PendingAction } | null> {
+): Promise<{
+  interactionId: string;
+  action: PendingAction;
+  /** metadata cru da Interaction, para o claim atômico reescrever preservando o resto. */
+  metadata: Record<string, unknown>;
+  /** objeto copilotPending cru (com connectionId/resolved), idem. */
+  pending: Record<string, unknown>;
+} | null> {
   const since = new Date(Date.now() - 30 * 60 * 1000);
   const rows = await prisma.interaction.findMany({
     where: {
@@ -159,24 +196,45 @@ async function findPendingAction(
       | (PendingAction & { connectionId?: string; resolved?: boolean })
       | undefined;
     if (pending && pending.connectionId === connectionId && pending.resolved !== true) {
-      return { interactionId: row.id, action: pending };
+      return {
+        interactionId: row.id,
+        action: pending,
+        metadata: meta,
+        pending: pending as unknown as Record<string, unknown>,
+      };
     }
   }
   return null;
 }
 
-/** Marca uma proposta pendente como resolvida (aceita ou cancelada) para não reexecutar. */
-async function resolvePending(interactionId: string): Promise<void> {
-  const row = await prisma.interaction.findUnique({
-    where: { id: interactionId },
-    select: { metadata: true },
+/**
+ * "Claim" ATÔMICO da proposta pendente: marca `copilotPending.resolved = true`
+ * SÓ na linha que ainda está `resolved === false`, via `updateMany` condicional
+ * (filtro por path de JSON — suportado por Prisma/Postgres). O UPDATE toma o lock
+ * de linha e serializa a corrida: dois "sim" concorrentes (ou redelivery de webhook
+ * do Meta) disputam a mesma linha, mas só UM verá `count === 1` — o outro vê 0 e
+ * NÃO reexecuta. Retorna `true` se ESTE chamador venceu a corrida.
+ */
+async function claimPending(
+  tenantId: string,
+  interactionId: string,
+  meta: Record<string, unknown>,
+  pending: Record<string, unknown>
+): Promise<boolean> {
+  const claim = await prisma.interaction.updateMany({
+    where: {
+      id: interactionId,
+      tenantId,
+      metadata: { path: ['copilotPending', 'resolved'], equals: false },
+    },
+    data: {
+      metadata: {
+        ...meta,
+        copilotPending: { ...pending, resolved: true },
+      } as unknown as Prisma.InputJsonValue,
+    },
   });
-  const meta = (row?.metadata || {}) as Record<string, unknown>;
-  const pending = (meta.copilotPending || {}) as Record<string, unknown>;
-  await prisma.interaction.update({
-    where: { id: interactionId },
-    data: { metadata: { ...meta, copilotPending: { ...pending, resolved: true } } },
-  });
+  return claim.count === 1;
 }
 
 /**
@@ -316,7 +374,21 @@ export const copilotService = {
     const pendingHit = await findPendingAction(tenantId, connection.id, user.id);
     if (pendingHit) {
       if (isConfirmation(body)) {
-        await resolvePending(pendingHit.interactionId);
+        // Claim ATÔMICO: só executa quem venceu a corrida. Dois "sim" concorrentes
+        // (ou redelivery do Meta) → só um vê count===1; o outro não reexecuta.
+        const won = await claimPending(
+          tenantId,
+          pendingHit.interactionId,
+          pendingHit.metadata,
+          pendingHit.pending
+        );
+        if (!won) {
+          logger.info('Copilot: confirmação já processada por outra volta — ignorada', {
+            tenantId,
+            userId: user.id,
+          });
+          return { handled: true, reply: null, toolsUsed: [] };
+        }
         await recordInbound(tenantId, connection.id, user.id, from, body);
         let reply: string;
         try {
@@ -333,14 +405,29 @@ export const copilotService = {
         return { handled: true, reply, toolsUsed: [] };
       }
       if (isCancellation(body)) {
-        await resolvePending(pendingHit.interactionId);
+        // Também atômico: dois "não" concorrentes cancelam só uma vez.
+        const won = await claimPending(
+          tenantId,
+          pendingHit.interactionId,
+          pendingHit.metadata,
+          pendingHit.pending
+        );
+        if (!won) {
+          return { handled: true, reply: null, toolsUsed: [] };
+        }
         await recordInbound(tenantId, connection.id, user.id, from, body);
         const reply = 'Ok, cancelei a ação.';
         await this.reply(tenantId, connection.id, from, reply).catch(() => {});
         return { handled: true, reply, toolsUsed: [] };
       }
-      // Qualquer outra mensagem: expira a proposta e segue como nova consulta.
-      await resolvePending(pendingHit.interactionId);
+      // Qualquer outra mensagem: expira a proposta (claim atômico) e segue como
+      // nova consulta. Não importa quem vença aqui — só evitamos ressuscitá-la.
+      await claimPending(
+        tenantId,
+        pendingHit.interactionId,
+        pendingHit.metadata,
+        pendingHit.pending
+      );
     }
 
     // ── Volta normal: dispara o modelo com tools ───────────────────────────────

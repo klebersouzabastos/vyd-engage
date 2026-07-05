@@ -9,7 +9,9 @@ import { prismaMock } from '../helpers/prismaMock.js';
  *    deal/empresa (timeline do deal/empresa), validando o vínculo contra o tenant;
  *  - preserva o envio via Meta Graph (fetch), os stats (messagesSent++) e o
  *    comportamento por lead;
- *  - dealId de outro tenant → NÃO vincula (findFirst devolve null) mas ainda envia.
+ *  - dealId de outro tenant → NÃO vincula (findFirst devolve null) mas ainda envia;
+ *  - leadId de outro tenant → NÃO vincula o lead (validado contra o tenant como
+ *    dealId/companyId), mas ainda envia.
  *
  * Meta Graph (fetch), scoring e encryption são mockados p/ isolar a lógica.
  */
@@ -114,7 +116,9 @@ describe('whatsappMessagingService.sendMessage — vínculo ao deal (req 23)', (
     expect(prismaMock.interaction.create).not.toHaveBeenCalled();
   });
 
-  it('comportamento por lead preservado (sem deal/company)', async () => {
+  it('comportamento por lead preservado (sem deal/company, lead validado no tenant)', async () => {
+    prismaMock.lead.findFirst.mockResolvedValue({ id: 'lead-1' } as never);
+
     await whatsappMessagingService.sendMessage(tenantId, {
       connectionId: 'conn-1',
       to: '5511999999999',
@@ -128,6 +132,23 @@ describe('whatsappMessagingService.sendMessage — vínculo ao deal (req 23)', (
     // Não consulta deal/company quando só há lead.
     expect(prismaMock.deal.findFirst).not.toHaveBeenCalled();
     expect(prismaMock.company.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('leadId de outro tenant → não vincula (leadId null) mas ainda envia', async () => {
+    // Lead de outro tenant: findFirst filtra por tenantId e devolve null.
+    prismaMock.lead.findFirst.mockResolvedValue(null as never);
+
+    await whatsappMessagingService.sendMessage(tenantId, {
+      connectionId: 'conn-1',
+      to: '5511999999999',
+      type: 'text',
+      content: 'x',
+      leadId: 'lead-de-outro-tenant',
+    });
+
+    // Envio ocorreu; Interaction NÃO foi criada (sem lead/deal/company válidos).
+    expect(global.fetch).toHaveBeenCalledOnce();
+    expect(prismaMock.interaction.create).not.toHaveBeenCalled();
   });
 
   it('sem conexão CONNECTED → 400 WHATSAPP_NOT_CONNECTED (gating)', async () => {

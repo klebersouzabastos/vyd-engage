@@ -486,6 +486,7 @@ export function CompanyDetail() {
                     companyId={company.id}
                     phone={company.phone}
                     name={company.name}
+                    onSent={fetchCompany}
                   />
                 </div>
               )}

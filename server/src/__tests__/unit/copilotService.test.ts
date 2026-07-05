@@ -77,8 +77,8 @@ beforeEach(() => {
   prismaMock.user.findMany.mockResolvedValue([] as never);
   prismaMock.interaction.findMany.mockResolvedValue([] as never);
   prismaMock.interaction.create.mockResolvedValue({ id: 'int-1' } as never);
-  prismaMock.interaction.findUnique.mockResolvedValue({ metadata: {} } as never);
-  prismaMock.interaction.update.mockResolvedValue({ id: 'int-1' } as never);
+  // Claim atômico: por padrão ESTE chamador vence a corrida (count === 1).
+  prismaMock.interaction.updateMany.mockResolvedValue({ count: 1 } as never);
   prismaMock.user.findFirst.mockResolvedValue(null as never); // permissionService fail-closed
 });
 
@@ -110,6 +110,29 @@ describe('autorização por número', () => {
     expect(res.reply).toMatch(/não autorizado/i);
     // Respondeu, mas não chamou o modelo nem criou interação de comando.
     expect(sendMessageMock).toHaveBeenCalledTimes(1);
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it('número AMBÍGUO (dois usuários ativos casam) → recusa (não escolhe o primeiro)', async () => {
+    // Dois usuários ATIVOS cujo whatsappNumber casa com o remetente pela mesma
+    // variante normalizada (com e sem o DDI 55). O antigo casamento por sufixo
+    // autorizaria o primeiro; o novo exige match ÚNICO e RECUSA.
+    prismaMock.user.findMany.mockResolvedValue([
+      { ...knownUser, id: 'user-a', whatsappNumber: '5511998887766' },
+      { ...knownUser, id: 'user-b', whatsappNumber: '+55 11 99888-7766' },
+    ] as never);
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'quais minhas tarefas?'
+    );
+
+    expect(res.handled).toBe(false);
+    expect(res.reply).toMatch(/não autorizado/i);
+    // Nenhuma ação executada — não escolheu nenhum dos dois.
     expect(taskCreateMock).not.toHaveBeenCalled();
     expect(dealUpdateMock).not.toHaveBeenCalled();
   });
@@ -190,9 +213,6 @@ describe('escrita com aceite', () => {
         },
       },
     ] as never);
-    prismaMock.interaction.findUnique.mockResolvedValue({
-      metadata: { copilotPending: { kind: 'criar_tarefa' } },
-    } as never);
 
     const res = await copilotService.handleCopilotMessage(
       tenantId,
@@ -210,6 +230,45 @@ describe('escrita com aceite', () => {
     expect(res.reply).toMatch(/criada/i);
     // Nunca dispara o modelo no caminho de confirmação.
     expect(res.toolsUsed).toEqual([]);
+    // O claim atômico foi disparado (updateMany condicional), não o par
+    // findUnique+update antigo.
+    expect(prismaMock.interaction.updateMany).toHaveBeenCalledTimes(1);
+    const claimArg = (prismaMock.interaction.updateMany as any).mock.calls[0][0];
+    expect(claimArg.where.metadata.path).toEqual(['copilotPending', 'resolved']);
+    expect(claimArg.where.metadata.equals).toBe(false);
+  });
+
+  it('segundo "sim" concorrente (claim perdido) → NÃO executa de novo (idempotente)', async () => {
+    prismaMock.user.findMany.mockResolvedValue([knownUser] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      {
+        id: 'int-pending',
+        metadata: {
+          copilotPending: {
+            kind: 'criar_tarefa',
+            args: { title: 'Ligar para cliente' },
+            summary: 'Vou criar a tarefa...',
+            connectionId: 'conn-1',
+            resolved: false,
+          },
+        },
+      },
+    ] as never);
+    // A outra volta já resolveu a linha: o claim condicional não afeta nada.
+    prismaMock.interaction.updateMany.mockResolvedValue({ count: 0 } as never);
+
+    const res = await copilotService.handleCopilotMessage(
+      tenantId,
+      connection,
+      KNOWN_FROM,
+      'sim'
+    );
+
+    // Perdeu a corrida → não cria a tarefa nem envia resposta duplicada.
+    expect(res.handled).toBe(true);
+    expect(res.reply).toBeNull();
+    expect(taskCreateMock).not.toHaveBeenCalled();
+    expect(sendMessageMock).not.toHaveBeenCalled();
   });
 
   it('após "não", cancela a pendência sem executar', async () => {

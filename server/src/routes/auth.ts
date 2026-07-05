@@ -146,6 +146,9 @@ router.get('/me', authenticate, async (req, res, next) => {
         tenantId: true,
         emailVerified: true,
         twoFactorEnabled: true,
+        // Número do WhatsApp do copiloto (gravado por PUT /users/me/whatsapp);
+        // sem isto o Profile exibe vazio após salvar/recarregar.
+        whatsappNumber: true,
         tenant: {
           select: {
             id: true,
@@ -265,6 +268,9 @@ router.put('/profile', authenticate, async (req, res, next) => {
         emailVerified: true,
         createdAt: true,
         lastLoginAt: true,
+        // Mantém o número do WhatsApp no objeto user retornado ao frontend,
+        // para não zerar o campo do Profile após um update de perfil.
+        whatsappNumber: true,
         tenant: {
           select: { id: true, name: true, slug: true, logo: true },
         },

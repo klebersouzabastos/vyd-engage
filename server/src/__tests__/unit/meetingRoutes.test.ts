@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { visibilityScope } from '../../services/permissionService.js';
 import request from 'supertest';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import { mockDeep, mockReset, type DeepMockProxy } from 'vitest-mock-extended';
@@ -164,10 +165,34 @@ describe('POST /deals/:id/meetings/:iid/apply', () => {
 
 describe('GET /deals/meetings/:iid — resolve antes do guard /:id', () => {
   it('não é capturado por /:id; chama getMeeting com o iid', async () => {
-    getMeetingMock.mockResolvedValue({ id: 'int-9', summary: 's' });
+    // getMeeting devolve o dealId no DTO — a rota usa isso para aplicar o escopo.
+    getMeetingMock.mockResolvedValue({ id: 'int-9', summary: 's', dealId: 'deal-1' });
+    // Escopo GERAL (undefined): o deal.findFirst confirma o deal do tenant sem filtro por dono.
+    (visibilityScope as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+    prismaMock.deal.findFirst.mockResolvedValueOnce({ id: 'deal-1' } as never);
     const res = await request(makeApp()).get('/deals/meetings/int-9');
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ id: 'int-9' });
     expect(getMeetingMock).toHaveBeenCalledWith('t1', 'int-9');
+  });
+
+  // LACUNA #2/#3/#12/#14: a rota está ANTES do guard /:id, então precisa aplicar a
+  // visibilidade P1 à mão. Um analista USER (deals=PROPRIA) que adivinhe o UUID de
+  // uma reunião de OUTRO dono deve receber 404 — nunca a transcrição/valor/notas.
+  it('analista PROPRIA fora do escopo → 404 MEETING_NOT_FOUND (não vaza a reunião)', async () => {
+    getMeetingMock.mockResolvedValue({
+      id: 'int-x',
+      summary: 'confidencial',
+      dealId: 'deal-de-outro',
+    });
+    // Escopo PROPRIA → visibilityScope devolve o userId (string). Como o deal é de
+    // OUTRO dono, o deal.findFirst com `assignedTo: 'outro-user'` não acha nada.
+    (visibilityScope as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce('outro-user');
+    prismaMock.deal.findFirst.mockResolvedValueOnce(null as never);
+    const res = await request(makeApp()).get('/deals/meetings/int-x');
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('MEETING_NOT_FOUND');
+    // Não vaza nada do conteúdo da reunião.
+    expect(res.body.data).toBeUndefined();
   });
 });

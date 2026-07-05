@@ -34,6 +34,13 @@ interface WhatsAppSendPanelProps {
   leadPhone?: string;
   /** @deprecated Use `name`. */
   leadName?: string;
+
+  /**
+   * Callback opcional chamado após um envio bem-sucedido (CONNECTED ou register-only).
+   * O chamador usa para recarregar a timeline/interações do contexto (deal/empresa).
+   * Opcional → usos legados (ex.: LeadForm) não precisam passar.
+   */
+  onSent?: () => void;
 }
 
 function sanitizePhone(phone: string): string {
@@ -48,6 +55,7 @@ export function WhatsAppSendPanel({
   name,
   leadPhone,
   leadName,
+  onSent,
 }: WhatsAppSendPanelProps) {
   // Resolve contexto/valores considerando os props legados.
   const targetPhone = phone ?? leadPhone;
@@ -128,6 +136,7 @@ export function WhatsAppSendPanel({
       toast.success('Mensagem WhatsApp enviada!');
       setContent('');
       setTemplateParams([]);
+      onSent?.();
     } catch (error: any) {
       toast.error(error.message || 'Erro ao enviar mensagem');
     } finally {
@@ -158,6 +167,7 @@ export function WhatsAppSendPanel({
       window.open(waUrl, '_blank', 'noopener,noreferrer');
       toast.success('Mensagem registrada (sem conexão WhatsApp ativa)');
       setContent('');
+      onSent?.();
     } catch (error: any) {
       toast.error(error.message || 'Erro ao registrar mensagem');
     } finally {

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import prisma from '../config/database.js';
 import { interactionService } from '../services/interactionService.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenant.js';
@@ -108,7 +109,35 @@ router.post('/', async (req, res, next) => {
       ...req.body,
       userId: req.body.userId || req.user.userId,
     });
-    const interaction = await interactionService.create(req.user.tenantId, data);
+
+    // Posse por tenant (Upgrade RD P3): valida cada entidade vinculada contra o
+    // tenant do usuário ANTES de gravar. Sem isto, o body poderia apontar
+    // leadId/dealId/companyId de OUTRO tenant e — via include do lead no service —
+    // vazar PII cross-tenant. É o caminho do fallback register-only do WhatsApp.
+    const tenantId = req.user.tenantId;
+    if (data.leadId) {
+      const lead = await prisma.lead.findFirst({
+        where: { id: data.leadId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!lead) return next(createError('Lead não encontrado', 404, 'LEAD_NOT_FOUND'));
+    }
+    if (data.dealId) {
+      const deal = await prisma.deal.findFirst({
+        where: { id: data.dealId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!deal) return next(createError('Negócio não encontrado', 404, 'DEAL_NOT_FOUND'));
+    }
+    if (data.companyId) {
+      const company = await prisma.company.findFirst({
+        where: { id: data.companyId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!company) return next(createError('Empresa não encontrada', 404, 'COMPANY_NOT_FOUND'));
+    }
+
+    const interaction = await interactionService.create(tenantId, data);
     res.status(201).json(interaction);
   } catch (error) {
     if (error instanceof z.ZodError) {

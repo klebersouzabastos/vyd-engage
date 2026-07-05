@@ -236,6 +236,8 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
       dealId,
       metadata: meetingMeta,
     } as never);
+    // Deal sem notas atuais → a anotação sugerida entra como está (sem prefixo).
+    prismaMock.deal.findFirst.mockResolvedValue({ notes: null } as never);
     taskCreateMock.mockImplementation(async () => ({ id: `task-${taskCreateMock.mock.calls.length}` }));
     dealUpdateMock.mockResolvedValue({ id: dealId });
     prismaMock.interaction.update.mockResolvedValue({ id: 'int-1' } as never);
@@ -314,5 +316,79 @@ describe('meetingService.applyMeeting — aplica só o aceito', () => {
       )
     ).rejects.toMatchObject({ statusCode: 400 });
     expect(dealUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it('stage=LOST → 400 MEETING_FIELD_NOT_APPLICABLE e não atualiza deal (#9)', async () => {
+    // A sugestão precisa conter a chave "stage" para o apply chegar na coerção.
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: {
+        ...meetingMeta,
+        suggestedFields: [{ key: 'stage', current: 'NEGOTIATION', suggested: 'LOST' }],
+      },
+    } as never);
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: [], fieldUpdates: { stage: 'LOST' } },
+        'user-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'MEETING_FIELD_NOT_APPLICABLE' });
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it('stage=WON → 400 MEETING_FIELD_NOT_APPLICABLE (fluxo próprio de ganho) (#9)', async () => {
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: {
+        ...meetingMeta,
+        suggestedFields: [{ key: 'stage', current: 'CLOSING', suggested: 'WON' }],
+      },
+    } as never);
+    await expect(
+      meetingService.applyMeeting(
+        tenantId,
+        dealId,
+        'int-1',
+        { taskIds: [], fieldUpdates: { stage: 'WON' } },
+        'user-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'MEETING_FIELD_NOT_APPLICABLE' });
+    expect(dealUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it('notes: ANEXA à nota atual do deal em vez de sobrescrever (#10)', async () => {
+    prismaMock.interaction.findFirst.mockResolvedValue({
+      id: 'int-1',
+      dealId,
+      metadata: meetingMeta,
+    } as never);
+    // Deal JÁ tem uma nota — a sugestão deve ser anexada, preservando a existente.
+    prismaMock.deal.findFirst.mockResolvedValue({ notes: 'nota existente' } as never);
+    dealUpdateMock.mockResolvedValue({ id: dealId });
+    prismaMock.interaction.update.mockResolvedValue({ id: 'int-1' } as never);
+
+    const result = await meetingService.applyMeeting(
+      tenantId,
+      dealId,
+      'int-1',
+      { taskIds: [], fieldUpdates: { notes: 'anotação nova' } },
+      'user-1'
+    );
+
+    // A busca do deal atual é escopada por tenant (multi-tenant).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const notesQuery = (prismaMock.deal.findFirst as any).mock.calls[0][0];
+    expect(notesQuery.where).toMatchObject({ id: dealId, tenantId });
+
+    // O update recebe nota_atual + \n\n + nota_sugerida (não substitui).
+    expect(dealUpdateMock).toHaveBeenCalledOnce();
+    const dealArg = dealUpdateMock.mock.calls[0][1];
+    expect(dealArg.notes).toBe('nota existente\n\nanotação nova');
+    expect(result.updatedFields).toEqual(['notes']);
   });
 });

@@ -830,6 +830,7 @@ export function DealDetail() {
                     leadId={deal.leadId || undefined}
                     phone={deal.lead?.phone}
                     name={deal.lead?.name || deal.name}
+                    onSent={fetchInteractions}
                   />
                 </div>
               </TabsContent>

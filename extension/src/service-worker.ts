@@ -25,6 +25,31 @@ interface ApiResult<T> {
   error?: string;
 }
 
+/**
+ * Deriva o padrão de origin (ex.: "https://host/*") de uma baseUrl, para checar
+ * se o host tem host_permission concedida (fixo no manifest ou opcional).
+ */
+function originPattern(baseUrl: string): string | null {
+  try {
+    const { protocol, host } = new URL(baseUrl);
+    if (protocol !== 'https:' && protocol !== 'http:') return null;
+    return `${protocol}//${host}/*`;
+  } catch {
+    return null;
+  }
+}
+
+/** Verifica se o host da baseUrl está autorizado (host_permission concedida). */
+async function hasHostPermission(baseUrl: string): Promise<boolean> {
+  const pattern = originPattern(baseUrl);
+  if (!pattern) return false;
+  try {
+    return await chrome.permissions.contains({ origins: [pattern] });
+  } catch {
+    return false;
+  }
+}
+
 async function apiFetch<T>(
   path: string,
   init: RequestInit & { method: string }
@@ -44,6 +69,17 @@ async function apiFetch<T>(
       },
     });
   } catch {
+    // O fetch pode falhar por host não autorizado (o Chrome bloqueia origins fora
+    // do host_permissions). Distingue esse caso de uma falha de rede genérica
+    // para dar uma mensagem acionável (req 19/20).
+    if (!(await hasHostPermission(baseUrl))) {
+      return {
+        ok: false,
+        status: 0,
+        error:
+          'A extensão só pode chamar o host autorizado. Conceda permissão ao host informado (salve a URL da API no popup) ou use api.vydengage.com.',
+      };
+    }
     return {
       ok: false,
       status: 0,

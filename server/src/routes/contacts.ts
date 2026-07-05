@@ -89,14 +89,21 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
       orderBy: { createdAt: 'desc' },
     });
 
+    // Resolução da empresa (tenant-scoped):
+    //  - Se o lead tem companyId, a empresa é a do lead. Se essa empresa estiver
+    //    indisponível (soft-deleted/não encontrada), retornamos company=null — NÃO
+    //    caímos no fallback por telefone, para não casar uma empresa arbitrária e
+    //    não relacionada (o companyId do lead já é a verdade da associação).
+    //  - Só quando o lead NÃO tem companyId (ou não há lead) é que tentamos o
+    //    fallback por sufixo de telefone.
     let company: { id: string; name: string; phone: string | null } | null = null;
     if (lead?.companyId) {
       company = await prisma.company.findFirst({
         where: { id: lead.companyId, tenantId, deletedAt: null },
         select: { id: true, name: true, phone: true },
       });
-    }
-    if (!company) {
+      // Lead tem companyId porém empresa indisponível → company=null (sem fallback).
+    } else {
       company = await prisma.company.findFirst({
         where: { tenantId, deletedAt: null, phone: { contains: suffix } },
         select: { id: true, name: true, phone: true },
@@ -104,23 +111,53 @@ router.get('/resolve', requireScope('contacts:read'), async (req, res, next) => 
       });
     }
 
-    const deals = lead
-      ? await prisma.deal.findMany({
-          where: { tenantId, deletedAt: null, leadId: lead.id },
-          select: { id: true, name: true, stage: true, status: true, value: true },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        })
-      : [];
+    // Deals e interações:
+    //  - Com lead → ligados ao lead.
+    //  - Sem lead, porém com empresa resolvida → ligados diretamente à empresa
+    //    (companyId), tenant-scoped, para que a extensão veja o histórico da
+    //    empresa mesmo quando o telefone não bate em nenhum lead.
+    let deals: Array<{
+      id: string;
+      name: string;
+      stage: unknown;
+      status: unknown;
+      value: unknown;
+    }> = [];
+    let lastInteractions: Array<{
+      id: string;
+      type: unknown;
+      direction: unknown;
+      content: string;
+      createdAt: Date;
+    }> = [];
 
-    const lastInteractions = lead
-      ? await prisma.interaction.findMany({
-          where: { tenantId, leadId: lead.id, deletedAt: null },
-          select: { id: true, type: true, direction: true, content: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        })
-      : [];
+    if (lead) {
+      deals = await prisma.deal.findMany({
+        where: { tenantId, deletedAt: null, leadId: lead.id },
+        select: { id: true, name: true, stage: true, status: true, value: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      });
+      lastInteractions = await prisma.interaction.findMany({
+        where: { tenantId, leadId: lead.id, deletedAt: null },
+        select: { id: true, type: true, direction: true, content: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+    } else if (company) {
+      deals = await prisma.deal.findMany({
+        where: { tenantId, deletedAt: null, companyId: company.id },
+        select: { id: true, name: true, stage: true, status: true, value: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      });
+      lastInteractions = await prisma.interaction.findMany({
+        where: { tenantId, companyId: company.id, deletedAt: null },
+        select: { id: true, type: true, direction: true, content: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+    }
 
     res.json({
       status: 200,

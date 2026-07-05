@@ -175,4 +175,75 @@ describe('GET /contacts/resolve — req 24', () => {
     };
     expect(call.where.tenantId).toBe('tenant-y');
   });
+
+  it('sem lead, com empresa → traz deals/interações ligados à empresa (companyId)', async () => {
+    // Nenhum lead casa o telefone; a empresa casa pelo fallback de telefone.
+    prismaMock.lead.findFirst.mockResolvedValue(null as never);
+    prismaMock.company.findFirst.mockResolvedValue({
+      id: 'company-1',
+      name: 'Acme SA',
+      phone: '1133330000',
+    } as never);
+    prismaMock.deal.findMany.mockResolvedValue([
+      { id: 'deal-c1', name: 'Contrato Acme', stage: 'QUALIFICATION', status: 'OPEN', value: 1000 },
+    ] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([
+      { id: 'int-c1', type: 'NOTE', direction: 'OUTBOUND', content: 'Ligação', createdAt: new Date() },
+    ] as never);
+
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=1133330000')
+      .set('x-api-key', 'tenant-z|contacts:read');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.lead).toBeNull();
+    expect(res.body.data.company).toMatchObject({ id: 'company-1' });
+    // deals[] e lastInteractions[] vieram da empresa (não do lead).
+    expect(res.body.data.deals).toHaveLength(1);
+    expect(res.body.data.deals[0]).toMatchObject({ id: 'deal-c1' });
+    expect(res.body.data.lastInteractions).toHaveLength(1);
+    expect(res.body.data.lastInteractions[0]).toMatchObject({ id: 'int-c1' });
+    // Buscou deals por companyId + tenant do apiKey (não por leadId).
+    const dealWhere = (prismaMock.deal.findMany.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { tenantId: string; companyId: string };
+    };
+    expect(dealWhere.where.tenantId).toBe('tenant-z');
+    expect(dealWhere.where.companyId).toBe('company-1');
+    const intWhere = (prismaMock.interaction.findMany.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { tenantId: string; companyId: string };
+    };
+    expect(intWhere.where.companyId).toBe('company-1');
+  });
+
+  it('lead com companyId de empresa soft-deleted → company=null (sem fallback por telefone)', async () => {
+    // Lead resolvido tem companyId, mas a empresa está indisponível (deletada).
+    prismaMock.lead.findFirst.mockResolvedValue({
+      id: 'lead-2',
+      name: 'Ciclano',
+      email: null,
+      phone: '11988887777',
+      company: 'Empresa Antiga',
+      companyId: 'company-deleted',
+    } as never);
+    // findFirst da empresa por id retorna null (soft-deleted → deletedAt: null filtra fora).
+    prismaMock.company.findFirst.mockResolvedValue(null as never);
+    prismaMock.deal.findMany.mockResolvedValue([] as never);
+    prismaMock.interaction.findMany.mockResolvedValue([] as never);
+
+    const res = await request(makeApp())
+      .get('/contacts/resolve?phone=11988887777')
+      .set('x-api-key', 'tenant-w|contacts:read');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.lead).toMatchObject({ id: 'lead-2' });
+    // Empresa indisponível NÃO deve cair no fallback por telefone → company=null.
+    expect(res.body.data.company).toBeNull();
+    // company.findFirst chamado UMA vez (só a busca por id do lead), sem fallback.
+    expect(prismaMock.company.findFirst).toHaveBeenCalledOnce();
+    const companyWhere = (prismaMock.company.findFirst.mock.calls[0] as unknown as unknown[])[0] as {
+      where: { id?: string; phone?: unknown };
+    };
+    expect(companyWhere.where.id).toBe('company-deleted');
+    expect(companyWhere.where.phone).toBeUndefined();
+  });
 });

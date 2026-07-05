@@ -23,6 +23,8 @@ export const whatsappService = {
   async create(tenantId: string, data: CreateWhatsAppConnectionData) {
     await planLimitsService.enforceLimit(tenantId, 'whatsappConnections');
 
+    const isCopilot = data.isCopilot ?? false;
+
     const connection = await prisma.whatsAppConnection.create({
       data: {
         tenantId,
@@ -30,9 +32,19 @@ export const whatsappService = {
         provider: data.provider,
         status: WhatsAppConnectionStatus.DISCONNECTED,
         config: safeEncryptConfig(data.config) as any,
-        isCopilot: data.isCopilot ?? false,
+        isCopilot,
       },
     });
+
+    // Invariante: no máximo UMA conexão copiloto por tenant. Se esta foi criada
+    // como copiloto, zera o flag das demais numa transação (o id só existe após
+    // o create, por isso o zeramento vem depois).
+    if (isCopilot) {
+      await prisma.whatsAppConnection.updateMany({
+        where: { tenantId, id: { not: connection.id }, isCopilot: true },
+        data: { isCopilot: false },
+      });
+    }
 
     planLimitsService.invalidateUsage(tenantId).catch(() => {});
 
@@ -83,6 +95,24 @@ export const whatsappService = {
     }
     if (data.status === WhatsAppConnectionStatus.CONNECTED) {
       updateData.lastConnectedAt = new Date();
+    }
+
+    // Invariante: no máximo UMA conexão copiloto por tenant. Quando esta conexão
+    // passa a ser copiloto, zera o flag das demais e atualiza esta na MESMA
+    // transação, garantindo consistência mesmo com writes concorrentes.
+    if (data.isCopilot === true) {
+      const [, connection] = await prisma.$transaction([
+        prisma.whatsAppConnection.updateMany({
+          where: { tenantId, id: { not: data.id }, isCopilot: true },
+          data: { isCopilot: false },
+        }),
+        prisma.whatsAppConnection.update({
+          where: { id: data.id },
+          data: updateData,
+        }),
+      ]);
+
+      return connection;
     }
 
     const connection = await prisma.whatsAppConnection.update({
