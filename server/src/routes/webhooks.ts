@@ -283,6 +283,36 @@ router.post('/email/resend', async (req: Request, res: Response) => {
 });
 
 // ========================
+// ZapSign Webhook (assinatura eletrônica — Upgrade RD P2, req 19)
+// ========================
+
+// POST /api/webhooks/zapsign — status de assinatura (público, sem CSRF).
+// Identifica o tenant pelo envelopeId (Proposal.signatureEnvelopeId) e valida o
+// HMAC com o webhookSecret DESSE tenant (feito dentro do signatureService). A
+// assinatura é computada sobre JSON.stringify(req.body) — mesmo proxy dos demais
+// webhooks IN (express.json já consumiu o corpo cru).
+router.post('/zapsign', async (req: Request, res: Response) => {
+  try {
+    const { signatureService } = await import('../services/signatureService.js');
+    const rawBody = JSON.stringify(req.body ?? {});
+    const headerSignature =
+      (req.headers['x-zapsign-signature'] as string | undefined) ||
+      (req.headers['x-signature'] as string | undefined) ||
+      (req.headers['x-hub-signature-256'] as string | undefined);
+
+    const result = await signatureService.handleWebhook(rawBody, headerSignature);
+    if (!result.handled) {
+      logger.info('ZapSign webhook não processado', { reason: result.reason });
+    }
+    // Sempre 200 para não provocar retry do provedor em casos não-acionáveis.
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Erro ao processar webhook ZapSign', error);
+    res.status(200).json({ received: true });
+  }
+});
+
+// ========================
 // Lead Capture Webhook (public, authenticated via API key)
 // ========================
 

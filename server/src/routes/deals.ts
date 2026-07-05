@@ -14,6 +14,7 @@ import prisma from '../config/database.js';
 import { createAuditLog } from '../utils/auditLogger.js';
 import { dispatchTrigger } from '../jobs/automationEngine.js';
 import { approvalService } from '../services/approvalService.js';
+import { proposalService } from '../services/proposalService.js';
 
 const router = Router();
 
@@ -362,6 +363,44 @@ router.get('/:id/proposal.pdf', async (req, res, next) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="proposta-${req.params.id}.pdf"`);
     res.send(pdf);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/deals/:id/proposals - Gera uma nova proposta (nova versão) a partir
+// de um modelo (opcional) → PDF anexado (Attachment source=PROPOSAL) → Proposal
+// → Interaction. Regenerar cria nova versão. (Upgrade RD P2, req 18)
+const generateProposalSchema = z.object({
+  templateId: z.string().uuid().optional(),
+});
+router.post('/:id/proposals', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { templateId } = generateProposalSchema.parse(req.body ?? {});
+    const proposal = await proposalService.generate(req.user.tenantId, req.params.id, {
+      templateId,
+      userId: req.user.userId,
+    });
+    res.status(201).json({ status: 201, data: proposal });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
+  }
+});
+
+// GET /api/deals/:id/proposals - Histórico de versões de proposta do deal.
+router.get('/:id/proposals', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const proposals = await proposalService.listForDeal(req.user.tenantId, req.params.id);
+    res.json({ status: 200, data: proposals });
   } catch (error) {
     next(error);
   }

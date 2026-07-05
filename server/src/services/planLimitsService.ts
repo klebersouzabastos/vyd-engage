@@ -6,12 +6,25 @@ import { cacheGet, cacheSet, cacheDel, cacheDelPattern } from '../config/redis.j
 const PLAN_LIMITS_TTL = 3600; // 1 hour — plan data rarely changes
 const USAGE_TTL = 300; // 5 minutes — usage counts change more often
 
+// Defaults de armazenamento de anexos (MB) por tipo de plano (Upgrade RD P2).
+// Usados quando o JSON `limits` do plano não traz `maxStorageMB`. Enterprise =
+// Infinity (ilimitado; representado como 0 nas respostas de limite, como os demais).
+const STORAGE_MB_DEFAULTS: Record<string, number> = {
+  STARTER: 50,
+  PRO: 500,
+  ENTERPRISE: Infinity,
+};
+
 export interface PlanLimits {
   maxLeads: number;
   maxUsers: number;
   maxAutomations: number;
   maxWhatsAppConnections: number;
   maxEmailConfigs: number;
+  // Documentos & integrações externas (Upgrade RD P2) — limite de armazenamento
+  // de anexos em MB. Opcional no JSON `limits` do plano; quando ausente, cai nos
+  // defaults por tipo de plano (ver STORAGE_MB_DEFAULTS / resolveStorageLimitMB).
+  maxStorageMB?: number;
   features: {
     whatsapp: boolean;
     email: boolean;
@@ -51,6 +64,24 @@ export const planLimitsService = {
     const limits = subscription.plan.limits as unknown as PlanLimits;
     await cacheSet(cacheKey, limits, PLAN_LIMITS_TTL);
     return limits;
+  },
+
+  /**
+   * Resolve o limite de armazenamento de anexos (MB) do tenant (Upgrade RD P2).
+   * Prioridade: `maxStorageMB` no JSON `limits` do plano → default por tipo de
+   * plano (STORAGE_MB_DEFAULTS) → 50MB (fallback conservador). Retorna Infinity
+   * para planos ilimitados. Sem assinatura, cai no fallback (não lança).
+   */
+  async resolveStorageLimitMB(tenantId: string): Promise<number> {
+    const subscription = await prisma.subscription.findUnique({
+      where: { tenantId },
+      include: { plan: true },
+    });
+    const limits = (subscription?.plan?.limits ?? {}) as Partial<PlanLimits>;
+    if (typeof limits.maxStorageMB === 'number') return limits.maxStorageMB;
+    const planType = subscription?.plan?.type;
+    if (planType && planType in STORAGE_MB_DEFAULTS) return STORAGE_MB_DEFAULTS[planType];
+    return STORAGE_MB_DEFAULTS.STARTER;
   },
 
   async getUsage(tenantId: string): Promise<PlanUsage> {

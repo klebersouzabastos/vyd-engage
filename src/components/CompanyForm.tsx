@@ -6,13 +6,14 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ClientStatus, Company, CompanySize, ContractHolder } from '../types';
 import type { CompanySegment } from '../types/sales';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { FieldError } from './register/FieldError';
 import { companyFormSchema } from '../utils/validation/formSchemas';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { useAutoFocus } from '../hooks/useFocusManagement';
 import { apiClient } from '../services/api/client';
 import { PresetField } from './settings/PresetField';
+import { CnpjEnrichDialog } from './companies/CnpjEnrichDialog';
 
 const SIZE_OPTIONS: { value: CompanySize; label: string }[] = [
   { value: 'MICRO', label: 'Micro' },
@@ -52,9 +53,14 @@ interface CompanyFormProps {
 
 export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
   const [name, setName] = useState(company?.name || '');
+  const [fantasyName, setFantasyName] = useState(company?.fantasyName || '');
+  const [cnpj, setCnpj] = useState(company?.cnpj || '');
   const [domain, setDomain] = useState(company?.domain || '');
   const [industry, setIndustry] = useState(company?.industry || '');
   const [size, setSize] = useState<CompanySize | ''>(company?.size || '');
+
+  // Enriquecimento por CNPJ (req 20) — diff campo a campo antes de aplicar.
+  const [enrichOpen, setEnrichOpen] = useState(false);
   const [segmentId, setSegmentId] = useState<string>(company?.segmentId || NO_SEGMENT);
   const [segments, setSegments] = useState<CompanySegment[]>([]);
   const [phone, setPhone] = useState(company?.phone || '');
@@ -138,6 +144,20 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
     return Object.keys(errors).length === 0;
   };
 
+  // Aplica ao formulário apenas os campos que o usuário marcou no diff de CNPJ.
+  // As chaves espelham o backend (cnpjService): name, fantasyName, address,
+  // industry, size. Nunca sobrescreve silenciosamente — só o que veio marcado.
+  const applyEnrichment = (fields: Record<string, string | null>) => {
+    if ('name' in fields) setName(fields.name ?? '');
+    if ('fantasyName' in fields) setFantasyName(fields.fantasyName ?? '');
+    if ('address' in fields) setAddress(fields.address ?? '');
+    if ('industry' in fields) setIndustry(fields.industry ?? '');
+    if ('size' in fields) {
+      const s = fields.size ?? '';
+      setSize((SIZE_OPTIONS.some((o) => o.value === s) ? s : '') as CompanySize | '');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -158,6 +178,8 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
       setSaving(true);
       await onSave({
         name: name.trim(),
+        fantasyName: fantasyName.trim() || null,
+        cnpj: cnpj.trim() || null,
         domain: domain.trim() || null,
         industry: industry.trim() || null,
         size: size || null,
@@ -214,6 +236,45 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
           error={fieldErrors.name as string}
           touched={touchedFields.name}
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="company-fantasy-name">Nome fantasia</Label>
+          <Input
+            id="company-fantasy-name"
+            value={fantasyName}
+            onChange={(e) => setFantasyName(e.target.value)}
+            placeholder="Nome fantasia"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="company-cnpj">CNPJ</Label>
+          <div className="mt-1 flex gap-2">
+            <Input
+              id="company-cnpj"
+              value={cnpj}
+              onChange={(e) => setCnpj(e.target.value)}
+              placeholder="00.000.000/0000-00"
+              maxLength={18}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEnrichOpen(true)}
+              disabled={cnpj.replace(/\D/g, '').length !== 14}
+              className="shrink-0 gap-2"
+              title="Consultar dados na Receita Federal pelo CNPJ"
+            >
+              <Sparkles size={16} />
+              Enriquecer
+            </Button>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Preencha 14 dígitos para buscar razão social, endereço e mais.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -516,6 +577,14 @@ export function CompanyForm({ company, onSave, onCancel }: CompanyFormProps) {
           {company ? 'Salvar' : 'Criar'}
         </Button>
       </div>
+
+      <CnpjEnrichDialog
+        open={enrichOpen}
+        onOpenChange={setEnrichOpen}
+        cnpj={cnpj}
+        companyId={company?.id}
+        onApply={applyEnrichment}
+      />
     </form>
   );
 }

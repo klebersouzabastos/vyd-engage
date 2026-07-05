@@ -253,6 +253,12 @@ import teamRoutes from './routes/teams.js';
 import permissionProfileRoutes from './routes/permissionProfiles.js';
 import approvalRoutes from './routes/approvals.js';
 import trashRoutes from './routes/trash.js';
+// Documentos & integrações externas (Upgrade RD P2)
+import attachmentRoutes from './routes/attachments.js';
+import proposalTemplateRoutes from './routes/proposalTemplates.js';
+import integrationRoutes from './routes/integrations.js';
+import phoneRoutes from './routes/phone.js';
+import proposalRoutes from './routes/proposals.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -343,6 +349,13 @@ v1Router.use('/teams', csrfProtection);
 v1Router.use('/permission-profiles', csrfProtection);
 v1Router.use('/approvals', csrfProtection);
 v1Router.use('/trash', csrfProtection);
+// Documentos & integrações externas (Upgrade RD P2) — rotas autenticadas → CSRF.
+// (`/integrations` já está na whitelist acima; o webhook público /webhooks/zapsign
+//  do provedor de assinatura fica FORA do CSRF, no grupo /webhooks — dono B3.)
+v1Router.use('/attachments', csrfProtection);
+v1Router.use('/proposal-templates', csrfProtection);
+v1Router.use('/proposals', csrfProtection);
+v1Router.use('/phone', csrfProtection);
 // scaffolding anchor — do not remove
 // plop:csrf
 
@@ -406,6 +419,16 @@ v1Router.use('/teams', teamRoutes);
 v1Router.use('/permission-profiles', permissionProfileRoutes);
 v1Router.use('/approvals', approvalRoutes);
 v1Router.use('/trash', trashRoutes);
+// Documentos & integrações externas (Upgrade RD P2). `integrationRoutes` é
+// montado no MESMO prefixo `/integrations` que o calendar (acima) mas ANTES na
+// ordem de registro? Não: o calendar já foi montado. Como os subcaminhos de B3
+// (signature/*, phone/*) não colidem com os do calendar (google/*), montar aqui
+// é seguro — Express tenta ambos os routers e cada um trata só seus paths.
+v1Router.use('/attachments', attachmentRoutes);
+v1Router.use('/proposal-templates', proposalTemplateRoutes);
+v1Router.use('/integrations', integrationRoutes);
+v1Router.use('/phone', phoneRoutes);
+v1Router.use('/proposals', proposalRoutes);
 // scaffolding anchor — do not remove
 // plop:mount
 

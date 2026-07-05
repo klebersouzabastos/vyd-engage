@@ -18,6 +18,9 @@ export type ContractFilter = 'expiring' | 'expired' | 'competitor' | 'ours' | 'n
 
 export interface CreateCompanyData {
   name: string;
+  // Upgrade RD P2 (req 20) — preenchíveis pelo enriquecimento por CNPJ.
+  fantasyName?: string | null;
+  cnpj?: string | null;
   domain?: string | null;
   industry?: string | null;
   size?: CompanySize | null;
@@ -75,6 +78,8 @@ export const companyService = {
       data: {
         tenantId,
         name: data.name,
+        fantasyName: data.fantasyName || null,
+        cnpj: data.cnpj || null,
         domain: data.domain || null,
         industry: data.industry || null,
         size: data.size || null,
@@ -326,6 +331,8 @@ export const companyService = {
 
     const updateData: any = {
       name: data.name,
+      fantasyName: data.fantasyName,
+      cnpj: data.cnpj,
       domain: data.domain,
       industry: data.industry,
       size: data.size,

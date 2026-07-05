@@ -228,6 +228,10 @@ export interface Company {
   id: string;
   tenantId: string;
   name: string;
+  /** Nome fantasia (name = razão social). Preenchível via enriquecimento por CNPJ (req 20). */
+  fantasyName?: string | null;
+  /** CNPJ da empresa (req 20 — enriquecimento). */
+  cnpj?: string | null;
   domain?: string | null;
   industry?: string | null;
   size?: CompanySize | null;

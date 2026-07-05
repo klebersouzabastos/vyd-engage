@@ -204,6 +204,11 @@ model Tenant {
   teams                 Team[]
   permissionProfiles    PermissionProfile[]
   approvalRequests      ApprovalRequest[]
+  // Documentos & integrações externas (Upgrade RD P2)
+  attachments           Attachment[]
+  proposalTemplates     ProposalTemplate[]
+  proposals             Proposal[]
+  integrationConfigs    IntegrationConfig[]
 
   @@index([slug])
 }
@@ -1207,6 +1212,7 @@ enum NotificationType {
   MULTI_SALE_CREATED
   APPROVAL_REQUEST
   APPROVAL_DECIDED
+  PROPOSAL_SIGNED
   SYSTEM
 }
 
@@ -2286,4 +2292,116 @@ model ApprovalRequest {
 
   @@index([tenantId, status])
   @@map("approval_requests")
+}
+
+// ============================================
+// DOCUMENTOS & INTEGRAÇÕES EXTERNAS (Upgrade RD P2)
+// (arquivos/anexos, propostas + assinatura, integrações plugáveis gated)
+// Camada ADITIVA: sem credencial de provedor, assinatura/telefonia ficam
+// ocultas e os endpoints respondem "não configurado" (gating gracioso).
+// ============================================
+
+enum SignatureStatus {
+  NONE
+  SENT
+  VIEWED
+  SIGNED
+  REFUSED
+  EXPIRED
+}
+
+enum IntegrationKind {
+  SIGNATURE
+  PHONE
+}
+
+// Anexo (metadados). Os bytes ficam em AttachmentBlob (provider "db") ou no
+// objeto S3-compatível (provider "s3", gated por STORAGE_S3_*). storageKey liga
+// o metadado ao blob/objeto. Soft-delete integra a Lixeira (P1).
+model Attachment {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  mimeType        String
+  size            Int // bytes
+  storageProvider String    @default("db") // "db" | "s3"
+  storageKey      String // db: id do AttachmentBlob; s3: object key
+  dealId          String? // vínculo opcional
+  companyId       String?
+  source          String    @default("UPLOAD") // UPLOAD | PROPOSAL
+  uploadedById    String?
+  deletedAt       DateTime? // soft-delete (integra Lixeira P1)
+  createdAt       DateTime  @default(now())
+
+  proposal Proposal? // 1:1 quando source=PROPOSAL
+
+  @@index([tenantId, dealId])
+  @@index([tenantId, companyId])
+  @@index([tenantId, deletedAt])
+  @@map("attachments")
+}
+
+// Blob separado para não carregar bytes em listas de metadados.
+model AttachmentBlob {
+  id   String @id @default(uuid())
+  data Bytes  @map("data")
+
+  @@map("attachment_blobs")
+}
+
+model ProposalTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  bodyHtml    String // rich HTML com variáveis {{...}} + marcador de tabela de itens
+  isDefault   Boolean  @default(false)
+  status      String   @default("PUBLISHED") // DRAFT | PUBLISHED
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  proposals Proposal[]
+
+  @@index([tenantId])
+  @@map("proposal_templates")
+}
+
+model Proposal {
+  id                  String            @id @default(uuid())
+  tenantId            String
+  tenant              Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dealId              String
+  templateId          String?
+  template            ProposalTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  version             Int // incremental por deal
+  attachmentId        String            @unique // o PDF gerado (Attachment source=PROPOSAL)
+  attachment          Attachment        @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  totalValue          Decimal?          @db.Decimal(12, 2)
+  signatureStatus     SignatureStatus   @default(NONE) // NONE|SENT|VIEWED|SIGNED|REFUSED|EXPIRED
+  signatureEnvelopeId String? // id no provedor de assinatura
+  createdById         String?
+  createdAt           DateTime          @default(now())
+
+  @@index([tenantId, dealId])
+  @@index([tenantId, signatureEnvelopeId])
+  @@map("proposals")
+}
+
+// Integrações por tenant (credencial encrypted; gated). Uma config por kind.
+model IntegrationConfig {
+  id        String          @id @default(uuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  kind      IntegrationKind // SIGNATURE | PHONE
+  provider  String // "zapsign" | "twilio"
+  config    Json // encrypted (apiKey, webhookSecret, accountSid, authToken, ...)
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([tenantId, kind])
+  @@index([tenantId])
+  @@map("integration_configs")
 }

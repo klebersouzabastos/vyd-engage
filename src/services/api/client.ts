@@ -57,6 +57,22 @@ import type {
   UpsertGoalInput,
   PendingApprovalResult,
 } from '../../types/governance';
+import type {
+  Attachment,
+  StorageUsage,
+  ProposalTemplate,
+  CreateProposalTemplateInput,
+  UpdateProposalTemplateInput,
+  Proposal,
+  GenerateProposalInput,
+  SendSignatureInput,
+  IntegrationStatus,
+  SignatureConfigInput,
+  PhoneConfigInput,
+  PhoneTokenResult,
+  LogCallInput,
+  EnrichCnpjResult,
+} from '../../types/documents';
 
 // Detect API URL automatically in production, use env var or localhost in development
 const getApiUrl = () => {
@@ -2917,6 +2933,219 @@ class ApiClient {
     const qs = query.toString();
     return this.request<{ status: number; data: Record<string, unknown> }>(
       `/api/v1/reports/team-performance${qs ? `?${qs}` : ''}`
+    );
+  }
+
+  // ========================================================
+  // Documentos & integrações externas (Upgrade RD P2, reqs 17–22)
+  // ========================================================
+
+  // ── Central de arquivos (req 22) ─────────────────────
+
+  /**
+   * Envia um anexo (multipart). Não usa `request()` porque este força
+   * Content-Type application/json — o FormData precisa deixar o browser definir
+   * o boundary. Mantém cookie + CSRF como o resto do client. `dealId`/`companyId`
+   * vinculam o anexo à superfície (deal ou empresa).
+   */
+  async uploadAttachment(
+    file: File,
+    link: { dealId?: string; companyId?: string }
+  ): Promise<{ status: number; data: Attachment }> {
+    const csrfToken = this.getCsrfToken();
+    const headers: Record<string, string> = {};
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    const formData = new FormData();
+    formData.append('file', file);
+    if (link.dealId) formData.append('dealId', link.dealId);
+    if (link.companyId) formData.append('companyId', link.companyId);
+    const response = await fetch(`${this.baseURL}/api/v1/attachments`, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      let errorData: Record<string, unknown>;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: response.statusText || 'Falha no upload' };
+      }
+      const message =
+        (errorData.error as string) || (errorData.message as string) || 'Falha no upload';
+      throw new ApiError(message, response.status, errorData);
+    }
+    return response.json();
+  }
+
+  /** Lista metadados de anexos (sem bytes) de um deal OU empresa. */
+  async getAttachments(link: { dealId?: string; companyId?: string }) {
+    const params = new URLSearchParams();
+    if (link.dealId) params.set('dealId', link.dealId);
+    if (link.companyId) params.set('companyId', link.companyId);
+    const qs = params.toString();
+    return this.request<{ status: number; data: Attachment[] }>(
+      `/api/v1/attachments${qs ? `?${qs}` : ''}`
+    );
+  }
+
+  /** Baixa os bytes de um anexo como Blob (stream tenant-scoped no backend). */
+  async downloadAttachment(id: string): Promise<Blob> {
+    const response = await fetch(`${this.baseURL}/api/v1/attachments/${id}/download`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Falha ao baixar arquivo' }));
+      throw new ApiError(errorData.error || 'Falha ao baixar arquivo', response.status, errorData);
+    }
+    return response.blob();
+  }
+
+  /** Exclui (soft-delete) um anexo. */
+  async deleteAttachment(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/attachments/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /** Uso de armazenamento do tenant (barra de uso). */
+  async getStorageUsage() {
+    return this.request<{ status: number; data: StorageUsage }>('/api/v1/attachments/usage');
+  }
+
+  // ── Modelos de proposta (req 17) ─────────────────────
+
+  async getProposalTemplates() {
+    return this.request<{ status: number; data: ProposalTemplate[] }>(
+      '/api/v1/proposal-templates'
+    );
+  }
+
+  async getProposalTemplate(id: string) {
+    return this.request<{ status: number; data: ProposalTemplate }>(
+      `/api/v1/proposal-templates/${id}`
+    );
+  }
+
+  async createProposalTemplate(data: CreateProposalTemplateInput) {
+    return this.request<{ status: number; data: ProposalTemplate }>('/api/v1/proposal-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateProposalTemplate(id: string, data: UpdateProposalTemplateInput) {
+    return this.request<{ status: number; data: ProposalTemplate }>(
+      `/api/v1/proposal-templates/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  async deleteProposalTemplate(id: string) {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      `/api/v1/proposal-templates/${id}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  // ── Propostas geradas no deal (req 18) ───────────────
+
+  /** Gera uma nova proposta (nova versão) a partir de um modelo → PDF anexado. */
+  async generateProposal(dealId: string, data?: GenerateProposalInput) {
+    return this.request<{ status: number; data: Proposal }>(
+      `/api/v1/deals/${dealId}/proposals`,
+      { method: 'POST', body: JSON.stringify(data ?? {}) }
+    );
+  }
+
+  /** Lista as versões de proposta de um deal (histórico). */
+  async getDealProposals(dealId: string) {
+    return this.request<{ status: number; data: Proposal[] }>(
+      `/api/v1/deals/${dealId}/proposals`
+    );
+  }
+
+  // ── Assinatura eletrônica, gated (req 19) ────────────
+
+  async getSignatureStatus() {
+    return this.request<{ status: number; data: IntegrationStatus }>(
+      '/api/v1/integrations/signature/status'
+    );
+  }
+
+  async setSignatureConfig(data: SignatureConfigInput) {
+    return this.request<{ status: number; data: IntegrationStatus }>(
+      '/api/v1/integrations/signature',
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  async deleteSignatureConfig() {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      '/api/v1/integrations/signature',
+      { method: 'DELETE' }
+    );
+  }
+
+  /** Envia a proposta para assinatura. Sem credencial → 400 SIGNATURE_NOT_CONFIGURED. */
+  async sendProposalForSignature(proposalId: string, data: SendSignatureInput) {
+    return this.request<{ status: number; data: Proposal }>(
+      `/api/v1/proposals/${proposalId}/send-signature`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  // ── Enriquecimento por CNPJ (req 20) ─────────────────
+
+  /**
+   * Consulta o CNPJ (BrasilAPI, fallback ReceitaWS) e retorna um diff campo a
+   * campo. NÃO grava — o apply é o `updateCompany` normal com os campos marcados.
+   */
+  async enrichCnpj(data: { cnpj: string; companyId?: string }) {
+    return this.request<{ status: number; data: EnrichCnpjResult }>(
+      '/api/v1/companies/enrich-cnpj',
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  // ── Telefonia virtual, gated (req 21) ────────────────
+
+  async getPhoneStatus() {
+    return this.request<{ status: number; data: IntegrationStatus }>(
+      '/api/v1/integrations/phone/status'
+    );
+  }
+
+  async setPhoneConfig(data: PhoneConfigInput) {
+    return this.request<{ status: number; data: IntegrationStatus }>('/api/v1/integrations/phone', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePhoneConfig() {
+    return this.request<{ status: number; data: { deleted: boolean } }>(
+      '/api/v1/integrations/phone',
+      { method: 'DELETE' }
+    );
+  }
+
+  /** Access token do provedor p/ o webphone. Sem credencial → 400 PHONE_NOT_CONFIGURED. */
+  async getPhoneToken() {
+    return this.request<{ status: number; data: PhoneTokenResult }>('/api/v1/phone/token', {
+      method: 'POST',
+    });
+  }
+
+  /** Registra o desfecho de uma ligação como Interaction CALL OUTBOUND. */
+  async logCall(data: LogCallInput) {
+    return this.request<{ status: number; data: Record<string, unknown> }>(
+      '/api/v1/phone/log-call',
+      { method: 'POST', body: JSON.stringify(data) }
     );
   }
 }

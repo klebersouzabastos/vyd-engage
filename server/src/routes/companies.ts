@@ -7,6 +7,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { ClientStatus, CompanySize, ContractHolder } from '@prisma/client';
 import { approvalService } from '../services/approvalService.js';
 import { visibilityScope, getEffective } from '../services/permissionService.js';
+import { cnpjService } from '../services/cnpjService.js';
 
 const router = Router();
 
@@ -17,6 +18,9 @@ router.use(tenantScope);
 // CONCORRENTE; datas coercidas; vencimento >= início quando ambas presentes (req 4).
 const companyFieldsSchema = z.object({
   name: z.string().min(1),
+  // Upgrade RD P2 (req 20) — campos preenchíveis pelo enriquecimento por CNPJ.
+  fantasyName: z.string().optional().nullable(),
+  cnpj: z.string().optional().nullable(),
   domain: z.string().optional().nullable(),
   industry: z.string().optional().nullable(),
   size: z.nativeEnum(CompanySize).optional().nullable(),
@@ -130,6 +134,30 @@ router.get('/contracts/expiring', async (req, res, next) => {
     const result = await companyService.findExpiringContracts(req.user.tenantId);
     res.json({ status: 200, data: result });
   } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/companies/enrich-cnpj - Enriquecimento por CNPJ (req 20). Consulta
+// BrasilAPI (fallback ReceitaWS) e devolve um DIFF campo a campo. NÃO grava — o
+// apply é o PUT /companies/:id normal. Deve vir ANTES de /:id. (before /:id)
+const enrichCnpjSchema = z.object({
+  cnpj: z.string().min(1),
+  companyId: z.string().uuid().optional(),
+});
+
+router.post('/enrich-cnpj', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(createError('Authentication required', 401));
+    }
+    const { cnpj, companyId } = enrichCnpjSchema.parse(req.body);
+    const result = await cnpjService.enrich(req.user.tenantId, cnpj, companyId);
+    res.json({ status: 200, data: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
+    }
     next(error);
   }
 });
