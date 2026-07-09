@@ -155,6 +155,15 @@ import('./jobs/clientFollowUpChecker.js')
     logger.error('Failed to initialize client follow-up checker', error);
   });
 
+// Pendências de atestação: lembretes/digest + auto-criação por deal ganho (no Redis)
+import('./jobs/atestadoPendenciaChecker.js')
+  .then(({ initializeAtestadoPendenciaChecker }) => {
+    initializeAtestadoPendenciaChecker();
+  })
+  .catch((error) => {
+    logger.error('Failed to initialize atestado pendência checker', error);
+  });
+
 // Governança (Upgrade RD P1): expira aprovações vencidas + expurgo da lixeira +
 // semeia builtins de perfil de permissão (always active — lightweight, no Redis).
 import('./jobs/governanceJobs.js')
@@ -273,6 +282,8 @@ import phoneRoutes from './routes/phone.js';
 import proposalRoutes from './routes/proposals.js';
 // Contatos — resolução por telefone p/ a extensão Chrome (Upgrade RD P3, req 24)
 import contactRoutes from './routes/contacts.js';
+// Gestão de Atestados Técnicos (acervo + concorrências + pendências + currículos)
+import atestadoRoutes from './routes/atestados.js';
 // scaffolding anchor — do not remove (plop injects route imports below)
 // plop:import-route
 
@@ -370,6 +381,7 @@ v1Router.use('/attachments', csrfProtection);
 v1Router.use('/proposal-templates', csrfProtection);
 v1Router.use('/proposals', csrfProtection);
 v1Router.use('/phone', csrfProtection);
+v1Router.use('/atestados', csrfProtection);
 // Upgrade RD P3: `/contacts` (resolução por telefone p/ a extensão Chrome, req 24)
 // autentica por `X-API-Key` (não sessão/cookie) → FORA do CSRF, como `/zapier`.
 // NÃO adicionar csrfProtection aqui.
@@ -446,6 +458,7 @@ v1Router.use('/proposal-templates', proposalTemplateRoutes);
 v1Router.use('/integrations', integrationRoutes);
 v1Router.use('/phone', phoneRoutes);
 v1Router.use('/proposals', proposalRoutes);
+v1Router.use('/atestados', atestadoRoutes);
 // Contatos — resolução por telefone p/ a extensão Chrome (Upgrade RD P3, req 24).
 // API-key auth (X-API-Key), sem sessão/CSRF (fora da whitelist acima).
 v1Router.use('/contacts', contactRoutes);

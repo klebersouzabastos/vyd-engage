@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { AppShell } from '../components/shell/AppShell';
 import { RequireAuth } from '../components/RequireAuth';
+import { RequireCapability } from '../components/RequireCapability';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Loading fallback
@@ -97,6 +98,7 @@ const RoadmapPanelView = lazyNamed(() => import('../pages/RoadmapPanelView'), 'R
 const Suggestions = lazyNamed(() => import('../pages/Suggestions'), 'Suggestions');
 const DealSettings = lazyNamed(() => import('../pages/DealSettings'), 'DealSettings');
 const Approvals = lazyNamed(() => import('../pages/Approvals'), 'Approvals');
+const Atestados = lazyNamed(() => import('../pages/Atestados'), 'Atestados');
 const Trash = lazyNamed(() => import('../pages/Trash'), 'Trash');
 
 export const router = createBrowserRouter([
@@ -311,6 +313,10 @@ export const router = createBrowserRouter([
       {
         path: 'deep-research',
         element: DeepResearch,
+      },
+      {
+        path: 'atestados',
+        element: <RequireCapability cap="accessAtestados">{Atestados}</RequireCapability>,
       },
       {
         path: 'deep-research/painel',

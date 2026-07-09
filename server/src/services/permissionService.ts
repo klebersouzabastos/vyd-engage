@@ -30,7 +30,11 @@ export type Capability =
   | 'configure'
   | 'manageAutomations'
   | 'transferOwner'
-  | 'viewReports';
+  | 'viewReports'
+  // Gestão de Atestados Técnicos — acesso ao módulo (gate próprio) e gestão (escrita).
+  // Default OFF para USER/VIEWER: o acesso é restrito a um perfil específico.
+  | 'accessAtestados'
+  | 'manageAtestados';
 
 export type VisibilityLevel = 'PROPRIA' | 'EQUIPE' | 'GERAL';
 
@@ -52,6 +56,8 @@ export interface Capabilities {
   manageAutomations: boolean;
   transferOwner: boolean;
   viewReports: boolean;
+  accessAtestados: boolean;
+  manageAtestados: boolean;
 }
 
 /** Permissões por-entidade (create/edit/delete) por tipo de registro (req 13). */
@@ -118,6 +124,8 @@ const ALL_CAPS_TRUE: Capabilities = {
   manageAutomations: true,
   transferOwner: true,
   viewReports: true,
+  accessAtestados: true,
+  manageAtestados: true,
 };
 
 const USER_CAPS: Capabilities = {
@@ -132,6 +140,9 @@ const USER_CAPS: Capabilities = {
   manageAutomations: false,
   transferOwner: false,
   viewReports: true,
+  // Acesso ao módulo de Atestados é restrito a um perfil específico (default OFF).
+  accessAtestados: false,
+  manageAtestados: false,
 };
 
 const VIEWER_CAPS: Capabilities = {
@@ -143,6 +154,8 @@ const VIEWER_CAPS: Capabilities = {
   manageAutomations: false,
   transferOwner: false,
   viewReports: true,
+  accessAtestados: false,
+  manageAtestados: false,
 };
 
 const GERAL_VISIBILITY: VisibilityMap = { deals: 'GERAL', companies: 'GERAL', contacts: 'GERAL' };

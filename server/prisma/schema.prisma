@@ -188,6 +188,8 @@ model Tenant {
   // limiares de antecedência do alerta de vencimento (lista decrescente, em dias).
   clientFollowUpDays    Int                    @default(30)
   contractAlertDays     Json                   @default("[90,60,30]")
+  // Atestados: antecedência (dias) do alerta de pendência próxima do prazo.
+  atestadoAlertDays     Int                    @default(7)
   products              Product[]
   goals                 Goal[]
   stageTaskTemplates    StageTaskTemplate[]
@@ -214,6 +216,15 @@ model Tenant {
   proposalTemplates     ProposalTemplate[]
   proposals             Proposal[]
   integrationConfigs    IntegrationConfig[]
+  // Gestão de Atestados Técnicos (acervo técnico + concorrências + pendências)
+  profissionais         Profissional[]
+  atestados             Atestado[]
+  atestadoTerceiros     Terceiro[]
+  concorrencias         Concorrencia[]
+  pendencias            Pendencia[]
+  pendenciaStatuses     PendenciaStatus[]
+  curriculos            Curriculo[]
+  atestadoTaxonomias    AtestadoTaxonomia[]
 
   @@index([slug])
 }
@@ -1229,6 +1240,10 @@ enum NotificationType {
   APPROVAL_REQUEST
   APPROVAL_DECIDED
   PROPOSAL_SIGNED
+  ATESTADO_PENDENCIA_DUE
+  ATESTADO_PENDENCIA_OVERDUE
+  ATESTADO_ANALISE_CONCLUIDA
+  ATESTADO_RT_DESLIGADO
   SYSTEM
 }
 
@@ -1489,6 +1504,7 @@ enum ImportType {
   DEALS
   INTERACTIONS
   COMPANIES
+  ATESTADOS
 }
 
 enum ImportStatus {
@@ -2423,4 +2439,405 @@ model IntegrationConfig {
   @@unique([tenantId, kind])
   @@index([tenantId])
   @@map("integration_configs")
+}
+
+// ============================================
+// GESTÃO DE ATESTADOS TÉCNICOS (Acervo técnico + Inteligência de concorrências)
+// ============================================
+
+enum AtestadoOrigem {
+  PROPRIO
+  TERCEIRO
+}
+
+// Tipo de acervo que o atestado comprova (a legislação de licitações exige os dois
+// separadamente: técnico-operacional = da empresa; técnico-profissional = do RT).
+enum AcervoTipo {
+  OPERACIONAL
+  PROFISSIONAL
+  AMBOS
+}
+
+enum VinculoProfissional {
+  SOCIO
+  CLT
+  CONTRATO
+  DESLIGADO
+}
+
+enum NaturezaParceria {
+  CONSORCIO
+  SUBCONTRATACAO
+  CESSAO_DE_ACERVO
+}
+
+// Estado do documento digital / extração de texto do atestado.
+enum AtestadoDocStatus {
+  SEM_DOCUMENTO
+  PENDENTE_EXTRACAO
+  OK
+  ILEGIVEL
+}
+
+enum ConcorrenciaStatus {
+  RASCUNHO
+  ANALISANDO
+  CONCLUIDA
+  ARQUIVADA
+}
+
+enum ExigenciaAcervo {
+  OPERACIONAL
+  PROFISSIONAL
+  INDEFINIDO
+}
+
+enum MatchStatus {
+  ATENDE
+  ATENDE_PARCIAL
+  NAO_ATENDE
+  REVISAR
+}
+
+enum PendenciaOrigem {
+  DEAL
+  CONTRATO
+  MANUAL
+}
+
+enum TaxonomiaTipo {
+  CATEGORIA
+  DISCIPLINA
+  SEGMENTO
+  SERVICO
+}
+
+// Profissional / Responsável Técnico — entidade de primeira classe (acervo
+// técnico-profissional). O vínculo com a empresa determina se o acervo dele habilita.
+model Profissional {
+  id              String              @id @default(uuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome            String
+  nomeNorm        String // normalizado p/ dedup (trim/lower/espaços únicos)
+  titulo          String? // formação/título
+  conselho        String? // CREA | CAU | ...
+  conselhoNum     String?
+  conselhoUF      String?
+  disciplinas     String[] // disciplinas de engenharia
+  segmento        String?
+  area            String?
+  vinculo         VinculoProfissional @default(CONTRATO)
+  vinculoInicio   DateTime?
+  vinculoFim      DateTime?
+  email           String?
+  telefone        String?
+  curriculoResumo String? @db.Text // corpo-base do currículo
+  importBatchId   String?
+  deletedAt       DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  responsavelLinks AtestadoResponsavel[]
+  curriculos       Curriculo[]
+
+  @@unique([tenantId, nomeNorm])
+  @@index([tenantId])
+  @@index([tenantId, importBatchId])
+  @@index([tenantId, vinculo])
+  @@map("profissionais")
+}
+
+// Empresa parceira dona de atestados de terceiros (consórcios/parcerias).
+model Terceiro {
+  id               String            @id @default(uuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empresa          String
+  contatoNome      String?
+  contatoEmail     String?
+  contatoTelefone  String?
+  validadeParceria DateTime?
+  condicoes        String?           @db.Text
+  usoLivre         Boolean           @default(false)
+  naturezaParceria NaturezaParceria?
+  deletedAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  atestados Atestado[]
+
+  @@index([tenantId])
+  @@map("atestado_terceiros")
+}
+
+// Atestado técnico / CAT — a unidade do acervo.
+model Atestado {
+  id            String @id @default(uuid())
+  tenantId      String
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  numero        String
+  caixa         String? // localização física do original (CX###)
+  contratante   String
+  contrato      String?
+  objeto        String    @db.Text
+  periodoTexto  String? // texto livre original da planilha
+  dataInicio    DateTime?
+  dataConclusao DateTime?
+  valorContrato Decimal?  @db.Decimal(14, 2)
+
+  origem     AtestadoOrigem @default(PROPRIO)
+  acervoTipo AcervoTipo     @default(AMBOS)
+
+  // Registro no conselho
+  artNumero  String?
+  catNumero  String?
+  conselho   String?
+  conselhoUF String?
+
+  // Documento digital + extração/indexação (RAG)
+  docStatus             AtestadoDocStatus @default(SEM_DOCUMENTO)
+  textoExtraido         String?           @db.Text
+  documentoAttachmentId String? // scalar (padrão Attachment.dealId)
+  indexadoEm            DateTime?
+
+  terceiroId    String?
+  terceiro      Terceiro? @relation(fields: [terceiroId], references: [id], onDelete: SetNull)
+  importBatchId String?
+  createdById   String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  responsaveis  AtestadoResponsavel[]
+  quantitativos AtestadoQuantitativo[]
+  chunks        AtestadoChunk[]
+  matches       ExigenciaMatch[]
+
+  @@unique([tenantId, origem, numero])
+  @@index([tenantId])
+  @@index([tenantId, origem])
+  @@index([tenantId, importBatchId])
+  @@index([tenantId, docStatus])
+  @@map("atestados")
+}
+
+model AtestadoResponsavel {
+  id             String       @id @default(uuid())
+  tenantId       String
+  atestadoId     String
+  atestado       Atestado     @relation(fields: [atestadoId], references: [id], onDelete: Cascade)
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  funcoes AtestadoFuncao[]
+
+  @@unique([atestadoId, profissionalId])
+  @@index([tenantId])
+  @@index([profissionalId])
+  @@map("atestado_responsaveis")
+}
+
+model AtestadoFuncao {
+  id            String              @id @default(uuid())
+  tenantId      String
+  responsavelId String
+  responsavel   AtestadoResponsavel @relation(fields: [responsavelId], references: [id], onDelete: Cascade)
+  funcao        String
+  funcaoNorm    String
+  categoria     String?
+  categoriaNorm String?
+  createdAt     DateTime            @default(now())
+
+  @@index([tenantId])
+  @@index([responsavelId])
+  @@map("atestado_funcoes")
+}
+
+// Quantitativo técnico estruturado (grandeza/valor/unidade) — casamento numérico.
+model AtestadoQuantitativo {
+  id         String   @id @default(uuid())
+  tenantId   String
+  atestadoId String
+  atestado   Atestado @relation(fields: [atestadoId], references: [id], onDelete: Cascade)
+  grandeza   String
+  valor      Decimal  @db.Decimal(18, 4)
+  unidade    String
+  descricao  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([atestadoId])
+  @@map("atestado_quantitativos")
+}
+
+// Trecho indexado do documento p/ busca semântica (RAG). embedding = pgvector.
+model AtestadoChunk {
+  id         String                        @id @default(uuid())
+  tenantId   String
+  atestadoId String
+  atestado   Atestado                      @relation(fields: [atestadoId], references: [id], onDelete: Cascade)
+  ordem      Int
+  texto      String                        @db.Text
+  embedding  Unsupported("vector(1536)")?
+  createdAt  DateTime                      @default(now())
+
+  @@index([tenantId, atestadoId])
+  @@map("atestado_chunks")
+}
+
+// Análise de Concorrência — edital + exigências extraídas + matriz de atendimento.
+model Concorrencia {
+  id                 String             @id @default(uuid())
+  tenantId           String
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  titulo             String
+  orgao              String?
+  editalTexto        String?            @db.Text
+  editalAttachmentId String?
+  dossieAttachmentId String?
+  status             ConcorrenciaStatus @default(RASCUNHO)
+  incluirTerceiros   Boolean            @default(false)
+  promptUsed         String             @default("")
+  analiseErro        String?
+  createdById        String?
+  deletedAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  exigencias ConcorrenciaExigencia[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("concorrencias")
+}
+
+model ConcorrenciaExigencia {
+  id               String          @id @default(uuid())
+  tenantId         String
+  concorrenciaId   String
+  concorrencia     Concorrencia    @relation(fields: [concorrenciaId], references: [id], onDelete: Cascade)
+  ordem            Int             @default(0)
+  descricao        String          @db.Text
+  acervo           ExigenciaAcervo @default(INDEFINIDO)
+  grandeza         String?
+  quantMinimo      Decimal?        @db.Decimal(18, 4)
+  unidade          String?
+  permiteSomatorio Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+
+  matches ExigenciaMatch[]
+
+  @@index([tenantId])
+  @@index([concorrenciaId])
+  @@map("concorrencia_exigencias")
+}
+
+// Casamento exigência ↔ atestado (matriz de atendimento).
+model ExigenciaMatch {
+  id              String                @id @default(uuid())
+  tenantId        String
+  exigenciaId     String
+  exigencia       ConcorrenciaExigencia @relation(fields: [exigenciaId], references: [id], onDelete: Cascade)
+  atestadoId      String
+  atestado        Atestado              @relation(fields: [atestadoId], references: [id], onDelete: Cascade)
+  status          MatchStatus           @default(REVISAR)
+  confianca       Float?
+  quantComprovado Decimal?              @db.Decimal(18, 4)
+  trecho          String?               @db.Text
+  incluido        Boolean               @default(true) // incluído na composição
+  manual          Boolean               @default(false) // ajuste manual do usuário
+  createdAt       DateTime              @default(now())
+
+  @@unique([exigenciaId, atestadoId])
+  @@index([tenantId])
+  @@index([exigenciaId])
+  @@map("concorrencia_matches")
+}
+
+// Etapa configurável do ciclo de vida de uma pendência (por tenant).
+model PendenciaStatus {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome      String
+  ordem     Int      @default(0)
+  isFinal   Boolean  @default(false)
+  builtin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  pendencias Pendencia[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("atestado_pendencia_status")
+}
+
+// Atestado pendente — serviço executado que ainda precisa ser atestado.
+model Pendencia {
+  id            String          @id @default(uuid())
+  tenantId      String
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  titulo        String
+  descricao     String?         @db.Text
+  responsavelId String? // User (scalar, padrão do repo)
+  prazo         DateTime?
+  statusId      String
+  status        PendenciaStatus @relation(fields: [statusId], references: [id])
+  origem        PendenciaOrigem @default(MANUAL)
+  dealId        String?
+  companyId     String?
+  osRef         String? // referência livre de OS / contrato guarda-chuva
+  atestadoId    String? // preenchido quando convertida em atestado
+  createdById   String?
+  deletedAt     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, statusId])
+  @@index([tenantId, prazo])
+  @@index([tenantId, dealId])
+  @@map("atestado_pendencias")
+}
+
+// Currículo estratégico de um profissional (gerado/salvo por concorrência).
+model Curriculo {
+  id             String       @id @default(uuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  titulo         String
+  segmento       String?
+  area           String?
+  disciplina     String?
+  corpo          String       @db.Text
+  concorrenciaId String? // scalar (opcional: CV sob medida p/ uma concorrência)
+  attachmentId   String? // PDF gerado (scalar)
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, profissionalId])
+  @@index([tenantId, concorrenciaId])
+  @@map("atestado_curriculos")
+}
+
+// Vocabulário controlado (categorias/disciplinas/segmentos/serviços).
+model AtestadoTaxonomia {
+  id        String        @id @default(uuid())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tipo      TaxonomiaTipo
+  nome      String
+  nomeNorm  String
+  builtin   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  @@unique([tenantId, tipo, nomeNorm])
+  @@index([tenantId, tipo])
+  @@map("atestado_taxonomias")
 }

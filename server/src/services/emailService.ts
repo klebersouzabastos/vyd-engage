@@ -5,6 +5,7 @@ import { logger } from '../utils/logger.js';
 import { PasswordResetEmail } from '../emails/PasswordResetEmail.js';
 import { EmailVerificationEmail } from '../emails/EmailVerificationEmail.js';
 import { InvitationEmail } from '../emails/InvitationEmail.js';
+import { AtestadoPendenciaEmail, type PendenciaLine } from '../emails/AtestadoPendenciaEmail.js';
 
 // Resend client initialization
 let resendClient: Resend | null = null;
@@ -102,6 +103,13 @@ export const emailTemplates = {
       html: await render(
         createElement(InvitationEmail, { inviterName, companyName, invitationLink, role })
       ),
+    };
+  },
+
+  async atestadoPendencias(pendencias: PendenciaLine[], appUrl: string) {
+    return {
+      subject: `Atestados pendentes (${pendencias.length}) - VYD Engage`,
+      html: await render(createElement(AtestadoPendenciaEmail, { pendencias, appUrl })),
     };
   },
 };
