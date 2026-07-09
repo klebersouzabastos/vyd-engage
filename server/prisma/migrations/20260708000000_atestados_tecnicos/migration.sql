@@ -468,4 +468,4 @@ ALTER TABLE "atestado_taxonomias" ADD CONSTRAINT "atestado_taxonomias_tenantId_f
 
 
 -- Atestados: limiar configuravel de antecedencia do alerta de pendencias (req 33).
-ALTER TABLE "tenants" ADD COLUMN IF NOT EXISTS "atestadoAlertDays" INTEGER NOT NULL DEFAULT 7;
+ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "atestadoAlertDays" INTEGER NOT NULL DEFAULT 7;
