@@ -28,6 +28,7 @@ const TITLES: Array<[string, string]> = [
   ['/app/suggestions', 'Sugestões'],
   ['/app/deep-research/painel', 'Painel de desdobramento'],
   ['/app/deep-research', 'Inteligência de Mercado'],
+  ['/app/atestados', 'Atestados Técnicos'],
   ['/app/settings/deal-config', 'Config. de Negócios'],
   ['/app/settings/products', 'Produtos'],
   ['/app/settings/import', 'Importar'],

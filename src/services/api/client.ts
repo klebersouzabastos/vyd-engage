@@ -74,6 +74,22 @@ import type {
   EnrichCnpjResult,
 } from '../../types/documents';
 import type {
+  Atestado,
+  AtestadoInput,
+  AtestadoStatus,
+  BuscaResult,
+  ImportReport,
+  SugestaoResponse,
+  Profissional,
+  Terceiro,
+  Taxonomia,
+  TaxonomiaTipo,
+  Pendencia,
+  PendenciaStatus,
+  Concorrencia,
+  Curriculo,
+} from '../../types/atestados';
+import type {
   Meeting,
   ApplyMeetingInput,
   ApplyMeetingResult,
@@ -3278,6 +3294,122 @@ class ApiClient {
     const json = (await response.json()) as { status: number; data: ResolvedContact };
     return json.data;
   }
+
+  // ── Gestão de Atestados Técnicos ──────────────────────────────────────────
+  private async atGet<T>(path: string): Promise<T> {
+    const res = await this.request<{ status: number; data: T }>(`/api/v1/atestados${path}`);
+    return res.data;
+  }
+  private async atSend<T>(path: string, method: string, body?: unknown): Promise<T> {
+    const res = await this.request<{ status: number; data: T }>(`/api/v1/atestados${path}`, {
+      method,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+    return res.data;
+  }
+  private async atUpload<T>(path: string, file: File): Promise<T> {
+    const csrfToken = this.getCsrfToken();
+    const headers: Record<string, string> = {};
+    if (csrfToken) headers['x-csrf-token'] = csrfToken;
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${this.baseURL}/api/v1/atestados${path}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Falha no upload' }));
+      throw new ApiError((errorData.error as string) || 'Falha no upload', response.status, errorData);
+    }
+    const json = (await response.json()) as { status: number; data: T };
+    return json.data;
+  }
+
+  getAtestadoStatus() { return this.atGet<AtestadoStatus>('/status'); }
+
+  listAtestados(params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.atGet<Atestado[]>(`${qs ? `?${qs}` : ''}`);
+  }
+  getAtestado(id: string) { return this.atGet<Atestado>(`/${id}`); }
+  createAtestado(input: AtestadoInput) { return this.atSend<Atestado>('', 'POST', input); }
+  updateAtestado(id: string, input: Partial<AtestadoInput>) { return this.atSend<Atestado>(`/${id}`, 'PUT', input); }
+  deleteAtestado(id: string) { return this.atSend<{ id: string }>(`/${id}`, 'DELETE'); }
+  reindexAtestado(id: string) { return this.atSend<{ id: string; chunks: number }>(`/${id}/reindex`, 'POST'); }
+  buscaAtestados(q: string, includeTerceiros = false) {
+    const qs = new URLSearchParams({ q, includeTerceiros: String(includeTerceiros) }).toString();
+    return this.atGet<BuscaResult[]>(`/busca?${qs}`);
+  }
+  importAtestados(file: File) { return this.atUpload<ImportReport>('/import', file); }
+  sugerirAtestado(file: File) { return this.atUpload<SugestaoResponse>('/sugerir', file); }
+  uploadAtestadoDocumento(id: string, file: File) {
+    return this.atUpload<{ atestado: Atestado; extraction: { status: string; engine: string; message: string | null } }>(
+      `/${id}/documento`,
+      file
+    );
+  }
+
+  listProfissionais(params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.atGet<Profissional[]>(`/profissionais${qs ? `?${qs}` : ''}`);
+  }
+  getProfissional(id: string) { return this.atGet<Profissional>(`/profissionais/${id}`); }
+  createProfissional(data: Partial<Profissional>) { return this.atSend<Profissional>('/profissionais', 'POST', data); }
+  updateProfissional(id: string, data: Partial<Profissional>) { return this.atSend<Profissional>(`/profissionais/${id}`, 'PUT', data); }
+  deleteProfissional(id: string) { return this.atSend<{ id: string }>(`/profissionais/${id}`, 'DELETE'); }
+
+  listTerceiros(search?: string) {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+    return this.atGet<Terceiro[]>(`/terceiros${qs}`);
+  }
+  createTerceiro(data: Partial<Terceiro>) { return this.atSend<Terceiro>('/terceiros', 'POST', data); }
+  updateTerceiro(id: string, data: Partial<Terceiro>) { return this.atSend<Terceiro>(`/terceiros/${id}`, 'PUT', data); }
+  deleteTerceiro(id: string) { return this.atSend<{ id: string }>(`/terceiros/${id}`, 'DELETE'); }
+
+  listTaxonomias(tipo?: TaxonomiaTipo) {
+    const qs = tipo ? `?tipo=${tipo}` : '';
+    return this.atGet<Taxonomia[]>(`/taxonomias${qs}`);
+  }
+  createTaxonomia(tipo: TaxonomiaTipo, nome: string) { return this.atSend<Taxonomia>('/taxonomias', 'POST', { tipo, nome }); }
+  deleteTaxonomia(id: string) { return this.atSend<{ id: string }>(`/taxonomias/${id}`, 'DELETE'); }
+
+  listPendencias(params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.atGet<Pendencia[]>(`/pendencias${qs ? `?${qs}` : ''}`);
+  }
+  getPendencia(id: string) { return this.atGet<Pendencia>(`/pendencias/${id}`); }
+  createPendencia(data: Partial<Pendencia>) { return this.atSend<Pendencia>('/pendencias', 'POST', data); }
+  updatePendencia(id: string, data: Partial<Pendencia>) { return this.atSend<Pendencia>(`/pendencias/${id}`, 'PUT', data); }
+  deletePendencia(id: string) { return this.atSend<{ id: string }>(`/pendencias/${id}`, 'DELETE'); }
+  convertPendencia(id: string, input: AtestadoInput) { return this.atSend<{ atestado: Atestado }>(`/pendencias/${id}/converter`, 'POST', input); }
+  listPendenciaStatus() { return this.atGet<PendenciaStatus[]>('/pendencias/status'); }
+  createPendenciaStatus(data: { nome: string; ordem?: number; isFinal?: boolean }) { return this.atSend<PendenciaStatus>('/pendencias/status', 'POST', data); }
+  updatePendenciaStatus(id: string, data: Partial<PendenciaStatus>) { return this.atSend<PendenciaStatus>(`/pendencias/status/${id}`, 'PUT', data); }
+  deletePendenciaStatus(id: string) { return this.atSend<{ id: string }>(`/pendencias/status/${id}`, 'DELETE'); }
+
+  listConcorrencias() { return this.atGet<Concorrencia[]>('/concorrencias'); }
+  getConcorrencia(id: string) { return this.atGet<Concorrencia>(`/concorrencias/${id}`); }
+  createConcorrencia(data: Partial<Concorrencia>) { return this.atSend<Concorrencia>('/concorrencias', 'POST', data); }
+  updateConcorrencia(id: string, data: Partial<Concorrencia>) { return this.atSend<Concorrencia>(`/concorrencias/${id}`, 'PUT', data); }
+  deleteConcorrencia(id: string) { return this.atSend<{ id: string }>(`/concorrencias/${id}`, 'DELETE'); }
+  analisarConcorrencia(id: string) { return this.atSend<Concorrencia>(`/concorrencias/${id}/analisar`, 'POST'); }
+  addExigencia(id: string, data: Record<string, unknown>) { return this.atSend<Concorrencia>(`/concorrencias/${id}/exigencias`, 'POST', data); }
+  updateMatch(matchId: string, data: { status?: string; incluido?: boolean }) { return this.atSend<Concorrencia>(`/concorrencias/matches/${matchId}`, 'PUT', data); }
+  gerarDossie(id: string, curriculoIds?: string[]) { return this.atSend<{ concorrenciaId: string; attachmentId: string }>(`/concorrencias/${id}/dossie`, 'POST', { curriculoIds }); }
+
+  listCurriculos(profissionalId?: string) {
+    const qs = profissionalId ? `?profissionalId=${profissionalId}` : '';
+    return this.atGet<Curriculo[]>(`/curriculos${qs}`);
+  }
+  getCurriculo(id: string) { return this.atGet<Curriculo>(`/curriculos/${id}`); }
+  createCurriculo(data: Record<string, unknown>) { return this.atSend<Curriculo>('/curriculos', 'POST', data); }
+  gerarCurriculoPdf(id: string) { return this.atSend<{ curriculo: Curriculo; attachmentId: string }>(`/curriculos/${id}/pdf`, 'POST'); }
+  deleteCurriculo(id: string) { return this.atSend<{ id: string }>(`/curriculos/${id}`, 'DELETE'); }
+
+  getAtestadoConfig() { return this.atGet<{ atestadoAlertDays: number }>('/config'); }
+  updateAtestadoConfig(data: { atestadoAlertDays: number }) { return this.atSend<{ atestadoAlertDays: number }>('/config', 'PUT', data); }
 }
 
 // ── API Hub types (api-hub spec) ────────────────────

@@ -14,6 +14,8 @@ export const CAPABILITY_DEFAULTS: Record<BaseRole, Capabilities> = {
     manageAutomations: true,
     transferOwner: true,
     viewReports: true,
+    accessAtestados: true,
+    manageAtestados: true,
   },
   GESTOR: {
     exportData: true,
@@ -24,6 +26,8 @@ export const CAPABILITY_DEFAULTS: Record<BaseRole, Capabilities> = {
     manageAutomations: true,
     transferOwner: true,
     viewReports: true,
+    accessAtestados: true,
+    manageAtestados: true,
   },
   USER: {
     exportData: true,
@@ -34,6 +38,8 @@ export const CAPABILITY_DEFAULTS: Record<BaseRole, Capabilities> = {
     manageAutomations: false,
     transferOwner: false,
     viewReports: true,
+    accessAtestados: false,
+    manageAtestados: false,
   },
   VIEWER: {
     exportData: false,
@@ -44,6 +50,8 @@ export const CAPABILITY_DEFAULTS: Record<BaseRole, Capabilities> = {
     manageAutomations: false,
     transferOwner: false,
     viewReports: true,
+    accessAtestados: false,
+    manageAtestados: false,
   },
 };
 

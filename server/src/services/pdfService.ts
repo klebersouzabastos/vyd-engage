@@ -381,3 +381,277 @@ export function renderProposalPdf(input: ProposalPdfInput): Promise<Buffer> {
     }
   });
 }
+
+// ─── Dossiê de habilitação técnica + Currículo estratégico (Atestados) ────────
+// Reusa pdfkit (offline/determinístico). Reqs 24 e 34.
+
+const AT_ACCENT = '#1e3a5f';
+const AT_MUTED = '#64748b';
+const AT_INK = '#1f2937';
+const AT_LINE = '#e2e8f0';
+
+const STATUS_LABEL: Record<string, string> = {
+  ATENDE: 'Atende',
+  ATENDE_PARCIAL: 'Atende parcial',
+  NAO_ATENDE: 'Não atende',
+  REVISAR: 'Revisar',
+};
+
+export interface DossierMatchLine {
+  atestadoNumero: string;
+  contratante: string;
+  status: string;
+  confianca?: number | null;
+  quantComprovado?: number | null;
+  incluido: boolean;
+  origem?: string;
+  parceiro?: string | null; // empresa dona (atestado de terceiro) — p/ consórcio
+}
+export interface DossierExigenciaLine {
+  descricao: string;
+  statusAgregado: string;
+  grandeza?: string | null;
+  quantMinimo?: number | null;
+  unidade?: string | null;
+  matches: DossierMatchLine[];
+}
+export interface DossierCurriculoLine {
+  profissional: string;
+  corpo: string;
+  rtDesligado?: boolean;
+}
+export interface DossierAtestadoLine {
+  numero: string;
+  contratante: string;
+  objeto: string;
+  catNumero?: string | null;
+  origem?: string;
+  parceiro?: string | null;
+  responsaveis?: string[];
+}
+export interface DossierPdfInput {
+  tenantName: string;
+  concorrenciaTitulo: string;
+  orgao?: string | null;
+  dataGeracao?: string;
+  exigencias: DossierExigenciaLine[];
+  atestados: DossierAtestadoLine[];
+  curriculos: DossierCurriculoLine[];
+  generatedBy?: string;
+}
+
+function atHeader(doc: PDFKit.PDFDocument, title: string, subtitle: string) {
+  doc.fillColor(AT_ACCENT).fontSize(19).font('Helvetica-Bold').text(title);
+  doc.moveDown(0.2).fillColor(AT_MUTED).fontSize(11).font('Helvetica').text(subtitle);
+  doc.moveDown(0.5);
+  doc
+    .strokeColor(AT_LINE)
+    .lineWidth(0.5)
+    .moveTo(doc.page.margins.left, doc.y)
+    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+    .stroke();
+  doc.moveDown(0.8);
+}
+
+function atPageBreak(doc: PDFKit.PDFDocument, reserve = 80) {
+  if (doc.y > doc.page.height - doc.page.margins.bottom - reserve) doc.addPage();
+}
+
+/** Gera o dossiê de habilitação técnica (matriz de atendimento + currículos). */
+export function renderDossierPdf(input: DossierPdfInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // ── Capa ──────────────────────────────────────────────────────────────
+      doc.moveDown(6);
+      doc.fillColor(AT_ACCENT).fontSize(26).font('Helvetica-Bold').text('Dossiê de Habilitação Técnica', { align: 'center' });
+      doc.moveDown(1);
+      doc.fillColor(AT_INK).fontSize(15).font('Helvetica-Bold').text(input.concorrenciaTitulo, { align: 'center' });
+      if (input.orgao) doc.moveDown(0.3).fillColor(AT_MUTED).fontSize(12).font('Helvetica').text(input.orgao, { align: 'center' });
+      doc.moveDown(1.5);
+      doc.fillColor(AT_MUTED).fontSize(11).font('Helvetica').text(input.tenantName || 'VYD Engage', { align: 'center' });
+      if (input.dataGeracao) doc.moveDown(0.2).text(`Gerado em ${input.dataGeracao}`, { align: 'center' });
+
+      // ── Índice ────────────────────────────────────────────────────────────
+      doc.moveDown(4);
+      doc.fillColor(AT_ACCENT).fontSize(13).font('Helvetica-Bold').text('Índice', { align: 'left' });
+      doc.moveDown(0.4).fillColor(AT_INK).fontSize(11).font('Helvetica');
+      doc.text('1. Matriz de Atendimento');
+      doc.text('2. Atestados Selecionados');
+      if (input.curriculos.length) doc.text('3. Equipe Técnica');
+
+      // ── 1. Matriz de Atendimento ──────────────────────────────────────────
+      doc.addPage();
+      doc.fillColor(AT_ACCENT).fontSize(15).font('Helvetica-Bold').text('1. Matriz de Atendimento');
+      doc.moveDown(0.5);
+
+      input.exigencias.forEach((ex, idx) => {
+        atPageBreak(doc, 120);
+        doc.fillColor(AT_INK).fontSize(11).font('Helvetica-Bold').text(`${idx + 1}. ${ex.descricao}`);
+        const meta: string[] = [`Status: ${STATUS_LABEL[ex.statusAgregado] ?? ex.statusAgregado}`];
+        if (ex.quantMinimo != null) meta.push(`Mínimo: ${ex.quantMinimo} ${ex.unidade ?? ''}`.trim());
+        doc.moveDown(0.1).fillColor(AT_MUTED).fontSize(9).font('Helvetica').text(meta.join('  ·  '));
+        doc.moveDown(0.2);
+
+        const included = ex.matches.filter((m) => m.incluido);
+        if (included.length === 0) {
+          doc.fillColor('#b91c1c').fontSize(9).font('Helvetica-Oblique').text('  Sem atestado que comprove esta exigência (lacuna).');
+        } else {
+          doc.fillColor(AT_INK).fontSize(9).font('Helvetica');
+          for (const m of included) {
+            const dono = m.origem === 'TERCEIRO' ? ` [terceiro: ${m.parceiro ?? 'parceiro'}]` : '';
+            const parts = [
+              `  • Atestado ${m.atestadoNumero} — ${m.contratante}${dono}`,
+              STATUS_LABEL[m.status] ?? m.status,
+            ];
+            if (m.quantComprovado != null) parts.push(`comprovado ${m.quantComprovado}`);
+            if (m.confianca != null) parts.push(`conf. ${(m.confianca * 100).toFixed(0)}%`);
+            doc.text(parts.join('  ·  '));
+          }
+        }
+        doc.moveDown(0.5);
+      });
+
+      // ── 2. Atestados Selecionados ─────────────────────────────────────────
+      doc.addPage();
+      doc.fillColor(AT_ACCENT).fontSize(15).font('Helvetica-Bold').text('2. Atestados Selecionados');
+      doc.moveDown(0.5);
+      if (input.atestados.length === 0) {
+        doc.fillColor(AT_MUTED).fontSize(10).font('Helvetica').text('Nenhum atestado incluído na composição.');
+      }
+      for (const a of input.atestados) {
+        atPageBreak(doc, 110);
+        const dono = a.origem === 'TERCEIRO' ? `  [terceiro: ${a.parceiro ?? 'parceiro'}]` : '';
+        doc.fillColor(AT_INK).fontSize(11).font('Helvetica-Bold').text(`Atestado ${a.numero} — ${a.contratante}${dono}`);
+        const linha2: string[] = [];
+        if (a.catNumero) linha2.push(`CAT ${a.catNumero}`);
+        if (a.responsaveis?.length) linha2.push(a.responsaveis.join(', '));
+        if (linha2.length) doc.moveDown(0.1).fillColor(AT_MUTED).fontSize(9).font('Helvetica').text(linha2.join('  ·  '));
+        doc.fillColor(AT_INK).fontSize(9).font('Helvetica').text(a.objeto.slice(0, 700));
+        doc.moveDown(0.5);
+      }
+
+      // ── 3. Equipe Técnica (currículos) ────────────────────────────────────
+      if (input.curriculos.length) {
+        doc.addPage();
+        doc.fillColor(AT_ACCENT).fontSize(15).font('Helvetica-Bold').text('3. Equipe Técnica');
+        doc.moveDown(0.5);
+        for (const c of input.curriculos) {
+          atPageBreak(doc, 120);
+          doc.fillColor(AT_INK).fontSize(11).font('Helvetica-Bold').text(c.profissional);
+          if (c.rtDesligado) {
+            doc.moveDown(0.1).fillColor('#b91c1c').fontSize(9).font('Helvetica-Oblique').text('  Profissional DESLIGADO — o acervo técnico-profissional dele não habilita a empresa.');
+          }
+          doc.moveDown(0.2).fillColor(AT_INK).fontSize(10).font('Helvetica');
+          for (const para of c.corpo.split(/\n{2,}/)) {
+            const t = para.trim();
+            if (t) {
+              atPageBreak(doc, 60);
+              doc.text(t);
+              doc.moveDown(0.3);
+            }
+          }
+          doc.moveDown(0.5);
+        }
+      }
+
+      doc.moveDown(1);
+      doc
+        .fillColor(AT_MUTED)
+        .fontSize(9)
+        .font('Helvetica')
+        .text(input.generatedBy ? `Gerado por ${input.generatedBy} via VYD Engage` : 'Gerado via VYD Engage', {
+          align: 'center',
+        });
+      doc.end();
+    } catch (err) {
+      reject(err as Error);
+    }
+  });
+}
+
+export interface CurriculoAtestadoLine {
+  numero: string;
+  contratante: string;
+  objeto: string;
+  funcoes: string[];
+}
+export interface CurriculoPdfInput {
+  tenantName: string;
+  profissionalNome: string;
+  titulo: string;
+  subtitulo?: string;
+  corpo: string;
+  alertaRtDesligado?: boolean;
+  atestados: CurriculoAtestadoLine[];
+  generatedBy?: string;
+}
+
+/** Gera o currículo estratégico de um profissional (com os atestados aderentes). */
+export function renderCurriculoPdf(input: CurriculoPdfInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      atHeader(doc, input.profissionalNome, input.subtitulo ? `${input.titulo} · ${input.subtitulo}` : input.titulo);
+
+      if (input.alertaRtDesligado) {
+        doc
+          .fillColor('#b91c1c')
+          .fontSize(9)
+          .font('Helvetica-Oblique')
+          .text('Atenção: profissional DESLIGADO — o acervo técnico-profissional dele não habilita a empresa.');
+        doc.moveDown(0.5);
+      }
+
+      if (input.corpo.trim()) {
+        doc.fillColor(AT_INK).fontSize(11).font('Helvetica');
+        for (const para of input.corpo.split(/\n{2,}/)) {
+          const t = para.trim();
+          if (t) {
+            atPageBreak(doc, 60);
+            doc.text(t);
+            doc.moveDown(0.4);
+          }
+        }
+        doc.moveDown(0.5);
+      }
+
+      if (input.atestados.length) {
+        atPageBreak(doc, 100);
+        doc.fillColor(AT_ACCENT).fontSize(13).font('Helvetica-Bold').text('Acervo Técnico');
+        doc.moveDown(0.5);
+        input.atestados.forEach((a) => {
+          atPageBreak(doc, 90);
+          doc.fillColor(AT_INK).fontSize(10).font('Helvetica-Bold').text(`Atestado ${a.numero} — ${a.contratante}`);
+          if (a.funcoes.length) {
+            doc.fillColor(AT_MUTED).fontSize(9).font('Helvetica').text(a.funcoes.join('  ·  '));
+          }
+          doc.fillColor(AT_INK).fontSize(9).font('Helvetica').text(a.objeto.slice(0, 600));
+          doc.moveDown(0.5);
+        });
+      }
+
+      doc.moveDown(1);
+      doc
+        .fillColor(AT_MUTED)
+        .fontSize(9)
+        .font('Helvetica')
+        .text(input.generatedBy ? `Gerado por ${input.generatedBy} via VYD Engage` : 'Gerado via VYD Engage', {
+          align: 'center',
+        });
+      doc.end();
+    } catch (err) {
+      reject(err as Error);
+    }
+  });
+}

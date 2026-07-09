@@ -109,6 +109,15 @@ const STRICT_SCOPE = new Set([
   // Upgrade RD parity — P3 (WhatsApp & IA / reuniões): arquivos novos nascem
   // 100% tokenizados.
   'src/components/deals/MeetingsSection.tsx',
+  // Gestão de Atestados Técnicos — módulo novo, 100% tokenizado.
+  'src/pages/Atestados.tsx',
+  'src/components/atestados/AcervoTab.tsx',
+  'src/components/atestados/BuscaTab.tsx',
+  'src/components/atestados/ConcorrenciasTab.tsx',
+  'src/components/atestados/PendenciasTab.tsx',
+  'src/components/atestados/ProfissionaisTab.tsx',
+  'src/components/atestados/TerceirosTab.tsx',
+  'src/components/atestados/ConfigTab.tsx',
 ]);
 const STRICT_FAMILIES =
   /\b(?:bg|text|border|ring|from|to|via|divide|placeholder|fill|stroke|decoration|outline|accent)-(?:gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/;

@@ -24,12 +24,15 @@ import {
   ScanSearch,
   MessageSquarePlus,
   CheckCircle,
+  Award,
   Trash2,
   ChevronUp,
   ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import type { Capability } from '@/types/governance';
 import { useTasks } from '@/hooks/useTasks';
 
 interface NavItem {
@@ -40,6 +43,8 @@ interface NavItem {
   adminOnly?: boolean;
   managerOnly?: boolean;
   platformAdminOnly?: boolean;
+  /** Item visível apenas quando o usuário tem esta capability (perfil de permissão). */
+  capability?: Capability;
 }
 
 interface NavCategory {
@@ -93,6 +98,13 @@ const categories: NavCategory[] = [
         label: 'Inteligência de Mercado',
         path: '/app/deep-research',
         tourId: 'sidebar-deep-research',
+      },
+      {
+        icon: Award,
+        label: 'Atestados Técnicos',
+        path: '/app/atestados',
+        tourId: 'sidebar-atestados',
+        capability: 'accessAtestados',
       },
       {
         icon: MessageSquarePlus,
@@ -197,6 +209,7 @@ interface RibbonTabsProps {
 export function RibbonTabs({ ribbonCollapsed, onToggleRibbon }: RibbonTabsProps) {
   const location = useLocation();
   const { user } = useAuth();
+  const { can } = usePermissions();
   const { tasks } = useTasks();
 
   const pendingTasksCount = (() => {
@@ -222,7 +235,8 @@ export function RibbonTabs({ ribbonCollapsed, onToggleRibbon }: RibbonTabsProps)
       user?.role === 'ADMIN' ||
       user?.role === 'GESTOR' ||
       user?.isPlatformAdmin) &&
-    (!item.platformAdminOnly || user?.isPlatformAdmin);
+    (!item.platformAdminOnly || user?.isPlatformAdmin) &&
+    (!item.capability || can(item.capability));
 
   // Categorias visíveis para o papel do usuário (categoria sem itens visíveis some).
   const visibleCategories = categories
