@@ -52,7 +52,11 @@ export function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await login(email, password, requires2FA ? totpCode : undefined);
+      const result = await login(
+        email.trim().toLowerCase(),
+        password,
+        requires2FA ? totpCode : undefined
+      );
       if (result && result.requiresTwoFactor) {
         setRequires2FA(true);
         setLoading(false);
