@@ -19,7 +19,10 @@ const tokenLookupLimiter = rateLimit({
 const router = Router();
 
 const createInvitationSchema = z.object({
-  email: z.string().email(),
+  // Normaliza (trim + lowercase) para que o convite — e o User criado no aceite,
+  // que herda `invitation.email` — nasçam com o email canônico. Sem isto, um admin
+  // que digita "Nome@Empresa.com" cria uma conta que não loga com "nome@empresa.com".
+  email: z.string().trim().toLowerCase().email(),
   role: z.nativeEnum(UserRole).default(UserRole.USER),
 });
 

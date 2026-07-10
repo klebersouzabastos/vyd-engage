@@ -21,7 +21,11 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  // Normaliza o email (trim + lowercase) para casar com o armazenamento canônico,
+  // igual ao registerSchema. Sem isto, um usuário criado por convite com email de
+  // case misto não consegue logar digitando o email em minúsculas (Postgres é
+  // case-sensitive na coluna `email @unique`).
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
