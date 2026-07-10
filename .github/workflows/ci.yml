@@ -13,7 +13,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        # pgvector/pgvector:pg16 = Postgres 16 oficial + binário da extensão `vector`
+        # (schema usa `Unsupported("vector(1536)")` no módulo de Atestados/RAG). A imagem
+        # postgres:16-alpine não traz pgvector, o que fazia o `db push` falhar com
+        # `type "vector" does not exist` e travava o CI desde o #62.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: flowcrm
           POSTGRES_PASSWORD: flowcrm_test
@@ -42,6 +46,12 @@ jobs:
         run: cd server && npx prisma generate
         env:
           DATABASE_URL: postgresql://flowcrm:flowcrm_test@localhost:5432/flowcrm_test
+
+      - name: Enable pgvector extension
+        # A extensão `vector` é criada por migration SQL manual em prod (não é
+        # declarada no datasource), então `db push` não a cria. Habilitamos aqui
+        # antes do push para que a coluna `vector(1536)` possa ser sincronizada.
+        run: PGPASSWORD=flowcrm_test psql -h localhost -U flowcrm -d flowcrm_test -c 'CREATE EXTENSION IF NOT EXISTS vector;'
 
       - name: Sync DB schema
         # `db push` em vez de `migrate deploy` — migration 20260320_soft_delete_pattern
