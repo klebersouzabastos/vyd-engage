@@ -13,7 +13,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        # pgvector/pgvector:pg16 = Postgres 16 oficial + binário da extensão `vector`
+        # (schema usa `Unsupported("vector(1536)")` no módulo de Atestados/RAG). A imagem
+        # postgres:16-alpine não traz pgvector, o que fazia o `db push` falhar com
+        # `type "vector" does not exist` e travava o CI desde o #62.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: flowcrm
           POSTGRES_PASSWORD: flowcrm_test
@@ -42,6 +46,12 @@ jobs:
         run: cd server && npx prisma generate
         env:
           DATABASE_URL: postgresql://flowcrm:flowcrm_test@localhost:5432/flowcrm_test
+
+      - name: Enable pgvector extension
+        # A extensão `vector` é criada por migration SQL manual em prod (não é
+        # declarada no datasource), então `db push` não a cria. Habilitamos aqui
+        # antes do push para que a coluna `vector(1536)` possa ser sincronizada.
+        run: PGPASSWORD=flowcrm_test psql -h localhost -U flowcrm -d flowcrm_test -c 'CREATE EXTENSION IF NOT EXISTS vector;'
 
       - name: Sync DB schema
         # `db push` em vez de `migrate deploy` — migration 20260320_soft_delete_pattern
@@ -108,29 +118,8 @@ jobs:
       - name: Build
         run: npm run build
 
-  deploy-vercel:
-    name: Deploy Frontend to Vercel
-    needs: [frontend, backend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-
-      - name: Build project artifacts
-        run: vercel build --prod --token=$VERCEL_TOKEN
-
-      - name: Deploy to Vercel production
-        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-
-  # Backend Railway tem auto-deploy via webhook GitHub (OK). Não duplicamos aqui.
+  # Deploy é feito pelas integrações nativas das plataformas, não pelo CI:
+  #   - Backend  → Railway (auto-deploy via webhook GitHub no push para main)
+  #   - Frontend → Vercel  (auto-deploy via integração GitHub no push para main)
+  # Não duplicamos aqui: um job de deploy no CI criaria um segundo deploy do mesmo
+  # commit. Este workflow serve apenas de gate de qualidade (lint/build/test).
