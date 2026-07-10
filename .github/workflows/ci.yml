@@ -118,29 +118,8 @@ jobs:
       - name: Build
         run: npm run build
 
-  deploy-vercel:
-    name: Deploy Frontend to Vercel
-    needs: [frontend, backend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-
-      - name: Build project artifacts
-        run: vercel build --prod --token=$VERCEL_TOKEN
-
-      - name: Deploy to Vercel production
-        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-
-  # Backend Railway tem auto-deploy via webhook GitHub (OK). Não duplicamos aqui.
+  # Deploy é feito pelas integrações nativas das plataformas, não pelo CI:
+  #   - Backend  → Railway (auto-deploy via webhook GitHub no push para main)
+  #   - Frontend → Vercel  (auto-deploy via integração GitHub no push para main)
+  # Não duplicamos aqui: um job de deploy no CI criaria um segundo deploy do mesmo
+  # commit. Este workflow serve apenas de gate de qualidade (lint/build/test).
