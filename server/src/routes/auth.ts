@@ -9,6 +9,7 @@ import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
 import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
 import { setCsrfCookie } from '../middleware/csrf.js';
+import { personNameSchema } from '../utils/validators.js';
 
 const router = Router();
 
@@ -16,7 +17,7 @@ const router = Router();
 const registerSchema = z.object({
   email: z.string().min(1, 'Email é obrigatório').email('Email inválido').toLowerCase().trim(),
   password: z.string().min(8),
-  name: z.string().min(2),
+  name: personNameSchema,
   companyName: z.string().min(2),
 });
 
@@ -246,7 +247,7 @@ router.post('/email/verify', async (req, res, next) => {
 
 // Update profile
 const updateProfileSchema = z.object({
-  name: z.string().min(2).optional(),
+  name: personNameSchema.optional(),
   phone: z.string().optional(),
   avatar: z.string().nullable().optional(),
 });
@@ -337,7 +338,7 @@ router.put('/change-password', authenticate, async (req, res, next) => {
 
 // Update tenant (company info)
 const updateTenantSchema = z.object({
-  name: z.string().min(2).optional(),
+  name: personNameSchema.optional(),
   logo: z.string().nullable().optional(),
   settings: z
     .object({
