@@ -74,7 +74,7 @@ describe('PUT /users/:id — edição de nome/e-mail', () => {
   it('GESTOR: e-mail é IGNORADO (só ADMIN altera), nome aplicado', async () => {
     const res = await request(app()).put('/users/u9').set('x-actor', 'GESTOR|t1|g1').send({ name: 'Novo Nome', email: 'tentativa@x.com' });
     expect(res.status).toBe(200);
-    const data = prismaMock.user.update.mock.calls[0][0].data as Record<string, unknown>;
+    const data = (prismaMock.user.update.mock.calls as any)[0][0].data as Record<string, unknown>;
     expect(data.name).toBe('Novo Nome');
     expect(data.email).toBeUndefined();
   });
@@ -83,7 +83,7 @@ describe('PUT /users/:id — edição de nome/e-mail', () => {
     prismaMock.user.findUnique.mockResolvedValue(null as never);
     const res = await request(app()).put('/users/u9').set('x-actor', 'ADMIN|t1|a1').send({ name: 'Leandro Hara', email: 'leandro@k2.com' });
     expect(res.status).toBe(200);
-    const data = prismaMock.user.update.mock.calls[0][0].data as Record<string, unknown>;
+    const data = (prismaMock.user.update.mock.calls as any)[0][0].data as Record<string, unknown>;
     expect(data.name).toBe('Leandro Hara');
     expect(data.email).toBe('leandro@k2.com');
   });
