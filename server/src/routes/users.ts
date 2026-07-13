@@ -6,6 +6,7 @@ import { requireRole } from '../middleware/auth.js';
 import { createError } from '../middleware/errorHandler.js';
 import prisma from '../config/database.js';
 import { UserRole, UserStatus, CommercialFunction } from '@prisma/client';
+import { personNameSchema } from '../utils/validators.js';
 
 const router = Router();
 
@@ -189,8 +190,14 @@ router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
       return next(createError('Authentication required', 401));
     }
 
-    const { role, status, commercialFunction, teamId, permissionProfileId } = z
+    const { name, email, role, status, commercialFunction, teamId, permissionProfileId } = z
       .object({
+        // Nome: corrigível por ADMIN/GESTOR. Rejeita e-mail no campo (mesma guarda do
+        // aceite de convite) — foi assim que um "nome" virou o e-mail de um usuário.
+        name: personNameSchema.optional(),
+        // E-mail: é a identidade de LOGIN — só ADMIN pode alterar. Normalizado
+        // (trim + lowercase) para casar com o armazenamento canônico.
+        email: z.string().trim().toLowerCase().email('Email inválido').optional(),
         role: z.nativeEnum(UserRole).optional(),
         status: z.nativeEnum(UserStatus).optional(),
         commercialFunction: z.nativeEnum(CommercialFunction).nullable().optional(),
@@ -228,14 +235,27 @@ router.put('/:id', requireRole('ADMIN', 'GESTOR'), async (req, res, next) => {
       if (!profile) return next(createError('Perfil não encontrado', 404, 'PROFILE_NOT_FOUND'));
     }
 
-    // role/status seguem restritos a ADMIN; GESTOR só pode definir a função
-    // comercial (spec: commercialFunction restrito a ADMIN/GESTOR) e o vínculo
-    // de equipe/perfil (Upgrade RD P1).
+    // role/status/email seguem restritos a ADMIN; GESTOR pode definir nome, função
+    // comercial (spec: commercialFunction restrito a ADMIN/GESTOR) e o vínculo de
+    // equipe/perfil (Upgrade RD P1). E-mail é a identidade de LOGIN → só ADMIN.
     const isAdmin = req.user.role === 'ADMIN';
+
+    // E-mail é @unique global — antes de gravar, garantir que não pertence a outro
+    // usuário (senão o update lançaria P2002; devolvemos 409 claro).
+    if (isAdmin && email && email !== user.email) {
+      const clash = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+      if (clash && clash.id !== user.id) {
+        return next(
+          createError('Este e-mail já está vinculado a outro usuário.', 409, 'EMAIL_TAKEN')
+        );
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id: req.params.id },
       data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(isAdmin && email ? { email } : {}),
         ...(isAdmin && role ? { role } : {}),
         ...(isAdmin && status ? { status } : {}),
         ...(commercialFunction !== undefined ? { commercialFunction } : {}),
