@@ -7,6 +7,7 @@ import { tenantScope } from '../middleware/tenant.js';
 import { requireRole } from '../middleware/auth.js';
 import { createError } from '../middleware/errorHandler.js';
 import { UserRole } from '@prisma/client';
+import { personNameSchema } from '../utils/validators.js';
 
 const tokenLookupLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -29,7 +30,7 @@ const createInvitationSchema = z.object({
 const acceptInvitationSchema = z.object({
   token: z.string().uuid(),
   password: z.string().min(8),
-  name: z.string().min(2),
+  name: personNameSchema,
 });
 
 // PUBLIC routes — must be registered BEFORE router.use(authenticate)
