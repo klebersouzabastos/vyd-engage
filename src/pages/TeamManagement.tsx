@@ -150,6 +150,8 @@ export function TeamManagement() {
 
   // Edit user modal
   const [editingUser, setEditingUser] = useState<TeamUser | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editStatus, setEditStatus] = useState(false);
   const [editCommercialFunction, setEditCommercialFunction] = useState('');
@@ -228,6 +230,8 @@ export function TeamManagement() {
 
   const handleOpenEditModal = (teamUser: TeamUser) => {
     setEditingUser(teamUser);
+    setEditName(teamUser.name || '');
+    setEditEmail(teamUser.email || '');
     setEditRole(teamUser.role);
     setEditStatus(teamUser.status === 'ACTIVE');
     setEditCommercialFunction(teamUser.commercialFunction || '');
@@ -241,6 +245,9 @@ export function TeamManagement() {
     try {
       const newStatus = editStatus ? 'ACTIVE' : 'INACTIVE';
       await apiClient.updateUser(editingUser.id, {
+        // Nome: ADMIN/GESTOR. E-mail: só ADMIN (o backend ignora de não-admin).
+        name: editName.trim(),
+        ...(isAdmin ? { email: editEmail.trim() } : {}),
         role: editRole,
         status: newStatus,
         commercialFunction: editCommercialFunction || null,
@@ -547,10 +554,35 @@ export function TeamManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Membro</DialogTitle>
-            <DialogDescription>Altere o papel e o status de {editingUser?.name}</DialogDescription>
+            <DialogDescription>Altere os dados, o papel e o status de {editingUser?.name}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Nome do membro"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                disabled={!isAdmin}
+                placeholder="email@empresa.com"
+              />
+              {!isAdmin && (
+                <p className="text-xs text-muted-foreground">
+                  Apenas administradores podem alterar o e-mail (identidade de login).
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>Papel</Label>
               <Select value={editRole} onValueChange={setEditRole} disabled={!isAdmin}>

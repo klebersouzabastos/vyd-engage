@@ -1606,6 +1606,9 @@ class ApiClient {
   async updateUser(
     id: string,
     data: {
+      // Nome corrigível por ADMIN/GESTOR; e-mail (identidade de login) só por ADMIN.
+      name?: string;
+      email?: string;
       role?: string;
       status?: string;
       commercialFunction?: string | null;
