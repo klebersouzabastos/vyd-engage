@@ -293,6 +293,21 @@ class ApiClient {
     }
   }
 
+  // SSO VYD ID — troca o vyd_token do portal id.vydhub.com pela sessão nativa.
+  // Mesmo contrato do /login: cookies httpOnly setados pelo servidor + { user }.
+  async ssoExchange(token: string) {
+    try {
+      return await this.request<{
+        user: { id: string; email: string; name: string; role: string; tenantId: string };
+      }>('/api/v1/auth/sso/exchange', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      });
+    } catch (error: unknown) {
+      this.normalizeError(error);
+    }
+  }
+
   async logout() {
     // Server clears httpOnly cookies
     await this.request('/api/v1/auth/logout', {

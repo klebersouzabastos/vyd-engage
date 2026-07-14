@@ -45,6 +45,7 @@ const Onboarding = lazyNamed(() => import('../pages/Onboarding'), 'Onboarding');
 const PublicForm = lazyNamed(() => import('../pages/PublicForm'), 'PublicForm');
 const PublicSchedule = lazyNamed(() => import('../pages/PublicSchedule'), 'PublicSchedule');
 const AcceptInvitation = lazyNamed(() => import('../pages/AcceptInvitation'), 'AcceptInvitation');
+const SsoCallback = lazyNamed(() => import('../pages/SsoCallback'), 'SsoCallback');
 
 // App pages (behind auth)
 const Dashboard = lazyNamed(() => import('../pages/Dashboard'), 'Dashboard');
@@ -137,6 +138,12 @@ export const router = createBrowserRouter([
   {
     path: '/accept-invitation',
     element: AcceptInvitation,
+  },
+  {
+    // Callback público do SSO VYD ID (portal id.vydhub.com) — lê o fragmento
+    // #vyd_token=… e troca pela sessão nativa (ver src/pages/SsoCallback.tsx).
+    path: '/sso',
+    element: SsoCallback,
   },
   {
     path: '/app',
