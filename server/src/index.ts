@@ -224,6 +224,7 @@ app.get('/health', async (req, res) => {
 
 // API Routes
 import authRoutes from './routes/auth.js';
+import ssoRoutes from './routes/sso.js';
 import leadRoutes from './routes/leads.js';
 import taskRoutes from './routes/tasks.js';
 import tagRoutes from './routes/tags.js';
@@ -318,7 +319,8 @@ v1Router.use('/webhooks', apiLimiter);
 v1Router.use('/', apiLimiter);
 
 // CSRF protection — applied to all API routes except webhooks (which use HMAC signatures)
-// Auth login/register/refresh are excluded since they don't have a CSRF cookie yet
+// Auth login/register/refresh são excluídos por não terem cookie CSRF ainda —
+// o mesmo vale para /auth/sso/exchange (SSO VYD ID: sessão nasce nessa troca).
 v1Router.use('/leads', csrfProtection);
 v1Router.use('/tasks', csrfProtection);
 v1Router.use('/tags', csrfProtection);
@@ -395,6 +397,9 @@ v1Router.use('/track', trackingRoutes);
 v1Router.use('/track', campaignTrackingRoutes);
 
 // API Routes
+// SSO VYD ID (portal id.vydhub.com) — fora do CSRF, como /auth/login; herda o
+// authLimiter do prefixo /auth acima.
+v1Router.use('/auth/sso', ssoRoutes);
 v1Router.use('/auth', authRoutes);
 v1Router.use('/leads', leadRoutes);
 v1Router.use('/tasks', taskRoutes);
