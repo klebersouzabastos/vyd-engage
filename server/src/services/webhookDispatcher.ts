@@ -183,10 +183,9 @@ async function getQueue(): Promise<import('bullmq').Queue<DeliveryJobData> | nul
   if (queueReady) return queue;
   try {
     const { Queue, Worker } = await import('bullmq');
+    const { getBullConnection } = await import('../config/redis.js');
     const connection = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
+      ...getBullConnection(),
       maxRetriesPerRequest: null,
     };
 

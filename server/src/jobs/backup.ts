@@ -118,20 +118,33 @@ function pruneOldBackups(dir: string): void {
   }
 }
 
-export async function initializeBackupJob(): Promise<void> {
-  logger.info('Backup job initialized — first run in 5 minutes');
+// Hora (UTC) da execução diária. Default 6 = 03:00 em Brasília. O pg_dump|gzip
+// roda NESTE container e compete por CPU com a API — agendado por relógio de
+// parede, de madrugada, e não "a cada 24h desde o boot" (que caía em horário
+// comercial e congelava a UI p/ todos os usuários — incidente 29/07/2026).
+const BACKUP_UTC_HOUR = parseInt(process.env.BACKUP_UTC_HOUR || '6', 10);
 
-  // Run once shortly after startup to verify configuration
-  setTimeout(
-    () => {
-      runBackup().catch((err) => logger.error('Backup job error', err));
-    },
-    5 * 60 * 1000
+function msUntilNextRun(utcHour: number): number {
+  const now = new Date();
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), utcHour, 0, 0, 0)
   );
+  if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1);
+  return next.getTime() - now.getTime();
+}
 
-  // Then every 24 hours at 02:00 server time
-  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-  setInterval(() => {
-    runBackup().catch((err) => logger.error('Backup job error', err));
-  }, TWENTY_FOUR_HOURS);
+export async function initializeBackupJob(): Promise<void> {
+  const scheduleNext = () => {
+    const delay = msUntilNextRun(BACKUP_UTC_HOUR);
+    setTimeout(() => {
+      runBackup()
+        .catch((err) => logger.error('Backup job error', err))
+        .finally(scheduleNext);
+    }, delay);
+    logger.info('Backup job scheduled', {
+      utcHour: BACKUP_UTC_HOUR,
+      nextRunInHours: (delay / 3_600_000).toFixed(1),
+    });
+  };
+  scheduleNext();
 }

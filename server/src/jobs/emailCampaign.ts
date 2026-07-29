@@ -1,13 +1,9 @@
 import { Queue, Worker, Job } from 'bullmq';
 import { logger } from '../utils/logger.js';
 import { emailMessagingService } from '../services/emailMessagingService.js';
+import { getBullConnection } from '../config/redis.js';
 
-// Redis connection configuration
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConnection = getBullConnection();
 
 // Create email campaign queue
 export const emailCampaignQueue = new Queue('email-campaign', {
@@ -79,6 +75,16 @@ export const emailCampaignWorker = new Worker(
     concurrency: 2,
   }
 );
+
+// Sem listener de 'error', o BullMQ despeja o stack completo de cada falha de
+// conexão no console — foi o spam de AggregateError/ECONNREFUSED que tomou os
+// logs de produção. Logamos só a mensagem, na cadência do retryStrategy.
+emailCampaignQueue.on('error', (err) => {
+  logger.warn('emailCampaignQueue Redis error', { error: err.message });
+});
+emailCampaignWorker.on('error', (err) => {
+  logger.warn('emailCampaignWorker Redis error', { error: err.message });
+});
 
 // Helper to schedule a campaign
 export async function scheduleCampaign(
