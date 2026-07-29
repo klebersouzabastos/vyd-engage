@@ -10,13 +10,9 @@ import { interpolateMergeTags, type MergeContext } from '../utils/mergeTags.js';
 import { computeDelayMs, evaluateCondition } from '../utils/automationEval.js';
 import { assertPublicHttpUrl } from '../utils/safeFetch.js';
 import { webhookDispatcher } from '../services/webhookDispatcher.js';
+import { getBullConnection } from '../config/redis.js';
 
-// Redis connection configuration
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConnection = getBullConnection();
 
 // ========================
 // Types

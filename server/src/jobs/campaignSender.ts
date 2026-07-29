@@ -8,6 +8,7 @@ import {
   rewriteLinksForTracking,
   type MergeTagContext,
 } from '../services/campaignService.js';
+import { getBullConnection } from '../config/redis.js';
 
 // ============================================================================
 // campaignSender — BullMQ job that sends an Email Campaign in batches.
@@ -25,11 +26,7 @@ const BATCH_SIZE = 100; // emails per minute per tenant (req 10)
 const BATCH_INTERVAL_MS = 60_000;
 const MAX_RECIPIENT_RETRIES = 3; // edge case: don't reprocess a recipient > 3x
 
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConnection = getBullConnection();
 
 export interface CampaignSendJobData {
   campaignId: string;

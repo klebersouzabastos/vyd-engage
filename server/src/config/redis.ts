@@ -3,6 +3,44 @@ import { logger } from '../utils/logger.js';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
+/**
+ * Opções de conexão para BullMQ (Queue/Worker), derivadas do ambiente.
+ *
+ * Prioriza REDIS_URL (Railway/Upstash expõem só a URL) e cai para
+ * REDIS_HOST/REDIS_PORT/REDIS_PASSWORD. Sem isso, os jobs conectavam em
+ * localhost:6379 em produção e entravam em loop infinito de ECONNREFUSED
+ * (incidente de instabilidade de 29/07/2026).
+ *
+ * O retryStrategy nunca desiste (workers precisam reconectar sozinhos após
+ * um blip do Redis), mas espaça as tentativas até 1 a cada 30s para não
+ * inundar CPU/logs quando o Redis está fora.
+ */
+export function getBullConnection() {
+  const retryStrategy = (times: number) => Math.min(times * 1000, 30_000);
+  const url = process.env.REDIS_URL;
+  if (url) {
+    try {
+      const u = new URL(url);
+      return {
+        host: u.hostname,
+        port: u.port ? parseInt(u.port, 10) : 6379,
+        username: u.username ? decodeURIComponent(u.username) : undefined,
+        password: u.password ? decodeURIComponent(u.password) : undefined,
+        ...(u.protocol === 'rediss:' ? { tls: {} } : {}),
+        retryStrategy,
+      };
+    } catch {
+      logger.error('REDIS_URL inválida — caindo para REDIS_HOST/REDIS_PORT');
+    }
+  }
+  return {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD,
+    retryStrategy,
+  };
+}
+
 let redis: Redis | null = null;
 
 export function getRedis(): Redis {

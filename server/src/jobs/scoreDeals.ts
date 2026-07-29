@@ -4,6 +4,7 @@ import prisma from '../config/database.js';
 import { DealStage } from '@prisma/client';
 import { dealScoringService } from '../services/dealScoringService.js';
 import { isAIEnabled } from '../services/aiProvider.js';
+import { getBullConnection } from '../config/redis.js';
 
 /**
  * AI-2.1 — weekly batch recalculation of deal close-propensity scores (spec req 21).
@@ -13,11 +14,7 @@ import { isAIEnabled } from '../services/aiProvider.js';
  * (dealScoringService.computeAndStore) and `enqueueScoreRecalc` below.
  */
 
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConnection = getBullConnection();
 
 const QUEUE_NAME = 'score-deals';
 const WEEKLY_JOB_ID = 'weekly-deal-score-recalc';

@@ -3,13 +3,9 @@ import { logger } from '../utils/logger.js';
 import prisma from '../config/database.js';
 import { paymentService } from '../services/paymentService.js';
 import { subscriptionService } from '../services/subscriptionService.js';
+import { getBullConnection } from '../config/redis.js';
 
-// Redis connection configuration
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConnection = getBullConnection();
 
 // Create billing queue
 export const billingQueue = new Queue('billing', {
