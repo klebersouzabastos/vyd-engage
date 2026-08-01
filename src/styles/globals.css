@@ -5,6 +5,15 @@
    NUNCA editar src/index.css (artefato pré-compilado, descontinuado).
    ===================================================================== */
 
+/* ORDEM DAS CASCADE LAYERS (DS 3.x): o vyd-design-system@3 emite CSS em
+   @layer vyd.tokens/vyd.components. Sem esta declaração, a ordem seria a de
+   primeira aparição (vyd.* antes das layers do Tailwind v4) e o preflight
+   (@layer base, declarado depois) venceria vyd.components, apagando
+   fundo/padding de .vyd-btn/.vyd-input/.vyd-topbar. Aqui: preflight ABAIXO
+   do VYD; components/utilities do app ACIMA (overrides continuam vencendo,
+   como o DS pretende). Precisa vir ANTES do @import do theme.css. */
+@layer theme, base, vyd.tokens, vyd.components, components, utilities;
+
 @import 'vyd-design-system/theme.css';
 /* App-shell do DS (ribbon Autodesk) — importado DEPOIS do theme.css
    (spec ribbon-shell-global req 1). Consome as vars --vyd-layout-*. */
