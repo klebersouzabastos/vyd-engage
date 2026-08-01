@@ -11,6 +11,9 @@
  */
 import prisma from '../src/config/database.js';
 import { CustomFieldType, FunnelType } from '@prisma/client';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/seed-rd-config.ts');
 
 const WRITE = process.argv.includes('--write');
 const slugArg = process.argv.find((a) => a.startsWith('--slug='));

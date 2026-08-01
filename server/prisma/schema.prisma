@@ -984,6 +984,7 @@ model AutomationLog {
   @@index([leadId])
   @@index([executionId])
   @@index([status])
+  @@index([executeAt])
 }
 
 // ============================================
@@ -2684,6 +2685,10 @@ model AtestadoChunk {
   createdAt  DateTime                      @default(now())
 
   @@index([tenantId, atestadoId])
+  // Índice ANN da busca semântica (HNSW/cosine, criado em 20260801000002).
+  // O Prisma não expressa USING hnsw; declarar o campo aqui mantém o
+  // `migrate diff` limpo — o método real do índice vive na migração.
+  @@index([embedding])
   @@map("atestado_chunks")
 }
 

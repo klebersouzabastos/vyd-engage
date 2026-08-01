@@ -12,6 +12,9 @@ import 'dotenv/config';
 import { PlanType } from '@prisma/client';
 import prisma from '../src/config/database.js';
 import { platformService } from '../src/services/platformService.js';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/provision-saas.ts');
 
 const PLATFORM_ADMIN_EMAIL = 'kleber.bastos.1984@gmail.com';
 

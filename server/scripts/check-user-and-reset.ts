@@ -2,6 +2,9 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import prisma from '../src/config/database.js';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/check-user-and-reset.ts');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -1,6 +1,7 @@
 import { PrismaClient, PlanType, LeadStatus, LeadSource, UserRole, UserStatus, DealStage } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { BUILTIN_TEMPLATES } from '../src/services/deepResearch/builtinTemplates.js';
+import { isProductionDatabaseUrl } from '../src/config/dbSafety.js';
 
 const prisma = new PrismaClient();
 
@@ -370,6 +371,14 @@ async function main() {
 
   // Only seed demo data if SEED_DEMO=true
   if (process.env.SEED_DEMO === 'true') {
+    // Bloqueio absoluto: dados demo (admin@test.com/admin123 etc.) jamais podem
+    // ir para produção — sem override (server/.env local aponta para prod).
+    if (isProductionDatabaseUrl()) {
+      throw new Error(
+        '[dbSafety] SEED_DEMO=true bloqueado: DATABASE_URL aponta para o banco de PRODUÇÃO. ' +
+          'Dados demo criariam usuários com senha fraca em prod. Use um banco local.'
+      );
+    }
     await seedDemoData(proPlan.id);
   }
 
