@@ -4,13 +4,17 @@
  * Uso (local ou no Railway, com DATABASE_URL no ambiente):
  *   npm run reset-password -- <email> <novaSenha>
  *
- * No Railway:
- *   railway run npm run reset-password -- usuario@exemplo.com NovaSenhaForte123
+ * Contra o banco de PRODUÇÃO a guarda dbSafety exige opt-in explícito:
+ *   PowerShell:  $env:ALLOW_PROD_DB='true'; npm run reset-password -- <email> <senha>
+ *   Railway:     railway run -- env ALLOW_PROD_DB=true npm run reset-password -- <email> <senha>
  *
  * Efeitos: seta passwordHash, marca a conta como ACTIVE + emailVerified, e revoga
  * os refresh tokens antigos. Use quando o reset por email não estiver disponível.
  */
 import { hashPassword } from '../src/utils/password.js';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/reset-password.ts');
 
 async function main(): Promise<void> {
   const [emailArg, newPassword] = process.argv.slice(2);

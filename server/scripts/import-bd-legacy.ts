@@ -11,6 +11,9 @@
 import fs from 'fs';
 import { CustomFieldType, ImportType } from '@prisma/client';
 import prisma from '../src/config/database.js';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/import-bd-legacy.ts');
 import {
   parseImportFile,
   analyzeCompanies,

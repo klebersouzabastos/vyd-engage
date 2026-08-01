@@ -9,6 +9,9 @@
 import prisma from '../src/config/database.js';
 import { checkClientFollowUpsAndContracts } from '../src/jobs/clientFollowUpChecker.js';
 import { dealService } from '../src/services/dealService.js';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/verify-followup-spec.ts');
 
 let failures = 0;
 function check(label: string, ok: boolean, detail?: string) {

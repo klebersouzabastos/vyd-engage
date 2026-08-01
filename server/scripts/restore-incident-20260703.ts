@@ -16,6 +16,9 @@ import bcrypt from 'bcryptjs';
 import prisma from '../src/config/database.js';
 import { funnelService } from '../src/services/funnelService.js';
 import { FunnelType, UserRole, UserStatus } from '@prisma/client';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/restore-incident-20260703.ts');
 
 const TENANT_SLUG = 'k2-engenharia-e-tecnologia';
 const EMAIL = 'kleber.bastos.1984@gmail.com';

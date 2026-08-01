@@ -10,6 +10,10 @@ buildCommand = "cd server && npm ci --include=dev && ./node_modules/.bin/prisma 
 # via db push). Daqui em diante, novas migrations funcionam normalmente.
 startCommand = "cd server && ./node_modules/.bin/prisma migrate deploy && node dist/index.js"
 healthcheckPath = "/health"
-healthcheckTimeout = 60
+# 300s: o startCommand roda `migrate deploy` ANTES do app subir — com 60s, uma
+# migração esperando lock era morta no meio (linha órfã em _prisma_migrations →
+# P3009 → pipeline travado até `prisma migrate resolve`). O deployment antigo
+# continua servindo durante a janela, então o timeout maior não custa downtime.
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

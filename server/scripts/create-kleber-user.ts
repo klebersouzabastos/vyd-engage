@@ -1,6 +1,9 @@
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import { assertNotProdDatabase } from '../src/config/dbSafety.js';
+
+assertNotProdDatabase('scripts/create-kleber-user.ts');
 
 // Load environment variables
 dotenv.config();
