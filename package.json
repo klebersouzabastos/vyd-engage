@@ -51,6 +51,8 @@
     "@tiptap/starter-kit": "^3.27.1",
     "@twilio/voice-sdk": "^2.18.3",
     "@types/dompurify": "^3.0.5",
+    "@vydhub/id": "^0.1.2",
+    "@vydhub/support": "^0.1.2",
     "@xyflow/react": "^12.11.0",
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
@@ -130,6 +132,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "preview": "vite preview"
   }
 }

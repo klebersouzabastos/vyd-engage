@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Lightbulb, Bug, MessageSquare, Trash2, Loader2, Pencil } from 'lucide-react';
+import { Lightbulb, Bug, MessageSquare, Trash2, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
@@ -7,7 +7,6 @@ import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { EmptyState } from '../components/EmptyState';
-import { SuggestionDialog } from '../components/SuggestionDialog';
 import {
   Dialog,
   DialogContent,
@@ -92,7 +91,6 @@ export function Suggestions() {
   const [typeFilter, setTypeFilter] = useState<'ALL' | SuggestionType>('ALL');
   const [scope, setScope] = useState<'all' | 'mine'>(isAdmin ? 'all' : 'mine');
 
-  const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Suggestion | null>(null);
   const [editStatus, setEditStatus] = useState<SuggestionStatus>('PENDING');
   const [editNotes, setEditNotes] = useState('');
@@ -241,10 +239,12 @@ export function Suggestions() {
             </select>
           </div>
 
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus size={16} />
-            Nova sugestão
-          </Button>
+          {/* Piloto 4 da Central de Suporte: a CRIAÇÃO migrou para o botão
+              "Suporte" (canto inferior direito). Esta página vira histórico
+              somente-leitura das sugestões antigas. */}
+          <span className="text-sm text-gray-500">
+            Novas solicitações: use o botão <strong>Suporte</strong> no canto da tela.
+          </span>
         </div>
 
         {/* Status counts (admin + scope=all) */}
@@ -269,10 +269,8 @@ export function Suggestions() {
               description={
                 showCounts
                   ? 'Ainda não há sugestões nesta organização.'
-                  : 'Você ainda não enviou nenhuma sugestão. Envie uma agora!'
+                  : 'Você não enviou sugestões por aqui. Para novas solicitações, use o botão Suporte.'
               }
-              actionLabel="Nova sugestão"
-              onAction={() => setCreateOpen(true)}
             />
           </div>
         ) : (
@@ -348,13 +346,6 @@ export function Suggestions() {
           </div>
         )}
       </div>
-
-      {/* Nova sugestão */}
-      <SuggestionDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={fetchSuggestions}
-      />
 
       {/* Gerenciar (admin) */}
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
