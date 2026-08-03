@@ -85,6 +85,11 @@ model User {
   lastLoginAt DateTime?
 
   // Relations
+  // Onda 4 (verbo logout): todo token emitido ANTES desta marca para de valer.
+  // O RefreshToken e apagado no logout; esta coluna mata tambem o access de
+  // 15min que ja estava em voo, sem esperar expirar.
+  tokensValidAfter      DateTime?
+
   refreshTokens         RefreshToken[]
   invitations           Invitation[]          @relation("InvitedBy")
   assignedLeads         Lead[]                @relation("LeadAssignment")
@@ -118,6 +123,27 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+}
+
+/// VYD ID G.33 — espelho de ban vindo do IdP, chaveado por E-MAIL (nao por
+/// userId) para que banir quem ainda nao tem conta local tambem valha: o
+/// exchange do SSO consulta esta tabela ANTES de casar o usuario.
+model VydBan {
+  email    String   @id
+  bannedAt DateTime
+  reason   String?
+
+  @@map("vyd_bans")
+}
+
+/// Anti-replay do webhook de ban-sync. A janela de 5min do `ts` sozinha
+/// deixaria a mesma requisicao assinada ser reenviada dentro dela.
+model VydBanNonce {
+  nonce  String   @id
+  seenAt DateTime
+
+  @@index([seenAt])
+  @@map("vyd_ban_nonces")
 }
 
 model Invitation {

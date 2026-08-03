@@ -225,6 +225,7 @@ app.get('/health', async (req, res) => {
 // API Routes
 import authRoutes from './routes/auth.js';
 import ssoRoutes from './routes/sso.js';
+import banSyncRoutes from './routes/banSync.js';
 import leadRoutes from './routes/leads.js';
 import taskRoutes from './routes/tasks.js';
 import tagRoutes from './routes/tags.js';
@@ -399,6 +400,10 @@ v1Router.use('/track', campaignTrackingRoutes);
 // API Routes
 // SSO VYD ID (portal id.vydhub.com) — fora do CSRF, como /auth/login; herda o
 // authLimiter do prefixo /auth acima.
+// G.33 / Onda 4 — webhook do dispatcher do VYD ID. Fora do CSRF (integração
+// servidor-a-servidor, autenticada por HMAC) e ANTES de authRoutes para o
+// path não ser engolido por ele.
+v1Router.use('/auth/ban-sync', banSyncRoutes);
 v1Router.use('/auth/sso', ssoRoutes);
 v1Router.use('/auth', authRoutes);
 v1Router.use('/leads', leadRoutes);

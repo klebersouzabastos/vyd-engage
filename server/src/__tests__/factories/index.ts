@@ -40,6 +40,9 @@ export const userFactory = Factory.define<User>(() => ({
   avatar: null,
   role: UserRole.USER,
   status: UserStatus.ACTIVE,
+  // Onda 4: sem marca d'agua o usuario de teste nasce com todos os tokens
+  // validos, que e o estado normal de 99,9% das contas.
+  tokensValidAfter: null,
   isPlatformAdmin: false,
   commercialFunction: null,
   teamId: null,
