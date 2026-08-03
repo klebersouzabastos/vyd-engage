@@ -17,3 +17,14 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+# Config do NIXPACKS (o Railway define NIXPACKS_CONFIG_FILE=railway.toml, então
+# este arquivo também é lido pelo nixpacks; [build]/[deploy] acima são do
+# Railway e ignorados por ele). O archive pinado pelo nixpacks do Railway
+# (ffeebf0a…) não contém `postgresql_18` — e o Postgres de produção é 18.4,
+# então o pg_dump do backup PRECISA ser >= 18 ("server version mismatch" era a
+# causa raiz dos backups vazios). Este commit é o tip da branch estável
+# nixos-25.11, verificado: contém postgresql_18 E nodejs_20.
+# O pacote em si vem da variável NIXPACKS_PKGS=postgresql_18 (Railway).
+[phases.setup]
+nixpkgsArchive = "b6018f87da91d19d0ab4cf979885689b469cdd41"
