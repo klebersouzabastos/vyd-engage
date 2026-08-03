@@ -32,6 +32,16 @@ router.post('/exchange', async (req, res, next) => {
     const { token } = exchangeSchema.parse(req.body);
     const identity = await vydIdService.verifyVydToken(token);
 
+    // G.33 — o espelho de ban vem ANTES do casamento por e-mail, de propósito:
+    // é o único ponto que barra quem foi banido no IdP e nunca chegou a ter
+    // conta local. Checar depois do findUnique deixaria esse caso passar.
+    const banido = await prisma.vydBan.findUnique({ where: { email: identity.email } });
+    if (banido) {
+      return next(
+        createError('Seu acesso ao VYD Engage foi revogado.', 403, 'SSO_USER_BANNED')
+      );
+    }
+
     // SÓ QUEM JÁ EXISTE: e-mails são armazenados normalizados (lowercase) e o
     // verifyVydToken já normaliza o e-mail do token — o findUnique casa direto.
     const user = await prisma.user.findUnique({

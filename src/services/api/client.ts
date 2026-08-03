@@ -198,9 +198,19 @@ class ApiClient {
       try {
         errorData = await response.json();
       } catch {
-        // Se não conseguir fazer parse do JSON, criar um erro genérico
+        // Corpo nao-JSON: quase sempre a BORDA respondendo (rewrite da Vercel,
+        // firewall, 502/504 do proxy) e nao a nossa API, que sempre devolve
+        // JSON pelo errorHandler.
+        //
+        // O `statusText` NAO serve aqui: em HTTP/2 ele e SEMPRE vazio, entao a
+        // mensagem caia no generico "An error occurred" e engolia ate o codigo
+        // HTTP. Isso ja custou uma investigacao inteira: um 403 de borda no
+        // handoff do VYD ID apareceu como "An error occurred" e mandou a busca
+        // para o lugar errado. O status e a unica pista que sobra — mostre-o.
         errorData = {
-          error: response.statusText || 'An error occurred',
+          error: `Erro ${response.status} ao contatar o servidor${
+            response.statusText ? ` (${response.statusText})` : ''
+          }. Se persistir, informe esse codigo ao suporte.`,
           statusCode: response.status,
         };
       }

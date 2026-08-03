@@ -38,6 +38,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
         tenantId: true,
         role: true,
         isPlatformAdmin: true,
+        tokensValidAfter: true,
       },
     });
 
@@ -47,6 +48,23 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
     if (user.status !== 'ACTIVE') {
       throw createError('User account is not active', 403, 'USER_INACTIVE');
+    }
+
+    // Onda 4 (verbo logout): "Sair de todas as ferramentas" no VYD ID apaga os
+    // refresh tokens E carimba esta marca. Sem a comparação abaixo, o access
+    // token de 15min que já estava em voo continuaria valendo até expirar —
+    // o logout pareceria instantâneo mas não seria.
+    //
+    // Comparação em segundos porque `iat` do JWT é epoch inteiro (piso do
+    // instante de emissão); a marca tem milissegundos. Estrita: no empate
+    // dentro do mesmo segundo o token cai, que é o lado seguro do erro.
+    const iatSegundos = (payload as { iat?: number }).iat;
+    if (
+      user.tokensValidAfter &&
+      typeof iatSegundos === 'number' &&
+      iatSegundos < Math.floor(user.tokensValidAfter.getTime() / 1000) + 1
+    ) {
+      throw createError('Session has been ended', 401, 'SESSION_ENDED');
     }
 
     // Attach user to request
