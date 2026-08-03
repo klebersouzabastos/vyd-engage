@@ -107,6 +107,9 @@ export default defineConfig({
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router'],
+          // SDKs do ecossistema + supabase-js (novo no bundle — só a Central
+          // usa): isolados para não engordar o chunk principal.
+          'vendor-vydhub': ['@vydhub/id', '@vydhub/support', '@supabase/supabase-js'],
           'vendor-radix': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-popover',

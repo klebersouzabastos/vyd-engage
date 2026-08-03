@@ -5,7 +5,7 @@ import { OnboardingTour } from '../OnboardingTour';
 import { CommandPalette } from '../CommandPalette';
 import { SidePanel } from '../SidePanel';
 import { SidePanelProvider } from '@/contexts/SidePanelContext';
-import { SuggestionFab } from '../SuggestionFab';
+import { SupportWidget } from '../support/SupportWidget';
 import { Topbar } from './Topbar';
 import { RibbonTabs } from './RibbonTabs';
 import { StatusBar } from './StatusBar';
@@ -66,7 +66,9 @@ function ShellInner() {
       <CommandPalette />
       <SidePanel />
       <OnboardingTour />
-      <SuggestionFab />
+      {/* Central de Suporte VYD (piloto 4) — substitui o SuggestionFab; o
+          histórico de sugestões segue consultável em /app/suggestions. */}
+      <SupportWidget />
     </div>
   );
 }
