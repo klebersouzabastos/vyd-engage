@@ -146,18 +146,24 @@ export function AutomationLogs() {
       const matchesAutomation = !filterAutomation || log.automationId === filterAutomation;
       const matchesStatus = !filterStatus || log.status === filterStatus;
 
+      // O toast fica DENTRO do guard de filtro de propósito. Fora dele,
+      // disparava para todo 'automation:log:new' do tenant — o servidor emite
+      // um por execução de passo de automação, para todos os usuários — e
+      // avisava sobre execuções que a tela nem estava mostrando. Ficou latente
+      // enquanto o tempo real esteve quebrado; com ele religado, viraria
+      // tempestade de toast em quem estivesse com a tela aberta.
       if (matchesAutomation && matchesStatus && page === 1) {
         setLogs((prev) => {
           // Deduplicate by id
           if (prev.some((l) => l.id === log.id)) return prev;
           return [log, ...prev];
         });
-      }
 
-      toast.info('Nova execução registrada', {
-        description: `${log.automationName} — ${log.status === 'ERROR' ? 'Erro' : 'Sucesso'}`,
-        duration: 4000,
-      });
+        toast.info('Nova execução registrada', {
+          description: `${log.automationName} — ${log.status === 'ERROR' ? 'Erro' : 'Sucesso'}`,
+          duration: 4000,
+        });
+      }
     });
 
     return cleanup;

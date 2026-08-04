@@ -38,6 +38,20 @@ function getAllowedOrigins(): string[] | false {
   const fromEnv = process.env.CORS_ORIGINS?.split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+
+  // Este código lê CORS_ORIGINS. A Railway tem uma variável ALLOWED_ORIGINS,
+  // que NINGUÉM lê — config morta que hoje só coincide com FRONTEND_URL, mas
+  // que numa emergência levaria alguém a editar a variável errada e achar que
+  // mudou o CORS. Barulho no boot em vez de armadilha silenciosa; não muda
+  // comportamento nenhum.
+  if (process.env.ALLOWED_ORIGINS && !(fromEnv && fromEnv.length > 0)) {
+    logger.warn(
+      'ALLOWED_ORIGINS está definida mas NÃO é lida por este servidor. ' +
+        'A variável correta é CORS_ORIGINS. Sem ela, o CORS cai no fallback FRONTEND_URL.',
+      { allowedOrigins: process.env.ALLOWED_ORIGINS, frontendUrl: process.env.FRONTEND_URL }
+    );
+  }
+
   if (fromEnv && fromEnv.length > 0) return fromEnv;
   if (process.env.FRONTEND_URL) return [process.env.FRONTEND_URL];
   return false; // fail-closed: no origins configured = reject all
