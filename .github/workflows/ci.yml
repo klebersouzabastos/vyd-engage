@@ -85,7 +85,7 @@ jobs:
           NODE_ENV: test
 
   frontend:
-    name: Frontend Lint & Build
+    name: Frontend Lint, Test & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -111,6 +111,12 @@ jobs:
       - name: Format check
         run: npm run format:check
         continue-on-error: true
+
+      # A suite de frontend existia mas não rodava em lugar nenhum (nem aqui,
+      # nem no .husky/pre-commit, que só roda os gates de cor). Entra como gate
+      # BLOQUEANTE porque está verde — 12 arquivos, 79 testes.
+      - name: Test
+        run: npm test
 
       - name: Typecheck (ratchet — fails only on NEW type errors above baseline)
         run: npm run typecheck:ci
