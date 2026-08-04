@@ -48,6 +48,18 @@ async function prismaMock(): Promise<DeepMockProxy<PrismaClient>> {
   return mod.default as unknown as DeepMockProxy<PrismaClient>;
 }
 
+async function loggerMock() {
+  const mod = await import('../../utils/logger.js');
+  return mod.logger as unknown as { warn: ReturnType<typeof vi.fn> };
+}
+
+/** Motivo registrado na última chamada de logger.warn('Handshake recusado', …). */
+async function ultimoMotivo(): Promise<string | undefined> {
+  const { warn } = await loggerMock();
+  const chamada = warn.mock.calls.filter((c) => c[0] === 'Handshake recusado').at(-1);
+  return (chamada?.[1] as { motivo?: string } | undefined)?.motivo;
+}
+
 /** Token assinado agora — `iat` é o piso do segundo corrente. */
 function tokenDe(over: Record<string, unknown> = {}, segredo = SEGREDO): string {
   return jwt.sign(
@@ -166,5 +178,56 @@ describe('autenticarHandshake', () => {
     prisma.user.findUnique.mockRejectedValue(new Error('P1001') as never);
     const { autenticarHandshake } = await carregar();
     expect(await autenticarHandshake(tokenDe())).toBeNull();
+  });
+});
+
+/**
+ * A primeira versão disto só logava no `catch`, então recusa por falta de
+ * cookie, conta inativa ou marca d'água saía SEM RASTRO — um socket barrado por
+ * ban ficava invisível no log, que é justamente quando alguém vai perguntar
+ * "por que fulano não recebe notificação". Cada motivo tem que aparecer.
+ */
+describe('autenticarHandshake — toda recusa deixa rastro', () => {
+  beforeEach(async () => {
+    mockReset(await prismaMock());
+    (await loggerMock()).warn.mockClear();
+  });
+
+  it('sem token → motivo sem_token', async () => {
+    const { autenticarHandshake } = await carregar();
+    await autenticarHandshake(undefined);
+    expect(await ultimoMotivo()).toBe('sem_token');
+  });
+
+  it('usuário apagado → motivo usuario_inexistente', async () => {
+    (await prismaMock()).user.findUnique.mockResolvedValue(null as never);
+    const { autenticarHandshake } = await carregar();
+    await autenticarHandshake(tokenDe());
+    expect(await ultimoMotivo()).toBe('usuario_inexistente');
+  });
+
+  it('banido pelo G.33 → motivo usuario_inativo', async () => {
+    (await prismaMock()).user.findUnique.mockResolvedValue(
+      usuario({ status: 'INACTIVE' }) as never
+    );
+    const { autenticarHandshake } = await carregar();
+    await autenticarHandshake(tokenDe());
+    expect(await ultimoMotivo()).toBe('usuario_inativo');
+  });
+
+  it('logout global da Onda 4 → motivo sessao_encerrada', async () => {
+    (await prismaMock()).user.findUnique.mockResolvedValue(
+      usuario({ tokensValidAfter: new Date(Date.now() + 60_000) }) as never
+    );
+    const { autenticarHandshake } = await carregar();
+    await autenticarHandshake(tokenDe());
+    expect(await ultimoMotivo()).toBe('sessao_encerrada');
+  });
+
+  it('conexão bem-sucedida NÃO loga recusa', async () => {
+    (await prismaMock()).user.findUnique.mockResolvedValue(usuario() as never);
+    const { autenticarHandshake } = await carregar();
+    await autenticarHandshake(tokenDe());
+    expect(await ultimoMotivo()).toBeUndefined();
   });
 });

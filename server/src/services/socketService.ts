@@ -69,13 +69,24 @@ function criarChecagemDeOrigem(corsOrigins: string[] | false) {
  * checagem abaixo, "Sair de todas as ferramentas" no VYD ID não derrubaria
  * este canal e o usuário seguiria recebendo eventos do tenant.
  *
- * Devolve null em qualquer recusa — o chamador não deve distinguir os motivos
- * para o cliente.
+ * Devolve null em qualquer recusa — o CLIENTE não deve distinguir os motivos.
+ * O LOG, ao contrário, distingue todos: a primeira versão disto só logava no
+ * `catch`, então recusa por falta de cookie, conta inativa ou marca d'água
+ * saía sem deixar rastro nenhum e um socket barrado por ban ficava invisível.
+ * Quem for mexer aqui: toda saída `null` tem que passar por `recusar()`.
  */
 export async function autenticarHandshake(
   token: string | undefined
 ): Promise<{ userId: string; tenantId: string } | null> {
-  if (!token) return null;
+  const recusar = (motivo: string, extra: Record<string, unknown> = {}) => {
+    logger.warn('Handshake recusado', { motivo, ...extra });
+    return null;
+  };
+
+  // Sem cookie e sem token no handshake: é o caso comum de aba deslogada, e
+  // por isso mesmo precisa aparecer — é o que diferencia "ninguém tentou" de
+  // "tentaram e foram barrados".
+  if (!token) return recusar('sem_token');
 
   try {
     const payload = verifyAccessToken(token);
@@ -85,8 +96,11 @@ export async function autenticarHandshake(
       select: { id: true, status: true, tenantId: true, tokensValidAfter: true },
     });
 
-    if (!user) return null;
-    if (user.status !== 'ACTIVE') return null;
+    if (!user) return recusar('usuario_inexistente', { userId: payload.userId });
+    if (user.status !== 'ACTIVE') {
+      // Caminho do ban do G.33 (status vira INACTIVE).
+      return recusar('usuario_inativo', { userId: user.id, status: user.status });
+    }
 
     // Mesma comparação de middleware/auth.ts: `iat` é epoch inteiro (piso do
     // segundo) e a marca tem milissegundos; estrita, para que o empate dentro
@@ -97,7 +111,8 @@ export async function autenticarHandshake(
       typeof iatSegundos === 'number' &&
       iatSegundos < Math.floor(user.tokensValidAfter.getTime() / 1000) + 1
     ) {
-      return null;
+      // Caminho do logout global da Onda 4.
+      return recusar('sessao_encerrada', { userId: user.id });
     }
 
     // tenantId vem do BANCO, não do token: se o usuário mudou de tenant, o
@@ -105,10 +120,7 @@ export async function autenticarHandshake(
     return { userId: user.id, tenantId: user.tenantId };
   } catch (erro) {
     // Assinatura inválida, token expirado ou banco fora: fail-closed.
-    logger.warn('Handshake recusado', {
-      motivo: erro instanceof Error ? erro.message : 'desconhecido',
-    });
-    return null;
+    return recusar(erro instanceof Error ? erro.message : 'erro_desconhecido');
   }
 }
 
