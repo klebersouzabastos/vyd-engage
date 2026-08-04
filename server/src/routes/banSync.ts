@@ -26,6 +26,7 @@ import express, { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../config/database.js';
 import { createError } from '../middleware/errorHandler.js';
+import { disconnectUser } from '../services/socketService.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -55,12 +56,20 @@ function assinaturaConfere(segredo: string, corpoCru: string, recebida: string):
  * Derruba as sessões do usuário: apaga os refresh tokens (mesma coisa que o
  * /auth/logout-all faz) e carimba a marca d'água, para o access token de 15min
  * que já estava em voo morrer junto em vez de esperar expirar.
+ *
+ * Ponto único dos verbos `ban` e `logout` — é por isso que a derrubada do tempo
+ * real mora aqui e não nos dois ramos separadamente.
  */
 async function derrubarSessoes(userId: string, agora: Date): Promise<void> {
   await prisma.$transaction([
     prisma.refreshToken.deleteMany({ where: { userId } }),
     prisma.user.update({ where: { id: userId }, data: { tokensValidAfter: agora } }),
   ]);
+  // A marca d'água acima só é lida em handshake/requisição NOVA. Um socket já
+  // aberto autentica uma única vez e viveria indefinidamente, então sem esta
+  // linha a aba que o usuário já tem aberta seguiria recebendo eventos do
+  // tenant depois de banido ou deslogado.
+  disconnectUser(userId);
 }
 
 router.post('/', async (req, res, next) => {
