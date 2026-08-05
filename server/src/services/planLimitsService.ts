@@ -46,11 +46,46 @@ export interface PlanUsage {
   emailConfigs: { current: number; limit: number; percentage: number };
 }
 
+/**
+ * Normaliza um limite vindo do JSON `limits` do plano para número comparável.
+ *
+ * Planos ilimitados gravam **-1** (ver prisma/seed.ts, plano ENTERPRISE) porque
+ * `Infinity` não sobrevive ao JSON — `JSON.stringify(Infinity)` vira `null`.
+ * Sem esta normalização a checagem virava `current < -1`, sempre falsa, e o
+ * plano mais caro era o único incapaz de criar leads/usuários/automações.
+ *
+ * Regra: negativo, nulo, ausente ou não-finito ⇒ ilimitado. `0` NÃO é ilimitado
+ * (é limite zero, legítimo para desligar um recurso num plano).
+ */
+function normalizeLimit(value: unknown): number {
+  if (value === null || value === undefined) return Infinity;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return Infinity;
+  return n < 0 ? Infinity : n;
+}
+
+/** Aplica normalizeLimit a todos os campos numéricos de limite. */
+function normalizeLimits(raw: PlanLimits): PlanLimits {
+  return {
+    ...raw,
+    maxLeads: normalizeLimit(raw?.maxLeads),
+    maxUsers: normalizeLimit(raw?.maxUsers),
+    maxAutomations: normalizeLimit(raw?.maxAutomations),
+    maxWhatsAppConnections: normalizeLimit(raw?.maxWhatsAppConnections),
+    maxEmailConfigs: normalizeLimit(raw?.maxEmailConfigs),
+    ...(raw?.maxStorageMB !== undefined
+      ? { maxStorageMB: normalizeLimit(raw.maxStorageMB) }
+      : {}),
+  };
+}
+
 export const planLimitsService = {
   async getLimits(tenantId: string): Promise<PlanLimits> {
     const cacheKey = `plan:${tenantId}:limits`;
+    // A normalização acontece na LEITURA (aqui e no cache), nunca antes de gravar:
+    // o cache é JSON, e um Infinity gravado voltaria como null.
     const cached = await cacheGet<PlanLimits>(cacheKey);
-    if (cached) return cached;
+    if (cached) return normalizeLimits(cached);
 
     const subscription = await prisma.subscription.findUnique({
       where: { tenantId },
@@ -63,7 +98,7 @@ export const planLimitsService = {
 
     const limits = subscription.plan.limits as unknown as PlanLimits;
     await cacheSet(cacheKey, limits, PLAN_LIMITS_TTL);
-    return limits;
+    return normalizeLimits(limits);
   },
 
   /**
