@@ -6,6 +6,11 @@ dist/
 *.log
 uploads/
 *.pem
+# Relatórios do invite-batch (contêm e-mails e links de convite)
+scripts/out/
+# CSVs reais de convite (dados pessoais do export do People)
+scripts/data/*.csv
+!scripts/data/convites-people.template.csv
 .DS_Store
 
 
