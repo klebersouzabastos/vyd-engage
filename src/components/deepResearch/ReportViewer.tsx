@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Presentation, BookOpen, ListTree } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Presentation,
+  BookOpen,
+  ListTree,
+  FileDown,
+} from 'lucide-react';
 import { buttonVariants } from '../ui/button';
 import {
   Drawer,
@@ -13,6 +20,7 @@ import { ReportRenderer } from './ReportRenderer';
 import { ReportTOC } from './ReportTOC';
 import { ReportCover } from './ReportCover';
 import { ReportSources } from './ReportSources';
+import { ReportPrintable } from './ReportPrintable';
 import { extractToc } from './extractToc';
 import { useActiveHeading } from './useActiveHeading';
 import { useReportPages, pageLabel, type ReportPage } from './useReportPages';
@@ -141,6 +149,45 @@ export function ReportViewer({
     }
   };
 
+  // Exportação em PDF via impressão do navegador. O bloco completo (ReportPrintable)
+  // só é montado durante a exportação; o efeito abaixo roda DEPOIS do commit, então
+  // o DOM já contém o documento inteiro quando `print()` é chamado.
+  const [printing, setPrinting] = useState(false);
+
+  useEffect(() => {
+    if (!printing) return;
+
+    // O PDF sai sempre no tema claro: em dark o documento ficaria com fundo escuro
+    // (ruim para leitura/impressão). Usa os tokens do DS — nenhuma cor literal.
+    const root = document.documentElement;
+    const prevTheme = root.getAttribute('data-vyd-theme');
+    root.setAttribute('data-vyd-theme', 'light');
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (prevTheme === null) root.removeAttribute('data-vyd-theme');
+      else root.setAttribute('data-vyd-theme', prevTheme);
+      setPrinting(false);
+    };
+
+    window.addEventListener('afterprint', finish);
+    // rAF: garante um ciclo de layout com o bloco de impressão já no DOM.
+    const raf = requestAnimationFrame(() => {
+      window.print();
+      // Navegadores que não emitem `afterprint` (ex.: alguns WebKit) — sem isto o
+      // componente ficaria preso no estado de impressão e no tema claro.
+      window.setTimeout(finish, 800);
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('afterprint', finish);
+      finish();
+    };
+  }, [printing]);
+
   // Índice seguro: trava entre 0 e a última página mesmo se `pageIndex` ficar
   // obsoleto após o markdown encolher (o reset por efeito roda após a render).
   const lastIndex = pages.length - 1;
@@ -213,8 +260,10 @@ export function ReportViewer({
 
   return (
     <div className="report-viewer" ref={rootRef}>
-      {hasH2 && (
-        <div className="report-viewer__topbar">
+      {/* A topbar existe mesmo sem seções (H2) — o toggle de modo é condicional,
+          mas "Exportar PDF" vale para qualquer relatório. */}
+      <div className="report-viewer__topbar">
+        {hasH2 && (
           <div className="report-viewer__toggle" role="group" aria-label="Modo de leitura">
             <button
               type="button"
@@ -231,8 +280,16 @@ export function ReportViewer({
               <BookOpen size={15} aria-hidden /> Leitura
             </button>
           </div>
-        </div>
-      )}
+        )}
+        <button
+          type="button"
+          className="report-viewer__export"
+          onClick={() => setPrinting(true)}
+          disabled={printing}
+        >
+          <FileDown size={15} aria-hidden /> {printing ? 'Preparando…' : 'Exportar PDF'}
+        </button>
+      </div>
 
       <div
         className="report-viewer__progress"
@@ -316,6 +373,20 @@ export function ReportViewer({
           )}
         </div>
       </div>
+
+      {/* Documento completo para impressão/PDF — montado só durante a exportação. */}
+      {printing && (
+        <ReportPrintable
+          markdown={markdown}
+          title={title}
+          sectionTitles={sectionTitles}
+          templateName={templateName}
+          updatedAt={updatedAt}
+          toc={toc}
+          searchResults={searchResults}
+          sourceCount={sourceCount}
+        />
+      )}
     </div>
   );
 }

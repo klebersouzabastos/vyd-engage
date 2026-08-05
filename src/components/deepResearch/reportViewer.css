@@ -139,6 +139,44 @@
   box-shadow: 0 1px 2px color-mix(in oklab, var(--vyd-neutral-0) 25%, transparent);
 }
 
+/* ---------- exportar PDF ---------- */
+/* `margin-left: auto` mantém o botão à direita mesmo quando o toggle de modo não
+   é renderizado (relatório sem seções H2). */
+.report-viewer__export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 7px 14px;
+  background: var(--rv-bg-soft);
+  border: 1px solid var(--rv-line);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--rv-muted);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.report-viewer__export:hover:not(:disabled) {
+  color: var(--rv-primary);
+  border-color: var(--rv-primary);
+}
+.report-viewer__export:focus-visible {
+  outline: 2px solid var(--rv-primary);
+  outline-offset: 2px;
+}
+.report-viewer__export:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-viewer__export {
+    transition: none;
+  }
+}
+
 /* ---------- índice (modo paginado) ---------- */
 .report-viewer__index {
   font-size: 13px;
@@ -606,4 +644,119 @@
   font-size: 12px;
   color: var(--rv-faint);
   white-space: nowrap;
+}
+
+/* =====================================================================
+   IMPRESSÃO / EXPORTAR PDF
+   O bloco .report-print é montado só durante a exportação e contém o
+   documento COMPLETO (capa → sumário → seções → fontes). Na tela ele fica
+   oculto; na impressão ele é a única coisa visível.
+   ===================================================================== */
+.report-print {
+  display: none;
+}
+
+@media print {
+  /* Só o documento de impressão aparece — some com a UI do visualizador. */
+  .report-viewer__topbar,
+  .report-viewer__progress,
+  .report-viewer__layout {
+    display: none !important;
+  }
+
+  .report-print {
+    display: block;
+  }
+
+  /* Mantém o desenho do relatório (fundos/realces) no papel e no PDF. */
+  .report-print,
+  .report-print * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Sem sombras/cantos: no papel viram borrões cinza. */
+  .report-print .report-cover--full,
+  .report-print .report-viewer__panel,
+  .report-print .report-sources {
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  /* --- quebras de página --- */
+  .report-print .report-cover--full,
+  .report-print__toc {
+    break-after: page;
+  }
+  /* Cada seção principal (H2) começa em página nova. O :first-child evita uma
+     página em branco logo após o sumário. */
+  .report-print .report-viewer__body h2 {
+    break-before: page;
+  }
+  .report-print .report-viewer__body > article > h2:first-child {
+    break-before: auto;
+  }
+  .report-print__sources {
+    break-before: page;
+  }
+
+  /* Não deixa título órfão no rodapé nem quebra blocos indivisíveis. */
+  .report-print h1,
+  .report-print h2,
+  .report-print h3 {
+    break-after: avoid;
+  }
+  .report-print table,
+  .report-print pre,
+  .report-print blockquote,
+  .report-print .report-sources__item {
+    break-inside: avoid;
+  }
+  .report-print img {
+    max-width: 100%;
+  }
+
+  /* O painel do corpo perde a moldura: no PDF a página já é o contêiner. */
+  .report-print .report-viewer__panel {
+    border: 0;
+    padding: 0;
+  }
+  .report-print .report-viewer__body {
+    max-width: none;
+  }
+
+  /* --- sumário --- */
+  .report-print__toc-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--rv-faint);
+    margin-bottom: 12px;
+  }
+  .report-print__toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 13px;
+  }
+  .report-print__toc-item {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--rv-line-soft);
+    color: var(--rv-ink);
+  }
+  .report-print__toc-item[data-level='2'] {
+    padding-left: 16px;
+    color: var(--rv-body);
+  }
+  .report-print__toc-item[data-level='3'] {
+    padding-left: 32px;
+    color: var(--rv-muted);
+  }
+
+  /* Links do corpo saem sem cor de link (no papel não são clicáveis); as URLs
+     completas ficam na seção Fontes. */
+  .report-print .report-viewer__body a {
+    color: var(--rv-ink);
+    text-decoration: underline;
+  }
 }

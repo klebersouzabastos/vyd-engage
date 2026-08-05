@@ -48,6 +48,40 @@
   min-height: 100%;
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   IMPRESSÃO — o shell é `height: 100vh; overflow: hidden` e a rolagem vive
+   no .vyd-canvas. Sem soltar essas travas, QUALQUER impressão dentro do app
+   sairia com uma única página (o resto do conteúdo fica clipado). O chrome
+   (topbar/abas/ribbon/statusbar) não faz sentido no papel.
+   ───────────────────────────────────────────────────────────────────── */
+@media print {
+  .vyd-app {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  .vyd-canvas,
+  .vyd-canvas__content {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .vyd-topbar,
+  .vyd-ribbon-tabs,
+  .vyd-ribbon,
+  .vyd-statusbar {
+    display: none;
+  }
+}
+
+/* Margens da folha (exportar PDF do relatório). Fica AQUI, e não no
+   reportViewer.css, de propósito: o jsdom não consegue calcular especificidade de
+   uma at-rule `@page` e derruba com "Cannot destructure property 'value' of
+   Specificity.max(...)" qualquer teste de componente que importe o CSS. Este
+   arquivo só é carregado pelo main.tsx, que os testes não montam. */
+@page {
+  margin: 16mm 14mm;
+}
 /* Faixa de NAVEGAÇÃO colapsada: a linha da ribbon some (mantém as categorias).
    O grid do shell lê --vyd-layout-ribbon-h na linha → zerá-la colapsa. */
 .vyd-app--ribbon-collapsed {
