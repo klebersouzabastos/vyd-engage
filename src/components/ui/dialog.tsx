@@ -48,8 +48,20 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        // `max-h` + `overflow-y-auto` são DEFAULT de propósito (não remover): o
+        // conteúdo é `fixed` centrado por translate, então sem limite de altura ele
+        // cresce para os dois lados e sai da tela SEM barra de rolagem — o body está
+        // travado pelo Radix. Simetria com o `max-w-[calc(100%-2rem)]` ao lado.
+        // Usos que fazem header/rodapé fixo + corpo rolável passam `overflow-hidden`
+        // (e/ou `max-h-*` próprio) e o twMerge dá a vitória a eles.
+        // `overflow-x-hidden` é explícito: pela spec, com um eixo != visible o outro
+        // computa para `auto`, o que traria uma barra HORIZONTAL indesejada.
+        // LIMITAÇÃO CONHECIDA: quando o modal de fato rola, o X abaixo (`absolute`)
+        // rola junto e sai de vista — Esc e clique no overlay seguem fechando. Para
+        // modais longos, prefira o padrão de cabeçalho fixo + corpo rolável
+        // (`overflow-hidden` + `flex-1 overflow-y-auto min-h-0`), como o LeadModal.
         className={cn(
-          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-[32rem]',
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-x-hidden overflow-y-auto rounded-lg border p-6 shadow-lg duration-200 sm:max-w-[32rem]',
           className
         )}
         {...props}

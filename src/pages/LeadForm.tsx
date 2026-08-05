@@ -333,7 +333,7 @@ export function LeadForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-full bg-gray-100">
       <Header
         title={lead ? 'Editar Lead' : 'Novo Lead'}
         subtitle={lead ? `Editando: ${lead.name}` : 'Preencha os dados do novo lead'}

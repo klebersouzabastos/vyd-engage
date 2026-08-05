@@ -39,6 +39,15 @@
 .vyd-canvas__content {
   min-height: 100%;
 }
+/* Páginas herdadas do Lovable declaram min-h-screen (100vh). Dentro do canvas do
+   shell — que já é 100vh MENOS topbar/abas/ribbon/statusbar — isso força ~200px de
+   rolagem fantasma e empurra rodapés de formulário para fora da área visível.
+   Escopado ao canvas: telas públicas (login, cadastro, formulário público) seguem
+   usando min-h-screen normalmente. */
+.vyd-canvas__content .min-h-screen {
+  min-height: 100%;
+}
+
 /* Faixa de NAVEGAÇÃO colapsada: a linha da ribbon some (mantém as categorias).
    O grid do shell lê --vyd-layout-ribbon-h na linha → zerá-la colapsa. */
 .vyd-app--ribbon-collapsed {
