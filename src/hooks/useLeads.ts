@@ -12,6 +12,23 @@ import {
 import { useSocket } from './useSocket';
 import { handlePendingApproval } from '../lib/approvalResponse';
 
+/**
+ * Normaliza as tags para o formato que o backend valida: `tagIds` é
+ * `z.array(z.string().uuid())` — array de STRINGS (server/src/routes/leads.ts).
+ *
+ * Existe porque as telas montavam a lista como `[{ id }]` e o payload ia assim
+ * para a API, que respondia 400 "Validation error". O erro ficou invisível por
+ * muito tempo: na rota, o enforceLimit do plano roda ANTES do parse, então o 403
+ * do limite mascarava este 400. Aceitar os dois formatos aqui evita que qualquer
+ * chamador futuro reintroduza o problema.
+ */
+function toTagIds(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return [];
+  return tags
+    .map((t) => (typeof t === 'string' ? t : ((t as { id?: string } | null)?.id ?? '')))
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+}
+
 export interface LeadsFilters {
   page?: number;
   limit?: number;
@@ -190,7 +207,7 @@ export function useLeads() {
           customFields: data.customFields || {},
           notes: data.notes,
           assignedTo: data.assignedTo,
-          tagIds: data.tags || [],
+          tagIds: toTagIds(data.tags),
         });
         const newLead = transformLead(result as unknown as ApiLead);
         toast.success('Lead criado com sucesso!');
@@ -219,7 +236,7 @@ export function useLeads() {
           customFields: data.customFields,
           notes: data.notes,
           assignedTo: data.assignedTo,
-          tagIds: data.tags || [],
+          tagIds: toTagIds(data.tags),
         });
         const updatedLead = transformLead(result as unknown as ApiLead);
         toast.success('Lead atualizado com sucesso!');

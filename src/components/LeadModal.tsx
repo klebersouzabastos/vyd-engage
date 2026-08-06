@@ -239,7 +239,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           source: formData.source,
           status: formData.status,
           customFields: formData.customFields,
-          tags: formData.tags.map((tagId: string) => ({ id: tagId })),
+          tags: formData.tags,
         });
       } else {
         // Criar novo lead
@@ -250,7 +250,7 @@ export function LeadModal({ open, onClose, lead }: LeadModalProps) {
           source: formData.source,
           status: formData.status,
           customFields: formData.customFields,
-          tags: formData.tags.map((tagId: string) => ({ id: tagId })),
+          tags: formData.tags,
         });
 
         // Criar interação inicial
