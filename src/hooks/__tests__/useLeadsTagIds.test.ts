@@ -88,3 +88,46 @@ describe('useLeads — tagIds enviados ao backend', () => {
     expect(createLead.mock.calls[0][0].tagIds).toEqual([UUID_A]);
   });
 });
+
+/**
+ * Campos de texto opcionais não podem ir como string vazia: o backend valida
+ * `email` com .email().optional() e `assignedTo` com .uuid().optional(), e o
+ * `.optional()` do Zod aceita `undefined`, NÃO `''`. Salvar um lead sem e-mail
+ * (campo opcional na tela) devolvia 400 "Validation error".
+ */
+describe('useLeads — campos opcionais vazios', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('e-mail vazio vira undefined, não string vazia (a causa do 400)', async () => {
+    const { result } = renderHook(() => useLeads(), { wrapper });
+    await act(async () => {
+      await result.current.createLead({ name: 'Sem e-mail', email: '' });
+    });
+    expect(createLead.mock.calls[0][0].email).toBeUndefined();
+  });
+
+  it('e-mail preenchido passa intacto (com trim)', async () => {
+    const { result } = renderHook(() => useLeads(), { wrapper });
+    await act(async () => {
+      await result.current.createLead({ name: 'X', email: '  alguem@k2mais.com.br  ' });
+    });
+    expect(createLead.mock.calls[0][0].email).toBe('alguem@k2mais.com.br');
+  });
+
+  it('assignedTo vazio vira undefined (reprovaria no uuid)', async () => {
+    const { result } = renderHook(() => useLeads(), { wrapper });
+    await act(async () => {
+      await result.current.createLead({ name: 'X', assignedTo: '' });
+    });
+    expect(createLead.mock.calls[0][0].assignedTo).toBeUndefined();
+  });
+
+  it('vale também para o update', async () => {
+    const { result } = renderHook(() => useLeads(), { wrapper });
+    await act(async () => {
+      await result.current.updateLead('l1', { email: '', phone: '' });
+    });
+    expect(updateLead.mock.calls[0][1].email).toBeUndefined();
+    expect(updateLead.mock.calls[0][1].phone).toBeUndefined();
+  });
+});

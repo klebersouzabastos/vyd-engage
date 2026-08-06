@@ -20,9 +20,21 @@ const router = Router();
 router.use(authenticate);
 router.use(tenantScope);
 
+/**
+ * Campo opcional cujo valor vazio vindo da UI significa "não informado".
+ *
+ * Um `<input>` não preenchido manda `''`, e `.optional()` do Zod só aceita
+ * `undefined` — então `z.string().email().optional()` REPROVA a string vazia.
+ * Era isso que devolvia 400 "Validation error" ao salvar um lead sem e-mail
+ * (campo que a tela trata como opcional). Vale igual para `assignedTo`, onde
+ * `''` reprovaria no `.uuid()`.
+ */
+const vazioComoAusente = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), schema);
+
 const createLeadSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email().optional(),
+  email: vazioComoAusente(z.string().email().optional()),
   phone: z.string().optional(),
   company: z.string().optional(),
   position: z.string().optional(),
@@ -31,7 +43,7 @@ const createLeadSchema = z.object({
   score: z.number().int().min(0).max(100).optional(),
   customFields: z.record(z.any()).optional(),
   notes: z.string().optional(),
-  assignedTo: z.string().uuid().optional(),
+  assignedTo: vazioComoAusente(z.string().uuid().optional()),
   tagIds: z.array(z.string().uuid()).optional(),
 });
 

@@ -13,6 +13,21 @@ import { useSocket } from './useSocket';
 import { handlePendingApproval } from '../lib/approvalResponse';
 
 /**
+ * Campo de texto opcional: `''` (input não preenchido) vira `undefined`.
+ *
+ * O backend valida `email` com `.email().optional()` e `assignedTo` com
+ * `.uuid().optional()` — e `.optional()` do Zod aceita `undefined`, NÃO string
+ * vazia. Mandar `''` reprovava com 400 "Validation error" ao salvar um lead sem
+ * e-mail (campo que a tela trata como opcional). O backend também passou a
+ * tolerar vazio; aqui é a outra ponta.
+ */
+function vazioComoAusente(v: unknown): string | undefined {
+  if (typeof v !== 'string') return v as string | undefined;
+  const t = v.trim();
+  return t === '' ? undefined : t;
+}
+
+/**
  * Normaliza as tags para o formato que o backend valida: `tagIds` é
  * `z.array(z.string().uuid())` — array de STRINGS (server/src/routes/leads.ts).
  *
@@ -197,16 +212,16 @@ export function useLeads() {
       try {
         const result = await apiClient.createLead({
           name: data.name || '',
-          email: data.email,
-          phone: data.phone,
-          company: data.company,
-          position: data.position,
+          email: vazioComoAusente(data.email),
+          phone: vazioComoAusente(data.phone),
+          company: vazioComoAusente(data.company),
+          position: vazioComoAusente(data.position),
           status: data.status ? mapStatusToBackend(data.status) : undefined,
           source: data.source ? mapSourceToBackend(data.source) : undefined,
           score: data.score || 0,
           customFields: data.customFields || {},
-          notes: data.notes,
-          assignedTo: data.assignedTo,
+          notes: vazioComoAusente(data.notes),
+          assignedTo: vazioComoAusente(data.assignedTo),
           tagIds: toTagIds(data.tags),
         });
         const newLead = transformLead(result as unknown as ApiLead);
@@ -226,16 +241,16 @@ export function useLeads() {
       try {
         const result = await apiClient.updateLead(id, {
           name: data.name,
-          email: data.email,
-          phone: data.phone,
-          company: data.company,
-          position: data.position,
+          email: vazioComoAusente(data.email),
+          phone: vazioComoAusente(data.phone),
+          company: vazioComoAusente(data.company),
+          position: vazioComoAusente(data.position),
           status: data.status ? mapStatusToBackend(data.status) : undefined,
           source: data.source ? mapSourceToBackend(data.source) : undefined,
           score: data.score,
           customFields: data.customFields,
-          notes: data.notes,
-          assignedTo: data.assignedTo,
+          notes: vazioComoAusente(data.notes),
+          assignedTo: vazioComoAusente(data.assignedTo),
           tagIds: toTagIds(data.tags),
         });
         const updatedLead = transformLead(result as unknown as ApiLead);
