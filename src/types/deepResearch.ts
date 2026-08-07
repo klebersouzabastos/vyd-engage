@@ -50,6 +50,11 @@ export interface DeepResearchReportMeta {
   truncated?: boolean;
   /** finish_reason bruto do provedor, para diagnóstico. */
   finishReason?: string;
+  /**
+   * Seções do roteiro que o relatório não cobriu. É o sinal mais útil: no caso
+   * real o provedor reportou `stop` e ainda assim faltaram 2 capítulos.
+   */
+  missingSections?: string[];
 }
 
 /** Item da lista — não carrega o markdown completo nem o prompt. */

@@ -41,6 +41,8 @@ interface ReportViewerProps {
   sourceCount: number;
   /** O motor cortou o texto por limite de saída — o relatório está incompleto. */
   truncated?: boolean;
+  /** Seções do roteiro que ficaram de fora (quando detectadas). */
+  missingSections?: string[];
 }
 
 function readStoredMode(): Mode {
@@ -67,6 +69,7 @@ export function ReportViewer({
   searchResults,
   sourceCount,
   truncated = false,
+  missingSections = [],
 }: ReportViewerProps) {
   const hasSources = searchResults.length > 0 || sourceCount > 0;
   const { split, pages } = useReportPages(markdown, hasSources);
@@ -302,10 +305,15 @@ export function ReportViewer({
         <div className="report-viewer__truncated" role="status">
           <AlertTriangle size={16} aria-hidden />
           <div>
-            <strong>Relatório incompleto.</strong> O motor de pesquisa atingiu o limite de
-            tamanho da resposta e o texto foi interrompido antes da conclusão. O conteúdo
-            acima é válido, mas não cobre tudo o que foi pedido — gere novamente para obter
-            a versão completa.
+            <strong>Relatório incompleto.</strong> O motor de pesquisa interrompeu o texto
+            antes de cobrir todo o roteiro. O conteúdo acima é válido, mas está parcial —
+            gere novamente para obter a versão completa.
+            {missingSections.length > 0 && (
+              <>
+                {' '}
+                Ficou sem: <em>{missingSections.join('; ')}</em>.
+              </>
+            )}
           </div>
         </div>
       )}

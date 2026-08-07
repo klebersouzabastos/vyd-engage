@@ -5,6 +5,7 @@ import { sanitizeMarkdown } from './deepResearch/sanitizeMarkdown.js';
 import { deepResearchTemplateService } from './deepResearch/templateService.js';
 import { buildPrompt } from './deepResearch/promptUtils.js';
 import { getProvider } from './deepResearch/deepResearchProvider.js';
+import { avaliarCompletude } from './deepResearch/completeness.js';
 import type { ResearchSource } from './deepResearch/providers/types.js';
 import { logger } from '../utils/logger.js';
 
@@ -281,6 +282,25 @@ export const deepResearchService = {
     }
     const cleaned = sanitizeMarkdown(result.markdown || '');
     const sources = result.sources?.length ? result.sources : cleaned.sources;
+
+    // O `finish_reason` do provedor NÃO basta: num teste real o motor entregou 8
+    // dos 10 capítulos pedidos, cortado no meio da frase, e mesmo assim reportou
+    // `stop`. Conferimos a cobertura contra o outline do prompt.
+    const atual = await prisma.deepResearch.findUnique({
+      where: { id },
+      select: { promptUsed: true },
+    });
+    const completude = avaliarCompletude(atual?.promptUsed || '', cleaned.markdown);
+    const incompleto = result.truncated === true || completude.incompleto;
+    if (incompleto) {
+      logger.warn('Deep Research INCOMPLETO', {
+        id,
+        truncadoPeloProvedor: result.truncated === true,
+        finishReason: result.finishReason,
+        secoesFaltando: completude.faltando,
+        fraseIncompleta: completude.fraseIncompleta,
+      });
+    }
     await prisma.deepResearch.update({
       where: { id },
       data: {
@@ -290,11 +310,19 @@ export const deepResearchService = {
           searchResults: result.searchResults || [],
           charCount: cleaned.markdown.length,
           generatedAt: new Date().toISOString(),
-          // Relatório cortado por limite de saída do modelo. Fica no meta (e não
-          // em providerError) porque NÃO é falha: o conteúdo recebido é válido —
-          // só está incompleto, e a tela avisa em vez de fingir que está pronto.
-          truncated: result.truncated === true,
+          // Relatório cortado. Fica no meta (e não em providerError) porque NÃO é
+          // falha: o conteúdo recebido é válido — só está incompleto, e a tela
+          // avisa em vez de fingir que está pronto.
+          //
+          // `truncated` é a UNIÃO de duas evidências: o provedor admitir o corte
+          // (finish_reason=length) OU a cobertura do outline denunciar. A segunda
+          // é a que pega o caso real, em que o provedor diz `stop` e ainda assim
+          // faltam capítulos.
+          truncated: incompleto,
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
+          ...(completude.faltando.length
+            ? { missingSections: completude.faltando }
+            : {}),
         } as any,
         status: DeepResearchStatus.COMPLETED,
         providerError: null,
