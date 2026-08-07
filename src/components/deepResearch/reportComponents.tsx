@@ -73,6 +73,13 @@ export const reportComponents: Components = {
     />
   ),
   hr: ({ node, ...props }) => <hr className="my-10 border-gray-200" {...props} />,
+  sup: ({ node, ...props }) => (
+    // Citação sobrescrita (ver remarkCitations): discreta, sem competir com o texto.
+    <sup
+      className="ml-0.5 align-super text-[0.65em] font-medium text-primary/70"
+      {...props}
+    />
+  ),
   strong: ({ node, ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
   em: ({ node, ...props }) => <em className="italic text-gray-700" {...props} />,
   img: ({ node, ...props }) => (

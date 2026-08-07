@@ -313,6 +313,40 @@
   max-width: 78ch;
 }
 
+/* ---------- ajuste tipográfico do texto corrido ----------
+   Justificado SEMPRE com hifenização: sem hífen, a justificação abre buracos
+   entre palavras e cria "rios" verticais na mancha — fica pior que alinhado à
+   esquerda. A hifenização depende de `lang` no documento (index.html declara
+   pt-BR) e do dicionário do navegador. */
+.report-viewer__body p,
+.report-viewer__body li {
+  text-align: justify;
+  hyphens: auto;
+  /* Palavra que não cabe (URL, código de projeto) quebra em vez de furar a
+     margem — sem isto, justificar piora o transbordo. */
+  overflow-wrap: break-word;
+}
+/* Nunca deixa 1-2 linhas isoladas de um parágrafo numa coluna/página. */
+.report-viewer__body p,
+.report-viewer__body li {
+  orphans: 2;
+  widows: 2;
+}
+/* Títulos NÃO se justificam, e `balance` evita a última linha com uma palavra
+   solta — o defeito mais visível em título de duas linhas. */
+.report-viewer__body h1,
+.report-viewer__body h2,
+.report-viewer__body h3,
+.report-viewer__body h4 {
+  text-align: left;
+  text-wrap: balance;
+  hyphens: manual;
+}
+/* Em parágrafo, `pretty` cuida só da última linha (não reflui o bloco todo). */
+.report-viewer__body p {
+  text-wrap: pretty;
+}
+
 /* O DOCUMENTO tem largura própria e fica centralizado no canvas.
    Sem isto, o painel acompanhava a tela inteira e a coluna de texto (78ch)
    deixava um vazio enorme à direita — a "área inutilizada". Agora a folha tem
@@ -829,6 +863,7 @@
   }
   .report-print table {
     width: 100%;
+    font-variant-numeric: tabular-nums;
     font-size: 8pt;
     border-collapse: collapse;
     table-layout: auto;
