@@ -36,6 +36,9 @@ export function DeepResearchView() {
   const hasReport = item?.status === 'COMPLETED' && markdown.trim().length > 0;
   const sourceCount = item?.reportMeta?.sources?.length ?? 0;
   const searchResults = item?.reportMeta?.searchResults ?? [];
+  // Relatórios gerados antes da detecção não têm o campo — só avisamos quando o
+  // motor DISSE que cortou, nunca por suposição.
+  const truncated = item?.reportMeta?.truncated === true;
 
   // Conteúdo do relatório (visualizador ou estado vazio). Reutilizado na aba
   // "Relatório" do platform admin e na visão direta do usuário comum.
@@ -47,6 +50,7 @@ export function DeepResearchView() {
       updatedAt={item.updatedAt}
       searchResults={searchResults}
       sourceCount={sourceCount}
+      truncated={truncated}
     />
   ) : (
     <StatusState status={item.status} onEdit={() => setEditorOpen(true)} />

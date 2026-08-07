@@ -139,6 +139,29 @@
   box-shadow: 0 1px 2px color-mix(in oklab, var(--vyd-neutral-0) 25%, transparent);
 }
 
+/* ---------- aviso de relatório truncado ---------- */
+/* O motor parou por limite de tokens e o texto está cortado. Usa o token de
+   aviso do DS (nunca cor literal — gate check:colors). */
+.report-viewer__truncated {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in oklab, var(--vyd-warning) 45%, transparent);
+  border-left: 3px solid var(--vyd-warning);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--vyd-warning) 12%, var(--vyd-bg-panel));
+  color: var(--rv-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.report-viewer__truncated > svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--vyd-warning);
+}
+
 /* ---------- exportar PDF ---------- */
 /* `margin-left: auto` mantém o botão à direita mesmo quando o toggle de modo não
    é renderizado (relatório sem seções H2). */
@@ -657,11 +680,20 @@
 }
 
 @media print {
-  /* Só o documento de impressão aparece — some com a UI do visualizador. */
+  /* Só o documento de impressão aparece — some com a UI do visualizador.
+     O aviso de truncado sai daqui e é renderizado DENTRO do .report-print
+     (ReportPrintable), para cair na capa em vez de flutuar antes dela. */
   .report-viewer__topbar,
   .report-viewer__progress,
+  .report-viewer__truncated,
   .report-viewer__layout {
     display: none !important;
+  }
+
+  /* Dentro do documento impresso o aviso é exibido (mesma classe, reativada). */
+  .report-print .report-viewer__truncated {
+    display: flex !important;
+    margin-bottom: 18px;
   }
 
   .report-print {

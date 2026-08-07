@@ -264,6 +264,9 @@ export const deepResearchService = {
       searchResults?: ResearchSource[];
       failed?: boolean;
       error?: string;
+      /** Provedor parou por limite de saída — o texto está cortado. */
+      truncated?: boolean;
+      finishReason?: string;
     }
   ) {
     if (result.failed) {
@@ -287,6 +290,11 @@ export const deepResearchService = {
           searchResults: result.searchResults || [],
           charCount: cleaned.markdown.length,
           generatedAt: new Date().toISOString(),
+          // Relatório cortado por limite de saída do modelo. Fica no meta (e não
+          // em providerError) porque NÃO é falha: o conteúdo recebido é válido —
+          // só está incompleto, e a tela avisa em vez de fingir que está pronto.
+          truncated: result.truncated === true,
+          ...(result.finishReason ? { finishReason: result.finishReason } : {}),
         } as any,
         status: DeepResearchStatus.COMPLETED,
         providerError: null,
