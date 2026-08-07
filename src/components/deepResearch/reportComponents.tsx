@@ -42,7 +42,7 @@ export const reportComponents: Components = {
     />
   ),
   p: ({ node, ...props }) => (
-    <p className="my-3.5 text-[0.95rem] leading-7 text-gray-700" {...props} />
+    <p className="my-3.5 text-[1.0625rem] leading-7 text-gray-700" {...props} />
   ),
   a: ({ node, ...props }) => (
     // eslint-disable-next-line jsx-a11y/anchor-has-content -- conteúdo vem via children/props do react-markdown
@@ -55,20 +55,20 @@ export const reportComponents: Components = {
   ),
   ul: ({ node, ...props }) => (
     <ul
-      className="my-4 list-disc space-y-1.5 pl-6 text-[0.95rem] text-gray-700 marker:text-primary/70"
+      className="my-4 list-disc space-y-1.5 pl-6 text-[1.0625rem] text-gray-700 marker:text-primary/70"
       {...props}
     />
   ),
   ol: ({ node, ...props }) => (
     <ol
-      className="my-4 list-decimal space-y-1.5 pl-6 text-[0.95rem] text-gray-700 marker:font-semibold marker:text-primary/80"
+      className="my-4 list-decimal space-y-1.5 pl-6 text-[1.0625rem] text-gray-700 marker:font-semibold marker:text-primary/80"
       {...props}
     />
   ),
   li: ({ node, ...props }) => <li className="pl-1 leading-7" {...props} />,
   blockquote: ({ node, ...props }) => (
     <blockquote
-      className="my-5 rounded-r-lg border-l-4 border-primary bg-blue-50/70 px-5 py-3 text-[0.95rem] italic text-gray-700"
+      className="my-5 rounded-r-lg border-l-4 border-primary bg-blue-50/70 px-5 py-3 text-[1.0625rem] italic text-gray-700"
       {...props}
     />
   ),

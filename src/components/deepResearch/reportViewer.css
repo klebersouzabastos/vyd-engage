@@ -302,16 +302,9 @@
 .report-viewer__body {
   max-width: none;
 }
-.report-viewer__body p,
-.report-viewer__body ul,
-.report-viewer__body ol,
-.report-viewer__body blockquote,
-.report-viewer__body h3,
-.report-viewer__body h4,
-.report-viewer__body h5,
-.report-viewer__body h6 {
-  max-width: 78ch;
-}
+/* Sem max-width por elemento: quem define a medida é a largura da FOLHA
+   (.report-viewer__main). Limitar aqui além disso só recriaria a faixa morta
+   que existia à direita do texto. */
 
 /* ---------- ajuste tipográfico do texto corrido ----------
    Justificado SEMPRE com hifenização: sem hífen, a justificação abre buracos
@@ -347,14 +340,50 @@
   text-wrap: pretty;
 }
 
-/* O DOCUMENTO tem largura própria e fica centralizado no canvas.
-   Sem isto, o painel acompanhava a tela inteira e a coluna de texto (78ch)
-   deixava um vazio enorme à direita — a "área inutilizada". Agora a folha tem
-   largura de documento e o espaço restante é margem, não buraco. */
+/* LARGURA DA FOLHA — acompanha o TEXTO, não a tela.
+   A tentativa anterior (folha de 1120px) só mudou o vazio de lugar: o texto
+   para em 78ch (~760px) e sobravam ~360px em branco DENTRO do painel. Como
+   alargar a linha de texto pioraria a leitura, a folha é que encolhe para a
+   medida do texto — e os blocos de DADOS é que escapam dela (regra abaixo).
+   Resultado: mancha cheia, sem faixa morta à direita. */
 .report-viewer__main {
-  max-width: 1120px;
+  /* Calibrada para o texto ENCHER a folha, em vez de parar no meio dela:
+     medida de leitura + padding do painel (28px de cada lado). Com o corpo em
+     1.0625rem dá ~80 caracteres por linha — o teto do intervalo confortável
+     (60-80). Alargar mais devolveria a faixa morta que existia à direita. */
+  max-width: 740px;
   margin-inline: auto;
   width: 100%;
+}
+
+/* FULL-BLEED dos blocos largos: tabela, imagem e código saem da coluna de
+   leitura e usam o espaço que a folha não usa, centralizados. É o padrão
+   editorial (texto estreito, dados largos) e o que resolve tabela de 8 colunas
+   sem espremer nem criar rolagem horizontal. O `min()` impede que ela invada a
+   margem da tela em monitores pequenos. */
+.report-viewer__body > article > div:has(> table),
+.report-viewer__body > article > figure,
+.report-viewer__body > article > pre {
+  width: min(1240px, calc(100vw - 22rem));
+  max-width: none;
+  margin-inline: calc(50% - min(620px, calc(50vw - 11rem)));
+}
+
+/* Sem o rail (modo apresentação/telas estreitas) sobra mais espaço lateral. */
+.report-viewer__layout--full .report-viewer__body > article > div:has(> table) {
+  width: min(1240px, calc(100vw - 12rem));
+  margin-inline: calc(50% - min(620px, calc(50vw - 6rem)));
+}
+
+@media (max-width: 1023px) {
+  /* Sem espaço lateral para escapar: volta a acompanhar a coluna. */
+  .report-viewer__body > article > div:has(> table),
+  .report-viewer__body > article > figure,
+  .report-viewer__body > article > pre,
+  .report-viewer__layout--full .report-viewer__body > article > div:has(> table) {
+    width: 100%;
+    margin-inline: 0;
+  }
 }
 /* Com o rail de índice, o conjunto (rail + folha) é que se centraliza. */
 @media (min-width: 768px) {
