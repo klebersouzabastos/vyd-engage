@@ -87,13 +87,13 @@ export const reportComponents: Components = {
   thead: ({ node, ...props }) => <thead className="bg-gray-800" {...props} />,
   th: ({ node, ...props }) => (
     <th
-      className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-100"
+      className="px-4 py-3 text-left text-xs font-semibold uppercase leading-snug tracking-wide text-gray-100"
       {...props}
     />
   ),
   td: ({ node, ...props }) => (
     <td
-      className="border-t border-gray-100 px-4 py-2.5 align-top text-[0.875rem] text-gray-700"
+      className="border-t border-gray-100 px-4 py-2.5 align-top text-[0.875rem] leading-relaxed text-gray-700 [&:first-child]:font-medium [&:first-child]:text-gray-900"
       {...props}
     />
   ),

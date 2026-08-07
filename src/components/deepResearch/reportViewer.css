@@ -293,8 +293,24 @@
 }
 
 /* ---------- tipografia do corpo do relatório ---------- */
+/* MEDIDA DE LEITURA — texto estreito, dados largos.
+   Antes o corpo inteiro cabia em 760px, o que espremia as tabelas (o Radar tem
+   8 colunas) e as obrigava a rolar na horizontal dentro da coluna de texto.
+   Agora o bloco usa a largura toda do painel e só os elementos de TEXTO ficam
+   limitados a ~72 caracteres, que é a medida confortável de leitura; tabelas,
+   imagens e blocos de código aproveitam o espaço inteiro. */
 .report-viewer__body {
-  max-width: 760px;
+  max-width: none;
+}
+.report-viewer__body p,
+.report-viewer__body ul,
+.report-viewer__body ol,
+.report-viewer__body blockquote,
+.report-viewer__body h3,
+.report-viewer__body h4,
+.report-viewer__body h5,
+.report-viewer__body h6 {
+  max-width: 72ch;
 }
 .report-viewer__body > article {
   max-width: none;
@@ -783,12 +799,33 @@
     padding: 0;
   }
 
-  /* Tabela é o coração deste relatório: cabeçalho repete a cada folha e a
-     linha não parte no meio. */
+  /* TABELAS — o coração deste relatório (Radar de Oportunidades tem 8 colunas).
+     O wrapper da tabela é `overflow-x-auto` para rolar na TELA; no papel isso
+     CORTA as colunas da direita, que foi como o Radar saiu no primeiro PDF.
+     Aqui o wrapper libera o overflow e a tabela passa a `fixed`, que distribui
+     a largura e obriga o texto a quebrar em vez de empurrar a coluna para fora. */
+  .report-print .report-viewer__body > article div:has(> table),
+  .report-print div:has(> table) {
+    overflow: visible !important;
+    border-radius: 0;
+    box-shadow: none;
+  }
   .report-print table {
     width: 100%;
-    font-size: 9pt;
+    font-size: 8pt;
     border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .report-print th,
+  .report-print td {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
+  }
+  /* Primeira coluna costuma ser "Nº": não precisa de largura de texto. */
+  .report-print table th:first-child,
+  .report-print table td:first-child {
+    width: 4%;
   }
   .report-print thead {
     display: table-header-group;
