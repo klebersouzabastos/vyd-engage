@@ -194,50 +194,12 @@ router.put('/profile', authenticate, async (req, res, next) => {
   }
 });
 
-// Change password
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
-});
-
-router.put('/change-password', authenticate, async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return next(createError('Authentication required', 401));
-    }
-
-    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-    });
-
-    if (!user) {
-      return next(createError('User not found', 404));
-    }
-
-    const { comparePassword: comparePw } = await import('../utils/password.js');
-    const isValid = await comparePw(currentPassword, user.passwordHash);
-    if (!isValid) {
-      return next(createError('Senha atual incorreta', 400, 'INVALID_PASSWORD'));
-    }
-
-    const { hashPassword: hashPw } = await import('../utils/password.js');
-    const newHash = await hashPw(newPassword);
-
-    await prisma.user.update({
-      where: { id: req.user.userId },
-      data: { passwordHash: newHash },
-    });
-
-    res.json({ message: 'Password changed successfully' });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(createError('Validation error', 400, 'VALIDATION_ERROR', error.errors));
-    }
-    next(error);
-  }
-});
+/*
+ * `PUT /change-password` saiu junto com o corte: sem login por senha, ninguém
+ * tem "senha atual" para informar — quem entra pelo exchange recebe um hash
+ * que não corresponde a nenhuma senha conhecida. A rota era código morto que
+ * mantinha viva a ideia de credencial local.
+ */
 
 // Update tenant (company info)
 const updateTenantSchema = z.object({
