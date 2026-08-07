@@ -15,108 +15,86 @@ export interface BuiltinTemplate {
   promptBody: string;
 }
 
-export const EMPRESA_TEMPLATE_PROMPT = `Objetivo: gerar uma pesquisa aprofundada sobre a empresa [EMPRESA] (setor: [SETOR]), com foco em identificar oportunidades de negócio em engenharia, projetos e suprimentos.
+export const EMPRESA_TEMPLATE_PROMPT = `Objetivo: gerar uma pesquisa comercial aprofundada sobre a empresa [EMPRESA] (setor: [SETOR]), para uso do time comercial de uma empresa de consultoria e serviços de engenharia, projetos e suprimentos. O leitor parte do desconhecimento total da conta e, ao terminar, precisa dominar: quais oportunidades existem, quanto valem, em que fase estão, quem decide, quando e como abordar.
+
+Este relatório alimenta um CRM: cada oportunidade identificada aqui será cadastrada como negócio e trabalhada até um pedido de proposta. Escreva para esse uso — informação acionável, específica e datada. Estamos em 2026.
 
 ## Estrutura da pesquisa solicitada
 
-### Capítulo 1 — Panorama Geral da Empresa
-- Histórico e posicionamento no seu setor de atuação;
-- Estrutura societária e grupos controladores;
-- Localização das unidades operacionais e escritórios;
-- Produtos principais, volumes produzidos e mercados atendidos.
+### Capítulo 1 — Sumário Executivo Comercial
+- A conta em até 6 bullets: quem é, tamanho, momento financeiro, direção estratégica e por que ela importa AGORA para quem vende engenharia, projetos e suprimentos;
+- Tabela **Radar de Oportunidades** com TODAS as oportunidades detalhadas no Capítulo 2, ranqueadas por atratividade: Nº | Oportunidade | Valor estimado | Fase atual | Janela de contratação | Decisor provável | Próximo passo | Confiança;
+- Leitura de momento: o que acontece nos próximos 12 meses que abre (ou fecha) janelas de entrada.
 
-### Capítulo 2 — Investimentos em Curso e Planejados (próximos 5 anos, sendo que estamos em 2026)
-- Tabela com os investimentos planejados por ano e por projeto, separando:
-  - Expansão de capacidade (greenfield, brownfield);
-  - Sustentação (CAPEX de manutenção);
-  - Exploração / prospecção de recursos (quando aplicável);
-- Destaque para:
-  - Fases mais intensivas em engenharia e obras;
-  - Marcos principais do cronograma (início de obras, comissionamento, etc.).
+### Capítulo 2 — Fichas das Oportunidades
+Para CADA linha do Radar, uma ficha padronizada (título de nível 3 com o nome da oportunidade) contendo os campos:
+- **O que é** — descrição objetiva do projeto ou iniciativa;
+- **Escopo aderente** — o que pode ser vendido em engenharia, projetos ou suprimentos dentro dela;
+- **Valor e base** — investimento estimado, com ano-base e moeda (R$ e US$ quando possível);
+- **Fase e maturidade** — estudo, licenciamento, engenharia conceitual/básica/detalhada, construção, comissionamento ou operação — sempre com a evidência da fase;
+- **Janela de contratação** — quando os pacotes de serviços devem ir a mercado;
+- **Modelo de contratação provável** — EPC, EPCM, pacotes especializados, LTA, reforço de equipe;
+- **Stakeholders** — quem decide, quem influencia e quem pode vetar (nomes e cargos públicos);
+- **Concorrência provável** — quem já está dentro e quem deve disputar;
+- **Sinais e gatilhos** — eventos DATADOS que sustentam a ficha (licença, edital, audiência pública, contratação-chave, divulgação de CAPEX);
+- **Riscos e incertezas** — o que pode atrasar, reduzir ou cancelar;
+- **Próximo passo recomendado** — ação concreta para os próximos 30 dias.
 
-O estudo de investimentos deve sempre levar em consideração investimentos que passam pelo ano de 2026 ou que se iniciam em 2026 ou posterior. Deve-se ignorar os investimentos que já se findaram. Todos os investimentos devem ser informados com as suas datas de realização: em toda situação em que um investimento for anunciado, é necessário dizer quando ele ocorrerá.
+Campo sem informação pública: escreva "não encontrado" e indique onde o time deve buscar (pessoa, documento ou canal). Nunca preencha com generalidades.
 
-### Capítulo 3 — Distribuição de Investimentos por Fase de Projeto
-- Apresentar a distribuição percentual estimada dos custos por fase, incluindo:
-  - Engenharia conceitual / estudos iniciais;
-  - Engenharia básica e estudos de viabilidade;
-  - Engenharia detalhada;
-  - Aquisição de equipamentos;
-  - Construção e montagem;
-  - Gerenciamento de obras e comissionamento.
+### Capítulo 3 — Panorama da Empresa
+- Histórico, posicionamento, estrutura societária e controladores, unidades e localizações, produtos, volumes e mercados atendidos;
+- Saúde financeira e capacidade de investimento (receita, margem, alavancagem, rating — quando públicos);
+- Reputação como contratante (prazos de pagamento, litígios relevantes com fornecedores — quando públicos);
+- Inclua APENAS o que muda a leitura comercial da conta; nada de biografia genérica.
 
-Considerar apenas investimentos que passam por 2026 ou se iniciam em 2026 ou posterior, sempre com as respectivas datas.
+### Capítulo 4 — Investimentos e CAPEX (2026 em diante)
+- Diretrizes de CAPEX anunciadas e valores por projeto e por ano, separando expansão (greenfield/brownfield), sustentação e exploração/prospecção quando aplicável;
+- Tabela consolidada: Projeto | Valor | Período | Categoria | Fase | Status | Fonte;
+- Considere apenas investimentos que atravessam 2026 ou começam em 2026 ou depois; ignore os já concluídos; todo investimento citado precisa de data ou janela.
 
-### Capítulo 4 — Maturidade dos Projetos
-- Listar os projetos da empresa com indicação do estágio atual, como:
-  - Estudo / concepção;
-  - Estudo de viabilidade;
-  - Engenharia básica;
-  - Construção;
-  - Operação;
-- Indicar possíveis janelas de entrada para prestadores de serviços.
+### Capítulo 5 — Maturidade e Janelas de Entrada
+- Para cada projeto do Capítulo 4: fase atual (com evidência), próximos marcos decisórios e a janela em que serviços de engenharia, projetos e suprimentos são contratados;
+- Distribuição percentual estimada dos custos por fase (engenharia conceitual/básica/detalhada, aquisição de equipamentos, construção e montagem, gerenciamento e comissionamento), quando houver base para estimar;
+- Tabela: Projeto | Fase atual | Próximo marco | Janela para serviços | Urgência da abordagem.
 
-Considerar apenas investimentos que passam por 2026 ou se iniciam em 2026 ou posterior, sempre com as respectivas datas.
+### Capítulo 6 — Como a Empresa Contrata
+- Processo e plataforma de compras (portal, cadastro e homologação de fornecedores: requisitos, prazos e passos práticos);
+- Estrutura de contratação (EPC, EPCM, pacotes especializados, LTAs guarda-chuva) e nível de terceirização em engenharia, compras e obras;
+- Política de conteúdo local e preferência por fornecedores nacionais ou regionais — e como usá-la a favor;
+- Encerre com um passo a passo objetivo: o que fazer HOJE para estar apto a receber um convite de proposta desta empresa.
 
-### Capítulo 5 — Modelo de Contratação e Preferências da Empresa
-- Informar como a empresa costuma estruturar suas contratações:
-  - Modelo EPC ou EPCM;
-  - Uso de equipe interna vs. contratação de pacotes externos;
-  - Nível de terceirização em engenharia, compras e obras;
-  - Se a empresa atua com contratos de LTA do tipo guarda-chuva para fornecimento de projetos de engenharia.
-- Avaliar se há padronização ou flexibilidade nos escopos.
+### Capítulo 7 — Mapa de Stakeholders (situação em 2026)
+- Lideranças relevantes para as oportunidades, nas áreas de Engenharia, Projetos, Suprimentos e Diretoria Executiva: nome, cargo, responsabilidades e contato institucional público;
+- Classifique cada um: decide | influencia | veta — amarrando às oportunidades do Capítulo 2 sempre que possível;
+- Sinais públicos de cada stakeholder (entrevistas, palestras, publicações, movimentações de carreira) que sirvam de gancho de abordagem;
+- Porta de entrada recomendada na conta e erros a evitar.
 
-### Capítulo 6 — Concorrência e Parcerias Estratégicas
-- Mapear fornecedores e concorrentes que já atuam com a empresa:
-  - Empresas de engenharia;
-  - Identificar se há alguma empresa atendendo com contrato LTA (estamos em 2026);
-  - Consultorias técnicas (ambiental, viabilidade, especializadas);
-  - Empreiteiras e montadoras industriais;
-- Apontar os diferenciais competitivos dessas empresas.
+### Capítulo 8 — Concorrência na Conta
+- Fornecedores de engenharia, consultorias técnicas, empreiteiras e montadoras que JÁ atuam com a empresa: contratos conhecidos, escopos, datas e se há LTA vigente;
+- Forças e LACUNAS de cada incumbente — onde existe espaço real de entrada;
+- Parcerias estratégicas da empresa que condicionam a disputa.
 
-### Capítulo 7 — Organograma e Tomadores de Decisão (estamos em 2026)
-- Gerar um organograma com os principais líderes nas áreas:
-  - Engenharia;
-  - Projetos;
-  - Suprimentos;
-  - Diretoria Executiva;
-- Incluir, para cada um:
-  - Nome;
-  - Cargo;
-  - Responsabilidades;
-  - E-mail ou contato institucional, se público.
+### Capítulo 9 — Sinais de Compra e Gatilhos de Timing
+- Eventos datados dos últimos 18 meses e esperados para os próximos 12: licenças, audiências, editais, contratações-chave, guidance de CAPEX, M&A, mudanças regulatórias;
+- Tabela ordenada do mais urgente ao menos urgente: Data | Sinal | O que indica | Implicação prática | Prazo sugerido de reação.
 
-### Capítulo 8 — Conteúdo Local e Política de Contratação Regional
-- Informar se a empresa prioriza fornecedores nacionais ou regionais;
-- Avaliar o nível de conteúdo local (ex.: % do CAPEX executado no Brasil);
-- Indicar vantagens competitivas para empresas locais.
+### Capítulo 10 — Plano de Ataque Comercial
+- Sequência de abordagem em 30/60/90 dias, amarrada às fichas do Capítulo 2 e ao Radar do Capítulo 1;
+- Mensagem-chave por stakeholder: o que dizer a cada decisor ou influenciador para gerar a primeira reunião;
+- Objeções prováveis e como respondê-las;
+- Critérios de qualificação: o que confirmar na primeira conversa para validar (ou descartar) cada oportunidade.
 
-### Capítulo 9 — Pipeline de Projetos e Oportunidades Futuras (estamos em 2026)
-- Identificar projetos em estudo ou com alto potencial de se tornarem empreendimentos futuros;
-- Indicar estimativas de prazo para início de estudos, licenciamento ou obras;
-- Destacar oportunidades para:
-  - Estudos de viabilidade;
-  - Engenharia conceitual e básica;
-  - Suporte técnico antecipado.
-
-### Capítulo 10 — Estratégias Comerciais Recomendadas
-- Indicar abordagens comerciais eficazes para:
-  - Iniciar contato com os decisores;
-  - Posicionar a empresa como parceira técnica;
-  - Oferecer soluções complementares à equipe interna;
-- Incluir exemplos de diferenciação com foco em:
-  - Redução de custos e riscos;
-  - Agilidade e flexibilidade;
-  - Domínio do ambiente regulatório/local.
-
-## Instruções de formatação da saída
-- Responda em português do Brasil, em **Markdown estruturado** (não HTML).
-- Use um título de nível 1 (#) para o relatório e um título de nível 2 (##) para cada capítulo, na ordem acima, para que um sumário navegável possa ser gerado.
-- Use **tabelas Markdown (GFM)** para todos os dados comparativos (investimentos por ano/projeto, distribuição por fase, diretório de decisores, etc.).
-- Sempre que citar um investimento, informe a data ou janela; considere apenas investimentos que atravessam 2026 ou começam em 2026 ou depois.
-- Marque claramente como **estimativa** qualquer valor ou cronograma inferido.
-- Inclua uma seção final \`## Fontes e Referências\` listando as fontes utilizadas.
-- Mantenha linguagem profissional e objetiva, adequada para apresentação à área comercial.`;
+## Instruções de formato e qualidade
+- Responda em português do Brasil, em **Markdown estruturado** (não HTML): título de nível 1 (#) para o relatório e de nível 2 (##) para cada capítulo, na ordem acima, para que o sumário navegável possa ser gerado.
+- É PROIBIDO repetir fatos entre capítulos: escreva o fato uma única vez e use referência cruzada ("ver Capítulo 4"). Cada parágrafo deve trazer informação nova.
+- Dados em **tabelas Markdown (GFM)**; prosa apenas para análise e interpretação. Sem frases de preenchimento ("é fundamental destacar…") desacompanhadas de fato.
+- Marque o nível de confiança de cada informação relevante: fato com fonte numerada | inferência (com o raciocínio explícito) | **estimativa**.
+- Todo investimento citado precisa de data ou janela, valor com ano-base e moeda (R$ e US$ quando possível).
+- Termine cada capítulo com **Implicações para a abordagem** — no máximo 3 bullets, sem repetir fatos, apenas a consequência prática para o time comercial.
+- O que não foi encontrado publicamente deve aparecer como "não encontrado — onde buscar: …". Lacuna silenciosa é proibida.
+- Inclua uma seção final com o título "Fontes e Referências" (nível 2) listando todas as fontes numeradas utilizadas.
+- Linguagem profissional e objetiva, adequada para apresentação à área comercial.`;
 
 export const SEGMENTO_TEMPLATE_PROMPT = `Objetivo: gerar uma pesquisa aprofundada sobre o segmento de [SEGMENTO] em [REGIÃO], com foco em mapear oportunidades de negócio em engenharia, projetos e suprimentos — identificando empresas-alvo, investimentos, decisores e estratégia comercial.
 
@@ -173,7 +151,7 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
   {
     name: 'Empresa',
     description:
-      'Pesquisa profunda focada em uma empresa específica — oportunidades de engenharia, projetos e suprimentos (10 capítulos).',
+      'Pesquisa profunda focada em uma empresa específica — do desconhecimento total ao plano de ataque comercial (10 capítulos).',
     promptBody: EMPRESA_TEMPLATE_PROMPT,
   },
   {
