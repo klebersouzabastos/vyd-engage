@@ -757,6 +757,61 @@
     max-width: none;
   }
 
+  /* ---------- acabamento tipográfico do documento impresso ---------- */
+  /* Medidas em pt: no papel, px não tem relação com o resultado. */
+  .report-print {
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  .report-print .report-viewer__body h1 {
+    font-size: 20pt;
+  }
+  .report-print .report-viewer__body h2 {
+    font-size: 15pt;
+  }
+  .report-print .report-viewer__body h3 {
+    font-size: 12pt;
+  }
+
+  /* CAPA ocupando a folha inteira, em vez de um cartão no meio da página. */
+  .report-print .report-cover--full {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 82vh;
+    border: 0;
+    padding: 0;
+  }
+
+  /* Tabela é o coração deste relatório: cabeçalho repete a cada folha e a
+     linha não parte no meio. */
+  .report-print table {
+    width: 100%;
+    font-size: 9pt;
+    border-collapse: collapse;
+  }
+  .report-print thead {
+    display: table-header-group;
+  }
+  .report-print tr {
+    break-inside: avoid;
+  }
+  .report-print th,
+  .report-print td {
+    padding: 4pt 6pt;
+    vertical-align: top;
+  }
+
+  /* Órfãs e viúvas: nada de uma linha solta no pé ou no topo da folha. */
+  .report-print p,
+  .report-print li {
+    orphans: 3;
+    widows: 3;
+  }
+  .report-print li {
+    break-inside: avoid;
+  }
+
   /* --- sumário --- */
   .report-print__toc-title {
     font-size: 11px;
