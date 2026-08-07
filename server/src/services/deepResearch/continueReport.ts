@@ -68,6 +68,29 @@ export function montarPromptContinuacao(
   ].join('\n');
 }
 
+/**
+ * Emenda o trecho novo ao texto existente, limpando a costura.
+ *
+ * Caso real (07/08/2026): o texto original terminava numa linha de tabela
+ * cortada ("| Sustaining CAPEX … US$ 140") e a continuação REESCREVEU a linha
+ * completa — deixando a versão interrompida como lixo imediatamente acima da
+ * emenda. Quando a última linha está visivelmente incompleta E a continuação a
+ * reescreve (mesmo prefixo), a versão cortada é descartada.
+ */
+export function emendar(markdown: string, trecho: string): string {
+  const base = markdown.trimEnd();
+  const linhas = base.split('\n');
+  const ultima = (linhas[linhas.length - 1] ?? '').trim();
+
+  const terminaBem = /[.!?:)`|*"]$/.test(ultima);
+  const prefixo = ultima.slice(0, 40);
+  const reescrita =
+    !terminaBem && prefixo.length >= 15 && trecho.slice(0, 600).includes(prefixo);
+
+  const corpo = reescrita ? linhas.slice(0, -1).join('\n').trimEnd() : base;
+  return `${corpo}\n\n${trecho}`;
+}
+
 export interface ResultadoContinuacao {
   markdown: string;
   searchResults: ResearchSource[];
@@ -128,7 +151,7 @@ export async function continuarRelatorio(
       break;
     }
 
-    const candidato = `${markdown.trimEnd()}\n\n${trecho}`;
+    const candidato = emendar(markdown, trecho);
     const novaCompletude = avaliarCompletude(promptOriginal, candidato);
 
     const cobriuAlgo = novaCompletude.faltando.length < completude.faltando.length;

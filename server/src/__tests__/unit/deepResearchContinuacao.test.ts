@@ -197,3 +197,43 @@ describe('montarPromptContinuacao', () => {
     expect(p.length).toBeLessThan(12000);
   });
 });
+
+/**
+ * Limpeza da COSTURA — caso real de 07/08/2026: o texto original terminava numa
+ * linha de tabela cortada e a continuação reescreveu a linha completa, deixando
+ * a versão interrompida como lixo acima da emenda.
+ */
+describe('emendar', () => {
+  it('descarta a linha cortada quando a continuação a reescreve', async () => {
+    const { emendar } = await import('../../services/deepResearch/continueReport.js');
+    const base = [
+      '| Projeto | Valor |',
+      '| Filtragem | US$ 240 mi |',
+      '| Sustaining CAPEX Minas-Rio (Oport. 4) | Estimativa: US$ 140',
+    ].join('\n');
+    const trecho =
+      '| Sustaining CAPEX Minas-Rio (Oport. 4) | Estimativa: US$ 140–200 mi |\n\n## Capítulo 5 — Maturidade\nTexto.';
+
+    const r = emendar(base, trecho);
+
+    expect(r).toContain('US$ 140–200 mi');
+    expect(r).toContain('| Filtragem | US$ 240 mi |');
+    // A versão CORTADA não sobrevive (só existe a completa).
+    expect(r.match(/Sustaining CAPEX Minas-Rio/g)).toHaveLength(1);
+  });
+
+  it('preserva a última linha quando ela termina bem', async () => {
+    const { emendar } = await import('../../services/deepResearch/continueReport.js');
+    const base = 'Parágrafo completo com ponto final.';
+    const r = emendar(base, '## Capítulo 5 — Maturidade\nTexto.');
+    expect(r).toContain('Parágrafo completo com ponto final.');
+  });
+
+  it('preserva a linha cortada quando a continuação NÃO a reescreve (emenda direta)', async () => {
+    const { emendar } = await import('../../services/deepResearch/continueReport.js');
+    const base = 'A frase foi interrompida no meio de segurança e';
+    const r = emendar(base, 'integridade, completando o raciocínio.\n\n## Capítulo 5 — Maturidade');
+    // Sem reescrita detectada, nada é descartado — perder conteúdo é pior.
+    expect(r).toContain('segurança e');
+  });
+});
