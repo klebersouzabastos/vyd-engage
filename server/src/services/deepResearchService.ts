@@ -6,6 +6,7 @@ import { deepResearchTemplateService } from './deepResearch/templateService.js';
 import { buildPrompt } from './deepResearch/promptUtils.js';
 import { getProvider } from './deepResearch/deepResearchProvider.js';
 import { avaliarCompletude } from './deepResearch/completeness.js';
+import { continuarRelatorio } from './deepResearch/continueReport.js';
 import type { ResearchSource } from './deepResearch/providers/types.js';
 import { logger } from '../utils/logger.js';
 
@@ -290,25 +291,61 @@ export const deepResearchService = {
       where: { id },
       select: { promptUsed: true },
     });
-    const completude = avaliarCompletude(atual?.promptUsed || '', cleaned.markdown);
-    const incompleto = result.truncated === true || completude.incompleto;
+    const promptOriginal = atual?.promptUsed || '';
+    let markdownFinal = cleaned.markdown;
+    let searchResultsFinal = result.searchResults || [];
+    let sourcesFinal = sources;
+    let completude = avaliarCompletude(promptOriginal, markdownFinal);
+    let continuacoes = 0;
+
+    // Incompleto → tenta COMPLETAR antes de gravar, pedindo ao motor apenas as
+    // seções que faltam. Só quando há prompt para comparar (sem outline não há
+    // o que cobrar) e provider síncrono disponível.
+    const provider = getProvider();
+    if (completude.incompleto && promptOriginal.trim() && provider) {
+      const cont = await continuarRelatorio(
+        provider,
+        promptOriginal,
+        markdownFinal,
+        searchResultsFinal,
+        sourcesFinal
+      );
+      if (cont.continuacoes > 0) {
+        const limpo = sanitizeMarkdown(cont.markdown);
+        markdownFinal = limpo.markdown;
+        searchResultsFinal = cont.searchResults;
+        sourcesFinal = cont.sources.length ? cont.sources : limpo.sources;
+        completude = avaliarCompletude(promptOriginal, markdownFinal);
+        continuacoes = cont.continuacoes;
+        logger.info('Deep Research — continuação aplicada', {
+          id,
+          continuacoes,
+          charsAntes: cleaned.markdown.length,
+          charsDepois: markdownFinal.length,
+          aindaFaltando: completude.faltando,
+        });
+      }
+    }
+
+    const incompleto = completude.incompleto;
     if (incompleto) {
-      logger.warn('Deep Research INCOMPLETO', {
+      logger.warn('Deep Research INCOMPLETO (após continuação)', {
         id,
         truncadoPeloProvedor: result.truncated === true,
         finishReason: result.finishReason,
         secoesFaltando: completude.faltando,
         fraseIncompleta: completude.fraseIncompleta,
+        continuacoes,
       });
     }
     await prisma.deepResearch.update({
       where: { id },
       data: {
-        reportMarkdown: cleaned.markdown,
+        reportMarkdown: markdownFinal,
         reportMeta: {
-          sources,
-          searchResults: result.searchResults || [],
-          charCount: cleaned.markdown.length,
+          sources: sourcesFinal,
+          searchResults: searchResultsFinal,
+          charCount: markdownFinal.length,
           generatedAt: new Date().toISOString(),
           // Relatório cortado. Fica no meta (e não em providerError) porque NÃO é
           // falha: o conteúdo recebido é válido — só está incompleto, e a tela
@@ -323,6 +360,7 @@ export const deepResearchService = {
           ...(completude.faltando.length
             ? { missingSections: completude.faltando }
             : {}),
+          ...(continuacoes > 0 ? { continuations: continuacoes } : {}),
         } as any,
         status: DeepResearchStatus.COMPLETED,
         providerError: null,
