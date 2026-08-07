@@ -310,7 +310,24 @@
 .report-viewer__body h4,
 .report-viewer__body h5,
 .report-viewer__body h6 {
-  max-width: 72ch;
+  max-width: 78ch;
+}
+
+/* O DOCUMENTO tem largura própria e fica centralizado no canvas.
+   Sem isto, o painel acompanhava a tela inteira e a coluna de texto (78ch)
+   deixava um vazio enorme à direita — a "área inutilizada". Agora a folha tem
+   largura de documento e o espaço restante é margem, não buraco. */
+.report-viewer__main {
+  max-width: 1120px;
+  margin-inline: auto;
+  width: 100%;
+}
+/* Com o rail de índice, o conjunto (rail + folha) é que se centraliza. */
+@media (min-width: 768px) {
+  .report-viewer__layout:not(.report-viewer__layout--full) {
+    max-width: 1400px;
+    margin-inline: auto;
+  }
 }
 .report-viewer__body > article {
   max-width: none;
@@ -814,19 +831,28 @@
     width: 100%;
     font-size: 8pt;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: auto;
   }
   .report-print th,
   .report-print td {
-    overflow-wrap: anywhere;
+    /* !important porque a classe utilitária do componente (nowrap/uppercase)
+       vence por especificidade e era ela que embolava o cabeçalho no papel. */
+    white-space: normal !important;
+    overflow-wrap: break-word;
     word-break: normal;
     hyphens: auto;
+    vertical-align: top;
   }
-  /* Primeira coluna costuma ser "Nº": não precisa de largura de texto. */
-  .report-print table th:first-child,
-  .report-print table td:first-child {
-    width: 4%;
+  .report-print th {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 7.5pt;
+    line-height: 1.25;
   }
+  /* NADA de largura fixa por posição de coluna: a primeira nem sempre é "Nº".
+     Na tabela de projetos ela é texto longo, e um `width: 4%` fez o conteúdo
+     quebrar letra a letra na vertical. `table-layout: auto` distribui pelo
+     conteúdo real, que é o comportamento correto para tabelas heterogêneas. */
   .report-print thead {
     display: table-header-group;
   }
