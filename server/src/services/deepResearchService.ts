@@ -38,6 +38,8 @@ export interface CreateDeepResearchData {
   templateId?: string;
   variables?: Record<string, string>;
   status?: DeepResearchStatus;
+  /** Empresa do CRM a que a pesquisa (de Empresa) se refere. */
+  companyId?: string | null;
 }
 
 export interface UpdateDeepResearchData {
@@ -45,7 +47,18 @@ export interface UpdateDeepResearchData {
   variables?: Record<string, string>;
   status?: DeepResearchStatus;
   reportMarkdown?: string;
+  companyId?: string | null;
 }
+
+async function assertCompanyInTenant(tenantId: string, companyId: string) {
+  const c = await prisma.company.findFirst({
+    where: { id: companyId, tenantId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!c) throw createError('Empresa não encontrada.', 400, 'COMPANY_NOT_FOUND');
+}
+
+const companyRef = { select: { id: true, name: true } } as const;
 
 /**
  * Remove o prompt montado (`promptUsed`) da resposta quando o solicitante não é
@@ -98,6 +111,7 @@ export const deepResearchService = {
     data: CreateDeepResearchData,
     includePrompt = false
   ) {
+    if (data.companyId) await assertCompanyInTenant(tenantId, data.companyId);
     const promptUsed = await buildPromptForResearch(tenantId, data.templateId, data.variables);
     const research = await prisma.deepResearch.create({
       data: {
@@ -105,6 +119,7 @@ export const deepResearchService = {
         createdById: createdById || null,
         title: data.title,
         templateId: data.templateId || null,
+        companyId: data.companyId || null,
         promptUsed,
         variables: data.variables || {},
         status: data.status || DeepResearchStatus.DRAFT,
@@ -121,7 +136,7 @@ export const deepResearchService = {
   async findById(tenantId: string, id: string, includePrompt = false) {
     const research = await prisma.deepResearch.findFirst({
       where: { id, tenantId },
-      include: { template: { select: { id: true, name: true } } },
+      include: { template: { select: { id: true, name: true } }, company: companyRef },
     });
     if (!research) {
       throw createError('Deep research not found', 404, 'DEEP_RESEARCH_NOT_FOUND');
@@ -160,10 +175,12 @@ export const deepResearchService = {
           title: true,
           status: true,
           templateId: true,
+          companyId: true,
           createdById: true,
           createdAt: true,
           updatedAt: true,
           template: { select: { id: true, name: true } },
+          company: companyRef,
         },
       }),
       prisma.deepResearch.count({ where }),
@@ -187,6 +204,10 @@ export const deepResearchService = {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.companyId !== undefined) {
+      if (data.companyId) await assertCompanyInTenant(tenantId, data.companyId);
+      updateData.companyId = data.companyId;
+    }
 
     // Re-solicitar limpa o disparo anterior, permitindo nova tentativa (ex.: após
     // uma falha) — o maybeTrigger volta a disparar pois não há mais responseId.

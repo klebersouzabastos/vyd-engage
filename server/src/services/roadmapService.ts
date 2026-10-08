@@ -12,6 +12,30 @@ import { createError } from '../middleware/errorHandler.js';
 import { taskService } from './taskService.js';
 import { dealService } from './dealService.js';
 import { googleCalendarService } from './googleCalendarService.js';
+import { normalizeName } from './atestados/normalize.js';
+import { parseStakeholderTable, type StakeholderRow } from './deepResearch/reportTables.js';
+
+/** Linha do cap. 7 da pesquisa, já cruzada com os contatos da empresa. */
+export interface StakeholderPreviewRow extends StakeholderRow {
+  existingLeadId?: string;
+  alreadyStakeholder: boolean;
+}
+
+/** Linha confirmada/editada pelo gestor para importar. */
+export interface ImportStakeholderRow {
+  name: string;
+  position?: string;
+  email?: string;
+  /** Classificação original da pesquisa (decide/influencia/veta) — vai na proveniência. */
+  classification?: string;
+  notes?: string;
+  roleInDecision: StakeholderRole;
+  posture?: StakeholderPosture;
+  /** Contato já existente na empresa: só vincula, não cria Lead. */
+  existingLeadId?: string;
+}
+
+export const IMPORT_MAX_ROWS = 50;
 
 export interface CreateRoadmapData {
   title: string;
@@ -273,6 +297,112 @@ export const roadmapService = {
   async removeStakeholder(tenantId: string, roadmapId: string, leadId: string) {
     await this.findById(tenantId, roadmapId);
     await prisma.roadmapStakeholder.deleteMany({ where: { roadmapId, leadId } });
+  },
+
+  /**
+   * Pré-visualização dos decisores do cap. 7 (Mapa de Stakeholders) da pesquisa
+   * de Empresa, cruzados com os contatos da empresa do roadmap (por e-mail ou
+   * nome normalizado). Nada é gravado: o gestor confirma linha a linha — os
+   * nomes vêm de fontes públicas pesquisadas pelo motor e podem estar errados.
+   */
+  async previewStakeholdersFromResearch(tenantId: string, roadmapId: string, deepResearchId?: string) {
+    const roadmap = await this.findById(tenantId, roadmapId);
+    const researchId = deepResearchId || roadmap.deepResearchId;
+    if (!researchId) {
+      throw createError(
+        'Este desdobramento não tem pesquisa de origem. Informe a pesquisa.',
+        400,
+        'RESEARCH_REQUIRED'
+      );
+    }
+    const research = await prisma.deepResearch.findFirst({
+      where: { id: researchId, tenantId },
+      select: { id: true, title: true, reportMarkdown: true },
+    });
+    if (!research) throw createError('Pesquisa não encontrada.', 404, 'DEEP_RESEARCH_NOT_FOUND');
+
+    const rows = parseStakeholderTable(research.reportMarkdown || '');
+    const leads = await prisma.lead.findMany({
+      where: { tenantId, companyId: roadmap.companyId, deletedAt: null },
+      select: { id: true, name: true, email: true },
+    });
+    const porNome = new Map(leads.map((l) => [normalizeName(l.name), l.id]));
+    const porEmail = new Map(
+      leads.filter((l) => l.email).map((l) => [l.email!.trim().toLowerCase(), l.id])
+    );
+    const jaStakeholder = new Set(roadmap.stakeholders.map((s) => s.leadId));
+
+    const preview: StakeholderPreviewRow[] = rows.map((r) => {
+      const existingLeadId =
+        (r.email && porEmail.get(r.email)) || porNome.get(normalizeName(r.name)) || undefined;
+      return {
+        ...r,
+        existingLeadId,
+        alreadyStakeholder: !!existingLeadId && jaStakeholder.has(existingLeadId),
+      };
+    });
+    return { research: { id: research.id, title: research.title }, rows: preview };
+  },
+
+  /**
+   * Importa as linhas confirmadas: cria Lead (isContact, na empresa do roadmap,
+   * com proveniência nas notas) para quem não existe, vincula quem existe, e
+   * registra cada um como stakeholder com o papel/postura escolhidos.
+   */
+  async importStakeholdersFromResearch(
+    tenantId: string,
+    roadmapId: string,
+    data: { deepResearchId: string; rows: ImportStakeholderRow[] }
+  ) {
+    if (data.rows.length > IMPORT_MAX_ROWS) {
+      throw createError(`No máximo ${IMPORT_MAX_ROWS} contatos por importação.`, 400, 'TOO_MANY_ROWS');
+    }
+    const roadmap = await this.findById(tenantId, roadmapId);
+    const research = await prisma.deepResearch.findFirst({
+      where: { id: data.deepResearchId, tenantId },
+      select: { id: true, title: true },
+    });
+    if (!research) throw createError('Pesquisa não encontrada.', 404, 'DEEP_RESEARCH_NOT_FOUND');
+
+    const quando = new Date().toLocaleDateString('pt-BR');
+    let created = 0;
+    let linked = 0;
+    const createdLeads: Prisma.LeadGetPayload<Record<string, never>>[] = [];
+    const stakeholders: Awaited<ReturnType<typeof this.upsertStakeholder>>[] = [];
+
+    for (const row of data.rows) {
+      let leadId = row.existingLeadId;
+      if (leadId) {
+        linked++;
+      } else {
+        const lead = await prisma.lead.create({
+          data: {
+            tenantId,
+            name: row.name.trim(),
+            position: row.position?.trim() || null,
+            email: row.email?.trim().toLowerCase() || null,
+            companyId: roadmap.companyId,
+            isContact: true,
+            convertedAt: new Date(),
+            notes:
+              `Importado da pesquisa «${research.title}» em ${quando}` +
+              (row.classification ? ` — classificação: ${row.classification}` : ''),
+          },
+        });
+        leadId = lead.id;
+        created++;
+        createdLeads.push(lead);
+      }
+      stakeholders.push(
+        await this.upsertStakeholder(tenantId, roadmapId, {
+          leadId,
+          roleInDecision: row.roleInDecision,
+          posture: row.posture,
+          notes: row.notes,
+        })
+      );
+    }
+    return { created, linked, createdLeads, stakeholders };
   },
 
   /**

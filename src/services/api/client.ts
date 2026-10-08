@@ -19,6 +19,9 @@ import type {
   UpsertStakeholderInput,
   RoadmapStakeholder,
   RoadmapPanel,
+  StakeholderImportPreview,
+  ImportStakeholdersInput,
+  ImportStakeholdersResult,
 } from '../../types/comercial';
 import type {
   QualificationConfig,
@@ -2678,6 +2681,21 @@ class ApiClient {
   async removeRoadmapStakeholder(id: string, leadId: string) {
     return this.request(`/api/v1/roadmaps/${id}/stakeholders/${leadId}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Decisores a partir do cap. 7 da pesquisa de Empresa (pré-visualização + import).
+  async getRoadmapStakeholdersImportPreview(id: string, deepResearchId?: string) {
+    const q = deepResearchId ? `?deepResearchId=${encodeURIComponent(deepResearchId)}` : '';
+    return this.request<StakeholderImportPreview>(
+      `/api/v1/roadmaps/${id}/stakeholders/import-preview${q}`
+    );
+  }
+
+  async importRoadmapStakeholders(id: string, data: ImportStakeholdersInput) {
+    return this.request<ImportStakeholdersResult>(`/api/v1/roadmaps/${id}/stakeholders/import`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 
