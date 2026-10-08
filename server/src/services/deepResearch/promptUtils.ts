@@ -38,7 +38,7 @@ export function applyPlaceholders(promptBody: string, values: Record<string, str
  * tudo abaixo — inclusive "##" que o usuário tenha colado no texto livre — fica
  * fora da lista de seções cobradas pelo detector de completude.
  */
-export const APPENDIX_TITLES = ['Contexto adicional informado'] as const;
+export const APPENDIX_TITLES = ['Contexto adicional informado', 'Experiências da consultoria'] as const;
 
 function isAppendixTitle(title: string): boolean {
   const t = title.toLowerCase();
@@ -65,18 +65,25 @@ export function extractOutline(promptBody: string): string[] {
 }
 
 /**
- * Monta o prompt final a partir do template + valores preenchidos + um eventual
- * contexto adicional informado pelo usuário (enriquecimento). Tudo no servidor.
+ * Monta o prompt final a partir do template + valores preenchidos + apêndices:
+ * o contexto adicional informado pelo usuário (enriquecimento) e o bloco de
+ * experiências do acervo (já vem com o próprio título — ver experienceContext).
+ * Tudo no servidor.
  */
 export function buildPrompt(
   promptBody: string,
   variables: Record<string, string>,
-  extraContext?: string
+  extraContext?: string,
+  experiences?: string
 ): string {
   let prompt = applyPlaceholders(promptBody, variables);
   const extra = (extraContext || '').trim();
   if (extra) {
     prompt += `\n\n## ${APPENDIX_TITLES[0]}\n${extra}`;
+  }
+  const exp = (experiences || '').trim();
+  if (exp) {
+    prompt += `\n\n${exp}`;
   }
   return prompt;
 }

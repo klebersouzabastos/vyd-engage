@@ -45,4 +45,14 @@ describe('promptUtils', () => {
     const comContexto = buildPrompt(tpl, {}, 'Foco em lítio.\n\n## Minha observação\ntexto livre');
     expect(extractOutline(comContexto)).toEqual(extractOutline(tpl));
   });
+
+  it('buildPrompt: anexa o bloco de experiências depois do contexto, e o outline o ignora', () => {
+    const tpl = '## Estrutura\n\n### Capítulo 1 — Panorama';
+    const bloco = '## Experiências da consultoria (TENAX)\n- Vale — Projeto básico (2025)';
+    const p = buildPrompt(tpl, {}, 'foco em 2026', bloco);
+    expect(p).toContain('## Contexto adicional informado\nfoco em 2026');
+    expect(p.endsWith(bloco)).toBe(true);
+    expect(p.indexOf('Contexto adicional')).toBeLessThan(p.indexOf('Experiências da consultoria'));
+    expect(extractOutline(p)).toEqual(['Panorama']);
+  });
 });

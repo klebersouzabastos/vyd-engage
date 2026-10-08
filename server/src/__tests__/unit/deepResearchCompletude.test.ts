@@ -170,6 +170,31 @@ describe('template builtin de Segmento (expandido)', () => {
     expect(r.incompleto).toBe(false);
   });
 
+  it('prompt montado com contexto E bloco de experiências continua exigindo só os 11 capítulos', () => {
+    const prompt = buildPrompt(
+      SEGMENTO_TEMPLATE_PROMPT,
+      { SEGMENTO: 'lítio', REGIÃO: 'MG' },
+      'foco em 2026',
+      '## Experiências da consultoria (TENAX)\n- Vale — Projeto básico (2025)\n\n## Outra coisa colada'
+    );
+    const r = avaliarCompletude(prompt, relatorioSegmento(CAPITULOS_SEGMENTO));
+    expect(r.esperados).toBe(CAPITULOS_SEGMENTO.length);
+    expect(r.faltando).toEqual([]);
+  });
+
+  // Ajustes de prompt da revisão de 07/10/2026: o "percentual alto" da matriz
+  // vinha de mostrar a fase inteira; o cap. 10 passa a apontar para o bloco de
+  // experiências em vez de uma "TENAX" que o modelo não conhece.
+  it('Cap. 7 separa a fase inteira do SAM endereçável pela consultoria', () => {
+    expect(SEGMENTO_TEMPLATE_PROMPT).toContain('SAM endereçável pela consultoria');
+    expect(SEGMENTO_TEMPLATE_PROMPT).toMatch(/fator de captura/i);
+  });
+
+  it('Cap. 10 relaciona o processo produtivo com o bloco "Experiências da consultoria"', () => {
+    expect(SEGMENTO_TEMPLATE_PROMPT).toContain('Experiências da consultoria');
+    expect(SEGMENTO_TEMPLATE_PROMPT).not.toContain('experiências da TENAX');
+  });
+
   it('capítulo novo faltando (Matriz de Screening) é acusado pelo detector', () => {
     const semScreening = CAPITULOS_SEGMENTO.filter((t) => t !== 'Matriz de Screening do Segmento');
     const r = avaliarCompletude(SEGMENTO_TEMPLATE_PROMPT, relatorioSegmento(semScreening));
