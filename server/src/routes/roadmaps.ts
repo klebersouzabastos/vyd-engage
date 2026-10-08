@@ -6,8 +6,10 @@ import {
   StakeholderPosture,
   CommercialFunction,
 } from '@prisma/client';
-import { roadmapService } from '../services/roadmapService.js';
+import { roadmapService, IMPORT_MAX_ROWS } from '../services/roadmapService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { getEffective } from '../services/permissionService.js';
+import { emitToTenant } from '../services/socketService.js';
 import { tenantScope } from '../middleware/tenant.js';
 import { createError } from '../middleware/errorHandler.js';
 import { approvalService } from '../services/approvalService.js';
@@ -181,6 +183,75 @@ router.delete('/:id/stakeholders/:leadId', async (req, res, next) => {
     res.status(204).send();
   } catch (error) {
     next(error);
+  }
+});
+
+// ── Decisores a partir da pesquisa de Empresa (cap. 7) ────────────────────────
+const importPreviewQuery = z.object({ deepResearchId: z.string().uuid().optional() });
+const importRowSchema = z.object({
+  name: z.string().min(1).max(200),
+  position: z.string().max(200).optional(),
+  email: z.string().email().optional(),
+  classification: z.string().max(200).optional(),
+  notes: z.string().max(2000).optional(),
+  roleInDecision: z.nativeEnum(StakeholderRole),
+  posture: z.nativeEnum(StakeholderPosture).optional(),
+  existingLeadId: z.string().uuid().optional(),
+});
+const importSchema = z.object({
+  deepResearchId: z.string().uuid(),
+  rows: z.array(importRowSchema).min(1).max(IMPORT_MAX_ROWS),
+});
+
+router.get('/:id/stakeholders/import-preview', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const { deepResearchId } = importPreviewQuery.parse(req.query);
+    const out = await roadmapService.previewStakeholdersFromResearch(
+      req.user.tenantId,
+      req.params.id,
+      deepResearchId
+    );
+    res.json(out);
+  } catch (error) {
+    zodNext(error, next);
+  }
+});
+
+router.post('/:id/stakeholders/import', async (req, res, next) => {
+  try {
+    if (!req.user) return next(createError('Authentication required', 401));
+    const data = importSchema.parse(req.body);
+
+    // Linhas novas viram Leads: mesma guarda de permissão e de limite do plano
+    // do POST /leads/contacts (contato conta como Lead no plano).
+    if (data.rows.some((r) => !r.existingLeadId)) {
+      const eff = await getEffective({
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+        role: req.user.role,
+        isPlatformAdmin: req.user.isPlatformAdmin,
+      });
+      if (!eff.entities.leads.create) {
+        return next(createError('Insufficient permissions', 403, 'INSUFFICIENT_PERMISSIONS'));
+      }
+      const { planLimitsService } = await import('../services/planLimitsService.js');
+      await planLimitsService.enforceLimit(req.user.tenantId, 'leads');
+    }
+
+    const out = await roadmapService.importStakeholdersFromResearch(
+      req.user.tenantId,
+      req.params.id,
+      data
+    );
+    if (out.created > 0) {
+      const { planLimitsService } = await import('../services/planLimitsService.js');
+      planLimitsService.invalidateUsage(req.user.tenantId).catch(() => {});
+      for (const lead of out.createdLeads) emitToTenant(req.user.tenantId, 'lead:created', { lead });
+    }
+    res.status(201).json(out);
+  } catch (error) {
+    zodNext(error, next);
   }
 });
 

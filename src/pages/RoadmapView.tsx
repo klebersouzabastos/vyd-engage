@@ -49,8 +49,13 @@ import {
 } from '../components/ui/breadcrumb';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api/client';
-import { useRoadmap, useRoadmapActions } from '../hooks/useComercial';
+import {
+  useRoadmap,
+  useRoadmapActions,
+  useStakeholderImportPreview,
+} from '../hooks/useComercial';
 import { Organograma } from '../components/comercial/Organograma';
+import { ImportStakeholdersDialog } from '../components/comercial/ImportStakeholdersDialog';
 import {
   ROADMAP_STATUS_LABELS,
   TASK_TYPE_LABELS,
@@ -89,15 +94,27 @@ export function RoadmapView() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const roadmapQuery = useRoadmap(id);
-  const { advanceToProposal, upsertStakeholder, removeStakeholder, invalidate } =
-    useRoadmapActions();
+  const {
+    advanceToProposal,
+    upsertStakeholder,
+    removeStakeholder,
+    importStakeholders,
+    invalidate,
+  } = useRoadmapActions();
   const roadmap = roadmapQuery.data;
 
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: () => apiClient.getUsers() });
   const users = usersQuery.data ?? [];
 
   const [addContactOpen, setAddContactOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [addActionOpen, setAddActionOpen] = useState(false);
+  // Decisores do cap. 7 da pesquisa de origem — só busca quando o diálogo abre.
+  const importPreview = useStakeholderImportPreview(
+    roadmap?.id,
+    undefined,
+    importOpen && !!roadmap?.deepResearchId
+  );
   const [advancing, setAdvancing] = useState(false);
   const [registerTask, setRegisterTask] = useState<RoadmapTask | null>(null);
 
@@ -267,10 +284,18 @@ export function RoadmapView() {
                     <Users className="h-4 w-4" />
                     Decisores
                   </CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => setAddContactOpen(true)}>
-                    <Plus className="mr-1 h-4 w-4" />
-                    Contato
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {roadmap.deepResearch && (
+                      <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                        <ScanSearch className="mr-1 h-4 w-4" />
+                        Importar da pesquisa
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => setAddContactOpen(true)}>
+                      <Plus className="mr-1 h-4 w-4" />
+                      Contato
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Organograma
@@ -424,6 +449,22 @@ export function RoadmapView() {
               name: s.lead.name,
             }))}
           />
+          {roadmap.deepResearchId && (
+            <ImportStakeholdersDialog
+              open={importOpen}
+              onOpenChange={setImportOpen}
+              researchTitle={importPreview.data?.research.title ?? roadmap.deepResearch?.title}
+              rows={importPreview.data?.rows ?? []}
+              loading={importPreview.isLoading}
+              error={importPreview.error ? (importPreview.error as Error).message : null}
+              onImport={async (rows) => {
+                await importStakeholders(roadmap.id, {
+                  deepResearchId: roadmap.deepResearchId as string,
+                  rows,
+                });
+              }}
+            />
+          )}
           <AddActionDialog
             open={addActionOpen}
             onOpenChange={setAddActionOpen}

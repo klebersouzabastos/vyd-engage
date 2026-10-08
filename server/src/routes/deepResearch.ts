@@ -47,6 +47,9 @@ const createResearchSchema = z.object({
   templateId: z.string().uuid().optional(),
   variables: z.record(z.string()).optional(),
   status: z.nativeEnum(DeepResearchStatus).optional(),
+  // Empresa do CRM a que a pesquisa (de Empresa) se refere — liga a pesquisa
+  // ao desdobramento e ao censo → Empresas.
+  companyId: z.string().uuid().nullable().optional(),
 });
 
 const updateResearchSchema = z.object({
@@ -54,6 +57,7 @@ const updateResearchSchema = z.object({
   variables: z.record(z.string()).optional(),
   status: z.nativeEnum(DeepResearchStatus).optional(),
   reportMarkdown: z.string().max(500_000).optional(),
+  companyId: z.string().uuid().nullable().optional(),
 });
 
 const querySchema = z.object({

@@ -6,6 +6,7 @@ import type {
   CreateRoadmapInput,
   UpdateRoadmapInput,
   UpsertStakeholderInput,
+  ImportStakeholdersInput,
   CreateEmpreendimentoInput,
   UpdateEmpreendimentoInput,
   CreatePlaybookInput,
@@ -42,6 +43,20 @@ export function useRoadmap(id?: string) {
     queryKey: [...ROADMAPS_KEY, id],
     queryFn: () => apiClient.getRoadmap(id as string),
     enabled: !!id,
+  });
+}
+
+/** Pré-visualização dos decisores do cap. 7 da pesquisa de Empresa (só quando o diálogo abre). */
+export function useStakeholderImportPreview(
+  roadmapId?: string,
+  deepResearchId?: string,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: [...ROADMAPS_KEY, roadmapId, 'stakeholder-import-preview', deepResearchId ?? null],
+    queryFn: () =>
+      apiClient.getRoadmapStakeholdersImportPreview(roadmapId as string, deepResearchId),
+    enabled: !!roadmapId && enabled,
   });
 }
 
@@ -150,6 +165,25 @@ export function useRoadmapActions() {
     [invalidate]
   );
 
+  const importStakeholders = useCallback(
+    async (id: string, data: ImportStakeholdersInput) => {
+      try {
+        const res = await apiClient.importRoadmapStakeholders(id, data);
+        invalidate(id);
+        const total = res.created + res.linked;
+        toast.success(
+          `${total} contato(s) adicionado(s) ao desdobramento` +
+            (res.created ? ` — ${res.created} novo(s) na empresa.` : '.')
+        );
+        return res;
+      } catch (err) {
+        toast.error(msg(err, 'Erro ao importar decisores'));
+        throw err;
+      }
+    },
+    [invalidate]
+  );
+
   return {
     createRoadmap,
     updateRoadmap,
@@ -157,6 +191,7 @@ export function useRoadmapActions() {
     advanceToProposal,
     upsertStakeholder,
     removeStakeholder,
+    importStakeholders,
     invalidate,
   };
 }

@@ -209,6 +209,49 @@ export interface UpsertStakeholderInput {
   notes?: string;
 }
 
+// ---- Importar decisores da pesquisa de Empresa (cap. 7) ----
+/** Linha do Mapa de Stakeholders do relatório, cruzada com os contatos da empresa. */
+export interface StakeholderPreviewRow {
+  name: string;
+  position?: string;
+  area?: string;
+  responsibilities?: string;
+  contact?: string;
+  email?: string;
+  classification?: string;
+  suggestedRole: Exclude<StakeholderRole, 'USUARIO'>;
+  /** Contato já existente na empresa (por e-mail ou nome): será vinculado, não criado. */
+  existingLeadId?: string;
+  alreadyStakeholder: boolean;
+}
+
+export interface StakeholderImportPreview {
+  research: { id: string; title: string };
+  rows: StakeholderPreviewRow[];
+}
+
+export interface ImportStakeholderRow {
+  name: string;
+  position?: string;
+  email?: string;
+  classification?: string;
+  notes?: string;
+  roleInDecision: StakeholderRole;
+  posture?: StakeholderPosture;
+  existingLeadId?: string;
+}
+
+export interface ImportStakeholdersInput {
+  deepResearchId: string;
+  rows: ImportStakeholderRow[];
+}
+
+export interface ImportStakeholdersResult {
+  created: number;
+  linked: number;
+  stakeholders: RoadmapStakeholder[];
+}
+
 // ---- Painel "não deixar passar" ----
 export interface PanelTask {
   id: string;
