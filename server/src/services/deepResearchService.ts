@@ -325,6 +325,12 @@ export const deepResearchService = {
   async applyProviderResult(
     id: string,
     result: {
+      /**
+       * Status do provedor (ProviderResult). O caminho síncrono repassa o
+       * resultado do run() direto, então `status: 'failed'` TEM que ser
+       * respeitado aqui — não só o `failed: true` do caminho de exceção.
+       */
+      status?: 'pending' | 'completed' | 'failed';
       markdown?: string;
       sources?: string[];
       searchResults?: ResearchSource[];
@@ -336,19 +342,31 @@ export const deepResearchService = {
     },
     token: RunToken = {}
   ) {
-    if (result.failed) {
-      // Só derruba quem ainda está RESEARCHING e pertence a ESTE run: uma falha
-      // tardia de um run antigo não pode apagar um resultado já publicado.
-      await prisma.deepResearch.updateMany({
+    // Só derruba quem ainda está RESEARCHING e pertence a ESTE run: uma falha
+    // tardia de um run antigo não pode apagar um resultado já publicado.
+    const marcarFalha = (providerError: string) =>
+      prisma.deepResearch.updateMany({
         where: { id, status: DeepResearchStatus.RESEARCHING, ...token },
-        data: {
-          status: DeepResearchStatus.FAILED,
-          providerError: result.error || 'Falha ao gerar a pesquisa.',
-        },
+        data: { status: DeepResearchStatus.FAILED, providerError },
       });
+
+    // Incidente 08/10/2026: créditos do OpenRouter esgotados → `status: 'failed'`
+    // com "OpenRouter 402" em 0,3 s. Só `failed` era checado: o erro sumia, rodava
+    // uma continuação inútil e um relatório VAZIO era publicado como COMPLETED.
+    if (result.failed || result.status === 'failed') {
+      logger.warn('Deep Research — provedor falhou', { id, error: result.error });
+      await marcarFalha(result.error || 'Falha ao gerar a pesquisa.');
       return;
     }
     const cleaned = sanitizeMarkdown(result.markdown || '');
+
+    // Defesa em profundidade: sem conteúdo nenhum não há relatório — FAILED com
+    // motivo claro (permite re-solicitar), nunca um "Concluída" vazio.
+    if (!cleaned.markdown.trim()) {
+      logger.warn('Deep Research — provedor respondeu sem conteúdo', { id });
+      await marcarFalha('O motor de pesquisa respondeu sem conteúdo. Tente novamente.');
+      return;
+    }
     const sources = result.sources?.length ? result.sources : cleaned.sources;
 
     // O `finish_reason` do provedor NÃO basta: num teste real o motor entregou 8
