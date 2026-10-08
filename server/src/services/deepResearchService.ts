@@ -4,6 +4,7 @@ import { createError } from '../middleware/errorHandler.js';
 import { sanitizeMarkdown } from './deepResearch/sanitizeMarkdown.js';
 import { deepResearchTemplateService } from './deepResearch/templateService.js';
 import { buildPrompt } from './deepResearch/promptUtils.js';
+import { buildExperienceContext } from './deepResearch/experienceContext.js';
 import { getProvider } from './deepResearch/deepResearchProvider.js';
 import { avaliarCompletude } from './deepResearch/completeness.js';
 import { continuarRelatorio } from './deepResearch/continueReport.js';
@@ -72,7 +73,22 @@ async function buildPromptForResearch(
   if (!templateId) return '';
   const tpl = await deepResearchTemplateService.getRaw(tenantId, templateId);
   const vars = variables || {};
-  return buildPrompt(tpl.promptBody, vars, vars[CONTEXT_KEY]);
+
+  // Acervo do tenant relacionado ao que foi preenchido (segmento + região,
+  // empresa + setor…) — o contexto livre fica de fora da consulta. Falha aqui
+  // não pode impedir a pesquisa: segue sem o bloco.
+  const consulta = Object.entries(vars)
+    .filter(([k, v]) => k !== CONTEXT_KEY && typeof v === 'string' && v.trim())
+    .map(([, v]) => v.trim())
+    .join(' ');
+  const experiencias = consulta
+    ? await buildExperienceContext(tenantId, consulta).catch((err: unknown) => {
+        logger.warn('Deep Research — bloco de experiências indisponível', err as Error);
+        return null;
+      })
+    : null;
+
+  return buildPrompt(tpl.promptBody, vars, vars[CONTEXT_KEY], experiencias ?? undefined);
 }
 
 export const deepResearchService = {

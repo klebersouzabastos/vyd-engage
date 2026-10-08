@@ -140,15 +140,17 @@ export const SEGMENTO_TEMPLATE_PROMPT = `Objetivo: gerar uma pesquisa aprofundad
 Considerar apenas investimentos que passam por 2026 ou se iniciam em 2026 ou posterior; sempre informar datas/janelas; marcar inferências como **estimativa**.
 
 ### Capítulo 7 — Matriz de Screening do Segmento
-- Distribuição do valor endereçável (SAM) por fase de projeto, usando as FAIXAS-TETO de referência abaixo (percentual do CAPEX):
-  - Estudos + engenharia conceitual/básica: 1,5–4% do CAPEX;
-  - Detalhamento: 2–5% do CAPEX;
-  - EPCM/gerenciamento: 6–12% do CAPEX;
-  - Comissionamento: 1–3% do CAPEX;
-  - Compras/equipamentos: 40–60% do CAPEX.
-- As faixas acima são TETO: só ultrapasse se houver evidência pública em contrário, citada no texto;
+- Duas tabelas, SEPARADAS de propósito — misturá-las faz o valor da fase inteira parecer o valor disponível para a consultoria:
+  (a) **Distribuição do CAPEX por fase** — contexto, usando as FAIXAS-TETO de referência abaixo (percentual do CAPEX total):
+    - Estudos + engenharia conceitual/básica: 1,5–4% do CAPEX;
+    - Detalhamento: 2–5% do CAPEX;
+    - EPCM/gerenciamento: 6–12% do CAPEX;
+    - Comissionamento: 1–3% do CAPEX;
+    - Compras/equipamentos: 40–60% do CAPEX.
+  (b) **SAM endereçável pela consultoria** — o número que importa: para cada fase, valor da fase × FATOR DE CAPTURA realista de uma consultoria de engenharia e projetos (referência: 10–20% em estudos, detalhamento, EPCM e comissionamento; compras/equipamentos NÃO são endereçáveis — entram apenas como "apoio técnico": especificação, inspeção, expediting — com 0% de SAM). Some o SAM por projeto e para o segmento.
+- As faixas e os fatores acima são TETO: só ultrapasse se houver evidência pública em contrário, citada no texto;
 - Explicite o DENOMINADOR de cada percentual — CAPEX total do projeto vs. escopo endereçável por serviços de engenharia — e nunca misture os dois sem avisar;
-- Todo valor derivado deve vir marcado como **estimativa**, com a base de cálculo explícita (percentual aplicado × CAPEX de referência).
+- Todo valor derivado deve vir marcado como **estimativa**, com a base de cálculo explícita (percentual aplicado × CAPEX de referência × fator de captura).
 
 ### Capítulo 8 — Maturidade, modelos de contratação e concorrência
 - Mapa de maturidade dos projetos e janela de entrada para serviços;
@@ -161,7 +163,7 @@ Considerar apenas investimentos que passam por 2026 ou se iniciam em 2026 ou pos
 
 ### Capítulo 10 — Posicionamento e Proposta de Valor
 - Particularidades e expertises necessárias para atuação no segmento e **em cada commodity** (normas, tecnologias de processo, licenciamento, desafios típicos de engenharia);
-- Resumo básico do processo produtivo / beneficiamento de cada commodity (etapas principais, da matéria-prima ao produto vendável), descrito de forma a permitir relacionar com as experiências da TENAX em engenharia, projetos e suprimentos;
+- Resumo básico do processo produtivo / beneficiamento de cada commodity (etapas principais, da matéria-prima ao produto vendável), relacionando cada etapa com o que a consultoria já executou conforme o bloco "Experiências da consultoria" ao final deste prompt (quando presente): cite as experiências aderentes pelo contratante/objeto e aponte as etapas SEM experiência comprovada — nunca atribua experiência que não esteja no bloco;
 - Onde uma consultoria de engenharia gera mais valor em cada etapa do processo.
 
 ### Capítulo 11 — Pipeline futuro, estratégia comercial e limitações
