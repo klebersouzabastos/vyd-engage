@@ -14,6 +14,24 @@ import { logger } from '../utils/logger.js';
 // usuário — anexado ao prompt como contexto adicional, sem ser um placeholder.
 export const CONTEXT_KEY = 'Contexto adicional';
 
+/**
+ * Pesquisas com run SÍNCRONO em andamento neste processo. O poller não as trata
+ * como travadas — um run vivo (chamada inicial + continuações) passa fácil dos
+ * minutos de uma janela fixa. Se o processo morrer, o id some com ele e a
+ * limpeza do poller volta a valer: exatamente a semântica certa para restart.
+ */
+export const inFlightSyncRuns = new Set<string>();
+
+/**
+ * Identifica O run cujo resultado está sendo aplicado. Gravar condicionado ao
+ * token evita que um run antigo (de antes de o usuário re-solicitar) sobrescreva
+ * o prompt novo, e evita derrubar uma pesquisa que já mudou de estado.
+ */
+export interface RunToken {
+  requestedAt?: Date;
+  providerResponseId?: string;
+}
+
 export interface CreateDeepResearchData {
   title: string;
   templateId?: string;
@@ -235,16 +253,25 @@ export const deepResearchService = {
           data: { providerResponseId: jobId, requestedAt: new Date(), providerError: null },
         });
       } else {
-        // Síncrono (streaming): marca requestedAt e processa em background.
+        // Síncrono (streaming): marca requestedAt — que vira o token deste run —
+        // e processa em background, registrado como in-flight até o fim.
+        const requestedAt = new Date();
         await prisma.deepResearch.update({
           where: { id },
-          data: { requestedAt: new Date(), providerError: null },
+          data: { requestedAt, providerError: null },
         });
+        const token: RunToken = { requestedAt };
+        inFlightSyncRuns.add(id);
         provider.run!(r.promptUsed)
-          .then((result) => this.applyProviderResult(id, result))
+          .then((result) => this.applyProviderResult(id, result, token))
           .catch((err) =>
-            this.applyProviderResult(id, { failed: true, error: String(err?.message || err) })
-          );
+            this.applyProviderResult(
+              id,
+              { failed: true, error: String(err?.message || err) },
+              token
+            )
+          )
+          .finally(() => inFlightSyncRuns.delete(id));
       }
     } catch (err: any) {
       logger.error('Falha ao iniciar Deep Research', err);
@@ -269,11 +296,14 @@ export const deepResearchService = {
       /** Provedor parou por limite de saída — o texto está cortado. */
       truncated?: boolean;
       finishReason?: string;
-    }
+    },
+    token: RunToken = {}
   ) {
     if (result.failed) {
-      await prisma.deepResearch.update({
-        where: { id },
+      // Só derruba quem ainda está RESEARCHING e pertence a ESTE run: uma falha
+      // tardia de um run antigo não pode apagar um resultado já publicado.
+      await prisma.deepResearch.updateMany({
+        where: { id, status: DeepResearchStatus.RESEARCHING, ...token },
         data: {
           status: DeepResearchStatus.FAILED,
           providerError: result.error || 'Falha ao gerar a pesquisa.',
@@ -338,8 +368,8 @@ export const deepResearchService = {
         continuacoes,
       });
     }
-    await prisma.deepResearch.update({
-      where: { id },
+    const gravado = await prisma.deepResearch.updateMany({
+      where: { id, ...token },
       data: {
         reportMarkdown: markdownFinal,
         reportMeta: {
@@ -366,6 +396,12 @@ export const deepResearchService = {
         providerError: null,
       },
     });
+    // Sem token válido = resultado órfão (pesquisa re-solicitada ou alterada
+    // durante o run): descartado. Com token válido, grava mesmo que o poller
+    // tenha marcado FAILED por tempo — o conteúdo pago resgata a pesquisa.
+    if (gravado.count === 0) {
+      logger.warn('Deep Research — resultado órfão descartado (token do run não confere)', { id });
+    }
   },
 
   async delete(tenantId: string, id: string) {

@@ -4,6 +4,7 @@ import {
   montarPromptContinuacao,
 } from '../../services/deepResearch/continueReport.js';
 import type { ResearchProvider } from '../../services/deepResearch/providers/types.js';
+import { buildPrompt } from '../../services/deepResearch/promptUtils.js';
 
 /**
  * Continuação automática de relatório incompleto.
@@ -57,6 +58,29 @@ afterEach(() => {
 });
 
 describe('continuarRelatorio', () => {
+  // Custo: com o prompt montado COM contexto adicional, um relatório completo
+  // não pode disparar continuação só porque o apêndice "faltava".
+  it('não gasta chamada quando o único "faltante" é o apêndice de contexto', async () => {
+    const provider = providerQueDevolve('## Capítulo 1 — Panorama Geral\nnada');
+    const promptComContexto = buildPrompt(PROMPT, { EMPRESA: 'ACME' }, 'Foco em 2026.');
+    const completo = [
+      '## Capítulo 1 — Panorama Geral',
+      'Texto.',
+      '## Capítulo 2 — Investimentos',
+      'Texto.',
+      '## Capítulo 3 — Concorrência',
+      'Texto.',
+      '## Capítulo 4 — Estratégias Comerciais',
+      'Texto final.',
+    ].join('\n');
+
+    const r = await continuarRelatorio(provider, promptComContexto, completo, [], []);
+
+    expect(r.continuacoes).toBe(0);
+    expect(provider.chamadas).toBe(0);
+    expect(r.markdown).toBe(completo);
+  });
+
   it('completa o relatório pedindo só o que falta', async () => {
     const provider = providerQueDevolve(
       '## Capítulo 3 — Concorrência\nTexto.\n\n## Capítulo 4 — Estratégias Comerciais\nFim do relatório.'

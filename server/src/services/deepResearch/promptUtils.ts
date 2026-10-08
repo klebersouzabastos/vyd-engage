@@ -33,6 +33,19 @@ export function applyPlaceholders(promptBody: string, values: Record<string, str
 }
 
 /**
+ * Títulos dos apêndices que `buildPrompt` anexa DEPOIS do template (contexto do
+ * usuário etc.). Não são capítulos: o outline para de ler ao encontrá-los, e
+ * tudo abaixo — inclusive "##" que o usuário tenha colado no texto livre — fica
+ * fora da lista de seções cobradas pelo detector de completude.
+ */
+export const APPENDIX_TITLES = ['Contexto adicional informado'] as const;
+
+function isAppendixTitle(title: string): boolean {
+  const t = title.toLowerCase();
+  return APPENDIX_TITLES.some((a) => t.startsWith(a.toLowerCase()));
+}
+
+/**
  * Resumo do que será entregue, derivado dos títulos de capítulo (## / ###) do
  * prompt — sem revelar o conteúdo do prompt. Pula seções estruturais
  * (objetivo, estrutura, instruções, fontes) e limpa o prefixo "Capítulo N —".
@@ -43,6 +56,7 @@ export function extractOutline(promptBody: string): string[] {
     const m = /^(#{2,3})\s+(.+?)\s*#*\s*$/.exec(line);
     if (!m) continue;
     let title = m[2].replace(/[*_`]/g, '').trim();
+    if (isAppendixTitle(title)) break;
     if (/^(objetivo|estrutura|instru[çc]|formata|fontes|refer)/i.test(title)) continue;
     title = title.replace(/^cap[íi]tulo\s+\d+\s*[—:-]\s*/i, '').trim();
     if (title) items.push(title);
@@ -62,7 +76,7 @@ export function buildPrompt(
   let prompt = applyPlaceholders(promptBody, variables);
   const extra = (extraContext || '').trim();
   if (extra) {
-    prompt += `\n\n## Contexto adicional informado\n${extra}`;
+    prompt += `\n\n## ${APPENDIX_TITLES[0]}\n${extra}`;
   }
   return prompt;
 }

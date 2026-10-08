@@ -34,4 +34,15 @@ describe('promptUtils', () => {
   it('buildPrompt: sem contexto não adiciona seção', () => {
     expect(buildPrompt('[EMPRESA]', { EMPRESA: 'X' })).toBe('X');
   });
+
+  // Bug real: o apêndice "## Contexto adicional informado" (e qualquer "##" que
+  // o usuário cole dentro dele) entrava no outline como capítulo esperado — o
+  // detector de completude cobrava uma seção que o modelo nunca escreveria e
+  // disparava continuações pagas à toa.
+  it('extractOutline: ignora o apêndice de contexto e os títulos colados pelo usuário', () => {
+    const tpl =
+      'Objetivo: x\n\n## Estrutura da pesquisa\n\n### Capítulo 1 — Panorama\n\n### Capítulo 2 — Investimentos';
+    const comContexto = buildPrompt(tpl, {}, 'Foco em lítio.\n\n## Minha observação\ntexto livre');
+    expect(extractOutline(comContexto)).toEqual(extractOutline(tpl));
+  });
 });
