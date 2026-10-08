@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { avaliarCompletude } from '../../services/deepResearch/completeness.js';
-import { extractOutline, extractPlaceholders } from '../../services/deepResearch/promptUtils.js';
+import {
+  extractOutline,
+  extractPlaceholders,
+  buildPrompt,
+} from '../../services/deepResearch/promptUtils.js';
 import {
   EMPRESA_TEMPLATE_PROMPT,
   SEGMENTO_TEMPLATE_PROMPT,
@@ -52,6 +56,14 @@ function relatorio(ateCapitulo: number, cortado = false): string {
 }
 
 describe('avaliarCompletude', () => {
+  it('contexto adicional do usuário não vira capítulo cobrado (falso "incompleto")', () => {
+    const prompt = buildPrompt(PROMPT_10_CAPS, { EMPRESA: 'ACME' }, 'Foco em 2026.\n## Observação minha');
+    const r = avaliarCompletude(prompt, relatorio(10));
+    expect(r.faltando).toEqual([]);
+    expect(r.esperados).toBe(10);
+    expect(r.incompleto).toBe(false);
+  });
+
   it('detecta o caso real: 8 de 10 capítulos e frase cortada', () => {
     const r = avaliarCompletude(PROMPT_10_CAPS, relatorio(8, true));
     expect(r.incompleto).toBe(true);

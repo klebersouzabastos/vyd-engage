@@ -2,7 +2,7 @@ import prisma from '../config/database.js';
 import { DeepResearchStatus } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { getProvider } from '../services/deepResearch/deepResearchProvider.js';
-import { deepResearchService } from '../services/deepResearchService.js';
+import { deepResearchService, inFlightSyncRuns } from '../services/deepResearchService.js';
 
 /**
  * Poller do Deep Research. Para provedores assíncronos (OpenAI/Perplexity),
@@ -15,9 +15,18 @@ const POLL_INTERVAL_MS = process.env.DEEP_RESEARCH_POLL_INTERVAL_MS
   ? parseInt(process.env.DEEP_RESEARCH_POLL_INTERVAL_MS)
   : 30 * 1000; // 30s
 
-const STALE_AFTER_MS = 20 * 60 * 1000; // 20 min sem concluir → falha
+/**
+ * Janela para considerar travada uma pesquisa sem job assíncrono. Lida a cada
+ * ciclo (env), default 60 min: um run síncrono de 11 capítulos com continuações
+ * passa dos 20 min antigos — e, de toda forma, runs vivos neste processo nunca
+ * entram aqui (inFlightSyncRuns).
+ */
+function staleAfterMs(): number {
+  const raw = parseInt(process.env.DEEP_RESEARCH_STALE_AFTER_MS || '', 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 60 * 60 * 1000;
+}
 
-async function pollPending() {
+export async function pollPending() {
   const provider = getProvider();
   if (!provider) return;
   try {
@@ -35,22 +44,29 @@ async function pollPending() {
       for (const r of pending) {
         try {
           const result = await provider.poll(r.providerResponseId!);
+          // Token do run assíncrono = o próprio providerResponseId.
+          const token = { providerResponseId: r.providerResponseId! };
           if (result.status === 'completed') {
-            await deepResearchService.applyProviderResult(r.id, {
-              markdown: result.markdown,
-              sources: result.sources,
-              searchResults: result.searchResults,
-              // Repassado explicitamente: este caminho monta o objeto campo a
-              // campo, então um campo novo do provider some se não vier aqui.
-              truncated: result.truncated,
-              finishReason: result.finishReason,
-            });
+            await deepResearchService.applyProviderResult(
+              r.id,
+              {
+                markdown: result.markdown,
+                sources: result.sources,
+                searchResults: result.searchResults,
+                // Repassado explicitamente: este caminho monta o objeto campo a
+                // campo, então um campo novo do provider some se não vier aqui.
+                truncated: result.truncated,
+                finishReason: result.finishReason,
+              },
+              token
+            );
             logger.info('Deep Research concluído', { id: r.id });
           } else if (result.status === 'failed') {
-            await deepResearchService.applyProviderResult(r.id, {
-              failed: true,
-              error: result.error,
-            });
+            await deepResearchService.applyProviderResult(
+              r.id,
+              { failed: true, error: result.error },
+              token
+            );
             logger.warn('Deep Research falhou', { id: r.id, error: result.error });
           }
           // pending → aguarda o próximo ciclo
@@ -65,11 +81,13 @@ async function pollPending() {
     //    indisponível quando foi solicitada). Cobre requestedAt antigo OU nulo
     //    (nunca disparou). Só roda com provider ativo, então não afeta o fluxo
     //    manual (API desligada, em que RESEARCHING aguarda o admin).
-    const cutoff = new Date(Date.now() - STALE_AFTER_MS);
+    const cutoff = new Date(Date.now() - staleAfterMs());
     const stale = await prisma.deepResearch.updateMany({
       where: {
         status: DeepResearchStatus.RESEARCHING,
         providerResponseId: null,
+        // Run síncrono vivo neste processo nunca é "travado".
+        ...(inFlightSyncRuns.size > 0 ? { id: { notIn: [...inFlightSyncRuns] } } : {}),
         OR: [{ requestedAt: { lt: cutoff } }, { requestedAt: null, createdAt: { lt: cutoff } }],
       },
       data: {
