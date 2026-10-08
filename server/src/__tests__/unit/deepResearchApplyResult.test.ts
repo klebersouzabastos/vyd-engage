@@ -80,7 +80,68 @@ describe('applyProviderResult — token de run', () => {
   });
 });
 
+// Incidente de 08/10/2026: créditos do OpenRouter esgotados → o provedor
+// devolveu `{ status: 'failed', error: 'OpenRouter 402: Insufficient credits' }`
+// em 0,3 s. O caminho síncrono só olhava `failed: true`: o erro sumiu, rodou uma
+// continuação inútil e um relatório VAZIO foi publicado como COMPLETED.
+describe('applyProviderResult — falha do provedor nunca vira relatório concluído', () => {
+  const ERRO_402 = 'OpenRouter 402: {"error":{"message":"Insufficient credits."}}';
+
+  it('status "failed" do provedor grava FAILED com o erro real, sem continuação', async () => {
+    const run = vi.fn();
+    getProviderMock.mockReturnValue({ name: 'fake', isAsync: false, enabled: () => true, run });
+    prismaMock.deepResearch.findUnique.mockResolvedValue({ promptUsed: '### Capítulo 1 — Panorama' } as never);
+    prismaMock.deepResearch.updateMany.mockResolvedValue({ count: 1 } as never);
+    const token = new Date('2026-10-08T13:43:00.988Z');
+
+    await deepResearchService.applyProviderResult('r1', { status: 'failed', error: ERRO_402 }, { requestedAt: token });
+
+    expect(run).not.toHaveBeenCalled();
+    const calls = updateManyCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0].where).toMatchObject({ id: 'r1', status: 'RESEARCHING', requestedAt: token });
+    expect(calls[0][0].data).toMatchObject({ status: 'FAILED', providerError: ERRO_402 });
+  });
+
+  it('conteúdo vazio (mesmo "completed") grava FAILED, nunca COMPLETED vazio', async () => {
+    prismaMock.deepResearch.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    await deepResearchService.applyProviderResult('r1', { status: 'completed', markdown: '   ' });
+
+    const calls = updateManyCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0].data.status).toBe('FAILED');
+    expect(String(calls[0][0].data.providerError)).toMatch(/sem conteúdo/i);
+    expect(calls[0][0].data.reportMarkdown).toBeUndefined();
+  });
+});
+
 describe('maybeTrigger — registro in-flight do run síncrono', () => {
+  it('run síncrono que devolve status "failed" termina FAILED (caminho real do incidente)', async () => {
+    getProviderMock.mockReturnValue({
+      name: 'fake',
+      isAsync: false,
+      enabled: () => true,
+      run: async () => ({ status: 'failed', error: 'OpenRouter 402: Insufficient credits' }),
+    });
+    prismaMock.deepResearch.findFirst.mockResolvedValue({
+      id: 'r1',
+      status: 'RESEARCHING',
+      promptUsed: '### Capítulo 1 — Panorama',
+      providerResponseId: null,
+    } as never);
+    prismaMock.deepResearch.findUnique.mockResolvedValue({ promptUsed: '### Capítulo 1 — Panorama' } as never);
+    prismaMock.deepResearch.update.mockResolvedValue({} as never);
+    prismaMock.deepResearch.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    await deepResearchService.maybeTrigger('t1', 'r1');
+    await new Promise((r) => setTimeout(r, 0));
+
+    const gravados = updateManyCalls().map((c) => c[0].data.status);
+    expect(gravados).toEqual(['FAILED']);
+    expect(String(updateManyCalls()[0][0].data.providerError)).toContain('402');
+  });
+
   it('mantém o id em inFlightSyncRuns enquanto o run roda e remove ao aplicar o resultado', async () => {
     let resolveRun!: (v: unknown) => void;
     getProviderMock.mockReturnValue({
