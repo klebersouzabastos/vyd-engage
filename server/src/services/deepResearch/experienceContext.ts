@@ -14,6 +14,7 @@
 import type { Prisma } from '@prisma/client';
 import prisma from '../../config/database.js';
 import { semanticSearch } from '../atestados/ragService.js';
+import { normalizeName } from '../atestados/normalize.js';
 import { logger } from '../../utils/logger.js';
 import { APPENDIX_TITLES } from './promptUtils.js';
 
@@ -42,6 +43,7 @@ const select = {
   objeto: true,
   dataInicio: true,
   dataConclusao: true,
+  periodoTexto: true,
   valorContrato: true,
   responsaveis: { select: { funcoes: { select: { funcao: true, categoria: true } } } },
   quantitativos: { select: { grandeza: true, valor: true, unidade: true }, take: 2 },
@@ -65,9 +67,60 @@ function dec(v: unknown): number {
   return Number(v);
 }
 
+const ANO_4_DIGITOS = /\b(?:19|20)\d{2}\b/g;
+// "Janeiro/73", "Dez/74": mês por extenso (ou abreviado) + ano com 2 dígitos.
+const MES_ANO_2_DIGITOS = /\b(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\/(\d{2})\b/gi;
+
+/**
+ * Ano de CONCLUSÃO a partir do período em texto livre do acervo legado — o
+ * maior ano citado. O legado tem 22 formatos ("01/1982 a 05/1987",
+ * "17/08/1987…", "Janeiro/73 a Agosto/76", "1986-07-01"); duração pura ("120
+ * DIAS", "54 MESES"), "Em execução" e "***" não têm ano → null (nunca inventa).
+ */
+export function anoDoPeriodo(texto: string | null | undefined): number | null {
+  const t = texto || '';
+  const anos = (t.match(ANO_4_DIGITOS) || []).map(Number);
+  const seculoAtual = new Date().getFullYear() % 100;
+  for (const m of t.matchAll(MES_ANO_2_DIGITOS)) {
+    const yy = Number(m[1]);
+    anos.push(yy <= seculoAtual ? 2000 + yy : 1900 + yy);
+  }
+  return anos.length ? Math.max(...anos) : null;
+}
+
+/** Ano de conclusão: data estruturada quando existe; senão, o texto livre. */
 function ano(r: Row): number | null {
   const d = r.dataConclusao ?? r.dataInicio;
-  return d ? d.getUTCFullYear() : null;
+  return d ? d.getUTCFullYear() : anoDoPeriodo(r.periodoTexto);
+}
+
+/** Objeto como aparece no prompt: espaços colapsados e cortado em OBJETO_MAX. */
+function objetoExibido(r: Row): string {
+  const objeto = compacta(r.objeto);
+  return objeto.length > OBJETO_MAX ? `${objeto.slice(0, OBJETO_MAX - 1).trimEnd()}…` : objeto;
+}
+
+/**
+ * Identidade de uma linha de exemplo = o que o MODELO vê (contratante + objeto
+ * exibido). O legado registra o mesmo contrato várias vezes, com objetos que só
+ * diferem depois do corte (caso real CBTU/Natal: "…Extremo", "…Extremoz,
+ * utilizando a metodologia BIM", "…com as seguintes atividades") — no prompt
+ * seriam linhas idênticas, então valem uma só.
+ */
+function chaveExemplo(r: Row): string {
+  return `${normalizeName(r.contratante)}|${normalizeName(objetoExibido(r))}`;
+}
+
+/** Mantém a primeira ocorrência de cada chave, ignorando as já usadas. */
+function semRepeticao(itens: Row[], usadas: Set<string>): Row[] {
+  const out: Row[] = [];
+  for (const r of itens) {
+    const k = chaveExemplo(r);
+    if (usadas.has(k)) continue;
+    usadas.add(k);
+    out.push(r);
+  }
+  return out;
 }
 
 function compacta(s: string): string {
@@ -88,8 +141,7 @@ function disciplinas(r: Row): string[] {
 }
 
 function linhaExemplo(r: Row): string {
-  let objeto = compacta(r.objeto);
-  if (objeto.length > OBJETO_MAX) objeto = `${objeto.slice(0, OBJETO_MAX - 1).trimEnd()}…`;
+  const objeto = objetoExibido(r);
   const partes: string[] = [];
   const a = ano(r);
   if (a) partes.push(String(a));
@@ -175,10 +227,17 @@ export async function buildExperienceContext(tenantId: string, query: string): P
       logger.warn('Experiências: busca semântica falhou; seguindo só com os recentes', err as Error);
     }
   }
-  const idsRelacionados = new Set(relacionados.map((r) => r.id));
-  const recentes = rows
-    .filter((r) => !idsRelacionados.has(r.id))
-    .slice(0, Math.max(0, maxExemplos - relacionados.length));
+  const usadas = new Set<string>();
+  relacionados = semRepeticao(relacionados, usadas);
+
+  // "Recentes" pelo ano de conclusão DERIVADO (mais recente primeiro; sem ano
+  // por último): no legado não há data estruturada, e a ordem do banco seria a
+  // de importação. Array.prototype.sort é estável — empates mantêm a ordem.
+  const porRecencia = [...rows].sort((a, b) => (ano(b) ?? -Infinity) - (ano(a) ?? -Infinity));
+  const recentes = semRepeticao(porRecencia, usadas).slice(
+    0,
+    Math.max(0, maxExemplos - relacionados.length)
+  );
 
   const nomeTenant = compacta(tenant?.name || '') || 'a consultoria';
   const maxChars = envInt('DEEP_RESEARCH_EXPERIENCES_MAX_CHARS', DEFAULT_MAX_CHARS);
